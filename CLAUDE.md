@@ -8,9 +8,12 @@ The bloom word comes from the concept that you "plant" your mini-pc and then in 
 ## Architecture
 
 - **Pi package**: Extensions + skills bundled as a Pi package (`pi install ./`)
-- **Extensions**: `extensions/` — TypeScript Pi extensions (bloom-persona, bloom-os, bloom-memory, bloom-channels)
+- **Extensions**: `extensions/` — TypeScript Pi extensions (bloom-garden, bloom-persona, bloom-os, bloom-memory, bloom-channels)
 - **Skills**: `skills/` — Pi skill markdown files (os-operations, bridge-management, object-store, self-evolution)
-- **Persona**: `persona/` — OpenPersona 4-layer identity (SOUL.md, BODY.md, FACULTY.md, SKILL.md)
+- **Persona**: `persona/` — OpenPersona 4-layer identity (SOUL.md, BODY.md, FACULTY.md, SKILL.md) — seeded to Garden on first run
+- **Garden vault**: `~/Garden/` — PARA-organized user content, synced via Syncthing. Env: `BLOOM_GARDEN_DIR`
+- **Bloom system**: `~/Garden/Bloom/` — shareable persona, skills, evolutions (synced)
+- **Pi state**: `~/.pi/` — internal agent state, sessions, settings (NOT synced)
 - **OS image**: `os/Containerfile` — Fedora bootc 42
 
 ## Build and Test

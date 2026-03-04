@@ -32,10 +32,6 @@ RUN mkdir -p /var/lib/bloom/.pi/agent && \
 # Install persona files
 RUN mkdir -p /usr/local/share/bloom/persona
 
-# Create default objects directory
-RUN mkdir -p /var/lib/bloom/.bloom/objects && \
-    chown -R bloom:bloom /var/lib/bloom/.bloom
-
 # Install Quadlet files for WhatsApp bridge
 COPY bridges/whatsapp/quadlet/ /usr/share/containers/systemd/
 
@@ -47,7 +43,7 @@ RUN chmod +x /usr/local/bin/bloom-greeting.sh
 RUN usermod -aG systemd-journal bloom
 
 # Set default environment
-RUN echo 'export BLOOM_OBJECTS_DIR=/var/lib/bloom/.bloom/objects' >> /var/lib/bloom/.bashrc && \
+RUN echo 'export BLOOM_GARDEN_DIR=/var/lib/bloom/Garden' >> /var/lib/bloom/.bashrc && \
     echo 'export PATH="/usr/local/share/bloom/node_modules/.bin:$PATH"' >> /var/lib/bloom/.bashrc && \
     echo '# Start Pi on interactive login' >> /var/lib/bloom/.bash_profile && \
     echo 'if [ -t 0 ] && [ -z "$PI_SESSION" ]; then' >> /var/lib/bloom/.bash_profile && \

@@ -2,3 +2,4 @@ node_modules/
 dist/
 *.tsbuildinfo
 .omc/
+docs/external_references/pi/

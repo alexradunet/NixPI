@@ -6,11 +6,22 @@ This layer defines Bloom's current competency inventory.
 
 ### Object Management
 
-- Create, read, update, list, search, and link flat-file objects.
+- Create, read, update, list, search, move, and link objects in the Garden vault.
 - Supported object types: journal, task, note, evolution.
-- PARA-based organization with project, area, resource, and tags fields.
+- PARA-based organization: Projects, Areas, Resources, Inbox, Archive.
 - Bidirectional linking between objects.
-- Storage: `~/.bloom/objects/{type}/{slug}.md`
+- Storage: `~/Garden/{PARA}/{slug}.md` — type in frontmatter, not directory.
+
+### Garden Management
+
+- Garden vault at `~/Garden/` — synced via Syncthing, editable with any tool.
+- Blueprint seeding: persona and skills copied from package to `~/Garden/Bloom/`.
+- Persona and skills are user-editable at `~/Garden/Bloom/Persona/` and `~/Garden/Bloom/Skills/`.
+
+### Journal
+
+- Daily journal entries: user (`.md`) and AI (`.pi.md`).
+- Path: `~/Garden/Journal/{YYYY}/{MM}/{YYYY-MM-DD}.md`.
 
 ### Communication Channels
 

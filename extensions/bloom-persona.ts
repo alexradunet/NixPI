@@ -1,6 +1,7 @@
-import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
+import { existsSync, readFileSync } from "node:fs";
+import { homedir } from "node:os";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 
 const DANGEROUS_PATTERNS: Array<{ pattern: RegExp; label: string }> = [
@@ -13,7 +14,9 @@ const DANGEROUS_PATTERNS: Array<{ pattern: RegExp; label: string }> = [
 ];
 
 function loadPersona(): string {
-	const dir = join(fileURLToPath(import.meta.url), "../../persona");
+	const gardenDir = process.env._BLOOM_GARDEN_RESOLVED ?? process.env.BLOOM_GARDEN_DIR ?? join(homedir(), "Garden");
+	const vaultDir = join(gardenDir, "Bloom", "Persona");
+	const dir = existsSync(join(vaultDir, "SOUL.md")) ? vaultDir : join(fileURLToPath(import.meta.url), "../../persona");
 	const layers: Array<[string, string]> = [
 		["Soul", "SOUL.md"],
 		["Body", "BODY.md"],
@@ -47,7 +50,7 @@ export default function (pi: ExtensionAPI) {
 			"- `/topic switch <name>` — Switch to an existing topic",
 			"",
 			"When you notice the conversation shifting to a distinctly different subject:",
-			"- Suggest starting a new topic: \"This seems like a new topic. You could use `/topic new <suggested-name>` to track it separately.\"",
+			'- Suggest starting a new topic: "This seems like a new topic. You could use `/topic new <suggested-name>` to track it separately."',
 			"- Do NOT auto-create topics — always suggest and let the user decide.",
 			"- If the user ignores the suggestion, continue normally without repeating it.",
 		].join("\n");

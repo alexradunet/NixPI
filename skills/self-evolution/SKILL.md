@@ -21,8 +21,10 @@ Use this skill when Bloom detects a capability gap or the user requests a system
 ```bash
 memory_create evolution "add-health-tracking" \
   --title="Add health tracking object type" \
-  --status=proposed --risk=low --area=objects
+  --status=proposed --risk=low
 ```
+
+Evolution objects are stored at `~/Garden/Bloom/evolutions/{slug}.pi.md`.
 
 ## Evolution Object Fields
 
