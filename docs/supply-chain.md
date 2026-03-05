@@ -34,7 +34,7 @@ Service container images must be pinned:
 
 ### Current Exceptions
 
-- `bloom-whatsapp` image is hosted on private GHCR and digest is not publicly resolvable in all environments. It remains tag-based until signed digest distribution is available.
+- None.
 
 ## bootc Image Policy
 

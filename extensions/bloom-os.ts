@@ -1089,6 +1089,13 @@ function findLocalServicePackage(name: string): { serviceDir: string; quadletDir
 			}
 			writeFileSync(join(skillDir, "SKILL.md"), readFileSync(skillSrc));
 
+			const expectedSocket = join(quadletSrc, `bloom-${name}.socket`);
+			const installedSocket = join(userSystemdDir, `bloom-${name}.socket`);
+			if (!existsSync(expectedSocket) && existsSync(installedSocket)) {
+				await run("systemctl", ["--user", "disable", "--now", `bloom-${name}.socket`], signal);
+				rmSync(installedSocket, { force: true });
+			}
+
 			const tokenDir = join(os.homedir(), ".config", "bloom", "channel-tokens");
 			mkdirSync(tokenDir, { recursive: true });
 			const tokenPath = join(tokenDir, name);

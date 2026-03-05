@@ -39,7 +39,7 @@ Expected local path:
 Declare desired services in `~/Garden/Bloom/manifest.yaml` via tool calls:
 
 - `manifest_set_service(name="syncthing", image="docker.io/syncthing/syncthing@sha256:...", version="0.1.0", enabled=true)`
-- `manifest_set_service(name="whatsapp", image="ghcr.io/alexradunet/bloom-whatsapp:latest", version="0.1.0", enabled=true)`
+- `manifest_set_service(name="whatsapp", image="ghcr.io/pibloom/bloom-whatsapp:0.1.0", version="0.1.0", enabled=true)`
 - `manifest_set_service(name="whisper", image="docker.io/fedirz/faster-whisper-server@sha256:...", version="0.1.0", enabled=true)`
 - `manifest_set_service(name="tailscale", image="docker.io/tailscale/tailscale@sha256:...", version="0.1.0", enabled=true)`
 

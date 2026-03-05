@@ -14,7 +14,7 @@ services:
     version: "0.1.0"
     category: communication
     artifact: ghcr.io/pibloom/bloom-svc-whatsapp
-    image: ghcr.io/alexradunet/bloom-whatsapp:latest
+    image: ghcr.io/pibloom/bloom-whatsapp:0.1.0
     optional: true
     preflight:
       commands: [oras, podman, systemctl]
