@@ -28,6 +28,15 @@ RUN dnf install -y \
     oras \
     qemu-system-x86 \
     edk2-ovmf \
+    sway \
+    greetd \
+    tuigreet \
+    wayvnc \
+    foot \
+    xdg-desktop-portal-wlr \
+    wl-clipboard \
+    grim \
+    slurp \
     nodejs \
     npm \
     && dnf clean all \
@@ -70,6 +79,11 @@ RUN mkdir -p /usr/local/share/bloom/.pi/agent && \
 COPY os/sysconfig/bloom-bashrc /usr/local/share/bloom/skel/.bashrc
 COPY os/sysconfig/bloom-bash_profile /usr/local/share/bloom/skel/.bash_profile
 
+# Minimal desktop defaults: greetd + sway + wayvnc
+COPY os/sysconfig/greetd.toml /etc/greetd/config.toml
+RUN mkdir -p /usr/local/share/bloom/skel/.config/sway
+COPY os/sysconfig/sway-config /usr/local/share/bloom/skel/.config/sway/config
+
 # tmpfiles.d for /var directory structure (created at boot)
 COPY os/sysconfig/bloom-tmpfiles.conf /usr/lib/tmpfiles.d/bloom.conf
 
@@ -85,6 +99,10 @@ RUN chmod +x /usr/local/bin/bloom-greeting.sh
 
 # Syncthing user service
 RUN systemctl enable syncthing@bloom.service
+
+# Boot to desktop with greetd (sway is configured as default session)
+RUN systemctl enable greetd.service
+RUN systemctl set-default graphical.target
 
 # Update check timer
 COPY os/sysconfig/bloom-update-check.timer /usr/lib/systemd/system/bloom-update-check.timer

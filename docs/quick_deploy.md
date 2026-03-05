@@ -61,3 +61,16 @@ just iso
 ```
 
 Use the generated ISO from `os/output/anaconda-iso/` as installation media.
+
+### Optional: Remote desktop (Sway + wayvnc, no Guacamole)
+
+Bloom OS boots to `graphical.target` with `greetd` and starts a Sway session for the `bloom` user.
+The Sway config starts `wayvnc` on `127.0.0.1:5901`.
+
+Recommended access pattern:
+
+```bash
+ssh -N -L 5901:127.0.0.1:5901 bloom@<host>
+```
+
+Then connect your VNC client to `localhost:5901`.
