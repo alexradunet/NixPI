@@ -33,10 +33,10 @@ Always prefer the lightest option. See `docs/service-architecture.md` for detail
 | Skill | Purpose |
 |-------|---------|
 | `os-operations` | System health inspection and remediation |
-| `bridge-management` | Messaging bridge setup and troubleshooting |
 | `object-store` | CRUD operations for the memory store |
 | `self-evolution` | Structured system change workflow |
 | `service-management` | Install, manage, and discover OCI service packages |
+| `first-boot` | One-time system setup guide |
 
 ## Services (OCI Packages)
 

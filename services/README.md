@@ -22,6 +22,8 @@ Service packages are pushed to GHCR as OCI artifacts using `oras`:
 ghcr.io/alexradunet/bloom-svc-{name}:latest
 ```
 
+> `bloom-svc-{name}` is the OCI *artifact* name (the installable package containing quadlet files and SKILL.md). This is distinct from the container *image* referenced inside the quadlet — which may be upstream (e.g., `docker.io/fedirz/faster-whisper-server`) or custom (e.g., `ghcr.io/alexradunet/bloom-whatsapp`).
+
 ### Pushing
 
 ```bash
