@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
-import { getGardenDir, nowIso, stringifyFrontmatter, truncate } from "./shared.js";
+import { getGardenDir, nowIso, stringifyFrontmatter, truncate } from "../lib/shared.js";
 
 export default function (pi: ExtensionAPI) {
 	pi.registerTool({

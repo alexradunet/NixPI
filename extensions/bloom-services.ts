@@ -8,7 +8,7 @@ import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import type { ExtensionAPI, ExtensionContext } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
-import { createLogger, errorResult, getGardenDir, parseFrontmatter, truncate } from "./shared.js";
+import { createLogger, errorResult, getGardenDir, parseFrontmatter, truncate } from "../lib/shared.js";
 
 const require = createRequire(import.meta.url);
 const yaml: { load: (str: string) => unknown; dump: (obj: unknown) => string } = require("js-yaml");

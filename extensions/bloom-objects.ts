@@ -11,7 +11,7 @@ import {
 	parseFrontmatter,
 	stringifyFrontmatter,
 	truncate,
-} from "./shared.js";
+} from "../lib/shared.js";
 
 function parseRef(ref: string): { type: string; slug: string } {
 	const slash = ref.indexOf("/");

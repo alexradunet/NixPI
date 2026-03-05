@@ -8,7 +8,7 @@ import { promisify } from "node:util";
 import { StringEnum } from "@mariozechner/pi-ai";
 import type { ExtensionAPI, ExtensionContext } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
-import { createLogger, errorResult, getGardenDir, truncate } from "./shared.js";
+import { createLogger, errorResult, getGardenDir, truncate } from "../lib/shared.js";
 
 const require = createRequire(import.meta.url);
 const yaml: { load: (str: string) => unknown; dump: (obj: unknown) => string } = require("js-yaml");

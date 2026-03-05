@@ -2,7 +2,7 @@ import { appendFileSync, existsSync, mkdirSync, readdirSync, readFileSync, unlin
 import { join } from "node:path";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
-import { createLogger, getGardenDir, truncate } from "./shared.js";
+import { createLogger, getGardenDir, truncate } from "../lib/shared.js";
 
 const log = createLogger("bloom-audit");
 

@@ -10,7 +10,7 @@ import type {
 	SessionShutdownEvent,
 	SessionStartEvent,
 } from "@mariozechner/pi-coding-agent";
-import { createLogger } from "./shared.js";
+import { createLogger } from "../lib/shared.js";
 
 const log = createLogger("bloom-channels");
 

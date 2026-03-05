@@ -12,6 +12,6 @@
 		"composite": true,
 		"sourceMap": true
 	},
-	"include": ["extensions/**/*.ts"],
+	"include": ["extensions/**/*.ts", "lib/**/*.ts"],
 	"exclude": ["node_modules", "dist"]
 }

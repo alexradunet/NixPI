@@ -3,7 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
-import { errorResult, getGardenDir, nowIso, stringifyFrontmatter, truncate } from "./shared.js";
+import { errorResult, getGardenDir, nowIso, stringifyFrontmatter, truncate } from "../lib/shared.js";
 
 function getPackageDir(): string {
 	return path.join(fileURLToPath(import.meta.url), "../..");

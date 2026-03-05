@@ -1,11 +1,13 @@
-import { createRequire } from "node:module";
 import os from "node:os";
 import path from "node:path";
 import { truncateHead } from "@mariozechner/pi-coding-agent";
-import type { FrontMatterResult } from "front-matter";
 
-const require = createRequire(import.meta.url);
-const fm: <T>(str: string) => FrontMatterResult<T> = require("front-matter");
+export interface ParsedFrontmatter<T> {
+	attributes: T;
+	body: string;
+	bodyBegin: number;
+	frontmatter: string;
+}
 
 export function getGardenDir(): string {
 	return process.env._BLOOM_GARDEN_RESOLVED ?? process.env.BLOOM_GARDEN_DIR ?? path.join(os.homedir(), "Garden");
@@ -40,8 +42,85 @@ export function stringifyFrontmatter(data: Record<string, unknown>, content: str
 	return `${lines.join("\n")}\n${content}`;
 }
 
-export function parseFrontmatter<T>(str: string): FrontMatterResult<T> {
-	return fm<T>(str);
+export function parseFrontmatter<T extends Record<string, unknown> = Record<string, unknown>>(
+	str: string,
+): ParsedFrontmatter<T> {
+	if (!str.startsWith("---\n")) {
+		return {
+			attributes: {} as T,
+			body: str,
+			bodyBegin: 1,
+			frontmatter: "",
+		};
+	}
+
+	const end = str.indexOf("\n---\n", 4);
+	if (end === -1) {
+		return {
+			attributes: {} as T,
+			body: str,
+			bodyBegin: 1,
+			frontmatter: "",
+		};
+	}
+
+	const frontmatter = str.slice(4, end);
+	const body = str.slice(end + 5);
+	const attributes: Record<string, unknown> = {};
+
+	let currentArrayKey: string | null = null;
+	let currentArrayValues: string[] = [];
+	const flushArray = () => {
+		if (currentArrayKey) {
+			attributes[currentArrayKey] = currentArrayValues;
+			currentArrayKey = null;
+			currentArrayValues = [];
+		}
+	};
+
+	for (const line of frontmatter.split("\n")) {
+		const trimmed = line.trim();
+		if (!trimmed || trimmed.startsWith("#")) continue;
+
+		if (line.match(/^\s*-\s+/) && currentArrayKey) {
+			const item = line.replace(/^\s*-\s+/, "").trim();
+			if (item) currentArrayValues.push(item);
+			continue;
+		}
+
+		flushArray();
+
+		const colon = line.indexOf(":");
+		if (colon === -1) continue;
+
+		const key = line.slice(0, colon).trim();
+		const val = line.slice(colon + 1).trim();
+		if (!key) continue;
+
+		if (val === "") {
+			currentArrayKey = key;
+			continue;
+		}
+
+		if (val.includes(",")) {
+			attributes[key] = val
+				.split(",")
+				.map((s) => s.trim())
+				.filter(Boolean);
+		} else {
+			attributes[key] = val;
+		}
+	}
+
+	flushArray();
+
+	const bodyBegin = frontmatter.split("\n").length + 3;
+	return {
+		attributes: attributes as T,
+		body,
+		bodyBegin,
+		frontmatter,
+	};
 }
 
 export const PARA_DIRS = ["Inbox", "Projects", "Areas", "Resources", "Archive"];
@@ -74,3 +153,6 @@ export function createLogger(component: string) {
 		error: (msg: string, extra?: Record<string, unknown>) => log("error", msg, extra),
 	};
 }
+
+// No-op default export so this utility module can be safely discovered by extension loaders.
+export default function () {}

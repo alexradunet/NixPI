@@ -4,7 +4,7 @@ import os from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
-import { getGardenDir } from "./shared.js";
+import { getGardenDir } from "../lib/shared.js";
 
 const require = createRequire(import.meta.url);
 const yaml: { load: (str: string) => unknown } = require("js-yaml");
