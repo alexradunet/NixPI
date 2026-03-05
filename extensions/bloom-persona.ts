@@ -11,6 +11,8 @@ const DANGEROUS_PATTERNS: Array<{ pattern: RegExp; label: string }> = [
 	{ pattern: /:\(\)\s*\{/, label: "fork bomb" },
 	{ pattern: /\bshutdown\b/, label: "shutdown" },
 	{ pattern: /\breboot\b/, label: "reboot" },
+	{ pattern: /git\s+push\s+--force/, label: "git force-push" },
+	{ pattern: /git\s+push\b.*\bmain\b/, label: "git push to main" },
 ];
 
 function loadPersona(): string {
@@ -43,22 +45,7 @@ export default function (pi: ExtensionAPI) {
 		if (personaBlock === undefined) {
 			personaBlock = loadPersona();
 		}
-		const topicGuidance = [
-			"",
-			"## Topic Management",
-			"",
-			"You have topic management commands available:",
-			"- `/topic new <name>` — Start a new conversation topic (e.g. `/topic new deploy-planning`)",
-			"- `/topic close` — Close the current topic and summarize it",
-			"- `/topic list` — Show all topics and their status",
-			"- `/topic switch <name>` — Switch to an existing topic",
-			"",
-			"When you notice the conversation shifting to a distinctly different subject:",
-			'- Suggest starting a new topic: "This seems like a new topic. You could use `/topic new <suggested-name>` to track it separately."',
-			"- Do NOT auto-create topics — always suggest and let the user decide.",
-			"- If the user ignores the suggestion, continue normally without repeating it.",
-		].join("\n");
-		return { systemPrompt: personaBlock + topicGuidance + "\n\n" + event.systemPrompt };
+		return { systemPrompt: `${personaBlock}\n\n${event.systemPrompt}` };
 	});
 
 	pi.on("tool_call", async (event) => {

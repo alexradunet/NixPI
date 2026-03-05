@@ -14,6 +14,8 @@ if [ ! -f "$FIRST_RUN_MARKER" ]; then
     echo ""
     echo "  What Pi will help you configure:"
     echo "    • LLM API key (Anthropic, OpenAI, etc.)"
+    echo "    • GitHub authentication (for self-evolution)"
+    echo "    • Syncthing setup (for Garden sync)"
     echo "    • WhatsApp bridge (optional)"
     echo "    • Your preferences and name"
     echo ""

@@ -4,15 +4,29 @@
 
 Bloom is a Pi package that turns a Fedora bootc machine into a personal AI companion host. Pi IS the product; Bloom teaches Pi about its OS.
 
+## Extensibility Hierarchy
+
+Bloom extends Pi through three mechanisms, lightest first: **Skill → Extension → Service**.
+
+| Layer | What | When | Created By |
+|-------|------|------|------------|
+| **Skill** | Markdown instructions (SKILL.md) | Pi needs knowledge or a procedure | Pi or developer |
+| **Extension** | In-process TypeScript | Pi needs commands, tools, or event hooks | Developer (PR required) |
+| **Service** | OCI container (Podman Quadlet) | Standalone workload needing isolation | Pi or developer |
+
+Always prefer the lightest option. See `docs/service-architecture.md` for details.
+
 ## Extensions
 
 | Extension | Purpose | LOC |
 |-----------|---------|-----|
-| `bloom-persona` | Identity injection, safety guardrails, compaction guidance | ~84 |
-| `bloom-os` | bootc, Podman, systemd management tools | ~238 |
-| `bloom-memory` | Flat-file object store (YAML frontmatter + Markdown) | ~648 |
-| `bloom-garden` | Garden vault initialization, blueprint seeding and updates | ~214 |
-| `bloom-channels` | Channel bridge socket server, topic management | ~320 |
+| `bloom-persona` | Identity injection, safety guardrails, compaction guidance | ~73 |
+| `bloom-os` | bootc, Podman, systemd management tools | ~212 |
+| `bloom-objects` | Flat-file object store (YAML frontmatter + Markdown) | ~330 |
+| `bloom-journal` | Daily journal entries (user + AI) | ~90 |
+| `bloom-garden` | Garden vault, blueprint seeding, skill creation, persona evolution | ~310 |
+| `bloom-channels` | Channel bridge TCP server, WhatsApp command | ~193 |
+| `bloom-topics` | Topic management, /topic command, topic guidance | ~140 |
 
 ## Skills
 
@@ -22,6 +36,17 @@ Bloom is a Pi package that turns a Fedora bootc machine into a personal AI compa
 | `bridge-management` | Messaging bridge setup and troubleshooting |
 | `object-store` | CRUD operations for the memory store |
 | `self-evolution` | Structured system change workflow |
+| `service-management` | Install, manage, and discover OCI service packages |
+
+## Services (OCI Packages)
+
+Modular capabilities packaged as OCI artifacts, installed via `oras` from GHCR.
+
+| Service | Category | Port | Image |
+|---------|----------|------|-------|
+| `bloom-svc-whisper` | media | 9000 | fedirz/faster-whisper-server:latest-cpu |
+| `bloom-svc-whatsapp` | communication | — | ghcr.io/alexradunet/bloom-whatsapp:latest |
+| `bloom-svc-tailscale` | networking | — | tailscale/tailscale:latest |
 
 ## Persona
 
@@ -39,5 +64,5 @@ pi install /path/to/bloom
 
 Or for development:
 ```bash
-pi -e ./extensions/bloom-persona.ts -e ./extensions/bloom-os.ts -e ./extensions/bloom-memory.ts -e ./extensions/bloom-garden.ts -e ./extensions/bloom-channels.ts
+pi -e ./extensions/bloom-persona.ts -e ./extensions/bloom-os.ts -e ./extensions/bloom-objects.ts -e ./extensions/bloom-journal.ts -e ./extensions/bloom-garden.ts -e ./extensions/bloom-channels.ts -e ./extensions/bloom-topics.ts
 ```

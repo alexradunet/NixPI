@@ -1,0 +1,9 @@
+[Unit]
+Description=Check for Bloom OS updates
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=bloom
+ExecStart=/usr/local/bin/bloom-update-check.sh

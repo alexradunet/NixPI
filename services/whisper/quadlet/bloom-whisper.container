@@ -1,0 +1,28 @@
+[Unit]
+Description=Bloom Whisper — Speech-to-text transcription
+After=network-online.target
+
+[Container]
+Image=docker.io/fedirz/faster-whisper-server:latest-cpu
+ContainerName=bloom-whisper
+Network=host
+PublishPort=127.0.0.1:9000:8000
+Environment=WHISPER__MODEL=Systran/faster-whisper-small
+Environment=WHISPER__INFERENCE_DEVICE=cpu
+Volume=bloom-whisper-models:/root/.cache/huggingface:Z
+Volume=/var/lib/bloom/media:/media:ro,Z
+PodmanArgs=--memory=2g
+HealthCmd=curl -sf http://localhost:8000/health || exit 1
+HealthInterval=30s
+HealthRetries=3
+HealthTimeout=10s
+NoNewPrivileges=true
+LogDriver=journald
+
+[Service]
+Restart=on-failure
+RestartSec=10
+TimeoutStartSec=600
+
+[Install]
+WantedBy=default.target

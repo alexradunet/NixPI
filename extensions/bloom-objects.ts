@@ -1,31 +1,9 @@
 import fs from "node:fs";
-import { createRequire } from "node:module";
 import path from "node:path";
 import { StringEnum } from "@mariozechner/pi-ai";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
-import type { FrontMatterResult } from "front-matter";
-import { errorResult, getGardenDir, truncate } from "./shared.js";
-
-const require = createRequire(import.meta.url);
-const fm: <T>(str: string) => FrontMatterResult<T> = require("front-matter");
-
-function nowIso(): string {
-	return new Date().toISOString().replace(/\.\d{3}Z$/, "Z");
-}
-
-function stringifyFrontmatter(data: Record<string, unknown>, content: string): string {
-	const lines: string[] = ["---"];
-	for (const [key, val] of Object.entries(data)) {
-		if (Array.isArray(val)) {
-			lines.push(`${key}: ${val.join(", ")}`);
-		} else {
-			lines.push(`${key}: ${val}`);
-		}
-	}
-	lines.push("---");
-	return `${lines.join("\n")}\n${content}`;
-}
+import { PARA_DIRS, errorResult, getGardenDir, nowIso, parseFrontmatter, stringifyFrontmatter, truncate } from "./shared.js";
 
 function parseRef(ref: string): { type: string; slug: string } {
 	const slash = ref.indexOf("/");
@@ -47,8 +25,6 @@ interface IndexEntry {
 
 const index: Map<string, IndexEntry> = new Map();
 
-const PARA_DIRS = ["Inbox", "Projects", "Areas", "Resources", "Archive"];
-
 function buildIndex(gardenDir: string): void {
 	index.clear();
 	for (const paraDir of PARA_DIRS) {
@@ -65,7 +41,7 @@ function buildIndex(gardenDir: string): void {
 function indexFile(filepath: string): void {
 	try {
 		const raw = fs.readFileSync(filepath, "utf-8");
-		const { attributes } = fm<Record<string, unknown>>(raw);
+		const { attributes } = parseFrontmatter<Record<string, unknown>>(raw);
 		if (!attributes.type) return;
 		const type = String(attributes.type);
 		const slug = String(attributes.slug ?? path.basename(filepath, ".md"));
@@ -96,7 +72,7 @@ function findFileByName(dir: string, filename: string, type: string): string | n
 	for (const match of matches) {
 		const filepath = path.join(dir, match);
 		const raw = fs.readFileSync(filepath, "utf-8");
-		const { attributes } = fm<Record<string, unknown>>(raw);
+		const { attributes } = parseFrontmatter<Record<string, unknown>>(raw);
 		if (String(attributes.type ?? "") === type) return filepath;
 	}
 	return null;
@@ -263,11 +239,11 @@ export default function (pi: ExtensionAPI) {
 					try {
 						const raw = fs.readFileSync(filepath, "utf-8");
 						if (!raw.includes(params.pattern)) continue;
-						const { attributes } = fm<Record<string, unknown>>(raw);
+						const { attributes } = parseFrontmatter<Record<string, unknown>>(raw);
 						const type = String(attributes.type ?? "note");
 						const slug = String(attributes.slug ?? path.basename(filepath, ".md"));
 						const ref = `${type}/${slug}`;
-						const title = attributes.title ? ` \u2014 ${attributes.title}` : "";
+						const title = attributes.title ? ` — ${attributes.title}` : "";
 						matches.push(`${ref}${title}`);
 					} catch {
 						// Skip unreadable files
@@ -309,7 +285,7 @@ export default function (pi: ExtensionAPI) {
 
 			function addLink(fp: string, linkRef: string): void {
 				const raw = fs.readFileSync(fp, "utf-8");
-				const { attributes, body } = fm<Record<string, unknown>>(raw);
+				const { attributes, body } = parseFrontmatter<Record<string, unknown>>(raw);
 				const links: string[] = Array.isArray(attributes.links) ? [...(attributes.links as string[])] : [];
 				if (!links.includes(linkRef)) {
 					links.push(linkRef);
@@ -362,7 +338,7 @@ export default function (pi: ExtensionAPI) {
 				for (const filepath of walkMdFiles(dir)) {
 					try {
 						const raw = fs.readFileSync(filepath, "utf-8");
-						const { attributes } = fm<Record<string, unknown>>(raw);
+						const { attributes } = parseFrontmatter<Record<string, unknown>>(raw);
 						const type = String(attributes.type ?? "note");
 						if (params.type && type !== params.type) continue;
 
@@ -384,7 +360,7 @@ export default function (pi: ExtensionAPI) {
 						if (!match) continue;
 
 						const slug = String(attributes.slug ?? "unknown");
-						const title = attributes.title ? ` \u2014 ${attributes.title}` : "";
+						const title = attributes.title ? ` — ${attributes.title}` : "";
 						results.push(`${type}/${slug}${title}`);
 					} catch {
 						// Skip unreadable files
@@ -419,7 +395,7 @@ export default function (pi: ExtensionAPI) {
 			if (!oldPath) return errorResult(`object not found: ${params.type}/${params.slug}`);
 
 			const raw = fs.readFileSync(oldPath, "utf-8");
-			const { attributes, body } = fm<Record<string, unknown>>(raw);
+			const { attributes, body } = parseFrontmatter<Record<string, unknown>>(raw);
 
 			if (params.archive) {
 				delete attributes.project;
@@ -466,7 +442,7 @@ export default function (pi: ExtensionAPI) {
 				content: [
 					{
 						type: "text" as const,
-						text: `moved ${ref} \u2192 ${newPath}`,
+						text: `moved ${ref} → ${newPath}`,
 					},
 				],
 				details: {},
@@ -491,101 +467,6 @@ export default function (pi: ExtensionAPI) {
 						text: `indexed ${index.size} objects`,
 					},
 				],
-				details: {},
-			};
-		},
-	});
-
-	pi.registerTool({
-		name: "journal_write",
-		label: "Journal Write",
-		description: "Write an entry to the daily journal",
-		promptSnippet: "Write a journal entry for today or a specific date",
-		promptGuidelines: ["Use journal_write for daily reflections, logs, or observations. AI entries use origin 'pi'."],
-		parameters: Type.Object({
-			content: Type.String({ description: "Journal entry content" }),
-			date: Type.Optional(
-				Type.String({
-					description: "Date in YYYY-MM-DD format (default: today)",
-				}),
-			),
-			origin: Type.Optional(StringEnum(["pi", "user"] as const)),
-		}),
-		async execute(_toolCallId, params, _signal, _onUpdate, _ctx) {
-			const gardenDir = getGardenDir();
-			const date = params.date ?? new Date().toISOString().slice(0, 10);
-			const origin = params.origin ?? "pi";
-			const [year, month] = date.split("-");
-			const suffix = origin === "pi" ? ".pi.md" : ".md";
-			const filepath = path.join(gardenDir, "Journal", year, month, `${date}${suffix}`);
-			fs.mkdirSync(path.dirname(filepath), { recursive: true });
-
-			if (fs.existsSync(filepath)) {
-				const existing = fs.readFileSync(filepath, "utf-8");
-				const timestamp = nowIso();
-				fs.writeFileSync(filepath, `${existing}\n\n---\n\n*${timestamp}*\n\n${params.content}`);
-			} else {
-				const data: Record<string, unknown> = {
-					date,
-					origin,
-					created: nowIso(),
-				};
-				fs.writeFileSync(filepath, stringifyFrontmatter(data, `\n${params.content}\n`));
-			}
-
-			return {
-				content: [
-					{
-						type: "text" as const,
-						text: `journal entry written for ${date}`,
-					},
-				],
-				details: {},
-			};
-		},
-	});
-
-	pi.registerTool({
-		name: "journal_read",
-		label: "Journal Read",
-		description: "Read journal entries for a date",
-		promptSnippet: "Read journal entries for today or a specific date",
-		promptGuidelines: ["Use journal_read to review daily journal entries."],
-		parameters: Type.Object({
-			date: Type.Optional(
-				Type.String({
-					description: "Date in YYYY-MM-DD format (default: today)",
-				}),
-			),
-			include_ai: Type.Optional(
-				Type.Boolean({
-					description: "Include AI journal entries (default: true)",
-				}),
-			),
-		}),
-		async execute(_toolCallId, params, _signal, _onUpdate, _ctx) {
-			const gardenDir = getGardenDir();
-			const date = params.date ?? new Date().toISOString().slice(0, 10);
-			const includeAi = params.include_ai !== false;
-			const [year, month] = date.split("-");
-			const journalDir = path.join(gardenDir, "Journal", year, month);
-			const parts: string[] = [];
-
-			const userFile = path.join(journalDir, `${date}.md`);
-			if (fs.existsSync(userFile)) {
-				parts.push(`## User Journal\n\n${fs.readFileSync(userFile, "utf-8")}`);
-			}
-
-			if (includeAi) {
-				const aiFile = path.join(journalDir, `${date}.pi.md`);
-				if (fs.existsSync(aiFile)) {
-					parts.push(`## AI Journal\n\n${fs.readFileSync(aiFile, "utf-8")}`);
-				}
-			}
-
-			const text = parts.length > 0 ? parts.join("\n\n---\n\n") : `No journal entries for ${date}`;
-			return {
-				content: [{ type: "text" as const, text: truncate(text) }],
 				details: {},
 			};
 		},
