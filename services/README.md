@@ -66,7 +66,7 @@ Reference packages are included at:
 |------|---------|-------|
 | `services/examples/demo-api/` | Standard service (`PublishPort`) | Basic non-socket service package layout |
 | `services/examples/demo-socket-echo/` | Socket-activated (`.socket` + `.container`) | Reference wiring for on-demand activation |
-| `services/whisper/quadlet/` | Production socket-activated service | Real in-tree implementation |
+| `services/whisper/quadlet/` | Production HTTP service (`PublishPort`) | Real in-tree implementation |
 
 Use these as templates for frontmatter, Quadlet layout, health checks, and local install commands.
 

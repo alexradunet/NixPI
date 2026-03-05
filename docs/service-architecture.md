@@ -96,7 +96,7 @@ Service containers use a `bloom-` prefix on their **Quadlet unit names** (e.g., 
 | `bloom-whisper` | `fedirz/faster-whisper-server@sha256:760e5e43d427dc6cfbbc4731934b908b7de9c7e6d5309c6a1f0c8c923a5b6030` | No — upstream image |
 | `bloom-tailscale` | `tailscale/tailscale@sha256:95e528798bebe75f39b10e74e7051cf51188ee615934f232ba7ad06a3390ffa1` | No — upstream image |
 | `bloom-syncthing` | `syncthing/syncthing@sha256:1feffa2d4826b48f25faefed093d07c5f00304d7e7ac86fd7cda334d22651643` | No — upstream image |
-| `bloom-whatsapp` | `ghcr.io/alexradunet/bloom-whatsapp:latest` | Yes — custom bridge |
+| `bloom-whatsapp` | `ghcr.io/pibloom/bloom-whatsapp:0.1.0` | Yes — custom bridge |
 
 The prefix enables:
 - `systemctl --user status bloom-*` — list all Bloom-managed services
@@ -269,7 +269,7 @@ graph LR
 
 | Service | Category | Port | Image | Resources |
 |---------|----------|------|-------|-----------|
-| bloom-whatsapp | communication | — | ghcr.io/alexradunet/bloom-whatsapp | 128MB RAM |
+| bloom-whatsapp | communication | — | ghcr.io/pibloom/bloom-whatsapp:0.1.0 | 128MB RAM |
 | bloom-whisper | media | 9000 | fedirz/faster-whisper-server@sha256:760e5e43d427dc6cfbbc4731934b908b7de9c7e6d5309c6a1f0c8c923a5b6030 | 2GB RAM |
 | bloom-tailscale | networking | — | tailscale/tailscale@sha256:95e528798bebe75f39b10e74e7051cf51188ee615934f232ba7ad06a3390ffa1 | 256MB RAM |
 | bloom-syncthing | sync | 8384 | syncthing/syncthing@sha256:1feffa2d4826b48f25faefed093d07c5f00304d7e7ac86fd7cda334d22651643 | 256MB RAM |

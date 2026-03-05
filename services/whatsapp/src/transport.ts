@@ -10,6 +10,7 @@ import {
 	makeWASocket,
 	useMultiFileAuthState,
 } from "baileys";
+import qrcode from "qrcode-terminal";
 
 const AUTH_DIR = process.env.BLOOM_AUTH_DIR ?? "/data/auth";
 const CHANNELS_SOCKET = process.env.BLOOM_CHANNELS_SOCKET ?? "/run/bloom/channels.sock";
@@ -88,7 +89,6 @@ async function startWhatsApp(): Promise<void> {
 	const sock = makeWASocket({
 		version,
 		auth: state,
-		printQRInTerminal: true,
 		// suppress noisy default logger
 		logger: makeLogger(),
 	});
@@ -101,7 +101,8 @@ async function startWhatsApp(): Promise<void> {
 		const { connection, lastDisconnect, qr } = update;
 
 		if (qr) {
-			console.log("[wa] Scan the QR code above to pair.");
+			console.log("[wa] New pairing QR generated. Scan this in WhatsApp > Linked devices:");
+			qrcode.generate(qr, { small: true });
 		}
 
 		if (connection === "open") {

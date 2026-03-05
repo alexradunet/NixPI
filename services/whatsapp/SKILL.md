@@ -2,7 +2,7 @@
 name: whatsapp
 version: 0.1.0
 description: WhatsApp messaging bridge via Baileys — connects WhatsApp to Bloom's channel system
-image: ghcr.io/alexradunet/bloom-whatsapp:latest
+image: ghcr.io/pibloom/bloom-whatsapp:0.1.0
 ---
 
 # WhatsApp Bridge

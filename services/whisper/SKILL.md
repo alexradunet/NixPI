@@ -33,15 +33,13 @@ Supported formats: wav, mp3, ogg, flac, m4a, webm
 curl -sf http://localhost:9000/health
 ```
 
-## Socket Activation
+## Service Control
 
-Whisper is socket-activated via `bloom-whisper.socket`:
+Whisper runs as a regular user service:
 
 ```bash
-systemctl --user start bloom-whisper.socket
+systemctl --user start bloom-whisper.service
 ```
-
-The container starts on first request to `localhost:9000`.
 
 ## Notes
 

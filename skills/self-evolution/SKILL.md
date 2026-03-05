@@ -179,7 +179,7 @@ Reference example packages:
 - `services/examples/demo-api/`
 - `services/examples/demo-socket-echo/`
 - `services/examples/README.md` (copy/paste quickstart commands)
-- `services/whisper/quadlet/` (production socket-activation reference)
+- `services/whisper/quadlet/` (production HTTP service reference)
 
 ### Tool-Driven Lifecycle (Recommended)
 
