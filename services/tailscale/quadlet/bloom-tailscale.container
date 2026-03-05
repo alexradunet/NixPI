@@ -1,0 +1,28 @@
+[Unit]
+Description=Bloom Tailscale — Secure mesh networking
+After=network-online.target
+
+[Container]
+Image=docker.io/tailscale/tailscale:latest
+ContainerName=bloom-tailscale
+Network=host
+Volume=bloom-tailscale-state:/var/lib/tailscale:Z
+Environment=TS_STATE_DIR=/var/lib/tailscale
+Environment=TS_USERSPACE=true
+PodmanArgs=--memory=256m
+PodmanArgs=--cap-add=NET_ADMIN
+PodmanArgs=--cap-add=NET_RAW
+PodmanArgs=--device=/dev/net/tun
+HealthCmd=tailscale status --json | head -c 1 || exit 1
+HealthInterval=30s
+HealthRetries=3
+HealthTimeout=10s
+LogDriver=journald
+
+[Service]
+Restart=on-failure
+RestartSec=10
+TimeoutStartSec=120
+
+[Install]
+WantedBy=default.target

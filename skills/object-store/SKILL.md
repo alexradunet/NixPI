@@ -61,10 +61,10 @@ Objects are organized using PARA methodology. The type lives in frontmatter, not
 
 ### Journal Tools
 
-- `journal_write` — Write a daily journal entry. AI entries get `.pi.md` suffix.
-- `journal_read` — Read journal entries for a date (user + AI).
+- `journal_write` — Write an entry to the daily journal. AI entries go under a `## Pi` header in the same file.
+- `journal_read` — Read the journal for a date.
 
-Journal path: `~/Garden/Journal/{YYYY}/{MM}/{YYYY-MM-DD}.md` (user) or `{YYYY-MM-DD}.pi.md` (AI).
+Journal path: `~/Garden/Journal/{YYYY}/{MM}/{YYYY-MM-DD}.md` — one file per day, shared between user and AI.
 
 ### Garden Tools
 

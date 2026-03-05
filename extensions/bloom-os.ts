@@ -1,4 +1,7 @@
 import { execFile } from "node:child_process";
+import { readFile, writeFile } from "node:fs/promises";
+import os from "node:os";
+import { join } from "node:path";
 import { promisify } from "node:util";
 import { StringEnum } from "@mariozechner/pi-ai";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
@@ -207,5 +210,106 @@ export default function (pi: ExtensionAPI) {
 				isError: start.exitCode !== 0,
 			};
 		},
+	});
+
+	// --- Update detection tools ---
+
+	const bloomDir = join(os.homedir(), ".bloom");
+	const statusFile = join(bloomDir, "update-status.json");
+	const repoDir = join(bloomDir, "pibloom");
+
+	pi.registerTool({
+		name: "update_status",
+		label: "Update Status",
+		description: "Reads the Bloom OS update status from the last scheduled check.",
+		promptSnippet: "update_status — check if an OS update is available",
+		promptGuidelines: ["Use update_status to check whether a new OS image is available before suggesting an upgrade."],
+		parameters: Type.Object({}),
+		async execute(_toolCallId, _params, _signal, _onUpdate, _ctx) {
+			try {
+				const raw = await readFile(statusFile, "utf-8");
+				const status = JSON.parse(raw);
+				const text = status.available
+					? `Update available (checked ${status.checked}). Version: ${status.version || "unknown"}`
+					: `System is up to date (checked ${status.checked}).`;
+				return { content: [{ type: "text", text }], details: status };
+			} catch {
+				return errorResult("No update status available. The update check timer may not have run yet.");
+			}
+		},
+	});
+
+	pi.registerTool({
+		name: "schedule_reboot",
+		label: "Schedule Reboot",
+		description: "Schedule a system reboot after a delay (in minutes). Requires user confirmation.",
+		promptSnippet: "schedule_reboot — schedule a delayed system reboot",
+		promptGuidelines: [
+			"ALWAYS ask for explicit user confirmation before calling schedule_reboot.",
+			"Use after staging an OS update to apply it.",
+		],
+		parameters: Type.Object({
+			delay_minutes: Type.Number({ description: "Minutes to wait before rebooting", default: 1 }),
+		}),
+		async execute(_toolCallId, params, signal, _onUpdate, _ctx) {
+			const delay = Math.max(1, Math.round(params.delay_minutes));
+			const result = await run("sudo", ["systemd-run", `--on-active=${delay}m`, "systemctl", "reboot"], signal);
+			if (result.exitCode !== 0) {
+				return errorResult(`Failed to schedule reboot:\n${result.stderr}`);
+			}
+			return {
+				content: [{ type: "text", text: `Reboot scheduled in ${delay} minute(s).` }],
+				details: { delay_minutes: delay },
+			};
+		},
+	});
+
+	pi.registerTool({
+		name: "bloom_repo_status",
+		label: "Bloom Repo Status",
+		description: "Check if the local Bloom source repo clone exists and show its git status.",
+		promptSnippet: "bloom_repo_status — check local pibloom repo clone status",
+		promptGuidelines: [
+			"Use bloom_repo_status to check if the local repo clone exists before attempting self-evolution git operations.",
+		],
+		parameters: Type.Object({}),
+		async execute(_toolCallId, _params, signal, _onUpdate, _ctx) {
+			const check = await run("git", ["-C", repoDir, "rev-parse", "--git-dir"], signal);
+			if (check.exitCode !== 0) {
+				return errorResult(`No repo clone found at ${repoDir}. Run first-boot setup to clone it.`);
+			}
+			const branch = await run("git", ["-C", repoDir, "branch", "--show-current"], signal);
+			const status = await run("git", ["-C", repoDir, "status", "--short"], signal);
+			const log = await run("git", ["-C", repoDir, "log", "--oneline", "-5"], signal);
+			const text = [
+				`Branch: ${branch.stdout.trim()}`,
+				`\nStatus:\n${status.stdout.trim() || "(clean)"}`,
+				`\nRecent commits:\n${log.stdout.trim()}`,
+			].join("\n");
+			return { content: [{ type: "text", text }], details: { path: repoDir } };
+		},
+	});
+
+	// --- Session-start hook: notify about pending updates ---
+
+	let updateChecked = false;
+
+	pi.on("before_agent_start", async (event) => {
+		if (updateChecked) return;
+		updateChecked = true;
+		try {
+			const raw = await readFile(statusFile, "utf-8");
+			const status = JSON.parse(raw);
+			if (status.available && !status.notified) {
+				status.notified = true;
+				await writeFile(statusFile, JSON.stringify(status), "utf-8");
+				const note =
+					"\n\n[SYSTEM] A Bloom OS update is available. " +
+					"Inform the user and ask if they'd like to review and apply it.";
+				return { systemPrompt: event.systemPrompt + note };
+			}
+		} catch {
+			// No status file yet — timer hasn't run
+		}
 	});
 }

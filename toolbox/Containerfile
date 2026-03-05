@@ -8,6 +8,7 @@ FROM registry.fedoraproject.org/fedora-toolbox:43
 RUN dnf install -y \
     git \
     git-lfs \
+    gh \
     ripgrep \
     fd-find \
     jq \
@@ -20,6 +21,7 @@ RUN dnf install -y \
     curl \
     wget \
     unzip \
+    libatomic \
     && dnf clean all
 
 # ── Virtualization (QEMU + OVMF for VM testing) ──────────────────

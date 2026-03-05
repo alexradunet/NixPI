@@ -9,10 +9,18 @@ RUN dnf install -y \
     nodejs \
     npm \
     git \
+    gh \
+    syncthing \
     ripgrep \
     fd-find \
     jq \
+    curl \
     && dnf clean all
+
+# Install oras CLI for OCI artifact management
+RUN curl -LO https://github.com/oras-project/oras/releases/download/v1.2.2/oras_1.2.2_linux_amd64.tar.gz && \
+    tar xzf oras_*.tar.gz -C /usr/local/bin oras && \
+    rm oras_*.tar.gz
 
 # Create bloom system user via systemd-sysusers
 COPY os/sysconfig/bloom-sysusers.conf /usr/lib/sysusers.d/bloom.conf
@@ -39,12 +47,19 @@ COPY os/sysconfig/bloom-tmpfiles.conf /usr/lib/tmpfiles.d/bloom.conf
 # Install persona files
 RUN mkdir -p /usr/local/share/bloom/persona
 
-# Install Quadlet files for WhatsApp bridge
-COPY bridges/whatsapp/quadlet/ /usr/share/containers/systemd/
-
 # Systemd service for Pi auto-start on login
 COPY os/sysconfig/bloom-greeting.sh /usr/local/bin/bloom-greeting.sh
 RUN chmod +x /usr/local/bin/bloom-greeting.sh
+
+# Syncthing user service
+RUN systemctl enable syncthing@bloom.service
+
+# Update check timer
+COPY os/sysconfig/bloom-update-check.timer /usr/lib/systemd/system/bloom-update-check.timer
+COPY os/sysconfig/bloom-update-check.service /usr/lib/systemd/system/bloom-update-check.service
+COPY os/sysconfig/bloom-update-check.sh /usr/local/bin/bloom-update-check.sh
+RUN chmod +x /usr/local/bin/bloom-update-check.sh
+RUN systemctl enable bloom-update-check.timer
 
 # bootc installation config
 COPY os/bootc/config.toml /usr/lib/bootc/install/config.toml

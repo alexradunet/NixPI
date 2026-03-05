@@ -1,13 +1,43 @@
-import { makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion } from "baileys";
+import { makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion, downloadMediaMessage } from "baileys";
 import { createConnection, type Socket } from "node:net";
+import { writeFile, mkdir } from "node:fs/promises";
+import { randomBytes } from "node:crypto";
 import { Boom } from "@hapi/boom";
 
 const AUTH_DIR = process.env.BLOOM_AUTH_DIR ?? "/data/auth";
 const CHANNELS_HOST = process.env.BLOOM_CHANNELS_HOST ?? "127.0.0.1";
 const CHANNELS_PORT = Number(process.env.BLOOM_CHANNELS_PORT ?? "18800");
+const MEDIA_DIR = process.env.BLOOM_MEDIA_DIR ?? "/media/bloom";
 
 const RECONNECT_BASE_MS = 2_000;
 const RECONNECT_MAX_MS = 30_000;
+
+const MEDIA_TYPES: Record<string, string> = {
+	audioMessage: "audio",
+	imageMessage: "image",
+	videoMessage: "video",
+	documentMessage: "document",
+	stickerMessage: "sticker",
+};
+
+function mimeToExt(mime: string): string {
+	const map: Record<string, string> = {
+		"audio/ogg": "ogg",
+		"audio/ogg; codecs=opus": "ogg",
+		"audio/mpeg": "mp3",
+		"audio/mp4": "m4a",
+		"audio/wav": "wav",
+		"image/jpeg": "jpg",
+		"image/png": "png",
+		"image/webp": "webp",
+		"image/gif": "gif",
+		"video/mp4": "mp4",
+		"video/3gpp": "3gp",
+		"application/pdf": "pdf",
+		"application/octet-stream": "bin",
+	};
+	return map[mime] ?? mime.split("/").pop() ?? "bin";
+}
 
 // TCP state
 let channelSocket: Socket | null = null;
@@ -78,12 +108,6 @@ async function startWhatsApp(): Promise<void> {
 			// Skip own messages
 			if (msg.key.fromMe) continue;
 
-			const text =
-				msg.message?.conversation ??
-				msg.message?.extendedTextMessage?.text;
-
-			if (!text) continue;
-
 			const from = msg.key.remoteJid;
 			if (!from) continue;
 
@@ -92,16 +116,88 @@ async function startWhatsApp(): Promise<void> {
 					? msg.messageTimestamp
 					: Number(msg.messageTimestamp ?? Math.floor(Date.now() / 1000));
 
-			console.log(`[wa] message from ${from}: ${text.slice(0, 80)}`);
+			// Try text extraction first
+			const text =
+				msg.message?.conversation ??
+				msg.message?.extendedTextMessage?.text;
 
-			sendToChannels({
-				type: "message",
-				channel: "whatsapp",
-				from,
-				text,
-				timestamp,
-			});
+			if (text) {
+				console.log(`[wa] message from ${from}: ${text.slice(0, 80)}`);
+				sendToChannels({
+					type: "message",
+					channel: "whatsapp",
+					from,
+					text,
+					timestamp,
+				});
+				continue;
+			}
+
+			// Check for media types
+			if (msg.message) {
+				const mediaType = Object.keys(msg.message).find((k) => k in MEDIA_TYPES);
+				if (mediaType) {
+					handleMediaMessage(msg, from, timestamp, mediaType).catch((err) => {
+						console.error("[wa] media handling error:", (err as Error).message);
+					});
+					continue;
+				}
+			}
 		}
+	});
+}
+
+async function handleMediaMessage(
+	msg: Parameters<typeof downloadMediaMessage>[0],
+	from: string,
+	timestamp: number,
+	mediaType: string,
+): Promise<void> {
+	const kind = MEDIA_TYPES[mediaType] ?? "unknown";
+	const mediaMsg = (msg.message as Record<string, Record<string, unknown>>)?.[mediaType];
+	const mimetype = (mediaMsg?.mimetype as string) ?? "application/octet-stream";
+	const duration = mediaMsg?.seconds as number | undefined;
+	const caption = mediaMsg?.caption as string | undefined;
+
+	let filepath: string;
+	let size: number;
+
+	try {
+		const buffer = await downloadMediaMessage(msg, "buffer", {});
+		const ext = mimeToExt(mimetype);
+		const id = randomBytes(6).toString("hex");
+		const filename = `${timestamp}-${id}.${ext}`;
+		filepath = `${MEDIA_DIR}/${filename}`;
+
+		await mkdir(MEDIA_DIR, { recursive: true });
+		await writeFile(filepath, buffer as Buffer);
+		size = (buffer as Buffer).length;
+		console.log(`[wa] saved ${kind} from ${from}: ${filepath} (${size} bytes)`);
+	} catch (err) {
+		console.error(`[wa] media download failed:`, (err as Error).message);
+		sendToChannels({
+			type: "message",
+			channel: "whatsapp",
+			from,
+			text: `[${kind} message — download failed]`,
+			timestamp,
+		});
+		return;
+	}
+
+	sendToChannels({
+		type: "message",
+		channel: "whatsapp",
+		from,
+		timestamp,
+		media: {
+			kind,
+			mimetype,
+			filepath,
+			duration,
+			size,
+			caption,
+		},
 	});
 }
 
@@ -247,7 +343,7 @@ function shutdown(signal: string): void {
 	}
 
 	if (currentWaSock) {
-		currentWaSock.end();
+		currentWaSock.end(undefined);
 		currentWaSock = null;
 	}
 

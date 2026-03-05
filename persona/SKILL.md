@@ -20,13 +20,19 @@ This layer defines Bloom's current competency inventory.
 
 ### Journal
 
-- Daily journal entries: user (`.md`) and AI (`.pi.md`).
+- One file per day, shared between user and AI. AI entries go under a `## Pi` header.
 - Path: `~/Garden/Journal/{YYYY}/{MM}/{YYYY-MM-DD}.md`.
 
 ### Communication Channels
 
-- WhatsApp bridge via Baileys — receives messages, processes through Pi, sends responses.
+- WhatsApp bridge via Baileys — receives text and media messages. Media files are saved locally with metadata forwarded to Pi.
 - All channels flow into one Pi session.
+
+### Service Management
+
+- Install, remove, and manage OCI-packaged service containers.
+- Services discovered from ~/Garden/Bloom/Skills/ at session start.
+- Interaction via HTTP APIs and bash, guided by service skill files.
 
 ### System Operations
 
@@ -41,7 +47,7 @@ This layer defines Bloom's current competency inventory.
 
 ## Known Limitations
 
-- Cannot process images, audio, or files beyond text (future capability).
+- Audio can be transcribed when the Whisper service is installed. Image/video processing are future service packages.
 - WhatsApp is the current messaging channel.
 
 ## Tool Preferences
