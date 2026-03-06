@@ -21,19 +21,14 @@ If `~/.bloom/.setup-complete` exists, setup is already complete. Skip unless use
 
 ## Setup Steps
 
-### 1) LLM Provider + API Key
-
-- Ask preferred provider (Anthropic, OpenAI, etc.)
-- Help configure API key in Pi settings
-
-### 2) GitHub Authentication
+### 1) GitHub Authentication
 
 ```bash
 gh auth login
 gh auth status
 ```
 
-### 3) Device Git Identity
+### 2) Device Git Identity
 
 Prefer repo-local identity via tool setup (instead of global):
 
@@ -41,7 +36,7 @@ Prefer repo-local identity via tool setup (instead of global):
 
 Ask if user wants custom values.
 
-### 4) Configure Bloom Source Repo for PR Flow
+### 3) Configure Bloom Source Repo for PR Flow
 
 Use `bloom_repo_configure` to make the repo ready for contribution:
 
@@ -57,7 +52,7 @@ Preferred sequence:
 If fork URL is already known, pass `fork_url` explicitly.
 If not, `bloom_repo_configure` tries to create/attach one via `gh` when authenticated.
 
-### 5) Syncthing Setup (tool-first)
+### 4) Syncthing Setup (tool-first)
 
 - Install service package: `service_install(name="syncthing", version="0.1.0")`
 - Validate service: `service_test(name="syncthing")`
@@ -71,7 +66,7 @@ Offer one of these access paths:
 - SSH tunnel: `ssh -L 8384:localhost:8384 -p 2222 bloom@localhost`
 - Guest IP direct access on LAN if routing allows (`http://<guest-ip>:8384`)
 
-### 6) Optional Service Packages (manifest-first)
+### 5) Optional Service Packages (manifest-first)
 
 Prefer declarative setup:
 
@@ -101,7 +96,7 @@ Post-install guidance:
 
 If tooling is unavailable, use the fallback manual `oras pull` flow from `skills/service-management/SKILL.md`.
 
-### 7) Mark Setup Complete
+### 6) Mark Setup Complete
 
 ```bash
 touch ~/.bloom/.setup-complete
