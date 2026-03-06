@@ -282,7 +282,9 @@ export default function (pi: ExtensionAPI) {
 			const delay = Math.max(1, Math.round(params.delay_minutes));
 			const denied = await requireConfirmation(ctx, `Schedule reboot in ${delay} minute(s)`);
 			if (denied) return errorResult(denied);
-			const result = await runCommand("sudo", ["systemd-run", `--on-active=${delay}m`, "systemctl", "reboot"], { signal });
+			const result = await runCommand("sudo", ["systemd-run", `--on-active=${delay}m`, "systemctl", "reboot"], {
+				signal,
+			});
 			if (result.exitCode !== 0) {
 				return errorResult(`Failed to schedule reboot:\n${result.stderr}`);
 			}

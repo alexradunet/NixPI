@@ -24,8 +24,8 @@ import {
 } from "../lib/manifest.js";
 import { hasSubidRange, hasTagOrDigest, tailscaleAuthConfigured } from "../lib/service-policy.js";
 import {
-	DEFAULT_SERVICE_REGISTRY,
 	createLogger,
+	DEFAULT_SERVICE_REGISTRY,
 	errorResult,
 	getGardenDir,
 	requireConfirmation,

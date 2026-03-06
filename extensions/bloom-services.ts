@@ -14,7 +14,14 @@ import {
 	validatePinnedImage,
 	validateServiceName,
 } from "../lib/service-policy.js";
-import { DEFAULT_SERVICE_REGISTRY, createLogger, errorResult, getGardenDir, parseFrontmatter, truncate } from "../lib/shared.js";
+import {
+	createLogger,
+	DEFAULT_SERVICE_REGISTRY,
+	errorResult,
+	getGardenDir,
+	parseFrontmatter,
+	truncate,
+} from "../lib/shared.js";
 
 const log = createLogger("bloom-services");
 
@@ -493,7 +500,9 @@ export default function (pi: ExtensionAPI) {
 					break;
 				}
 				if (socketMode) {
-					const socketActive = await runCommand("systemctl", ["--user", "is-active", `${serviceUnit}.socket`], { signal });
+					const socketActive = await runCommand("systemctl", ["--user", "is-active", `${serviceUnit}.socket`], {
+						signal,
+					});
 					if (socketActive.exitCode === 0 && socketActive.stdout.trim() === "active") {
 						active = true;
 						break;

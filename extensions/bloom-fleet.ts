@@ -290,7 +290,9 @@ export default function (pi: ExtensionAPI) {
 				return errorResult(`Failed to commit changes:\n${commit.stderr || commit.stdout}`);
 			}
 
-			const push = await runCommand("git", ["-C", repoDir, "push", "--set-upstream", "origin", targetBranch], { signal });
+			const push = await runCommand("git", ["-C", repoDir, "push", "--set-upstream", "origin", targetBranch], {
+				signal,
+			});
 			if (push.exitCode !== 0) {
 				return errorResult(`Failed to push branch ${targetBranch} to origin:\n${push.stderr || push.stdout}`);
 			}
