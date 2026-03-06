@@ -70,18 +70,8 @@ export default function (pi: ExtensionAPI) {
 			if (!ok) errors.push(`missing command: ${command}`);
 		}
 
-		if (entry?.preflight?.rootless_subids) {
-			const user = os.userInfo().username;
-			const hasSubuid = hasSubidRange("/etc/subuid", user);
-			const hasSubgid = hasSubidRange("/etc/subgid", user);
-			if (!hasSubuid || !hasSubgid) {
-				errors.push(
-					`rootless subuid/subgid mappings missing for ${user} (fix: sudo usermod --add-subuids 100000-165535 ${user} && sudo usermod --add-subgids 100000-165535 ${user})`,
-				);
-			}
-		}
-
-		if (name === "tailscale" && !entry?.preflight?.rootless_subids) {
+		const needsSubids = entry?.preflight?.rootless_subids || name === "tailscale";
+		if (needsSubids) {
 			const user = os.userInfo().username;
 			const hasSubuid = hasSubidRange("/etc/subuid", user);
 			const hasSubgid = hasSubidRange("/etc/subgid", user);
