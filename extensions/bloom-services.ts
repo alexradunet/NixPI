@@ -182,7 +182,7 @@ export default function (pi: ExtensionAPI) {
 			"Use semver tag in version for immutable releases.",
 		],
 		parameters: Type.Object({
-			name: Type.String({ description: "Service name (e.g. whisper)" }),
+			name: Type.String({ description: "Service name (e.g. lemonade)" }),
 			version: Type.Optional(Type.String({ description: "Tag to publish", default: "latest" })),
 			registry: Type.Optional(Type.String({ description: "Registry namespace", default: getServiceRegistry() })),
 			also_latest: Type.Optional(Type.Boolean({ description: "Also publish latest tag", default: true })),
@@ -249,7 +249,7 @@ export default function (pi: ExtensionAPI) {
 			"After install, verify with systemctl status and container logs.",
 		],
 		parameters: Type.Object({
-			name: Type.String({ description: "Service name (e.g. whisper)" }),
+			name: Type.String({ description: "Service name (e.g. lemonade)" }),
 			version: Type.Optional(Type.String({ description: "Version tag to install", default: "latest" })),
 			registry: Type.Optional(Type.String({ description: "Registry namespace", default: getServiceRegistry() })),
 			start: Type.Optional(Type.Boolean({ description: "Enable/start service after install", default: true })),
@@ -452,7 +452,7 @@ export default function (pi: ExtensionAPI) {
 			"Check returned status and logs; fix issues before release.",
 		],
 		parameters: Type.Object({
-			name: Type.String({ description: "Installed service name (e.g. whisper)" }),
+			name: Type.String({ description: "Installed service name (e.g. lemonade)" }),
 			start_timeout_sec: Type.Optional(Type.Number({ description: "Timeout waiting for active state", default: 120 })),
 			cleanup: Type.Optional(Type.Boolean({ description: "Stop unit(s) after test", default: false })),
 		}),

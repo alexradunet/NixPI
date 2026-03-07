@@ -175,7 +175,7 @@ export default function (pi: ExtensionAPI) {
 		promptSnippet: "manifest_set_service — add/update a service in the manifest",
 		promptGuidelines: ["Use manifest_set_service to declare a service in the manifest."],
 		parameters: Type.Object({
-			name: Type.String({ description: "Service name (e.g. whatsapp, whisper)" }),
+			name: Type.String({ description: "Service name (e.g. whatsapp, lemonade)" }),
 			image: Type.String({ description: "Container image reference" }),
 			version: Type.Optional(Type.String({ description: "Semver version tag" })),
 			enabled: Type.Optional(Type.Boolean({ description: "Whether service should be running (default: true)" })),

@@ -29,7 +29,7 @@ graph TD
 |-----------|----------|----------|------|
 | **Skill** | Pi needs knowledge or a procedure to follow | meal-planning, troubleshooting guides, API references | Zero — just a markdown file |
 | **Extension** | Pi needs to register commands, tools, or react to session events | bloom-channels (Unix socket server), bloom-objects (object store) | Low — TypeScript, runs in-process |
-| **Service** | A standalone process needs to run independently of Pi's session | Whisper (ML model), WhatsApp bridge (always-on), NetBird (VPN) | Medium — container image, systemd unit, resource allocation |
+| **Service** | A standalone process needs to run independently of Pi's session | Lemonade (local LLM), WhatsApp bridge (always-on), NetBird (VPN) | Medium — container image, systemd unit, resource allocation |
 
 **Always prefer the lighter option.** A skill that teaches Pi to call an existing API is better than an extension wrapping that API, which is better than a service re-implementing it.
 
@@ -47,10 +47,10 @@ graph TB
         end
 
         subgraph "Service Containers (Podman Quadlet)"
-            wa[bloom-whatsapp<br/>Baileys Bridge]
-            whisper[bloom-whisper<br/>faster-whisper :9000]
+            wa[bloom-whatsapp<br/>whatsapp-web.js Bridge]
+            lemonade[bloom-lemonade<br/>Lemonade :8000]
             netbird[bloom-netbird<br/>NetBird VPN]
-            syncthing[bloom-syncthing<br/>Home sync :8384]
+            dufs[bloom-dufs<br/>WebDAV :5000]
         end
 
         subgraph "System Services"
@@ -59,14 +59,14 @@ graph TB
     end
 
     channels <-->|Unix socket JSON| wa
-    wa <-->|Baileys| whatsapp_cloud[WhatsApp Cloud]
-    whisper -->|HTTP API| channels
+    wa <-->|whatsapp-web.js| whatsapp_cloud[WhatsApp Cloud]
+    lemonade -->|HTTP API| channels
     netbird <-->|WireGuard| netbird_cloud[NetBird Cloud]
-    syncthing <-->|Syncthing Protocol| devices[Other Devices]
+    dufs -->|WebDAV| devices[Other Devices]
     systemd -->|manages| wa
-    systemd -->|manages| whisper
+    systemd -->|manages| lemonade
     systemd -->|manages| netbird
-    systemd -->|manages| syncthing
+    systemd -->|manages| dufs
 
     style persona fill:#e8d5f5
     style garden fill:#d5f5e8
@@ -90,14 +90,14 @@ graph TB
 
 ### 📦 The `bloom-` Prefix
 
-Service containers use a `bloom-` prefix on their **Quadlet unit names** (e.g., `bloom-whisper`, `bloom-netbird`). This is a management namespace — it does NOT mean the container image is Bloom-specific. Most services use upstream images directly:
+Service containers use a `bloom-` prefix on their **Quadlet unit names** (e.g., `bloom-lemonade`, `bloom-netbird`). This is a management namespace — it does NOT mean the container image is Bloom-specific. Most services use upstream images directly:
 
 | Quadlet Name | Container Image | Bloom-specific? |
 |-------------|-----------------|-----------------|
-| `bloom-whisper` | `fedirz/faster-whisper-server@sha256:760e5e43d427dc6cfbbc4731934b908b7de9c7e6d5309c6a1f0c8c923a5b6030` | No — upstream image |
+| `bloom-lemonade` | `ghcr.io/lemonade-sdk/lemonade-server:latest` | No — upstream image |
 | `bloom-netbird` | `netbirdio/netbird@sha256:b3e69490e58cf255caf1b9b6a8bbfcfae4d1b2bbaa3c40a06cfdbba5b8fdc0d2` | No — upstream image |
-| `bloom-syncthing` | `syncthing/syncthing@sha256:1feffa2d4826b48f25faefed093d07c5f00304d7e7ac86fd7cda334d22651643` | No — upstream image |
-| `bloom-whatsapp` | `ghcr.io/pibloom/bloom-whatsapp:0.1.0` | Yes — custom bridge |
+| `bloom-dufs` | `docker.io/sigoden/dufs:latest` | No — upstream image |
+| `bloom-whatsapp` | `ghcr.io/pibloom/bloom-whatsapp:0.2.0` | Yes — custom bridge |
 
 The prefix enables:
 - `systemctl --user status bloom-*` — list all Bloom-managed services
@@ -162,7 +162,7 @@ org.opencontainers.image.description = Human-readable description
 org.opencontainers.image.source      = https://github.com/pibloom/pi-bloom
 org.opencontainers.image.version     = 1.0.0
 dev.bloom.service.category           = media | communication | networking | sync
-dev.bloom.service.port               = 9000
+dev.bloom.service.port               = 8000
 ```
 
 ## 📦 Service Lifecycle
@@ -200,7 +200,7 @@ sequenceDiagram
     participant FS as /var/lib/bloom/media/
     participant Channels as bloom-channels
     participant Pi as Pi Agent
-    participant Whisper as bloom-whisper
+    participant Lemonade as bloom-lemonade
 
     WA->>Bridge: Incoming voice note
     Bridge->>Bridge: downloadMediaMessage()
@@ -209,8 +209,8 @@ sequenceDiagram
     Channels->>Pi: "[whatsapp: John] sent audio (15s, 24KB, audio/ogg). File: /var/lib/bloom/media/..."
 
     Note over Pi: Pi decides to transcribe
-    Pi->>Whisper: POST /v1/audio/transcriptions<br/>file=@/var/lib/bloom/media/...ogg
-    Whisper->>Pi: {"text": "transcribed content"}
+    Pi->>Lemonade: POST /v1/audio/transcriptions<br/>file=@/var/lib/bloom/media/...ogg
+    Lemonade->>Pi: {"text": "transcribed content"}
     Pi->>Channels: Response text
     Channels->>Bridge: Unix socket JSON response
     Bridge->>WA: Send reply
@@ -254,26 +254,24 @@ graph LR
 
     subgraph "Container Volumes"
         wa_auth["bloom-whatsapp-auth<br/>WhatsApp credentials"]
-        whisper_models["bloom-whisper-models<br/>ML model cache"]
+        lemonade_models["bloom-lemonade-models<br/>ML model cache"]
         nb_state["bloom-netbird-state<br/>NetBird identity"]
-        st_state["bloom-syncthing-data<br/>Syncthing config + index state"]
     end
 
     bloom_pkg --> config
     config --> wa_auth
-    config --> whisper_models
+    config --> lemonade_models
     config --> nb_state
-    config --> st_state
 ```
 
 ## 📦 Available Services
 
 | Service | Category | Port | Image | Resources |
 |---------|----------|------|-------|-----------|
-| bloom-whatsapp | communication | — | ghcr.io/pibloom/bloom-whatsapp:0.1.0 | 128MB RAM |
-| bloom-whisper | media | 9000 | fedirz/faster-whisper-server@sha256:760e5e43d427dc6cfbbc4731934b908b7de9c7e6d5309c6a1f0c8c923a5b6030 | 2GB RAM |
+| bloom-whatsapp | communication | — | ghcr.io/pibloom/bloom-whatsapp:0.2.0 | 128MB RAM |
+| bloom-lemonade | ai | 8000 | ghcr.io/lemonade-sdk/lemonade-server:latest | 2GB RAM |
 | bloom-netbird | networking | — | netbirdio/netbird@sha256:b3e69490e58cf255caf1b9b6a8bbfcfae4d1b2bbaa3c40a06cfdbba5b8fdc0d2 | 256MB RAM |
-| bloom-syncthing | sync | 8384 | syncthing/syncthing@sha256:1feffa2d4826b48f25faefed093d07c5f00304d7e7ac86fd7cda334d22651643 | 256MB RAM |
+| bloom-dufs | sync | 5000 | docker.io/sigoden/dufs:latest | 64MB RAM |
 
 ## 📦 Adding a New Service
 

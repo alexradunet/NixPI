@@ -64,7 +64,7 @@ function ensureBloom(bloomDir: string): void {
 	}
 }
 
-const STIGNORE_CONTENT = `// Syncthing device-specific exclusions
+const STIGNORE_CONTENT = `// Device-specific exclusions (used by sync services)
 .pi
 .ssh
 .gnupg

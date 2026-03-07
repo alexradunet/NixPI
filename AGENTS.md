@@ -202,7 +202,7 @@ Quick reference of every tool name available to Pi:
 | `object-store` | CRUD operations for the memory store |
 | `service-management` | Install, manage, and discover OCI service packages |
 | `self-evolution` | Structured system change workflow |
-| `recovery` | Troubleshooting playbooks (WhatsApp, OS updates, Syncthing, disk, containers) |
+| `recovery` | Troubleshooting playbooks (WhatsApp, OS updates, dufs, disk, containers) |
 
 ## 📦 Services (OCI Packages)
 
@@ -211,10 +211,10 @@ Canonical metadata for automation lives in `services/catalog.yaml`.
 
 | Service | Category | Port |
 |---------|----------|------|
-| `bloom-svc-whisper` | media | 9000 |
+| `bloom-svc-lemonade` | ai | 8000 |
 | `bloom-svc-whatsapp` | communication | — |
 | `bloom-svc-netbird` | networking | — |
-| `bloom-svc-syncthing` | sync | 8384 |
+| `bloom-svc-dufs` | sync | 5000 |
 
 ## 🪞 Persona
 

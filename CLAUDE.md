@@ -13,10 +13,10 @@ Bloom extends Pi through three mechanisms, lightest first: **Skill → Extension
 - **Extensions**: `extensions/` — 10 TypeScript Pi extensions (bloom-persona, bloom-audit, bloom-os, bloom-repo, bloom-manifest, bloom-services, bloom-objects, bloom-garden, bloom-channels, bloom-topics)
 - **Shared lib**: `lib/shared.ts` — utilities used across extensions (parseFrontmatter, stringifyFrontmatter, getBloomDir, createLogger, truncate, errorResult, nowIso)
 - **Skills**: `skills/` — 6 Pi skill markdown files (first-boot, os-operations, object-store, service-management, self-evolution, recovery)
-- **Services**: `services/` — OCI-packaged containers (whisper, whatsapp, netbird, syncthing). Metadata in `services/catalog.yaml`
+- **Services**: `services/` — OCI-packaged containers (lemonade, whatsapp, netbird, dufs). Metadata in `services/catalog.yaml`
 - **Persona**: `persona/` — OpenPersona 4-layer identity (SOUL.md, BODY.md, FACULTY.md, SKILL.md) — seeded to `~/Bloom/` on first run
 - **Guardrails**: `guardrails.yaml` — bash patterns blocked by bloom-persona (rm -rf, mkfs, dd, fork bombs, eval, pipe-to-shell, force-push, etc.)
-- **User home**: `$HOME` — the user's space, synced via Syncthing
+- **User home**: `$HOME` — the user's space, accessible via dufs WebDAV
 - **Bloom directory**: `~/Bloom/` — persona, skills, evolutions, guardrails, objects (synced). Env override: `BLOOM_DIR`
 - **Pi state**: `~/.pi/` — internal agent state, sessions, settings (NOT synced)
 - **OS image**: `os/Containerfile` — Fedora bootc 42
@@ -25,7 +25,7 @@ Bloom extends Pi through three mechanisms, lightest first: **Skill → Extension
 
 | Path | Purpose | Synced |
 |------|---------|--------|
-| `$HOME` | User's home directory | Yes (Syncthing) |
+| `$HOME` | User's home directory | Yes (dufs WebDAV) |
 | `~/Bloom/` | Bloom config: persona, skills, evolutions, guardrails | Yes |
 | `~/Bloom/Persona/` | Active persona files | Yes |
 | `~/Bloom/Skills/` | Installed skills | Yes |

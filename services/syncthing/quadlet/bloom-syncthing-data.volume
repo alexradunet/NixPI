@@ -1,4 +1,0 @@
-[Unit]
-Description=Bloom Syncthing persistent state volume
-
-[Volume]

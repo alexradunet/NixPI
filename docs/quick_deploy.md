@@ -49,7 +49,7 @@ just vm
 Forwarded host ports:
 
 - `localhost:2222 -> guest:22` (SSH)
-- `localhost:8384 -> guest:8384` (Syncthing Web UI)
+- `localhost:5000 -> guest:5000` (dufs WebDAV)
 
 Headless mode:
 
@@ -115,7 +115,14 @@ Replace `/dev/sdX` with the target disk.
 Bloom OS boots to `graphical.target` with `greetd` and starts a Sway session for user `bloom`.
 The Sway config starts `wayvnc` on `127.0.0.1:5901`.
 
-Recommended access pattern:
+Recommended access pattern — connect over the NetBird mesh:
+
+```bash
+# wayvnc binds 0.0.0.0:5901, reachable via NetBird IP
+vncviewer <netbird-ip>:5901
+```
+
+Or via SSH tunnel if NetBird is not available:
 
 ```bash
 ssh -N -L 5901:127.0.0.1:5901 bloom@<host>

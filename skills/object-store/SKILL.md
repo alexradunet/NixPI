@@ -68,4 +68,4 @@ The type lives in frontmatter, not in the directory structure.
 - Prefer update over create when an object already exists.
 - After search, offer to read matched objects.
 - Use link proactively when connections are mentioned.
-- The Bloom directory is synced via Syncthing — files may be edited externally.
+- The Bloom directory is accessible via dufs WebDAV — files may be edited externally.
