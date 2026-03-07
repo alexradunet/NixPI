@@ -1,23 +1,30 @@
 ---
 name: whatsapp
-version: 0.2.0
-description: WhatsApp messaging bridge via whatsapp-web.js — visible browser on Sway desktop
-image: ghcr.io/pibloom/bloom-whatsapp:0.2.0
+version: 0.3.0
+description: WhatsApp messaging bridge via Baileys (containerized)
+image: localhost/bloom-whatsapp:latest
 ---
 
 # WhatsApp Bridge
 
-Connects WhatsApp to Bloom via the channel protocol (Unix socket at `$XDG_RUNTIME_DIR/bloom/channels.sock`). Uses whatsapp-web.js to run WhatsApp Web in a visible Chromium window on the Sway desktop.
-
-The browser window is a normal Sway window — tiled, minimizable, and movable. You can watch Pi interact with WhatsApp in real time.
+Connects WhatsApp to Bloom via the channel protocol (Unix socket at `$XDG_RUNTIME_DIR/bloom/channels.sock`). Uses Baileys to connect directly to WhatsApp's WebSocket servers — no browser needed.
 
 ## Setup
 
-1. Install the service package
-2. Start the service: `systemctl --user start bloom-whatsapp`
-3. A Chromium window opens on the Sway desktop showing WhatsApp Web
-4. Scan the QR code with WhatsApp mobile app
-5. Verify: `systemctl --user status bloom-whatsapp`
+1. Install the service package: `service_install(name="whatsapp")`
+2. Watch logs for QR code: `journalctl --user -u bloom-whatsapp -f`
+3. Scan the QR code with WhatsApp mobile app (Settings > Linked Devices > Link a Device)
+4. Verify: `systemctl --user status bloom-whatsapp`
+
+## Pairing
+
+On first start, a QR code is printed to the service logs. View it with:
+
+```bash
+journalctl --user -u bloom-whatsapp -f
+```
+
+Scan the QR code with your WhatsApp mobile app to pair. Auth state persists in the `bloom-whatsapp-auth` volume — you only need to pair once.
 
 ## Sending Messages
 
@@ -26,7 +33,6 @@ Use the `/wa` command in Pi to send outbound WhatsApp messages.
 ## Troubleshooting
 
 - **Won't start**: Check logs: `journalctl --user -u bloom-whatsapp -n 100`
-- **No browser window**: Verify Wayland socket exists: `ls /run/user/$(id -u)/wayland-1`
 - **Connection lost**: Restart: `systemctl --user restart bloom-whatsapp`
 - **Auth expired**: Remove auth volume and re-scan QR:
   ```bash
@@ -37,6 +43,6 @@ Use the `/wa` command in Pi to send outbound WhatsApp messages.
 
 ## Media Support
 
-The bridge downloads audio, image, and video messages to `/var/lib/bloom/media/`.
+The bridge downloads audio, image, and video messages to `/var/lib/bloom/media/` (bind-mounted into the container at `/media/bloom`).
 Media metadata is forwarded to Pi via the channel protocol with file paths.
 Pi can use installed services (e.g., Lemonade) to process media files.
