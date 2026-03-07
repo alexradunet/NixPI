@@ -53,15 +53,15 @@ Expected checks:
 
 Run:
 
-1. `bloom_repo_configure(repo_url="https://github.com/<owner>/pi-bloom.git")`
-2. `bloom_repo_status`
-3. `bloom_repo_sync(branch="main")`
+1. `bloom_repo(action="configure",repo_url="https://github.com/<owner>/pi-bloom.git")`
+2. `bloom_repo(action="status")`
+3. `bloom_repo(action="sync", branch="main")`
 
 Optional explicit fork:
 
-- `bloom_repo_configure(..., fork_url="https://github.com/<you>/pi-bloom.git")`
+- `bloom_repo(action="configure",..., fork_url="https://github.com/<you>/pi-bloom.git")`
 
-### 🤖 What `bloom_repo_configure` does
+### 🤖 What `bloom_repo(action="configure")` does
 
 ```mermaid
 graph LR
@@ -91,7 +91,7 @@ sequenceDiagram
     participant Upstream as 🛡️ Upstream
     participant CI as 🚀 CI
 
-    Device->>Device: bloom_repo_sync(main)
+    Device->>Device: bloom_repo(action="sync", branch="main")
     Device->>Device: Implement + test locally
     Device->>Fork: bloom_repo_submit_pr<br/>(push branch)
     Fork->>Upstream: Open PR
@@ -103,9 +103,9 @@ sequenceDiagram
 When a Bloom host identifies a bug and applies a fix:
 
 1. Check readiness
-   - `bloom_repo_status`
+   - `bloom_repo(action="status")`
 2. Sync main
-   - `bloom_repo_sync(branch="main")`
+   - `bloom_repo(action="sync", branch="main")`
 3. Implement and test locally
    - run `npm run build && npm run check` in repo
 4. Submit PR in one step
@@ -158,7 +158,7 @@ Keep concise and action-oriented:
 
 ## 6) 🛡️ Failure Handling
 
-### `bloom_repo_status` says not PR-ready
+### `bloom_repo(action="status")` says not PR-ready
 
 Common causes:
 - missing `upstream` remote
@@ -166,7 +166,7 @@ Common causes:
 - no GitHub auth
 
 Fix:
-- rerun `bloom_repo_configure`
+- rerun `bloom_repo(action="configure")`
 - verify `gh auth login`
 
 ### PR creation fails after push
@@ -177,7 +177,7 @@ Fix:
 
 ### Wrong repo inferred
 
-- Pass `repo_url` explicitly in `bloom_repo_configure`.
+- Pass `repo_url` explicitly in `bloom_repo(action="configure")`.
 
 ---
 
@@ -186,9 +186,9 @@ Fix:
 For each new machine:
 
 - [ ] `gh auth login`
-- [ ] `bloom_repo_configure`
-- [ ] `bloom_repo_status` shows PR-ready
-- [ ] `bloom_repo_sync main`
+- [ ] `bloom_repo(action="configure")`
+- [ ] `bloom_repo(action="status")` shows PR-ready
+- [ ] `bloom_repo(action="sync", branch="main")`
 - [ ] dry-run docs PR submitted successfully
 
 For central repo:

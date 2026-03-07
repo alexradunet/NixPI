@@ -1,6 +1,6 @@
 # Bloom Service Packages
 
-Bloom services are modular capabilities packaged as OCI artifacts and deployed via Podman Quadlet.
+Bloom services are modular capabilities deployed via Podman Quadlet or native systemd units, installed from bundled local packages.
 
 ## Package Format
 
@@ -15,47 +15,27 @@ services/{name}/
 └── SKILL.md                      # Pi skill file (frontmatter + docs)
 ```
 
-## OCI Artifact Distribution
+## Installing a Service
 
-Service packages are pushed to GHCR as OCI artifacts using `oras`:
+Services are installed from bundled local packages. The `service_install` tool or `manifest_apply` handles:
 
-```
-ghcr.io/pibloom/bloom-svc-{name}:<version>
-```
+1. Copy quadlet files to `~/.config/containers/systemd/`
+2. Copy socket files to `~/.config/systemd/user/` (if present)
+3. Ensure `bloom.network` exists
+4. Copy SKILL.md to `~/Bloom/Skills/{name}/`
+5. `systemctl --user daemon-reload`
+6. Start the service unit
 
-> `bloom-svc-{name}` is the OCI *artifact* name (the installable package containing quadlet files and SKILL.md). This is distinct from the container *image* referenced inside the quadlet — which may be upstream (e.g., `ghcr.io/lemonade-sdk/lemonade-server`) or custom (e.g., `ghcr.io/<owner>/bloom-whatsapp`).
->
-> Use immutable semver tags for installs (e.g., `0.1.0`). Treat `latest` as development-only.
-
-### Pushing
-
-```bash
-just svc-push {name}
-```
-
-### Pulling & Installing
+Manual install:
 
 ```bash
-just svc-install {name}
-```
-
-Or manually:
-```bash
-mkdir -p /tmp/bloom-svc
-oras pull ghcr.io/pibloom/bloom-svc-{name}:{version} -o /tmp/bloom-svc/
-mkdir -p ~/.config/containers/systemd ~/.config/systemd/user
-find /tmp/bloom-svc/quadlet -maxdepth 1 -type f -name '*.socket' -exec cp {} ~/.config/systemd/user/ \;
-find /tmp/bloom-svc/quadlet -maxdepth 1 -type f ! -name '*.socket' -exec cp {} ~/.config/containers/systemd/ \;
-[ -f ~/.config/containers/systemd/bloom.network ] || cp /usr/local/share/bloom/os/sysconfig/bloom.network ~/.config/containers/systemd/bloom.network 2>/dev/null || cp os/sysconfig/bloom.network ~/.config/containers/systemd/bloom.network
+cp services/{name}/quadlet/*.container ~/.config/containers/systemd/
+cp services/{name}/quadlet/*.socket ~/.config/systemd/user/ 2>/dev/null || true
+[ -f ~/.config/containers/systemd/bloom.network ] || cp os/sysconfig/bloom.network ~/.config/containers/systemd/bloom.network
 mkdir -p ~/Bloom/Skills/{name}
-cp /tmp/bloom-svc/SKILL.md ~/Bloom/Skills/{name}/SKILL.md
+cp services/{name}/SKILL.md ~/Bloom/Skills/{name}/SKILL.md
 systemctl --user daemon-reload
-if [ -f ~/.config/systemd/user/bloom-{name}.socket ]; then
-  systemctl --user start bloom-{name}.socket
-else
-  systemctl --user start bloom-{name}.service
-fi
-rm -rf /tmp/bloom-svc
+systemctl --user start bloom-{name}.service
 ```
 
 ## Worked Example Packages
@@ -78,31 +58,8 @@ Copy/paste quickstart commands are in `services/examples/README.md`.
 
 1. `service_scaffold(name="demo-api", description="Demo HTTP API", image="docker.io/library/nginx:stable", version="0.1.0", port=9080, container_port=80)`
 2. `service_test(name="demo-api")`
-3. `service_publish(name="demo-api", version="0.1.0")`
-4. `service_install(name="demo-api", version="0.1.0")`
-5. Verify: `systemctl --user status bloom-demo-api` and `manifest_show`
-
-### Using shell commands
-
-```bash
-# scaffold manually under services/demo-api/
-just svc-push demo-api
-just svc-install demo-api
-systemctl --user status bloom-demo-api
-```
-
-## OCI Annotations
-
-Each artifact carries standard annotations:
-
-| Annotation | Description |
-|------------|-------------|
-| `org.opencontainers.image.title` | `bloom-{name}` |
-| `org.opencontainers.image.description` | Human-readable description |
-| `org.opencontainers.image.source` | `https://github.com/pibloom/pi-bloom` |
-| `org.opencontainers.image.version` | Semver version |
-| `dev.bloom.service.category` | `media`, `communication`, `networking`, `sync`, or `utility` |
-| `dev.bloom.service.port` | Exposed port (if any) |
+3. `service_install(name="demo-api", version="0.1.0")`
+4. Verify: `systemctl --user status bloom-demo-api` and `manifest_show`
 
 ## Quadlet Conventions
 
@@ -127,7 +84,6 @@ Each artifact carries standard annotations:
 `services/catalog.yaml` defines canonical service metadata for automation:
 
 - default versions
-- artifact references (`bloom-svc-*`)
 - runtime image references
 - service-specific preflight requirements
 

@@ -14,9 +14,9 @@ Use `audit_review` to inspect recent tool actions when you need to reconstruct w
 **Symptoms**: Messages not delivered, channel shows disconnected.
 
 1. Check channel status: `system_health`
-2. Check container: `container_status` — look for bloom-whatsapp
+2. Check container: `container(action="status")` — look for bloom-whatsapp
 3. If container not running: `systemd_control service=bloom-whatsapp action=status`
-4. Check logs: `container_logs service=bloom-whatsapp lines=100`
+4. Check logs: `container(action="logs", service="bloom-whatsapp", lines=100)`
 5. Common causes:
    - WhatsApp session expired → user must re-scan QR code
    - Channel socket unreachable → verify `$XDG_RUNTIME_DIR/bloom/channels.sock` exists
@@ -27,11 +27,11 @@ Use `audit_review` to inspect recent tool actions when you need to reconstruct w
 
 **Symptoms**: Update staged but reboot fails, or system boots into old image.
 
-1. Check current image: `bootc_status`
-2. If booted into wrong image: `bootc_rollback` to revert
-3. If update stuck: check `bootc_update stage=check` for available updates
+1. Check current image: `bootc(action="status")`
+2. If booted into wrong image: `bootc(action="rollback")` to revert
+3. If update stuck: check `bootc(action="check")` for available updates
 4. Common causes:
-   - Network interruption during download → retry `bootc_update stage=download`
+   - Network interruption during download → retry `bootc(action="download")`
    - Incompatible image → rollback and report to maintainer
    - Disk full → check with `system_health`, clear space in /var
 5. After rollback: schedule reboot with `schedule_reboot delay_minutes=1`
@@ -41,7 +41,7 @@ Use `audit_review` to inspect recent tool actions when you need to reconstruct w
 **Symptoms**: Files not accessible via WebDAV, connection refused on port 5000.
 
 1. Check service state: `systemd_control service=bloom-dufs action=status`
-2. Check logs: `container_logs service=bloom-dufs lines=100`
+2. Check logs: `container(action="logs", service="bloom-dufs", lines=100)`
 3. Verify port is listening: `curl -s http://localhost:5000/`
 4. Common causes:
    - Container not running → restart: `systemd_control service=bloom-dufs action=restart`
@@ -65,9 +65,9 @@ Use `audit_review` to inspect recent tool actions when you need to reconstruct w
 
 **Symptoms**: Container reported unhealthy or restarting repeatedly.
 
-1. Check status: `container_status`
+1. Check status: `container(action="status")`
 2. Check health: look for "unhealthy" or "restarting" states
-3. Inspect logs: `container_logs service=<name> lines=200`
+3. Inspect logs: `container(action="logs", service="<name>", lines=200)`
 4. Common causes:
    - Health check endpoint not responding → check application inside container
    - Resource limits hit → check memory/CPU with `system_health`

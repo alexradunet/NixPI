@@ -26,13 +26,11 @@ No frontend web framework (React/Vue/Next.js) detected.
 - `just vm-ssh` — SSH into VM
 - `just vm-kill` — Stop running VM
 - `just clean` — Remove generated artifacts
-- `just push-ghcr` — Push OS image to GHCR
-- `just svc-push <name>` — Push service OCI package
-- `just svc-install <name>` — Pull/install service package locally
 - `just deps` — Install host dependencies
 
 ### Tests
-- No explicit automated test command detected in `package.json`.
+- `npm test` — Vitest test suite
+- `npm run test:coverage` — Vitest with v8 coverage (80% threshold)
 
 ## Code Conventions (detected)
 
@@ -54,7 +52,7 @@ From `tsconfig.json`:
 
 - `extensions/` — Pi extension modules (core product behavior)
 - `skills/` — Domain skills (`SKILL.md`) used by Pi
-- `services/` — OCI service packages (whisper, whatsapp, netbird, examples)
+- `services/` — Bundled service packages (lemonade, whatsapp, dufs, examples)
 - `os/` — bootc image build assets, sysconfig, output manifests
 - `persona/` — OpenPersona identity layers (`SOUL/BODY/FACULTY/SKILL`)
 - `docs/` — architecture, protocol, deployment, supply-chain docs

@@ -42,4 +42,4 @@ systemctl --user start bloom-demo-api.service
 ## Notes
 
 - This package lives under `services/examples/` as documentation material.
-- For `just svc-push demo-api` or `just svc-install demo-api`, place it under `services/demo-api/`.
+- To install as a real service, use `service_install(name="demo-api")` or copy quadlet files manually.

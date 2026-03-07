@@ -32,7 +32,7 @@ Always prefer the lightest option.
 graph TD
     Pi[🤖 Pi Agent] --> Skills[📜 Skills<br/>Markdown instructions]
     Pi --> Extensions[🧩 Extensions<br/>In-process TypeScript]
-    Pi --> Services[📦 Services<br/>OCI Containers]
+    Pi --> Services[📦 Services<br/>Containers / Native]
     Extensions --> BloomDir[🌿 Bloom Directory<br/>~/Bloom/]
     Services --> BloomDir
     Extensions --> Persona[🪞 Persona<br/>4-layer identity]
@@ -53,8 +53,7 @@ graph TD
 | `bloom-audit` | Tool-call audit trail, retention, and review |
 | `bloom-os` | bootc, Podman, systemd management |
 | `bloom-repo` | Repository management, PR-based self-evolution |
-| `bloom-manifest` | Declarative service manifest management |
-| `bloom-services` | Service lifecycle (scaffold, publish, install, test) |
+| `bloom-services` | Service lifecycle (scaffold, install, test) and manifest management |
 | `bloom-objects` | Flat-file object store (CRUD with YAML frontmatter) |
 | `bloom-garden` | Bloom directory, blueprint seeding, skill discovery |
 | `bloom-channels` | Channel bridge Unix socket server |
@@ -67,7 +66,7 @@ graph TD
 | `first-boot` | One-time system setup guide |
 | `os-operations` | System health inspection and remediation |
 | `object-store` | CRUD operations for the memory store |
-| `service-management` | Install, manage, and discover OCI service packages |
+| `service-management` | Install, manage, and discover bundled service packages |
 | `self-evolution` | Structured system change workflow |
 | `recovery` | System recovery procedures |
 
@@ -110,7 +109,7 @@ bloom/
 ├── extensions/       # TypeScript Pi extensions
 ├── lib/              # Shared utilities (frontmatter, logging, paths)
 ├── skills/           # SKILL.md procedure guides
-├── services/         # OCI service packages
+├── services/         # Bundled service packages
 ├── persona/          # OpenPersona 4-layer identity
 ├── os/               # Fedora bootc 42 image (Containerfile + config)
 ├── tests/            # Unit, integration, and e2e tests
@@ -145,7 +144,6 @@ pi -e ./extensions/bloom-persona.ts \
    -e ./extensions/bloom-audit.ts \
    -e ./extensions/bloom-os.ts \
    -e ./extensions/bloom-repo.ts \
-   -e ./extensions/bloom-manifest.ts \
    -e ./extensions/bloom-services.ts \
    -e ./extensions/bloom-objects.ts \
    -e ./extensions/bloom-garden.ts \

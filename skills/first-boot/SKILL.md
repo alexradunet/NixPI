@@ -16,7 +16,7 @@ If `~/.bloom/.setup-complete` exists, setup is already complete. Skip unless use
 - Be conversational (one step at a time)
 - Let user skip/defer steps
 - Prefer Bloom tools over long shell copy-paste blocks
-- Clarify tool-vs-shell: `service_install`, `bloom_repo_configure`, etc. are Pi tools (not bash commands)
+- Clarify tool-vs-shell: `service_install`, `bloom_repo`, etc. are Pi tools (not bash commands)
 - On fresh Bloom OS, user `bloom` has passwordless `sudo` for bootstrap tasks.
 
 ## Pre-Requisite: NetBird
@@ -99,7 +99,7 @@ sudo dnf install gh
 gh auth login
 ```
 
-Then use `bloom_repo_configure` to set up fork-based PR flow:
-1. `bloom_repo_configure(repo_url="https://github.com/{owner}/pi-bloom.git")`
-2. `bloom_repo_status` (verify PR-ready state)
-3. `bloom_repo_sync(branch="main")`
+Then use `bloom_repo` to set up fork-based PR flow:
+1. `bloom_repo(action="configure", repo_url="https://github.com/{owner}/pi-bloom.git")`
+2. `bloom_repo(action="status")` (verify PR-ready state)
+3. `bloom_repo(action="sync", branch="main")`

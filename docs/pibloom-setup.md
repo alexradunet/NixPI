@@ -4,7 +4,7 @@
 
 This guide is for the first interactive session on a freshly installed Bloom OS machine.
 
-> Important: commands like `service_install`, `manifest_apply`, `bloom_repo_configure` are **Pi tools**.
+> Important: commands like `service_install`, `manifest_apply`, `bloom_repo` are **Pi tools**.
 > They are not shell binaries unless explicitly wrapped by your environment.
 
 ```mermaid
@@ -40,9 +40,9 @@ gh auth status
 
 Use Pi tools (recommended):
 
-1. `bloom_repo_configure(repo_url="https://github.com/pibloom/pi-bloom.git")`
-2. `bloom_repo_status`
-3. `bloom_repo_sync(branch="main")`
+1. `bloom_repo(action="configure", repo_url="https://github.com/pibloom/pi-bloom.git")`
+2. `bloom_repo(action="status")`
+3. `bloom_repo(action="sync", branch="main")`
 
 Expected local path:
 

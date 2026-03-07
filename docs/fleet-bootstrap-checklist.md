@@ -28,17 +28,17 @@ gh auth status
 
 Use Bloom tools:
 
-1. `bloom_repo_configure(repo_url="https://github.com/pibloom/pi-bloom.git")`
-2. `bloom_repo_status`
-3. `bloom_repo_sync(branch="main")`
+1. `bloom_repo(action="configure",repo_url="https://github.com/pibloom/pi-bloom.git")`
+2. `bloom_repo(action="status")`
+3. `bloom_repo(action="sync", branch="main")`
 
 If you already have a specific fork URL, set it explicitly:
 
-- `bloom_repo_configure(repo_url="https://github.com/pibloom/pi-bloom.git", fork_url="https://github.com/<your-user>/pi-bloom.git")`
+- `bloom_repo(action="configure",repo_url="https://github.com/pibloom/pi-bloom.git", fork_url="https://github.com/<your-user>/pi-bloom.git")`
 
 ### 3) 🚀 Verify PR readiness
 
-`bloom_repo_status` should show:
+`bloom_repo(action="status")` should show:
 
 - repo path exists (`~/.bloom/pi-bloom`)
 - upstream and origin are configured
@@ -63,8 +63,8 @@ npm run build && npm run check
 
 ## D) 🚀 Ongoing per-fix flow
 
-1. `bloom_repo_status`
-2. `bloom_repo_sync(branch="main")`
+1. `bloom_repo(action="status")`
+2. `bloom_repo(action="sync", branch="main")`
 3. implement fix + test (`npm run build && npm run check`)
 4. `bloom_repo_submit_pr(...)`
 5. merge after review + CI
