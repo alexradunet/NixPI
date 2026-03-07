@@ -15,10 +15,10 @@ if [ ! -f "$FIRST_RUN_MARKER" ]; then
     echo "    • LLM API key (Anthropic, OpenAI, etc.)"
     echo "    • GitHub authentication (for self-evolution)"
     echo "    • Optional OCI service modules:"
-    echo "      - Syncthing (home directory sync)"
+    echo "      - dufs (home directory WebDAV access)"
     echo "      - WhatsApp bridge"
-    echo "      - Whisper transcription"
-    echo "      - NetBird remote access"
+    echo "      - Lemonade (local LLM + speech-to-text)"
+    echo "      - NetBird mesh networking"
     echo "    • Your preferences and name"
     echo ""
 

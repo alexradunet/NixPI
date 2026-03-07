@@ -42,8 +42,8 @@ describe("loadManifest", () => {
 				"device: test-host",
 				"os_image: ghcr.io/pibloom/bloom-os:latest",
 				"services:",
-				"  whisper:",
-				"    image: docker.io/fedirz/faster-whisper-server:latest",
+				"  lemonade:",
+				"    image: ghcr.io/lemonade-sdk/lemonade-server:latest",
 				"    version: '0.1.0'",
 				"    enabled: true",
 			].join("\n"),
@@ -51,8 +51,8 @@ describe("loadManifest", () => {
 		const manifest = loadManifest(path);
 		expect(manifest.device).toBe("test-host");
 		expect(manifest.os_image).toBe("ghcr.io/pibloom/bloom-os:latest");
-		expect(manifest.services.whisper).toBeDefined();
-		expect(manifest.services.whisper.enabled).toBe(true);
+		expect(manifest.services.lemonade).toBeDefined();
+		expect(manifest.services.lemonade.enabled).toBe(true);
 	});
 });
 
@@ -73,8 +73,8 @@ describe("saveManifest + loadManifest roundtrip", () => {
 			device: "bloom-device",
 			os_image: "ghcr.io/pibloom/bloom-os:0.1.0",
 			services: {
-				whisper: {
-					image: "docker.io/fedirz/faster-whisper-server:latest",
+				lemonade: {
+					image: "ghcr.io/lemonade-sdk/lemonade-server:latest",
 					version: "0.1.0",
 					enabled: true,
 				},
@@ -90,9 +90,9 @@ describe("saveManifest + loadManifest roundtrip", () => {
 
 		expect(reloaded.device).toBe("bloom-device");
 		expect(reloaded.os_image).toBe("ghcr.io/pibloom/bloom-os:0.1.0");
-		expect(reloaded.services.whisper.image).toBe("docker.io/fedirz/faster-whisper-server:latest");
-		expect(reloaded.services.whisper.version).toBe("0.1.0");
-		expect(reloaded.services.whisper.enabled).toBe(true);
+		expect(reloaded.services.lemonade.image).toBe("ghcr.io/lemonade-sdk/lemonade-server:latest");
+		expect(reloaded.services.lemonade.version).toBe("0.1.0");
+		expect(reloaded.services.lemonade.enabled).toBe(true);
 		expect(reloaded.services.netbird.enabled).toBe(false);
 	});
 
@@ -186,12 +186,12 @@ describe("loadServiceCatalog", () => {
 		mkdirSync(catalogDir, { recursive: true });
 		writeFileSync(
 			join(catalogDir, "catalog.yaml"),
-			["services:", "  whisper:", "    version: '0.1.0'", "    category: ai"].join("\n"),
+			["services:", "  lemonade:", "    version: '0.1.0'", "    category: ai"].join("\n"),
 		);
 		const catalog = loadServiceCatalog(tempDir);
-		expect(catalog.whisper).toBeDefined();
-		expect(catalog.whisper.version).toBe("0.1.0");
-		expect(catalog.whisper.category).toBe("ai");
+		expect(catalog.lemonade).toBeDefined();
+		expect(catalog.lemonade.version).toBe("0.1.0");
+		expect(catalog.lemonade.category).toBe("ai");
 	});
 
 	it("skips catalog without services key and falls through", () => {
@@ -223,12 +223,12 @@ describe("findLocalServicePackage", () => {
 	});
 
 	it("finds a service package with quadlet dir and SKILL.md", () => {
-		const svcDir = join(tempDir, "services", "whisper");
+		const svcDir = join(tempDir, "services", "lemonade");
 		const quadletDir = join(svcDir, "quadlet");
 		mkdirSync(quadletDir, { recursive: true });
-		writeFileSync(join(svcDir, "SKILL.md"), "---\nname: whisper\n---\n");
-		writeFileSync(join(quadletDir, "bloom-whisper.container"), "[Container]\nImage=test");
-		const result = findLocalServicePackage("whisper", tempDir);
+		writeFileSync(join(svcDir, "SKILL.md"), "---\nname: lemonade\n---\n");
+		writeFileSync(join(quadletDir, "bloom-lemonade.container"), "[Container]\nImage=test");
+		const result = findLocalServicePackage("lemonade", tempDir);
 		expect(result).not.toBeNull();
 		expect(result!.serviceDir).toBe(svcDir);
 		expect(result!.quadletDir).toBe(quadletDir);

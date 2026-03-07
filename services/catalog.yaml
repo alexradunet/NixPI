@@ -2,19 +2,19 @@ version: 1
 registry_default: ghcr.io/pibloom
 source_repo: https://github.com/pibloom/pi-bloom
 services:
-  whisper:
+  lemonade:
     version: "0.1.0"
-    category: media
-    artifact: ghcr.io/pibloom/bloom-svc-whisper
-    image: docker.io/fedirz/faster-whisper-server@sha256:760e5e43d427dc6cfbbc4731934b908b7de9c7e6d5309c6a1f0c8c923a5b6030
-    optional: true
+    category: ai
+    artifact: ghcr.io/pibloom/bloom-svc-lemonade
+    image: ghcr.io/lemonade-sdk/lemonade-server:latest
+    optional: false
     preflight:
       commands: [oras, podman, systemctl]
   whatsapp:
-    version: "0.1.0"
+    version: "0.2.0"
     category: communication
     artifact: ghcr.io/pibloom/bloom-svc-whatsapp
-    image: ghcr.io/pibloom/bloom-whatsapp:0.1.0
+    image: ghcr.io/pibloom/bloom-whatsapp:0.2.0
     optional: true
     preflight:
       commands: [oras, podman, systemctl]
@@ -23,14 +23,14 @@ services:
     category: networking
     artifact: ghcr.io/pibloom/bloom-svc-netbird
     image: netbirdio/netbird@sha256:b3e69490e58cf255caf1b9b6a8bbfcfae4d1b2bbaa3c40a06cfdbba5b8fdc0d2
-    optional: true
+    optional: false
     preflight:
       commands: [oras, podman, systemctl]
-  syncthing:
+  dufs:
     version: "0.1.0"
     category: sync
-    artifact: ghcr.io/pibloom/bloom-svc-syncthing
-    image: docker.io/syncthing/syncthing@sha256:1feffa2d4826b48f25faefed093d07c5f00304d7e7ac86fd7cda334d22651643
-    optional: true
+    artifact: ghcr.io/pibloom/bloom-svc-dufs
+    image: docker.io/sigoden/dufs:latest
+    optional: false
     preflight:
       commands: [oras, podman, systemctl]
