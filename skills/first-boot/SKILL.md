@@ -21,38 +21,27 @@ If `~/.bloom/.setup-complete` exists, setup is already complete. Skip unless use
 
 ## Setup Steps
 
-### 1) GitHub Authentication
+### 1) Git Identity
+
+Ask the user for their name and email, then set globally:
 
 ```bash
-gh auth login
-gh auth status
+git config --global user.name "<name>"
+git config --global user.email "<email>"
 ```
 
-### 2) Device Git Identity
+Suggest sensible defaults (e.g., hostname-based) but let the user choose.
 
-Prefer repo-local identity via tool setup (instead of global):
+### 2) NetBird Setup (mesh networking)
 
-- `bloom_repo_configure(git_name="Bloom (<hostname>)", git_email="bloom+<hostname>@localhost")`
+NetBird provides the mesh network that other services (dufs, VNC) are accessible through remotely. Set it up first.
 
-Ask if user wants custom values.
+- Install service package: `service_install(name="netbird", version="0.1.0")`
+- Preflight: confirm user has entries in `/etc/subuid` and `/etc/subgid`
+- Authenticate: `podman exec bloom-netbird netbird up`
+- Validate: `service_test(name="netbird")`
 
-### 3) Configure Bloom Source Repo for PR Flow
-
-Use `bloom_repo_configure` to make the repo ready for contribution:
-
-- set `upstream` to canonical source repo
-- set `origin` to writable fork
-- clone into `~/.bloom/pi-bloom` if missing
-
-Preferred sequence:
-1. `bloom_repo_configure(repo_url="https://github.com/{owner}/pi-bloom.git")`
-2. `bloom_repo_status` (verify PR-ready state)
-3. `bloom_repo_sync(branch="main")`
-
-If fork URL is already known, pass `fork_url` explicitly.
-If not, `bloom_repo_configure` tries to create/attach one via `gh` when authenticated.
-
-### 4) dufs Setup (tool-first)
+### 3) dufs Setup (tool-first)
 
 - Install service package: `service_install(name="dufs", version="0.1.0")`
 - Validate service: `service_test(name="dufs")`
@@ -66,7 +55,7 @@ Offer one of these access paths:
 - SSH tunnel: `ssh -L 5000:localhost:5000 -p 2222 bloom@localhost`
 - Guest IP direct access on LAN if routing allows (`http://<guest-ip>:5000`)
 
-### 5) Optional Service Packages (manifest-first)
+### 4) Optional Service Packages (manifest-first)
 
 Prefer declarative setup:
 
@@ -78,25 +67,19 @@ Suggested optional profiles:
 
 - **sync-only**: dufs
 - **communication**: whatsapp + lemonade
-- **remote-access**: netbird (+ dufs recommended)
-
 Example declaration flow:
 
-1. `manifest_set_service(name="dufs", image="docker.io/sigoden/dufs:latest", version="0.1.0", enabled=true)`
-2. `manifest_set_service(name="whatsapp", image="ghcr.io/pibloom/bloom-whatsapp:0.2.0", version="0.2.0", enabled=true)`
-3. `manifest_set_service(name="lemonade", image="ghcr.io/lemonade-sdk/lemonade-server:latest", version="0.1.0", enabled=true)`
-4. `manifest_set_service(name="netbird", image="docker.io/netbirdio/netbird@sha256:...", version="0.1.0", enabled=true)`
-5. `manifest_apply(install_missing=true)`
+1. `manifest_set_service(name="whatsapp", image="ghcr.io/pibloom/bloom-whatsapp:0.2.0", version="0.2.0", enabled=true)`
+2. `manifest_set_service(name="lemonade", image="ghcr.io/lemonade-sdk/lemonade-server:latest", version="0.1.0", enabled=true)`
+3. `manifest_apply(install_missing=true)`
 
 Post-install guidance:
 
 - WhatsApp pairing: `journalctl --user -u bloom-whatsapp -f` and scan QR
-- NetBird preflight: confirm user has entries in `/etc/subuid` and `/etc/subgid`
-- NetBird auth: `podman exec bloom-netbird netbird up`
 
 If tooling is unavailable, use the fallback manual `oras pull` flow from `skills/service-management/SKILL.md`.
 
-### 6) Mark Setup Complete
+### 5) Mark Setup Complete
 
 ```bash
 touch ~/.bloom/.setup-complete
@@ -106,3 +89,17 @@ touch ~/.bloom/.setup-complete
 
 - Revisit skipped steps on demand
 - Confirm each critical step before moving on
+
+## Developer Mode (optional, not part of first-boot)
+
+For contributors who want to submit PRs back to the Bloom repo, install `gh` and configure the repo:
+
+```bash
+sudo dnf install gh
+gh auth login
+```
+
+Then use `bloom_repo_configure` to set up fork-based PR flow:
+1. `bloom_repo_configure(repo_url="https://github.com/{owner}/pi-bloom.git")`
+2. `bloom_repo_status` (verify PR-ready state)
+3. `bloom_repo_sync(branch="main")`
