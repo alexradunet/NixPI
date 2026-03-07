@@ -119,22 +119,6 @@ describe("bloom-repo registration", () => {
 });
 
 // ---------------------------------------------------------------------------
-// bloom-manifest
-// ---------------------------------------------------------------------------
-describe("bloom-manifest registration", () => {
-	it("registers expected tools and events", async () => {
-		const mod = await import("../../extensions/bloom-manifest.js");
-		const api = createMockExtensionAPI();
-		mod.default(api as never);
-
-		expect(toolNames(api)).toEqual(
-			expect.arrayContaining(["manifest_show", "manifest_sync", "manifest_set_service", "manifest_apply"]),
-		);
-		expect(eventNames(api)).toEqual(expect.arrayContaining(["session_start"]));
-	});
-});
-
-// ---------------------------------------------------------------------------
 // bloom-persona
 // ---------------------------------------------------------------------------
 describe("bloom-persona registration", () => {
@@ -160,7 +144,17 @@ describe("bloom-services registration", () => {
 		const api = createMockExtensionAPI();
 		mod.default(api as never);
 
-		expect(toolNames(api)).toEqual(expect.arrayContaining(["service_scaffold", "service_install", "service_test"]));
+		expect(toolNames(api)).toEqual(
+			expect.arrayContaining([
+				"service_scaffold",
+				"service_install",
+				"service_test",
+				"manifest_show",
+				"manifest_sync",
+				"manifest_set_service",
+				"manifest_apply",
+			]),
+		);
 		expect(eventNames(api)).toEqual(expect.arrayContaining(["session_start"]));
 	});
 });

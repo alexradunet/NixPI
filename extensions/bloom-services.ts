@@ -1,62 +1,40 @@
 /**
- * bloom-services — Service lifecycle: scaffold, install, and test local service packages.
+ * bloom-services — Service lifecycle: scaffold, install, test, and declarative manifest management.
  *
- * @tools service_scaffold, service_install, service_test
+ * @tools service_scaffold, service_install, service_test, manifest_show, manifest_sync, manifest_set_service, manifest_apply
  * @hooks session_start
  * @see {@link ../AGENTS.md#bloom-services} Extension reference
  */
-import { randomBytes } from "node:crypto";
-import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
-import os, { tmpdir } from "node:os";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import os from "node:os";
 import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { StringEnum } from "@mariozechner/pi-ai";
 import type { ExtensionAPI, ExtensionContext } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
 import { run } from "../lib/exec.js";
-import { loadManifest, saveManifest, servicePreflightErrors } from "../lib/manifest.js";
-import { commandMissingError, validatePinnedImage, validateServiceName } from "../lib/service-utils.js";
-import { createLogger, errorResult, getBloomDir, parseFrontmatter, truncate } from "../lib/shared.js";
+import {
+	detectRunningServices,
+	installServicePackage,
+	loadManifest,
+	loadServiceCatalog,
+	type Manifest,
+	saveManifest,
+	servicePreflightErrors,
+} from "../lib/manifest.js";
+import { validatePinnedImage, validateServiceName } from "../lib/service-utils.js";
+import {
+	createLogger,
+	errorResult,
+	getBloomDir,
+	parseFrontmatter,
+	requireConfirmation,
+	truncate,
+} from "../lib/shared.js";
 
 const log = createLogger("bloom-services");
 
-function resolvePackageRoot(): string {
-	const here = dirname(fileURLToPath(import.meta.url));
-	const candidates = [join(here, ".."), join(here, "../..")];
-	for (const candidate of candidates) {
-		if (existsSync(join(candidate, "os", "sysconfig", "bloom.network"))) {
-			return candidate;
-		}
-	}
-	return join(here, "../..");
-}
-
 function sleep(ms: number): Promise<void> {
 	return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-async function ensureCommand(name: string, args: string[], signal?: AbortSignal): Promise<string | null> {
-	const check = await run(name, args, signal);
-	if (check.exitCode === 0) return null;
-	const output = `${check.stderr || ""}\n${check.stdout || ""}`;
-	if (commandMissingError(output)) {
-		return `Required command not found: ${name}`;
-	}
-	return null;
-}
-
-function resolveRepoDir(ctx: ExtensionContext): string {
-	let current = ctx.cwd;
-	for (let i = 0; i < 6; i++) {
-		if (existsSync(join(current, "services")) && existsSync(join(current, "package.json"))) {
-			return current;
-		}
-		const parent = dirname(current);
-		if (parent === current) break;
-		current = parent;
-	}
-	const preferred = join(os.homedir(), ".bloom", "pi-bloom");
-	if (existsSync(join(preferred, "services"))) return preferred;
-	return ctx.cwd;
 }
 
 function extractSkillMetadata(skillPath: string): { image?: string; version?: string } {
@@ -73,8 +51,11 @@ function extractSkillMetadata(skillPath: string): { image?: string; version?: st
 }
 
 export default function (pi: ExtensionAPI) {
-	const packageRoot = resolvePackageRoot();
-	const defaultNetworkPath = join(packageRoot, "os", "sysconfig", "bloom.network");
+	const bloomDir = getBloomDir();
+	const manifestPath = join(bloomDir, "manifest.yaml");
+	const dotBloomDir = join(os.homedir(), ".bloom");
+	const repoDir = join(dotBloomDir, "pi-bloom");
+
 	pi.registerTool({
 		name: "service_scaffold",
 		label: "Scaffold Service Package",
@@ -106,8 +87,8 @@ export default function (pi: ExtensionAPI) {
 			const imageGuard = validatePinnedImage(params.image);
 			if (imageGuard) return errorResult(imageGuard);
 
-			const repoDir = resolveRepoDir(ctx);
-			const serviceDir = join(repoDir, "services", params.name);
+			const scaffoldRepoDir = resolveRepoDir(ctx);
+			const serviceDir = join(scaffoldRepoDir, "services", params.name);
 			const quadletDir = join(serviceDir, "quadlet");
 			const skillPath = join(serviceDir, "SKILL.md");
 			const containerPath = join(quadletDir, `bloom-${params.name}.container`);
@@ -149,7 +130,7 @@ export default function (pi: ExtensionAPI) {
 					{ type: "text" as const, text: `Service scaffold created:\n${created.map((f) => `- ${f}`).join("\n")}` },
 				],
 				details: {
-					repoDir,
+					repoDir: scaffoldRepoDir,
 					service: params.name,
 					category: params.category ?? null,
 					files: created,
@@ -175,7 +156,7 @@ export default function (pi: ExtensionAPI) {
 				Type.Boolean({ description: "Update manifest.yaml with installed version", default: true }),
 			),
 		}),
-		async execute(_toolCallId, params, signal, _onUpdate, _ctx) {
+		async execute(_toolCallId, params, signal) {
 			const guard = validateServiceName(params.name);
 			if (guard) return errorResult(guard);
 
@@ -183,125 +164,58 @@ export default function (pi: ExtensionAPI) {
 			const start = params.start ?? true;
 			const updateManifest = params.update_manifest ?? true;
 
-			const commandChecks: Array<[string, string[]]> = [
-				["podman", ["--version"]],
-				["systemctl", ["--version"]],
-			];
-			for (const [command, args] of commandChecks) {
-				const missing = await ensureCommand(command, args, signal);
-				if (missing) return errorResult(missing);
+			const catalog = loadServiceCatalog(repoDir);
+			const catalogEntry = catalog[params.name];
+
+			const preflight = await servicePreflightErrors(params.name, catalogEntry, signal);
+			if (preflight.length > 0) {
+				return errorResult(`Preflight failed: ${preflight.join("; ")}`);
 			}
 
-			const localServiceDir = join(packageRoot, "services", params.name);
-			const localQuadlet = join(localServiceDir, "quadlet");
-			const localSkill = join(localServiceDir, "SKILL.md");
-
-			if (!existsSync(localQuadlet) || !existsSync(localSkill)) {
-				return errorResult(
-					`No local service package found for ${params.name}. Expected quadlet/ and SKILL.md in ${localServiceDir}.`,
-				);
+			const install = await installServicePackage(params.name, version, bloomDir, repoDir, catalogEntry, signal);
+			if (!install.ok) {
+				return errorResult(install.note ?? `Install failed for ${params.name}`);
 			}
 
-			const tempDir = join(tmpdir(), `bloom-svc-${params.name}-${Date.now()}`);
-			mkdirSync(tempDir, { recursive: true });
+			const daemonReload = await run("systemctl", ["--user", "daemon-reload"], signal);
+			if (daemonReload.exitCode !== 0) return errorResult(`daemon-reload failed:\n${daemonReload.stderr}`);
 
-			try {
-				const localTempQuadlet = join(tempDir, "quadlet");
-				mkdirSync(localTempQuadlet, { recursive: true });
-				for (const fname of readdirSync(localQuadlet)) {
-					const src = join(localQuadlet, fname);
-					if (!statSync(src).isFile()) continue;
-					writeFileSync(join(localTempQuadlet, fname), readFileSync(src));
+			const userSystemdDir = join(os.homedir(), ".config", "systemd", "user");
+			const socketUnit = join(userSystemdDir, `bloom-${params.name}.socket`);
+			if (start) {
+				const target = existsSync(socketUnit) ? `bloom-${params.name}.socket` : `bloom-${params.name}.service`;
+				const startRes = await run("systemctl", ["--user", "start", target], signal);
+				if (startRes.exitCode !== 0) {
+					return errorResult(`Failed to start ${target}:\n${startRes.stderr}`);
 				}
-				writeFileSync(join(tempDir, "SKILL.md"), readFileSync(localSkill));
+			}
 
-				const quadletSrc = join(tempDir, "quadlet");
-				const skillSrc = join(tempDir, "SKILL.md");
-
-				const systemdDir = join(os.homedir(), ".config", "containers", "systemd");
-				const userSystemdDir = join(os.homedir(), ".config", "systemd", "user");
-				const skillDir = join(getBloomDir(), "Skills", params.name);
-				mkdirSync(systemdDir, { recursive: true });
-				mkdirSync(userSystemdDir, { recursive: true });
-				mkdirSync(skillDir, { recursive: true });
-
-				const networkDest = join(systemdDir, "bloom.network");
-				if (!existsSync(networkDest) && existsSync(defaultNetworkPath)) {
-					writeFileSync(networkDest, readFileSync(defaultNetworkPath));
-				}
-
-				for (const name of readdirSync(quadletSrc)) {
-					const src = join(quadletSrc, name);
-					if (!statSync(src).isFile()) continue;
-					const destDir = name.endsWith(".socket") ? userSystemdDir : systemdDir;
-					writeFileSync(join(destDir, name), readFileSync(src));
-				}
-				writeFileSync(join(skillDir, "SKILL.md"), readFileSync(skillSrc));
-
-				const expectedSocket = join(quadletSrc, `bloom-${params.name}.socket`);
-				const installedSocket = join(userSystemdDir, `bloom-${params.name}.socket`);
-				if (!existsSync(expectedSocket) && existsSync(installedSocket)) {
-					await run("systemctl", ["--user", "disable", "--now", `bloom-${params.name}.socket`], signal);
-					rmSync(installedSocket, { force: true });
-				}
-
-				const tokenDir = join(os.homedir(), ".config", "bloom", "channel-tokens");
-				mkdirSync(tokenDir, { recursive: true });
-				const tokenPath = join(tokenDir, params.name);
-				const tokenEnvPath = join(tokenDir, `${params.name}.env`);
-				if (!existsSync(tokenPath)) {
-					const token = randomBytes(32).toString("hex");
-					writeFileSync(tokenPath, `${token}\n`);
-					writeFileSync(tokenEnvPath, `BLOOM_CHANNEL_TOKEN=${token}\n`);
-				}
-
-				const daemonReload = await run("systemctl", ["--user", "daemon-reload"], signal);
-				if (daemonReload.exitCode !== 0) return errorResult(`daemon-reload failed:\n${daemonReload.stderr}`);
-
-				const socketUnit = join(userSystemdDir, `bloom-${params.name}.socket`);
-				if (start) {
-					const target = existsSync(socketUnit) ? `bloom-${params.name}.socket` : `bloom-${params.name}.service`;
-					const startRes = await run("systemctl", ["--user", "start", target], signal);
-					if (startRes.exitCode !== 0) {
-						return errorResult(`Failed to start ${target}:\n${startRes.stderr}`);
-					}
-				}
-
-				const meta = extractSkillMetadata(join(skillDir, "SKILL.md"));
-				if (updateManifest) {
-					const bloomDir = getBloomDir();
-					const manifestPath = join(bloomDir, "manifest.yaml");
-					const manifest = loadManifest(manifestPath);
-					manifest.services[params.name] = {
-						image: meta.image ?? "unknown",
-						version: version === "latest" ? meta.version : version,
-						enabled: true,
-					};
-					saveManifest(manifest, manifestPath);
-				}
-
-				return {
-					content: [
-						{
-							type: "text" as const,
-							text: `Installed ${params.name} successfully from bundled local package.`,
-						},
-					],
-					details: {
-						ref: params.name,
-						installSource: "local",
-						start,
-						manifestUpdated: updateManifest,
-						installedTo: {
-							systemdDir,
-							userSystemdDir,
-							skillDir,
-						},
-					},
+			const skillDir = join(bloomDir, "Skills", params.name);
+			const meta = extractSkillMetadata(join(skillDir, "SKILL.md"));
+			if (updateManifest) {
+				const manifest = loadManifest(manifestPath);
+				manifest.services[params.name] = {
+					image: meta.image ?? "unknown",
+					version: version === "latest" ? meta.version : version,
+					enabled: true,
 				};
-			} finally {
-				rmSync(tempDir, { recursive: true, force: true });
+				saveManifest(manifest, manifestPath);
 			}
+
+			return {
+				content: [
+					{
+						type: "text" as const,
+						text: `Installed ${params.name} successfully from bundled local package.`,
+					},
+				],
+				details: {
+					ref: params.name,
+					installSource: "local",
+					start,
+					manifestUpdated: updateManifest,
+				},
+			};
 		},
 	});
 
@@ -340,8 +254,8 @@ export default function (pi: ExtensionAPI) {
 			const reload = await run("systemctl", ["--user", "daemon-reload"], signal);
 			if (reload.exitCode !== 0) return errorResult(`daemon-reload failed:\n${reload.stderr}`);
 
-			const start = await run("systemctl", ["--user", "start", startUnit], signal);
-			if (start.exitCode !== 0) return errorResult(`Failed to start ${startUnit}:\n${start.stderr}`);
+			const startResult = await run("systemctl", ["--user", "start", startUnit], signal);
+			if (startResult.exitCode !== 0) return errorResult(`Failed to start ${startUnit}:\n${startResult.stderr}`);
 
 			let active = false;
 			const waitUntil = Date.now() + timeoutSec * 1000;
@@ -405,10 +319,399 @@ export default function (pi: ExtensionAPI) {
 		},
 	});
 
-	pi.on("session_start", (_event, ctx) => {
+	// -----------------------------------------------------------------------
+	// Manifest tools (merged from bloom-manifest)
+	// -----------------------------------------------------------------------
+
+	pi.registerTool({
+		name: "manifest_show",
+		label: "Show Manifest",
+		description: "Display the declarative service manifest from ~/Bloom/manifest.yaml",
+		promptSnippet: "manifest_show — display the Bloom service manifest",
+		promptGuidelines: ["Use manifest_show to view the current manifest state and configured services."],
+		parameters: Type.Object({}),
+		async execute() {
+			const manifest = loadManifest(manifestPath);
+			if (Object.keys(manifest.services).length === 0 && !manifest.device) {
+				return {
+					content: [
+						{
+							type: "text" as const,
+							text: "No manifest found. Use manifest_sync to generate one from running services.",
+						},
+					],
+					details: {},
+				};
+			}
+			const lines: string[] = [];
+			if (manifest.device) lines.push(`Device: ${manifest.device}`);
+			if (manifest.os_image) lines.push(`OS Image: ${manifest.os_image}`);
+			lines.push("");
+			const svcs = Object.entries(manifest.services);
+			if (svcs.length === 0) {
+				lines.push("No services configured.");
+			} else {
+				lines.push("Services:");
+				for (const [name, svc] of svcs) {
+					const ver = svc.version ? `@${svc.version}` : "";
+					const state = svc.enabled ? "enabled" : "disabled";
+					lines.push(`  ${name}: ${svc.image}${ver} [${state}]`);
+				}
+			}
+			return { content: [{ type: "text" as const, text: lines.join("\n") }], details: manifest };
+		},
+	});
+
+	pi.registerTool({
+		name: "manifest_sync",
+		label: "Sync Manifest",
+		description:
+			"Reconcile the manifest with actual running containers. Detects drift and can update the manifest or report differences.",
+		promptSnippet: "manifest_sync — reconcile manifest with running state",
+		promptGuidelines: [
+			"Use manifest_sync to detect drift between the manifest and reality.",
+			"Pass mode='detect' (default) to report differences, mode='update' to update the manifest to match reality.",
+		],
+		parameters: Type.Object({
+			mode: Type.Optional(
+				StringEnum(["detect", "update"] as const, {
+					description: "detect (report drift) or update (write manifest from running state)",
+					default: "detect",
+				}),
+			),
+		}),
+		async execute(_toolCallId, params, signal, _onUpdate, _ctx) {
+			const mode = params.mode ?? "detect";
+			const manifest = loadManifest(manifestPath);
+			const running = await detectRunningServices(signal);
+
+			const bootcResult = await run("bootc", ["status", "--format=json"], signal);
+			let osImage = manifest.os_image;
+			if (bootcResult.exitCode === 0) {
+				try {
+					const status = JSON.parse(bootcResult.stdout) as {
+						status?: { booted?: { image?: { image?: { image?: string } } } };
+					};
+					osImage = status?.status?.booted?.image?.image?.image ?? osImage;
+				} catch {
+					// keep existing
+				}
+			}
+
+			const drifts: string[] = [];
+
+			for (const [name, svc] of Object.entries(manifest.services)) {
+				if (svc.enabled && !running.has(name)) {
+					drifts.push(`- ${name}: manifest says enabled, but not running`);
+				}
+			}
+
+			for (const [name, info] of running) {
+				if (!manifest.services[name]) {
+					drifts.push(`- ${name}: running (${info.image}) but not in manifest`);
+				} else if (manifest.services[name].image !== info.image) {
+					drifts.push(`- ${name}: image mismatch — manifest: ${manifest.services[name].image}, actual: ${info.image}`);
+				}
+			}
+
+			if (osImage && manifest.os_image && osImage !== manifest.os_image) {
+				drifts.push(`- OS image: manifest: ${manifest.os_image}, actual: ${osImage}`);
+			}
+
+			if (mode === "update") {
+				const hostname = os.hostname();
+				const updated: Manifest = {
+					device: manifest.device || hostname,
+					os_image: osImage,
+					services: { ...manifest.services },
+				};
+
+				for (const [name, info] of running) {
+					if (!updated.services[name]) {
+						updated.services[name] = { image: info.image, enabled: true };
+					} else {
+						updated.services[name].image = info.image;
+						updated.services[name].enabled = true;
+					}
+				}
+
+				saveManifest(updated, manifestPath);
+				const text =
+					drifts.length > 0
+						? `Manifest updated. Resolved ${drifts.length} drift(s):\n${drifts.join("\n")}`
+						: "Manifest updated. No drift detected.";
+				return { content: [{ type: "text" as const, text }], details: updated };
+			}
+
+			if (drifts.length === 0) {
+				return {
+					content: [{ type: "text" as const, text: "No drift detected. Manifest matches running state." }],
+					details: {} as Manifest,
+				};
+			}
+			return {
+				content: [
+					{
+						type: "text" as const,
+						text: `${drifts.length} drift(s) detected:\n${drifts.join("\n")}\n\nRun manifest_sync with mode='update' to reconcile.`,
+					},
+				],
+				details: { drifts } as unknown as Manifest,
+			};
+		},
+	});
+
+	pi.registerTool({
+		name: "manifest_set_service",
+		label: "Set Manifest Service",
+		description: "Add or update a service entry in the manifest.",
+		promptSnippet: "manifest_set_service — add/update a service in the manifest",
+		promptGuidelines: ["Use manifest_set_service to declare a service in the manifest."],
+		parameters: Type.Object({
+			name: Type.String({ description: "Service name (e.g. whatsapp, lemonade)" }),
+			image: Type.String({ description: "Container image reference" }),
+			version: Type.Optional(Type.String({ description: "Semver version tag" })),
+			enabled: Type.Optional(Type.Boolean({ description: "Whether service should be running (default: true)" })),
+		}),
+		async execute(_toolCallId, params) {
+			const manifest = loadManifest(manifestPath);
+			manifest.services[params.name] = {
+				image: params.image,
+				version: params.version,
+				enabled: params.enabled ?? true,
+			};
+			saveManifest(manifest, manifestPath);
+			return {
+				content: [
+					{
+						type: "text" as const,
+						text: `Service ${params.name} set in manifest: ${params.image}${params.version ? `@${params.version}` : ""} [${params.enabled !== false ? "enabled" : "disabled"}]`,
+					},
+				],
+				details: {},
+			};
+		},
+	});
+
+	pi.registerTool({
+		name: "manifest_apply",
+		label: "Apply Manifest",
+		description:
+			"Apply desired service state from manifest: install/start enabled services and stop disabled services.",
+		promptSnippet: "manifest_apply — apply manifest desired service state",
+		promptGuidelines: [
+			"Use manifest_apply to enact desired service state from manifest.yaml.",
+			"Prefer install_missing=true for first-time setup on fresh devices.",
+		],
+		parameters: Type.Object({
+			install_missing: Type.Optional(
+				Type.Boolean({
+					description: "Install missing services from bundled local packages before applying state",
+					default: true,
+				}),
+			),
+			dry_run: Type.Optional(Type.Boolean({ description: "Preview actions without mutating system", default: false })),
+		}),
+		async execute(_toolCallId, params, signal, _onUpdate, ctx) {
+			const manifest = loadManifest(manifestPath);
+			const serviceEntries = Object.entries(manifest.services).sort(([a], [b]) => a.localeCompare(b));
+			if (serviceEntries.length === 0) {
+				return errorResult("Manifest has no services. Use manifest_set_service first.");
+			}
+
+			const installMissing = params.install_missing ?? true;
+			const dryRun = params.dry_run ?? false;
+
+			if (!dryRun) {
+				const denied = await requireConfirmation(ctx, `Apply manifest to ${serviceEntries.length} service(s)`);
+				if (denied) return errorResult(denied);
+			}
+
+			const catalog = loadServiceCatalog(repoDir);
+			const lines: string[] = [];
+			const errors: string[] = [];
+			let installedCount = 0;
+			let startedCount = 0;
+			let stoppedCount = 0;
+			let manifestChanged = false;
+			let needsReload = false;
+
+			const systemdDir = join(os.homedir(), ".config", "containers", "systemd");
+			const userSystemdDir = join(os.homedir(), ".config", "systemd", "user");
+
+			for (const [name, svc] of serviceEntries) {
+				if (!svc.enabled) continue;
+
+				const unit = `bloom-${name}`;
+				const containerDef = join(systemdDir, `${unit}.container`);
+				if (existsSync(containerDef)) continue;
+
+				if (!installMissing) {
+					errors.push(`${name}: missing unit ${containerDef} (set install_missing=true to auto-install)`);
+					continue;
+				}
+
+				const catalogEntry = catalog[name];
+				const version = svc.version?.trim() || catalogEntry?.version || "latest";
+
+				const preflight = await servicePreflightErrors(name, catalogEntry, signal);
+				if (preflight.length > 0) {
+					errors.push(`${name}: preflight failed — ${preflight.join("; ")}`);
+					continue;
+				}
+
+				if (dryRun) {
+					lines.push(`[dry-run] install ${name}@${version}`);
+					installedCount += 1;
+					continue;
+				}
+
+				const installResult = await installServicePackage(name, version, bloomDir, repoDir, catalogEntry, signal);
+				if (!installResult.ok) {
+					errors.push(`${name}: install failed — ${installResult.note ?? "unknown error"}`);
+					continue;
+				}
+
+				installedCount += 1;
+				needsReload = true;
+				lines.push(`Installed ${name} from bundled local package`);
+
+				if (!svc.version) {
+					manifest.services[name].version = version;
+					manifestChanged = true;
+				}
+				if ((!svc.image || svc.image === "unknown") && catalogEntry?.image) {
+					manifest.services[name].image = catalogEntry.image;
+					manifestChanged = true;
+				}
+			}
+
+			if (needsReload && !dryRun) {
+				const reload = await run("systemctl", ["--user", "daemon-reload"], signal);
+				if (reload.exitCode !== 0) {
+					return errorResult(`manifest_apply: daemon-reload failed:\n${reload.stderr || reload.stdout}`);
+				}
+			}
+
+			for (const [name, svc] of serviceEntries) {
+				const unit = `bloom-${name}`;
+				const containerDef = join(systemdDir, `${unit}.container`);
+				const socketDef = join(userSystemdDir, `${unit}.socket`);
+				const startTarget = existsSync(socketDef) ? `${unit}.socket` : `${unit}.service`;
+
+				if (svc.enabled) {
+					if (!existsSync(containerDef)) {
+						errors.push(`${name}: cannot start, unit not installed`);
+						continue;
+					}
+
+					if (dryRun) {
+						lines.push(`[dry-run] start ${startTarget}`);
+						startedCount += 1;
+						continue;
+					}
+
+					const startResult = await run("systemctl", ["--user", "start", startTarget], signal);
+					if (startResult.exitCode !== 0) {
+						errors.push(`${name}: failed to start ${startTarget}: ${startResult.stderr || startResult.stdout}`);
+					} else {
+						startedCount += 1;
+						lines.push(`Started ${startTarget}`);
+					}
+					continue;
+				}
+
+				if (dryRun) {
+					lines.push(`[dry-run] stop ${unit}.socket (if present)`);
+					lines.push(`[dry-run] stop ${unit}.service`);
+					stoppedCount += 1;
+					continue;
+				}
+
+				await run("systemctl", ["--user", "stop", `${unit}.socket`], signal);
+				await run("systemctl", ["--user", "stop", `${unit}.service`], signal);
+				stoppedCount += 1;
+				lines.push(`Stopped ${unit}`);
+			}
+
+			if (manifestChanged && !dryRun) {
+				saveManifest(manifest, manifestPath);
+			}
+
+			const summary = [
+				`Manifest apply complete (${dryRun ? "dry-run" : "live"}).`,
+				`Installed: ${installedCount}`,
+				`Started/enabled: ${startedCount}`,
+				`Stopped/disabled: ${stoppedCount}`,
+				`Errors: ${errors.length}`,
+				"",
+				...(lines.length > 0 ? ["Actions:", ...lines, ""] : []),
+				...(errors.length > 0 ? ["Errors:", ...errors] : []),
+			].join("\n");
+
+			return {
+				content: [{ type: "text" as const, text: truncate(summary) }],
+				details: {
+					installed: installedCount,
+					started: startedCount,
+					stopped: stoppedCount,
+					errors,
+					dryRun,
+				},
+				isError: errors.length > 0,
+			};
+		},
+	});
+
+	// -----------------------------------------------------------------------
+	// Merged session_start hook (service status + manifest drift detection)
+	// -----------------------------------------------------------------------
+
+	pi.on("session_start", async (_event, ctx) => {
+		log.info("service lifecycle extension loaded");
+
 		if (ctx.hasUI) {
 			ctx.ui.setStatus("bloom-services", "Services: lifecycle tools ready");
 		}
-		log.info("service lifecycle extension loaded");
+
+		if (!existsSync(manifestPath)) return;
+		const manifest = loadManifest(manifestPath);
+		const svcCount = Object.keys(manifest.services).length;
+		if (svcCount === 0) return;
+
+		const running = await detectRunningServices();
+		const drifts: string[] = [];
+		for (const [name, svc] of Object.entries(manifest.services)) {
+			if (svc.enabled && !running.has(name)) {
+				drifts.push(`${name} (not running)`);
+			}
+		}
+
+		if (ctx.hasUI) {
+			if (drifts.length > 0) {
+				ctx.ui.setWidget("bloom-services", [`Manifest drift: ${drifts.join(", ")}`]);
+			}
+			ctx.ui.setStatus("bloom-services", `Services: ${svcCount} in manifest`);
+		}
 	});
+}
+
+// ---------------------------------------------------------------------------
+// Internal helpers
+// ---------------------------------------------------------------------------
+
+/** Walk up from ctx.cwd to find the repo dir containing services/ and package.json. */
+function resolveRepoDir(ctx: ExtensionContext): string {
+	let current = ctx.cwd;
+	for (let i = 0; i < 6; i++) {
+		if (existsSync(join(current, "services")) && existsSync(join(current, "package.json"))) {
+			return current;
+		}
+		const parent = dirname(current);
+		if (parent === current) break;
+		current = parent;
+	}
+	const preferred = join(os.homedir(), ".bloom", "pi-bloom");
+	if (existsSync(join(preferred, "services"))) return preferred;
+	return ctx.cwd;
 }
