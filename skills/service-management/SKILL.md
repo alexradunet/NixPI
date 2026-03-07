@@ -58,7 +58,7 @@ Reference packages:
 - `services/examples/demo-api/`
 - `services/examples/demo-socket-echo/`
 - `services/examples/README.md` (copy/paste quickstart commands)
-- `services/whisper/quadlet/` (production HTTP service reference)
+- `services/lemonade/quadlet/` (production HTTP service reference)
 
 ## Install a Service
 
@@ -142,9 +142,9 @@ Services may depend on other components:
 | Service | Depends On | Handling |
 |---------|-----------|----------|
 | `whatsapp` | Pi channels server (`/run/bloom/channels.sock`) | Unix socket reconnect with exponential backoff |
-| `whisper` | None (standalone HTTP API) | — |
+| `lemonade` | None (standalone HTTP API) | — |
 | `netbird` | Network stack (NET_ADMIN, /dev/net/tun) | Host network mode |
-| `syncthing` | Syncthing peers and local home bind mount | Host network mode + `%h` bind mount |
+| `dufs` | Local home bind mount | `%h` bind mount |
 
 Pi's channels server is a user-space interactive process, not a systemd service. Service bridges handle unavailability via reconnect logic.
 
@@ -154,13 +154,13 @@ Service SKILL.md files include `version` and `image` fields in their frontmatter
 
 ```yaml
 ---
-name: whisper
+name: lemonade
 version: 0.1.0
-image: docker.io/fedirz/faster-whisper-server@sha256:760e5e43d427dc6cfbbc4731934b908b7de9c7e6d5309c6a1f0c8c923a5b6030
+image: ghcr.io/lemonade-sdk/lemonade-server:latest
 ---
 ```
 
-OCI artifacts use semver tags: `ghcr.io/pibloom/bloom-svc-whisper:0.1.0`
+OCI artifacts use semver tags: `ghcr.io/pibloom/bloom-svc-lemonade:0.1.0`
 
 ### Check Installed Version
 
@@ -193,7 +193,7 @@ Then pass it to `service_install`:
 
 | Name | Version | Category | Description |
 |------|---------|----------|-------------|
-| `whisper` | 0.1.0 | media | Speech-to-text transcription (faster-whisper, port 9000) |
-| `whatsapp` | 0.1.0 | communication | WhatsApp messaging bridge via Baileys |
+| `lemonade` | 0.1.0 | ai | Local LLM + STT via Lemonade (port 8000) |
+| `whatsapp` | 0.2.0 | communication | WhatsApp messaging bridge via whatsapp-web.js |
 | `netbird` | 0.1.0 | networking | Secure mesh VPN via NetBird |
-| `syncthing` | 0.1.0 | sync | Peer-to-peer home directory sync via Syncthing (port 8384 UI) |
+| `dufs` | 0.1.0 | sync | WebDAV file server via dufs (port 5000) |

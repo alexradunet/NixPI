@@ -36,16 +36,18 @@ Use `audit_review` to inspect recent tool actions when you need to reconstruct w
    - Disk full → check with `system_health`, clear space in /var
 5. After rollback: schedule reboot with `schedule_reboot delay_minutes=1`
 
-## Syncthing Sync Conflicts
+## dufs WebDAV Issues
 
-**Symptoms**: Duplicate files with `.sync-conflict-*` suffix in home directory.
+**Symptoms**: Files not accessible via WebDAV, connection refused on port 5000.
 
-1. List conflicts: search for `.sync-conflict-` files in `$HOME`
-2. Compare conflict file with original — keep the correct version
-3. Delete the conflict file
-4. Check service state: `systemd_control service=bloom-syncthing action=status`
-5. Check Syncthing UI at `http://localhost:8384` if available
-6. Prevention: avoid editing same file on multiple devices simultaneously
+1. Check service state: `systemd_control service=bloom-dufs action=status`
+2. Check logs: `container_logs service=bloom-dufs lines=100`
+3. Verify port is listening: `curl -s http://localhost:5000/`
+4. Common causes:
+   - Container not running → restart: `systemd_control service=bloom-dufs action=restart`
+   - Port conflict → check for other services on port 5000
+   - Bind mount issue → verify home directory is accessible inside container
+5. Prevention: check `system_health` regularly for service status
 
 ## Pi Startup Issues
 
@@ -82,6 +84,6 @@ Use `audit_review` to inspect recent tool actions when you need to reconstruct w
    - Container images: `podman image prune` to remove unused
    - Journal logs: `sudo journalctl --vacuum-size=500M`
    - Home directory: check for large files in `$HOME`
-   - Whisper models: check `/var/home/bloom/.local/share/whisper/`
+   - Lemonade models: check `/var/home/bloom/.local/share/lemonade/`
 3. For /var partition: focus on container images and logs
 4. For /home partition: focus on user content and downloaded media

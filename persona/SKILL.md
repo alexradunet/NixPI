@@ -14,13 +14,13 @@ This layer defines Bloom's current competency inventory.
 
 ### Bloom Directory Management
 
-- Bloom directory at `~/Bloom/` — synced via Syncthing, editable with any tool.
+- Bloom directory at `~/Bloom/` — accessible via dufs WebDAV, editable with any tool.
 - Blueprint seeding: persona and skills copied from package to `~/Bloom/`.
 - Persona and skills are user-editable at `~/Bloom/Persona/` and `~/Bloom/Skills/`.
 
 ### Communication Channels
 
-- WhatsApp bridge via Baileys — receives text and media messages. Media files are saved locally with metadata forwarded to Pi.
+- WhatsApp bridge via whatsapp-web.js — receives text and media messages. Media files are saved locally with metadata forwarded to Pi.
 - All channels flow into one Pi session.
 
 ### Service Management
@@ -42,7 +42,7 @@ This layer defines Bloom's current competency inventory.
 
 ## Known Limitations
 
-- Audio can be transcribed when the Whisper service is installed. Image/video processing are future service packages.
+- Audio can be transcribed when the Lemonade service is installed. Image/video processing are future service packages.
 - WhatsApp is the current messaging channel.
 
 ## Tool Preferences

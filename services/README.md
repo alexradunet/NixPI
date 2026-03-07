@@ -23,7 +23,7 @@ Service packages are pushed to GHCR as OCI artifacts using `oras`:
 ghcr.io/pibloom/bloom-svc-{name}:<version>
 ```
 
-> `bloom-svc-{name}` is the OCI *artifact* name (the installable package containing quadlet files and SKILL.md). This is distinct from the container *image* referenced inside the quadlet — which may be upstream (e.g., `docker.io/fedirz/faster-whisper-server`) or custom (e.g., `ghcr.io/<owner>/bloom-whatsapp`).
+> `bloom-svc-{name}` is the OCI *artifact* name (the installable package containing quadlet files and SKILL.md). This is distinct from the container *image* referenced inside the quadlet — which may be upstream (e.g., `ghcr.io/lemonade-sdk/lemonade-server`) or custom (e.g., `ghcr.io/<owner>/bloom-whatsapp`).
 >
 > Use immutable semver tags for installs (e.g., `0.1.0`). Treat `latest` as development-only.
 
@@ -66,7 +66,7 @@ Reference packages are included at:
 |------|---------|-------|
 | `services/examples/demo-api/` | Standard service (`PublishPort`) | Basic non-socket service package layout |
 | `services/examples/demo-socket-echo/` | Socket-activated (`.socket` + `.container`) | Reference wiring for on-demand activation |
-| `services/whisper/quadlet/` | Production HTTP service (`PublishPort`) | Real in-tree implementation |
+| `services/lemonade/quadlet/` | Production HTTP service (`PublishPort`) | Real in-tree implementation |
 
 Use these as templates for frontmatter, Quadlet layout, health checks, and local install commands.
 
@@ -117,10 +117,10 @@ Each artifact carries standard annotations:
 
 | Service | Category | Port | Description |
 |---------|----------|------|-------------|
-| `whisper` | media | 9000 | Speech-to-text transcription via faster-whisper |
-| `whatsapp` | communication | — | WhatsApp messaging bridge via Baileys |
+| `lemonade` | ai | 8000 | Local LLM + STT via Lemonade |
+| `whatsapp` | communication | — | WhatsApp messaging bridge via whatsapp-web.js |
 | `netbird` | networking | — | Secure mesh VPN via NetBird |
-| `syncthing` | sync | 8384 | Peer-to-peer sync for the home directory |
+| `dufs` | sync | 5000 | WebDAV file server via dufs |
 
 ## Service Catalog
 

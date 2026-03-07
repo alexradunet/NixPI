@@ -147,7 +147,7 @@ services/{name}/
 
 | Port | Service |
 |------|---------|
-| 9000 | Whisper (speech-to-text) |
+| 8000 | Lemonade (local LLM + STT) |
 
 ### SKILL.md Format
 
@@ -179,7 +179,7 @@ Reference example packages:
 - `services/examples/demo-api/`
 - `services/examples/demo-socket-echo/`
 - `services/examples/README.md` (copy/paste quickstart commands)
-- `services/whisper/quadlet/` (production HTTP service reference)
+- `services/lemonade/quadlet/` (production HTTP service reference)
 
 ### Tool-Driven Lifecycle (Recommended)
 

@@ -12,7 +12,7 @@ Bloom is a **Pi package** — a bundle of extensions, skills, and services that 
 
 - **Remembers** — flat-file object store with YAML frontmatter in `~/Bloom/Objects/`
 - **Manages its own OS** — bootc updates, rollbacks, container lifecycle, systemd services
-- **Communicates** — channel bridges (WhatsApp via Baileys) over Unix socket IPC
+- **Communicates** — channel bridges (WhatsApp via whatsapp-web.js) over Unix socket IPC
 - **Evolves** — structured self-improvement workflow, persona that grows from Seed to Bloom
 - **Stays private** — no cloud, no telemetry. Your thoughts never leave your box.
 
@@ -77,10 +77,10 @@ Modular capabilities packaged as OCI artifacts, installed via `oras` from GHCR:
 
 | Service | What |
 |---------|------|
-| `bloom-svc-whisper` | Speech-to-text (faster-whisper) |
-| `bloom-svc-whatsapp` | WhatsApp bridge (Baileys) |
+| `bloom-svc-lemonade` | Local LLM + STT (Lemonade) |
+| `bloom-svc-whatsapp` | WhatsApp bridge (whatsapp-web.js) |
 | `bloom-svc-netbird` | Mesh VPN |
-| `bloom-svc-syncthing` | P2P home sync |
+| `bloom-svc-dufs` | WebDAV file server |
 
 ### 🪞 Persona
 
@@ -93,7 +93,7 @@ Bloom has an [OpenPersona](persona/) 4-layer identity seeded to `~/Bloom/Persona
 
 ### 🌿 Bloom Directory
 
-The Bloom directory (`~/Bloom/`) holds Bloom's configuration and data, synced across devices via Syncthing:
+The Bloom directory (`~/Bloom/`) holds Bloom's configuration and data, accessible across devices via dufs WebDAV:
 
 ```
 ~/Bloom/
@@ -174,8 +174,8 @@ Once the OS is running, the `first-boot` skill walks through setup:
 1. Configure LLM provider + API key
 2. GitHub authentication
 3. Device git identity
-4. Syncthing setup (core sync service)
-5. Optional services (WhatsApp, Whisper, NetBird)
+4. dufs setup (WebDAV file server)
+5. Optional services (WhatsApp, Lemonade, NetBird)
 
 See [docs/pibloom-setup.md](docs/pibloom-setup.md) for the full guide.
 

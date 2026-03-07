@@ -52,19 +52,19 @@ Preferred sequence:
 If fork URL is already known, pass `fork_url` explicitly.
 If not, `bloom_repo_configure` tries to create/attach one via `gh` when authenticated.
 
-### 4) Syncthing Setup (tool-first)
+### 4) dufs Setup (tool-first)
 
-- Install service package: `service_install(name="syncthing", version="0.1.0")`
-- Validate service: `service_test(name="syncthing")`
-- Direct user to `http://localhost:8384`
-- Help add/share `$HOME` (mapped in container as bind mount)
+- Install service package: `service_install(name="dufs", version="0.1.0")`
+- Validate service: `service_test(name="dufs")`
+- Direct user to `http://localhost:5000`
+- dufs serves `$HOME` over WebDAV (mapped in container as bind mount)
 
 If Bloom runs inside a VM, `localhost` in the guest may not be reachable from the host machine.
 Offer one of these access paths:
 
-- QEMU host-forwarded port (recommended in dev): host `localhost:8384` → guest `8384`
-- SSH tunnel: `ssh -L 8384:localhost:8384 -p 2222 bloom@localhost`
-- Guest IP direct access on LAN if routing allows (`http://<guest-ip>:8384`)
+- QEMU host-forwarded port (recommended in dev): host `localhost:5000` → guest `5000`
+- SSH tunnel: `ssh -L 5000:localhost:5000 -p 2222 bloom@localhost`
+- Guest IP direct access on LAN if routing allows (`http://<guest-ip>:5000`)
 
 ### 5) Optional Service Packages (manifest-first)
 
@@ -76,15 +76,15 @@ Prefer declarative setup:
 
 Suggested optional profiles:
 
-- **sync-only**: syncthing
-- **communication**: whatsapp + whisper
-- **remote-access**: netbird (+ syncthing recommended)
+- **sync-only**: dufs
+- **communication**: whatsapp + lemonade
+- **remote-access**: netbird (+ dufs recommended)
 
 Example declaration flow:
 
-1. `manifest_set_service(name="syncthing", image="docker.io/syncthing/syncthing@sha256:...", version="0.1.0", enabled=true)`
-2. `manifest_set_service(name="whatsapp", image="ghcr.io/pibloom/bloom-whatsapp:0.1.0", version="0.1.0", enabled=true)`
-3. `manifest_set_service(name="whisper", image="docker.io/fedirz/faster-whisper-server@sha256:...", version="0.1.0", enabled=true)`
+1. `manifest_set_service(name="dufs", image="docker.io/sigoden/dufs:latest", version="0.1.0", enabled=true)`
+2. `manifest_set_service(name="whatsapp", image="ghcr.io/pibloom/bloom-whatsapp:0.2.0", version="0.2.0", enabled=true)`
+3. `manifest_set_service(name="lemonade", image="ghcr.io/lemonade-sdk/lemonade-server:latest", version="0.1.0", enabled=true)`
 4. `manifest_set_service(name="netbird", image="docker.io/netbirdio/netbird@sha256:...", version="0.1.0", enabled=true)`
 5. `manifest_apply(install_missing=true)`
 
