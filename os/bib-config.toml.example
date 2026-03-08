@@ -7,7 +7,7 @@
 # Or configure after boot via: nmtui
 
 [customizations]
-hostname = "bloom"
+hostname = "pibloom"
 
 [[customizations.user]]
 name = "pi"

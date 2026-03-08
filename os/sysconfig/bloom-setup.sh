@@ -605,7 +605,7 @@ finish() {
 	# Create the marker file so the wizard doesn't run again
 	touch /bloom-setup-done
 
-	# Install getty autologin drop-in so bloom auto-logs in on next boot
+	# Install getty autologin drop-in so pi auto-logs in on next boot
 	mkdir -p /etc/systemd/system/getty@tty1.service.d
 	cp /usr/local/share/bloom/os/sysconfig/getty-autologin.conf \
 		/etc/systemd/system/getty@tty1.service.d/autologin.conf

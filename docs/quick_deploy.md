@@ -61,7 +61,7 @@ just vm-serial
 
 Default user comes from `os/bib-config.toml`:
 
-- username: `bloom`
+- username: `pi`
 - SSH key auth: from `customizations.user.key`
 
 If you want password auth, configure it explicitly in your bootc-image-builder config and rebuild.
