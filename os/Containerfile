@@ -28,13 +28,12 @@ RUN dnf install -y \
     qemu-system-x86 \
     edk2-ovmf \
     chromium \
-    xpra \
     xorg-x11-server-Xvfb \
     xdotool \
     scrot \
     at-spi2-core \
     python3-pyatspi \
-    alacritty \
+    tmux \
     openssh-server \
     firewalld \
     nodejs \
@@ -91,7 +90,7 @@ RUN mkdir -p /usr/local/share/bloom/.pi/agent && \
 COPY os/sysconfig/bloom-bashrc /etc/skel/.bashrc
 COPY os/sysconfig/bloom-bash_profile /etc/skel/.bash_profile
 
-# Display stack: Xpra + Xvfb (agent-native, headless-first)
+# Display stack: Xvfb headless framebuffer for AI computer use (no remote viewer)
 COPY os/sysconfig/bloom-display.service /usr/lib/systemd/system/bloom-display.service
 RUN systemctl enable bloom-display.service
 
