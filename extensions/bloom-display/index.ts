@@ -2,7 +2,7 @@
  * bloom-display -- AI agent computer use: screenshots, input injection, accessibility tree, window management.
  *
  * @tools display
- * @see {@link ../../docs/plans/2026-03-08-xvfb-xpra-display-stack-design.md} Design doc
+ * @see {@link ../../docs/plans/2026-03-08-drop-xpra-headless-display.md} Design doc
  */
 import { StringEnum } from "@mariozechner/pi-ai";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";

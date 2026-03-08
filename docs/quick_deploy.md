@@ -110,21 +110,20 @@ Replace `/dev/sdX` with the target disk.
 
 ---
 
-## Remote desktop (Xpra HTML5)
+## Remote access (SSH + tmux)
 
-Bloom OS boots to `graphical.target` with a virtual display (Xvfb :99) managed by Xpra.
-The Xpra HTML5 client is available on port 14500.
+Bloom OS is accessed via SSH. tmux is pre-installed for persistent terminal sessions.
 
 ```bash
-# Connect via browser — open in any web browser
-http://<netbird-ip>:14500
+# SSH into your Bloom (replace with your NetBird IP or hostname)
+ssh bloom@<netbird-ip>
 
-# Or connect via native Xpra client
-xpra attach tcp://<netbird-ip>:14500
+# Start or attach to a persistent tmux session
+tmux new-session -A -s main
 ```
 
-The display runs headless — no physical monitor needed. If a monitor is connected,
-getty auto-logs in and Pi starts in the terminal.
+Pi runs in the terminal. The headless Xvfb display (:99) is available for AI computer use
+(screenshots, browser automation, GUI apps) — no remote viewer is needed.
 
 ## 🔗 Related
 
