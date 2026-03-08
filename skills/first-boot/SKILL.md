@@ -1,6 +1,6 @@
 ---
 name: first-boot
-description: Guide the user through one-time Bloom system setup on a fresh install
+description: Guides first-time setup of a Bloom OS installation
 ---
 
 # First-Boot Setup
@@ -19,19 +19,31 @@ If `~/.bloom/.setup-complete` exists, setup is already complete. Skip unless use
 - Clarify tool-vs-shell: `service_install`, `bloom_repo`, etc. are Pi tools (not bash commands)
 - On fresh Bloom OS, user `bloom` has passwordless `sudo` for bootstrap tasks.
 
-## Pre-Requisite: NetBird
-
-NetBird mesh networking is configured before Pi starts (during the login greeting). If the user skipped it, they can authenticate later:
-
-```bash
-sudo netbird up
-```
-
-Verify with `sudo netbird status` -- look for "Connected".
-
 ## Setup Steps
 
-### 1) Git Identity
+### 1) NetBird Mesh Networking
+
+Check connection status:
+
+```bash
+sudo netbird status
+```
+
+If not connected, ask the user for their NetBird setup key (from https://app.netbird.io > Setup Keys):
+
+```bash
+sudo netbird up --setup-key "<key>"
+```
+
+Poll until connected:
+
+```bash
+sudo netbird status
+```
+
+Look for "Connected" in the output. The user can skip this step and connect later with `sudo netbird up`.
+
+### 2) Git Identity
 
 Ask the user for their name and email, then set globally:
 
@@ -40,56 +52,43 @@ git config --global user.name "<name>"
 git config --global user.email "<email>"
 ```
 
-Suggest sensible defaults (e.g., hostname-based) but let the user choose.
-
-### 2) dufs Setup
+### 3) dufs Setup
 
 - Install service package: `service_install(name="dufs", version="0.1.0")`
 - Validate service: `service_test(name="dufs")`
 - The WebDAV password is the channel token in `~/.config/bloom/channel-tokens/dufs.env` (BLOOM_CHANNEL_TOKEN)
 - Direct user to `http://localhost:5000` (username: `admin`)
-- dufs serves `$HOME` over WebDAV (mapped in container as bind mount)
+- dufs serves `$HOME` over WebDAV
 
-If Bloom runs inside a VM, `localhost` in the guest may not be reachable from the host machine.
-Offer one of these access paths:
-
-- QEMU host-forwarded port (recommended in dev): host `localhost:5000` -> guest `5000`
+If Bloom runs inside a VM, offer access paths:
+- QEMU port forward: host `localhost:5000` -> guest `5000`
 - SSH tunnel: `ssh -L 5000:localhost:5000 -p 2222 bloom@localhost`
-- Guest IP direct access on LAN if routing allows (`http://<guest-ip>:5000`)
 
-### 3) Optional Services
-
-#### LLM (local language model)
-
-- Install service package: `service_install(name="llm", version="0.1.0")`
-- Download a model before starting: the bloom-llm container needs a GGUF model file in the `bloom-llm-models` volume
-- Validate: `service_test(name="llm")`
-- API available at `http://localhost:8080` (OpenAI-compatible `/v1` endpoints)
-
-#### STT (speech-to-text, optional)
-
-- Install service package: `service_install(name="stt", version="0.1.0")`
-- Validate: `service_test(name="stt")`
-- API available at `http://localhost:8081`
+### 4) Optional Services
 
 #### WhatsApp Bridge
 
-- Install service package: `service_install(name="whatsapp")`
-- Watch logs for QR code: `journalctl --user -u bloom-whatsapp -f`
-- Scan QR with WhatsApp mobile app (Settings > Linked Devices)
+- Install: `service_install(name="whatsapp")`
+  - This auto-installs STT (whisper.cpp) as a dependency
+- Pair: `service_pair(name="whatsapp")` — displays QR code inline, scan with WhatsApp mobile app
 - Verify: `service_test(name="whatsapp")`
 
-The WhatsApp bridge needs the bloom-channels socket for IPC. If bloom-channels is not running, WhatsApp will reconnect automatically when it becomes available.
+#### Signal Bridge
 
-#### Signal Bridge (optional)
-
-- Install service package: `service_install(name="signal")`
-- Link device: `journalctl --user -u bloom-signal -f` and follow linking instructions
+- Ask the user for their phone number (E.164 format, e.g. +40749588297)
+- Create config: write `SIGNAL_ACCOUNT=+<number>` to `~/.config/bloom/signal.env`
+- Install: `service_install(name="signal")`
+  - This auto-installs STT (whisper.cpp) as a dependency
+- Pair: `service_pair(name="signal")` — displays QR code inline, scan with Signal mobile app (Settings > Linked Devices > Link New Device)
 - Verify: `service_test(name="signal")`
 
-The Signal bridge also connects via the bloom-channels socket.
+#### LLM (optional, local language model)
 
-### 4) Mark Setup Complete
+- Install: `service_install(name="llm", version="0.1.0")`
+- Note: requires a GGUF model file in the `bloom-llm-models` volume
+- API at `http://localhost:8080` (OpenAI-compatible)
+
+### 5) Mark Setup Complete
 
 ```bash
 touch ~/.bloom/.setup-complete
@@ -99,17 +98,3 @@ touch ~/.bloom/.setup-complete
 
 - Revisit skipped steps on demand
 - Confirm each critical step before moving on
-
-## Developer Mode (optional, not part of first-boot)
-
-For contributors who want to submit PRs back to the Bloom repo, install `gh` and configure the repo:
-
-```bash
-sudo dnf install gh
-gh auth login
-```
-
-Then use `bloom_repo` to set up fork-based PR flow:
-1. `bloom_repo(action="configure", repo_url="https://github.com/{owner}/pi-bloom.git")`
-2. `bloom_repo(action="status")` (verify PR-ready state)
-3. `bloom_repo(action="sync", branch="main")`
