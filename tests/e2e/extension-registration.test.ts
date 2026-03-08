@@ -29,7 +29,7 @@ function eventNames(api: MockExtensionAPI): string[] {
 // ---------------------------------------------------------------------------
 describe("bloom-audit registration", () => {
 	it("registers expected tools and events", async () => {
-		const mod = await import("../../extensions/bloom-audit.js");
+		const mod = await import("../../extensions/bloom-audit/index.js");
 		const api = createMockExtensionAPI();
 		mod.default(api as never);
 

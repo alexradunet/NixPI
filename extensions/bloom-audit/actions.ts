@@ -1,0 +1,97 @@
+/**
+ * Handler / business logic for bloom-audit.
+ */
+import { appendFileSync, existsSync, mkdirSync, readdirSync, readFileSync, unlinkSync } from "node:fs";
+import { join } from "node:path";
+import { dayStamp, summarizeInput } from "../../lib/audit.js";
+import { getBloomDir } from "../../lib/filesystem.js";
+import { createLogger, truncate } from "../../lib/shared.js";
+import type { AuditEntry } from "./types.js";
+
+const log = createLogger("bloom-audit");
+
+const RETENTION_DAYS = 30;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** Get the audit directory path. */
+export function auditDir(): string {
+	return join(getBloomDir(), "audit");
+}
+
+/** Ensure the audit directory exists and return its path. */
+export function ensureAuditDir(): string {
+	const dir = auditDir();
+	mkdirSync(dir, { recursive: true });
+	return dir;
+}
+
+/** Append an audit entry to today's JSONL file. */
+export function appendAudit(entry: AuditEntry): void {
+	try {
+		const file = join(ensureAuditDir(), `${dayStamp(new Date())}.jsonl`);
+		appendFileSync(file, `${JSON.stringify(entry)}\n`, "utf-8");
+	} catch (err) {
+		log.error("failed to append audit entry", { error: (err as Error).message });
+	}
+}
+
+/** Remove audit files older than RETENTION_DAYS. */
+export function rotateAudit(now = new Date()): void {
+	const dir = ensureAuditDir();
+	const cutoff = now.getTime() - RETENTION_DAYS * DAY_MS;
+
+	for (const name of readdirSync(dir)) {
+		if (!/^\d{4}-\d{2}-\d{2}\.jsonl$/.test(name)) continue;
+		const dayTs = Date.parse(`${name.slice(0, 10)}T00:00:00Z`);
+		if (Number.isNaN(dayTs)) continue;
+		if (dayTs < cutoff) {
+			try {
+				unlinkSync(join(dir, name));
+			} catch (err) {
+				log.warn("failed to remove old audit file", { file: name, error: (err as Error).message });
+			}
+		}
+	}
+}
+
+/** Read audit entries from the last N days. */
+export function readEntries(days: number): AuditEntry[] {
+	const dir = auditDir();
+	if (!existsSync(dir)) return [];
+
+	const entries: AuditEntry[] = [];
+	for (let i = days - 1; i >= 0; i--) {
+		const date = new Date(Date.now() - i * DAY_MS);
+		const file = join(dir, `${dayStamp(date)}.jsonl`);
+		if (!existsSync(file)) continue;
+
+		try {
+			const lines = readFileSync(file, "utf-8").split("\n").filter(Boolean);
+			for (const line of lines) {
+				try {
+					entries.push(JSON.parse(line) as AuditEntry);
+				} catch {
+					// Skip malformed lines.
+				}
+			}
+		} catch (err) {
+			log.warn("failed to read audit file", { file, error: (err as Error).message });
+		}
+	}
+
+	return entries;
+}
+
+/** Format audit entries for display. */
+export function formatEntries(entries: AuditEntry[], includeInputs: boolean): string {
+	const lines: string[] = [];
+	for (const e of entries) {
+		const status = e.event === "tool_result" ? (e.isError ? "error" : "ok") : "call";
+		lines.push(`- ${e.ts} ${e.tool} [${status}]`);
+		if (includeInputs && e.event === "tool_call") {
+			const input = summarizeInput(e.input);
+			if (input) lines.push(`  input: ${input}`);
+		}
+	}
+	return truncate(lines.join("\n"));
+}
