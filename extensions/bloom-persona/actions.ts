@@ -80,6 +80,18 @@ export function loadContext(): BloomContext | null {
 	}
 }
 
+/** Check if an OS update is available by reading the update-status file. */
+export function checkUpdateAvailable(): boolean {
+	try {
+		const statusFile = join(os.homedir(), ".bloom", "update-status.json");
+		if (!existsSync(statusFile)) return false;
+		const status = JSON.parse(readFileSync(statusFile, "utf-8"));
+		return status.available === true;
+	} catch {
+		return false;
+	}
+}
+
 /** Load the 4-layer persona from Bloom dir or default package persona. */
 export function loadPersona(): string {
 	const bloomDir = getBloomDir();

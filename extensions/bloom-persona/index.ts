@@ -4,11 +4,15 @@
  * @hooks session_start, before_agent_start, tool_call, session_before_compact
  * @see {@link ../../AGENTS.md#bloom-persona} Extension reference
  */
-import { existsSync, readFileSync } from "node:fs";
-import os from "node:os";
-import { join } from "node:path";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
-import { loadContext, loadGuardrails, loadPersona, normalizeCommand, saveContext } from "./actions.js";
+import {
+	checkUpdateAvailable,
+	loadContext,
+	loadGuardrails,
+	loadPersona,
+	normalizeCommand,
+	saveContext,
+} from "./actions.js";
 
 export { normalizeCommand } from "./actions.js";
 
@@ -78,16 +82,7 @@ export default function (pi: ExtensionAPI) {
 			}
 		}
 
-		let updateAvailable = false;
-		try {
-			const statusFile = join(os.homedir(), ".bloom", "update-status.json");
-			if (existsSync(statusFile)) {
-				const status = JSON.parse(readFileSync(statusFile, "utf-8"));
-				updateAvailable = status.available === true;
-			}
-		} catch {
-			// Ignore
-		}
+		const updateAvailable = checkUpdateAvailable();
 
 		saveContext({
 			savedAt: new Date().toISOString(),
