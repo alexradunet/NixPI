@@ -2,11 +2,11 @@
 vt = 1
 
 [default_session]
-command = "tuigreet --time --remember --remember-session --cmd sway"
+command = "tuigreet --time --remember --remember-session --cmd 'xpra attach :99'"
 user = "greetd"
 
-# Start Bloom's sway session automatically at boot so remote VNC is available
+# Auto-attach to Xpra display on boot so physical monitor shows the session
 # immediately. Remove this section if you prefer interactive login.
 [initial_session]
-command = "sway"
+command = "xpra attach :99"
 user = "bloom"
