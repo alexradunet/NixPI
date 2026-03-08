@@ -16,7 +16,7 @@ PublishPort=127.0.0.1:18801:18801
 # Auth state persists across restarts
 Volume=bloom-whatsapp-auth:/data/auth
 
-# Media files shared with host (lemonade reads these)
+# Media files shared with host
 Volume=/var/lib/bloom/media:/media/bloom
 
 # Channel bridge Unix socket
