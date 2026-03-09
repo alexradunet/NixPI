@@ -60,16 +60,20 @@ RUN systemctl enable netbird
 COPY os/sysconfig/bloom-sysusers.conf /usr/lib/sysusers.d/bloom.conf
 RUN systemd-sysusers /usr/lib/sysusers.d/bloom.conf
 
-# Install llama.cpp server binary (pre-built release)
-# TODO: Pin to specific release version and verify checksum
-ARG LLAMA_CPP_VERSION=b5390
-RUN mkdir -p /tmp/llama && \
-    curl -L "https://github.com/ggerganov/llama.cpp/releases/download/${LLAMA_CPP_VERSION}/llama-${LLAMA_CPP_VERSION}-bin-ubuntu-x64.zip" \
-    -o /tmp/llama/llama.zip && \
-    cd /tmp/llama && unzip llama.zip && \
-    cp build/bin/llama-server /usr/local/bin/llama-server && \
-    chmod +x /usr/local/bin/llama-server && \
-    rm -rf /tmp/llama
+# llama.cpp server (built from source — Fedora RPM only ships libraries, not the server binary)
+RUN dnf install -y cmake gcc-c++ && \
+    git clone --depth 1 --branch b8198 https://github.com/ggml-org/llama.cpp.git /tmp/llama-cpp && \
+    cmake -S /tmp/llama-cpp -B /tmp/llama-cpp/build \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DGGML_NATIVE=OFF \
+        -DLLAMA_CURL=OFF \
+        -DBUILD_SHARED_LIBS=OFF && \
+    cmake --build /tmp/llama-cpp/build --target llama-server -j$(nproc) && \
+    cp /tmp/llama-cpp/build/bin/llama-server /usr/local/bin/llama-server && \
+    rm -rf /tmp/llama-cpp && \
+    dnf remove -y cmake gcc-c++ && \
+    dnf clean all && \
+    rm -rf /var/cache/libdnf5 /var/lib/dnf /var/log/dnf5.log /var/log/dnf.log
 
 # Download Qwen3.5-4B GGUF model
 RUN mkdir -p /usr/local/share/bloom/models && \
@@ -100,13 +104,17 @@ RUN HOME=/tmp npm install -g --cache /tmp/npm-cache \
     typescript@${TYPESCRIPT_VERSION} \
     && rm -rf /tmp/npm-cache /var/roothome/.npm /root/.npm
 
-# Install Bloom Pi package (install all deps, build TypeScript, then prune dev deps)
-COPY . /usr/local/share/bloom/
+# Install Bloom Pi package deps first (cached unless package.json changes)
+COPY package.json package-lock.json /usr/local/share/bloom/
 RUN cd /usr/local/share/bloom && \
     HOME=/tmp npm install --cache /tmp/npm-cache && \
-    npm run build && \
-    npm prune --omit=dev && \
     rm -rf /tmp/npm-cache /var/roothome/.npm /root/.npm
+
+# Copy source and build TypeScript (re-runs on any source change, but deps are cached)
+COPY . /usr/local/share/bloom/
+RUN cd /usr/local/share/bloom && \
+    npm run build && \
+    npm prune --omit=dev
 
 RUN chmod +x /usr/local/share/bloom/os/scripts/ui-tree.py
 
@@ -141,9 +149,11 @@ RUN chmod +x /usr/local/bin/bloom-greeting.sh
 # Enable SSH for remote access
 RUN systemctl enable sshd.service
 
-# Auto-login on VT1 — Pi handles setup and authentication
-RUN mkdir -p /usr/lib/systemd/system/getty@tty1.service.d
+# Auto-login on VT1 and serial console — Pi handles setup and authentication
+RUN mkdir -p /usr/lib/systemd/system/getty@tty1.service.d \
+            /usr/lib/systemd/system/serial-getty@ttyS0.service.d
 COPY os/sysconfig/getty-autologin.conf /usr/lib/systemd/system/getty@tty1.service.d/autologin.conf
+COPY os/sysconfig/getty-autologin.conf /usr/lib/systemd/system/serial-getty@ttyS0.service.d/autologin.conf
 
 # Nginx reverse proxy — route subdomains to backend services
 COPY os/sysconfig/bloom-nginx.conf /etc/nginx/conf.d/bloom.conf

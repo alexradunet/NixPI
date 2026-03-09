@@ -10,6 +10,7 @@ docs
 *.md
 !persona/**/*.md
 !skills/**/*.md
+os/output
 
 # Keep OS build files in context explicitly (for CI/podman)
 !os/Containerfile

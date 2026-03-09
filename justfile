@@ -47,7 +47,7 @@ vm:
 		-machine q35 \
 		-cpu host \
 		-enable-kvm \
-		-m 4G \
+		-m 16G \
 		-smp 2 \
 		-drive if=pflash,format=raw,readonly=on,file={{ ovmf }} \
 		-drive if=pflash,format=raw,snapshot=on,file={{ ovmf_vars }} \

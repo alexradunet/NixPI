@@ -1,6 +1,21 @@
-# Start Pi on interactive login
-if [ -t 0 ] && [ -z "$PI_SESSION" ]; then
+# Source .bashrc for env vars (BLOOM_DIR, DISPLAY, PATH, etc.)
+[ -f ~/.bashrc ] && . ~/.bashrc
+
+# Start Pi on interactive login (only one instance — first TTY wins)
+if [ -t 0 ] && [ -z "$PI_SESSION" ] && ! pgrep -u "$USER" -x pi >/dev/null 2>&1; then
   export PI_SESSION=1
   /usr/local/bin/bloom-greeting.sh
-  exec pi
+  # First boot: use local LLM and auto-speak to trigger setup wizard
+  if [ ! -f "$HOME/.bloom/.setup-complete" ]; then
+    printf 'Waiting for local LLM...'
+    for i in $(seq 1 60); do
+      curl -sf http://127.0.0.1:8080/health >/dev/null 2>&1 && break
+      printf '.'
+      sleep 1
+    done
+    printf '\n'
+    exec pi --provider bloom-local --model qwen3.5-4b "hello"
+  else
+    exec pi
+  fi
 fi

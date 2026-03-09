@@ -1,7 +1,7 @@
 /**
  * Handler / business logic for bloom-setup.
  */
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import { dirname, join } from "node:path";
 import {
@@ -60,23 +60,31 @@ export function loadState(): SetupState {
 			const raw = readFileSync(SETUP_STATE_PATH, "utf-8");
 			return JSON.parse(raw) as SetupState;
 		} catch {
-			log.warn("corrupt setup-state.json, creating fresh state");
+			log.warn("corrupt setup-state.json, backing up and creating fresh state");
+			const backup = `${SETUP_STATE_PATH}.corrupt-${Date.now()}`;
+			try {
+				renameSync(SETUP_STATE_PATH, backup);
+			} catch {
+				// best-effort backup
+			}
 		}
 	}
 	return createInitialState();
 }
 
-/** Save setup state to disk. */
+/** Save setup state to disk (atomic write: temp file + rename). */
 export function saveState(state: SetupState): void {
 	const dir = dirname(SETUP_STATE_PATH);
-	if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
-	writeFileSync(SETUP_STATE_PATH, JSON.stringify(state, null, 2), "utf-8");
+	if (!existsSync(dir)) mkdirSync(dir, { recursive: true, mode: 0o700 });
+	const tmp = `${SETUP_STATE_PATH}.tmp`;
+	writeFileSync(tmp, JSON.stringify(state, null, 2), "utf-8");
+	renameSync(tmp, SETUP_STATE_PATH);
 }
 
 /** Mark setup as complete by touching the sentinel file. */
 export function touchSetupComplete(): void {
 	const dir = dirname(SETUP_COMPLETE_PATH);
-	if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+	if (!existsSync(dir)) mkdirSync(dir, { recursive: true, mode: 0o700 });
 	writeFileSync(SETUP_COMPLETE_PATH, new Date().toISOString(), "utf-8");
 }
 

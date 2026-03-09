@@ -13,7 +13,8 @@ ExecStart=/usr/local/bin/llama-server \
     --port 8080 \
     --ctx-size 8192 \
     --threads 4 \
-    --no-mmap
+    --no-mmap \
+    --chat-template chatml
 Restart=on-failure
 RestartSec=5
 
