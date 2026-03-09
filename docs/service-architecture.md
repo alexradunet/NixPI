@@ -29,7 +29,7 @@ graph TD
 |-----------|----------|----------|------|
 | **Skill** | Pi needs knowledge or a procedure to follow | meal-planning, troubleshooting guides, API references | Zero — just a markdown file |
 | **Extension** | Pi needs to register commands, tools, or react to session events | bloom-channels (Unix socket server), bloom-objects (object store) | Low — TypeScript, runs in-process |
-| **Service** | A standalone process needs to run independently of Pi's session | LLM (llama.cpp), STT (whisper.cpp), Matrix homeserver (always-on), dufs (WebDAV) | Medium — systemd unit, resource allocation |
+| **Service** | A standalone process needs to run independently of Pi's session | Lemonade (unified local AI), Matrix homeserver (always-on), Element bridge (always-on), dufs (WebDAV) | Medium — systemd unit, resource allocation |
 
 **Always prefer the lighter option.** A skill that teaches Pi to call an existing API is better than an extension wrapping that API, which is better than a service re-implementing it.
 
@@ -47,8 +47,7 @@ graph TB
         end
 
         subgraph "Service Containers (Podman Quadlet)"
-            llm[bloom-llm<br/>llama.cpp :8080]
-            stt[bloom-stt<br/>whisper.cpp :8081]
+            lemonade[bloom-lemonade<br/>lemonade-server :8000]
             dufs[bloom-dufs<br/>WebDAV :5000]
             element[bloom-element<br/>Element Bridge]
             matrix[bloom-matrix<br/>Continuwuity Homeserver]
@@ -66,13 +65,12 @@ graph TB
 
     channels <-->|Unix socket JSON| element
     element <-->|Matrix CS API| matrix
-    llm -->|HTTP API| channels
+    lemonade -->|HTTP API| channels
     netbird <-->|WireGuard| netbird_cloud[NetBird Cloud]
     dufs -->|WebDAV| devices[Other Devices]
     systemd -->|manages| element
     systemd -->|manages| matrix
-    systemd -->|manages| llm
-    systemd -->|manages| stt
+    systemd -->|manages| lemonade
     systemd -->|manages| dufs
     systemd_sys -->|manages| netbird
 
@@ -98,12 +96,11 @@ graph TB
 
 ### 📦 The `bloom-` Prefix
 
-Bloom-managed services use a `bloom-` prefix on their **unit names** (e.g., `bloom-llm`, `bloom-element`). This is a management namespace — it does NOT mean the underlying image is Bloom-specific. NetBird runs as a system-level RPM service:
+Bloom-managed services use a `bloom-` prefix on their **unit names** (e.g., `bloom-lemonade`, `bloom-element`). This is a management namespace — it does NOT mean the underlying image is Bloom-specific. NetBird runs as a system-level RPM service:
 
 | Unit Name | Type | Image / Runtime | Bloom-specific? |
 |-----------|------|-----------------|-----------------|
-| `bloom-llm` | Podman Quadlet (user) | `ghcr.io/ggml-org/llama.cpp:server` | No — upstream image |
-| `bloom-stt` | Podman Quadlet (user) | `ghcr.io/ggml-org/whisper.cpp:main` | No — upstream image |
+| `bloom-lemonade` | Podman Quadlet (user) | `ghcr.io/lemonade-sdk/lemonade-server:v9.4.1` | No — upstream image |
 | `bloom-dufs` | Podman Quadlet (user) | `docker.io/sigoden/dufs:latest` | No — upstream image |
 | `bloom-element` | Podman Quadlet (user) | localhost/bloom-element:latest | Yes — custom bridge |
 | `bloom-matrix` | Podman Quadlet (user) | ghcr.io/girlbossceo/continuwuity:main | No — upstream image |
@@ -166,7 +163,7 @@ sequenceDiagram
     participant FS as /var/lib/bloom/media/
     participant Channels as bloom-channels
     participant Pi as Pi Agent
-    participant STT as bloom-stt
+    participant STT as bloom-lemonade
 
     Matrix->>Bridge: Incoming voice note (Matrix CS API)
     Bridge->>Bridge: downloadMedia()
@@ -175,7 +172,7 @@ sequenceDiagram
     Channels->>Pi: "[element: John] sent audio (15s, 24KB, audio/ogg). File: /var/lib/bloom/media/..."
 
     Note over Pi: Pi decides to transcribe
-    Pi->>STT: POST http://localhost:8081/inference<br/>file=@/var/lib/bloom/media/...ogg
+    Pi->>STT: POST http://localhost:8000/v1/audio/transcriptions<br/>file=@/var/lib/bloom/media/...ogg
     STT->>Pi: {"text": "transcribed content"}
     Pi->>Channels: Response text
     Channels->>Bridge: Unix socket JSON response
@@ -218,8 +215,7 @@ graph LR
     end
 
     subgraph "Container Volumes"
-        llm_models["bloom-llm-models<br/>LLM model cache"]
-        stt_models["bloom-stt-models<br/>STT model cache"]
+        lemonade_data["bloom-lemonade-data<br/>Lemonade model cache"]
         matrix_data["bloom-matrix-data<br/>Continuwuity homeserver data"]
         element_data["bloom-element-data<br/>Element bridge state"]
     end
@@ -229,15 +225,14 @@ graph LR
     end
 
     bloom_pkg --> config
-    config --> llm_models
+    config --> lemonade_data
 ```
 
 ## 📦 Available Services
 
 | Service | Category | Port | Type | Image / Runtime | Resources |
 |---------|----------|------|------|-----------------|-----------|
-| bloom-llm | ai | 8080 | Podman Quadlet | ghcr.io/ggml-org/llama.cpp:server | 2GB RAM |
-| bloom-stt | ai | 8081 | Podman Quadlet | ghcr.io/ggml-org/whisper.cpp:main | 512MB RAM |
+| bloom-lemonade | ai | 8000 | Podman Quadlet | ghcr.io/lemonade-sdk/lemonade-server:v9.4.1 | 4GB RAM |
 | bloom-dufs | sync | 5000 | Podman Quadlet | docker.io/sigoden/dufs:latest | 64MB RAM |
 | bloom-element | communication | — | Podman Quadlet | localhost/bloom-element:latest | 128MB RAM |
 | bloom-matrix | communication | 6167 | Podman Quadlet | ghcr.io/girlbossceo/continuwuity:main | 512MB RAM |

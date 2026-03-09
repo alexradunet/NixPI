@@ -1,22 +1,11 @@
 version: 1
 source_repo: https://github.com/pibloom/pi-bloom
 services:
-  llm:
+  lemonade:
     version: "0.1.0"
     category: ai
-    image: ghcr.io/ggml-org/llama.cpp:server
-    optional: true
-    preflight:
-      commands: [podman, systemctl]
-  stt:
-    version: "0.1.0"
-    category: ai
-    image: ghcr.io/ggml-org/whisper.cpp:main
-    optional: true
-    models:
-      - volume: bloom-stt-models
-        path: /models/ggml-base.en.bin
-        url: "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.en.bin"
+    image: ghcr.io/lemonade-sdk/lemonade-server:v9.4.1
+    optional: false
     preflight:
       commands: [podman, systemctl]
   matrix:
@@ -31,7 +20,7 @@ services:
     category: communication
     image: localhost/bloom-element:latest
     optional: false
-    depends: [matrix, stt]
+    depends: [matrix, lemonade]
     preflight:
       commands: [podman, systemctl]
   dufs:
@@ -39,5 +28,12 @@ services:
     category: sync
     image: docker.io/sigoden/dufs:latest
     optional: false
+    preflight:
+      commands: [podman, systemctl]
+  code-server:
+    version: "0.1.0"
+    category: development
+    image: localhost/bloom-code-server:latest
+    optional: true
     preflight:
       commands: [podman, systemctl]

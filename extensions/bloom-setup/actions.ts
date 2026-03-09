@@ -35,14 +35,14 @@ export const STEP_GUIDANCE: Record<StepName, string> = {
 		"Ask if the user wants a file server. Explain: dufs (WebDAV) lets you access your files from any device via a web browser or file manager. If yes, use service_install(name='dufs') to install it.",
 	channels:
 		"Ask: 'Would you like to connect a messaging channel? Matrix is the default — it gives you a private homeserver.' If yes, use service_install(name='matrix') then service_install(name='element') then service_pair(name='element') to get connection details.",
-	whisper:
-		"Ask: 'Want voice message support? This lets you send voice messages on Matrix and I'll transcribe them.' If yes, use service_install(name='stt') to enable whisper.",
+	local_ai:
+		'Ask: \'Want to enable optional local AI capabilities? These run on-device for free:\' List: (1) Voice transcription (Whisper-Small) — transcribe voice messages, (2) Image generation (SD-Turbo) — generate images about your state, (3) Voice responses (Kokoro-v1) — I can speak back to you. For each one the user wants, pull the model via the lemonade API: POST http://localhost:8000/api/v1/pull with body {"model": "<model-name>", "stream": true}. The LLM (Qwen3-4B) was already pulled during first-boot.',
 	llm_upgrade:
-		"Explain: 'You're running on a local model right now. For much better reasoning, let's connect a cloud AI provider.' Guide them step by step: (1) Run /login to sign in via OAuth to Anthropic, OpenAI, or Google. (2) Once logged in, run /model to pick a stronger model (recommend Claude Sonnet or GPT-4o). (3) If the user prefers API keys instead, help them set the environment variable. (4) If they want to stay local-only, that's fine — skip.",
+		"Explain: 'You're running on a local Qwen3-4B model via lemonade-server right now. For much better reasoning, let's connect a cloud AI provider.' Guide them step by step: (1) Run /login to sign in via OAuth to Anthropic, OpenAI, or Google. (2) Once logged in, run /model to pick a stronger model (recommend Claude Sonnet or GPT-4o). (3) If the user prefers API keys instead, help them set the environment variable. (4) If they want to stay local-only, that's fine — skip.",
 	git_identity:
 		"Ask for the user's name and email for git commits. Run: git config --global user.name '<name>' and git config --global user.email '<email>'. Confirm the settings.",
 	contributing:
-		"Explain how the user can contribute: (1) Create custom extensions in ~/Bloom/, (2) Build new services, (3) Submit PRs to the Bloom repo, (4) Share their personal bloom configuration. This is informational — no action needed.",
+		"Developer tools let you contribute to Bloom from this device:\n- **code-server**: Edit code in a web browser\n- **Local OS builds**: Rebuild and test the OS image without waiting for CI\n- **Upstream contributions**: Push skills, services, and extensions as PRs\n\nAsk the user: \"Would you like to enable developer tools? You can always enable them later with dev_enable.\"\n\nIf yes: Call dev_enable to activate dev mode, then guide through bloom_repo(action: 'configure') if not already done.\nIf no: Acknowledge and move on. Mention they can run dev_enable anytime.",
 	persona:
 		"Guide the user through personalizing their AI companion. Ask one question at a time: SOUL — 'What should I call you?', 'How formal or casual should I be?', 'Any values important to you?'. BODY — 'Short messages on mobile, longer on terminal?'. FACULTY — 'Step-by-step thinker or quick and direct?'. Update ~/Bloom/Persona/ files with their preferences. Fully skippable.",
 	test_message:

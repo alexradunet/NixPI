@@ -204,8 +204,7 @@ Canonical metadata for automation lives in `services/catalog.yaml`.
 
 | Service | Category | Port | Type |
 |---------|----------|------|------|
-| `bloom-llm` | ai | 8080 | Podman Quadlet |
-| `bloom-stt` | ai | 8081 | Podman Quadlet |
+| `bloom-lemonade` | ai | 8000 | Podman Quadlet |
 | `bloom-dufs` | sync | 5000 | Podman Quadlet |
 | `bloom-matrix` | communication | 6167 | Podman Quadlet |
 | `bloom-element` | communication | — | Podman Quadlet |
