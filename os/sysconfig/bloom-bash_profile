@@ -1,8 +1,9 @@
 # Source .bashrc for env vars (BLOOM_DIR, DISPLAY, PATH, etc.)
 [ -f ~/.bashrc ] && . ~/.bashrc
 
-# Start Pi on interactive login (only one instance — first TTY wins)
-if [ -t 0 ] && [ -z "$PI_SESSION" ] && ! pgrep -u "$USER" -x pi >/dev/null 2>&1; then
+# Start Pi on interactive login (only one instance — atomic mkdir lock)
+if [ -t 0 ] && [ -z "$PI_SESSION" ] && mkdir /tmp/.bloom-pi-session 2>/dev/null; then
+  trap 'rmdir /tmp/.bloom-pi-session 2>/dev/null' EXIT
   export PI_SESSION=1
   /usr/local/bin/bloom-greeting.sh
   # First boot: use local LLM and auto-speak to trigger setup wizard
