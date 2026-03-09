@@ -1,5 +1,5 @@
 /**
- * bloom-setup — First-boot setup wizard: guides user through 14 setup steps.
+ * bloom-setup — First-boot setup wizard: guides user through 13 setup steps.
  *
  * @tools setup_status, setup_advance, setup_reset
  * @hooks before_agent_start

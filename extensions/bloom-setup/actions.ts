@@ -38,7 +38,7 @@ export const STEP_GUIDANCE: Record<StepName, string> = {
 	whisper:
 		"Ask: 'Want voice message support? This lets you send voice messages on WhatsApp/Signal and I'll transcribe them.' If yes, use service_install(name='stt') to enable whisper.",
 	llm_upgrade:
-		"Explain: 'You're running on a local model right now. For much better reasoning, let's connect a cloud AI provider.' Guide them step by step: (1) Run /login to sign in via OAuth to Anthropic, OpenAI, or Google. (2) Once logged in, run /model to pick a stronger model (recommend Claude Sonnet or GPT-4o). (3) If the user prefers API keys instead, help them set the environment variable. (4) If they want to stay local-only, that's fine — skip.",
+		"Explain: 'You're running on a local model right now. For much better reasoning, let's connect a cloud AI provider.' Guide them through the options: (1) **Synthetic (free tier)**: Run /model and pick a Synthetic model — models like Kimi K2.5 and MiniMax M2.5 are available for free. They just need to sign up at synthetic.new and add their API key. (2) **Anthropic/OpenAI/Google**: Run /login to sign in via OAuth, then /model to pick Claude Sonnet, GPT-4o, etc. (3) **API keys**: If they prefer, help set ANTHROPIC_API_KEY or OPENAI_API_KEY in ~/.bashrc. (4) **Stay local**: The bundled Crow-4B keeps running — that's fine too.",
 	git_identity:
 		"Ask for the user's name and email for git commits. Run: git config --global user.name '<name>' and git config --global user.email '<email>'. Confirm the settings.",
 	contributing:
