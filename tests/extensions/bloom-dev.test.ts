@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
@@ -8,6 +8,7 @@ import {
 	isDevEnabled,
 } from "../../extensions/bloom-dev/actions.js";
 import type { DevBuildResult, DevStatus, DevTestResult } from "../../extensions/bloom-dev/types.js";
+import { createMockExtensionAPI, type MockExtensionAPI } from "../helpers/mock-extension-api.js";
 import { createTempGarden, type TempGarden } from "../helpers/temp-garden.js";
 
 let temp: TempGarden;
@@ -125,5 +126,73 @@ describe("bloom-dev sentinel management", () => {
 		const result = await handleDevStatus(temp.gardenDir);
 		expect(result.details.enabled).toBe(true);
 		expect(result.content[0].text).toContain("enabled");
+	});
+});
+
+// ---------------------------------------------------------------------------
+// Task 3: Extension registration
+// ---------------------------------------------------------------------------
+
+const ALL_TOOL_NAMES = [
+	"dev_enable",
+	"dev_disable",
+	"dev_status",
+	"dev_code_server",
+	"dev_build",
+	"dev_switch",
+	"dev_rollback",
+	"dev_loop",
+	"dev_test",
+	"dev_submit_pr",
+	"dev_push_skill",
+	"dev_push_service",
+	"dev_push_extension",
+	"dev_install_package",
+];
+
+describe("bloom-dev registration", () => {
+	let api: MockExtensionAPI;
+
+	beforeEach(async () => {
+		api = createMockExtensionAPI();
+		const mod = await import("../../extensions/bloom-dev/index.js");
+		mod.default(api as never);
+	});
+
+	function toolNames(): string[] {
+		return api._registeredTools.map((t) => t.name as string);
+	}
+
+	it("registers all expected tool names", () => {
+		expect(toolNames()).toEqual(ALL_TOOL_NAMES);
+	});
+
+	it(`registers exactly ${ALL_TOOL_NAMES.length} tools`, () => {
+		expect(api._registeredTools).toHaveLength(ALL_TOOL_NAMES.length);
+	});
+
+	it("each tool has name, label, description, parameters, and execute", () => {
+		for (const tool of api._registeredTools) {
+			expect(tool, `tool ${tool.name} missing 'name'`).toHaveProperty("name");
+			expect(tool, `tool ${tool.name} missing 'label'`).toHaveProperty("label");
+			expect(tool, `tool ${tool.name} missing 'description'`).toHaveProperty("description");
+			expect(tool, `tool ${tool.name} missing 'parameters'`).toHaveProperty("parameters");
+			expect(tool, `tool ${tool.name} missing 'execute'`).toHaveProperty("execute");
+			expect(typeof tool.execute, `tool ${tool.name} execute is not a function`).toBe("function");
+		}
+	});
+
+	it("each tool has a non-empty description and label", () => {
+		for (const tool of api._registeredTools) {
+			expect(typeof tool.description).toBe("string");
+			expect((tool.description as string).length).toBeGreaterThan(0);
+			expect(typeof tool.label).toBe("string");
+			expect((tool.label as string).length).toBeGreaterThan(0);
+		}
+	});
+
+	it("tool names are unique", () => {
+		const names = toolNames();
+		expect(new Set(names).size).toBe(names.length);
 	});
 });
