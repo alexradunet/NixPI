@@ -57,7 +57,8 @@ RUN printf '[netbird]\nname=netbird\nbaseurl=https://pkgs.netbird.io/yum/\nenabl
 RUN systemctl enable netbird
 
 # Create dedicated llm user for local model servers
-RUN useradd -r -s /sbin/nologin llm
+COPY os/sysconfig/bloom-sysusers.conf /usr/lib/sysusers.d/bloom.conf
+RUN systemd-sysusers /usr/lib/sysusers.d/bloom.conf
 
 # Install llama.cpp server binary (pre-built release)
 # TODO: Pin to specific release version and verify checksum
@@ -80,25 +81,7 @@ RUN mkdir -p /usr/local/share/bloom/models && \
 COPY os/sysconfig/bloom-llm-local.service /usr/lib/systemd/system/bloom-llm-local.service
 RUN systemctl enable bloom-llm-local.service
 
-# Build whisper.cpp server from source (no prebuilt Linux binaries available)
-ARG WHISPER_CPP_VERSION=v1.8.3
-RUN dnf install -y cmake gcc-c++ && \
-    git clone --depth 1 --branch ${WHISPER_CPP_VERSION} https://github.com/ggml-org/whisper.cpp.git /tmp/whisper && \
-    cd /tmp/whisper && cmake -B build -DWHISPER_BUILD_SERVER=ON && \
-    cmake --build build --config Release -j$(nproc) --target whisper-server && \
-    cp build/bin/whisper-server /usr/local/bin/whisper-server && \
-    chmod +x /usr/local/bin/whisper-server && \
-    rm -rf /tmp/whisper && \
-    dnf remove -y cmake gcc-c++ && dnf clean all && \
-    rm -rf /var/cache/libdnf5 /var/lib/dnf
-
-# Download whisper-small model
-RUN curl -L "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small.bin" \
-    -o /usr/local/share/bloom/models/whisper-small.bin && \
-    chown llm:llm /usr/local/share/bloom/models/whisper-small.bin
-
-# Whisper service (not enabled by default — started during setup if user opts in)
-COPY os/sysconfig/bloom-whisper-local.service /usr/lib/systemd/system/bloom-whisper-local.service
+# Whisper/STT: not baked in — installed on demand via service_install(name="stt") during setup
 
 # Wheel group sudo (Anaconda creates user at install time)
 COPY os/sysconfig/bloom-sudoers /etc/sudoers.d/10-bloom
