@@ -58,7 +58,6 @@ graph TD
 | `bloom-garden` | Bloom directory, blueprint seeding, skill discovery |
 | `bloom-channels` | Channel bridge Unix socket server |
 | `bloom-topics` | Topic management and session organization |
-| `bloom-display` | AI computer use: screenshots, input, accessibility tree, window management |
 | `bloom-dev` | On-device development: builds, testing, PR submission |
 | `bloom-setup` | First-boot setup wizard with guided steps |
 
@@ -79,7 +78,6 @@ Modular capabilities running as containers:
 
 | Service | What | Type |
 |---------|------|------|
-| `bloom-lemonade` | Unified local AI (LLM, STT, TTS, image gen) | Podman Quadlet |
 | `bloom-dufs` | WebDAV file server | Podman Quadlet |
 | `bloom-matrix` | Continuwuity Matrix homeserver | Podman Quadlet |
 | `bloom-element` | Matrix bot bridge (matrix-bot-sdk) | Podman Quadlet |
@@ -169,7 +167,7 @@ Once the OS is running, the `first-boot` skill walks through setup:
 2. GitHub authentication
 3. Device git identity
 4. dufs setup (WebDAV file server)
-5. Optional services (Matrix, Element, Lemonade, NetBird)
+5. Optional services (Matrix, Element, NetBird)
 
 See [docs/pibloom-setup.md](docs/pibloom-setup.md) for the full guide.
 
@@ -179,8 +177,7 @@ The Bloom OS image (`os/Containerfile`) is based on **Fedora bootc 42** and incl
 
 - **Runtime**: Node.js, Pi, Claude Code
 - **Containers**: Podman, Buildah, Skopeo, oras
-- **Desktop**: Sway (Wayland compositor), wayvnc + noVNC (browser remote desktop), tmux
-- **Dev tools**: git, gh, ripgrep, fd, bat, VS Code
+- **Tools**: tmux, git, gh, ripgrep, fd, bat, VS Code
 - **User**: `pi` with rootless Podman and passwordless sudo for first-boot
 
 Atomic updates via `bootc upgrade` with automatic rollback support.

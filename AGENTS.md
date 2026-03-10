@@ -154,20 +154,13 @@ On-device development tools: build, test, switch, rollback, PR submission.
 
 ### 🚀 bloom-setup
 
-First-boot setup wizard with 13 guided steps.
+First-boot setup wizard with guided steps.
 
 **Tools:** `setup_status`, `setup_advance`, `setup_reset`
-**Provider:** `bloom-local` (lemonade-server local AI)
 **Hooks:**
 - `before_agent_start` — Inject first-boot skill into system prompt when setup is incomplete
 
-### 🖥️ bloom-display
-
-AI agent computer use: screenshots, input injection, accessibility tree, and window management on the Sway Wayland compositor. Browser remote desktop via noVNC on port 6080.
-
-**Tools:** `display` (actions: screenshot, click, type, key, move, scroll, ui_tree, windows, launch, focus)
-
-## 🧩 All Registered Tools (44)
+## 🧩 All Registered Tools (43)
 
 Quick reference of every tool name available to Pi:
 
@@ -199,7 +192,6 @@ Quick reference of every tool name available to Pi:
 | `skill_create` | bloom-garden | Create new SKILL.md in ~/Bloom/Skills/ |
 | `skill_list` | bloom-garden | List all skills in ~/Bloom/Skills/ |
 | `persona_evolve` | bloom-garden | Propose persona layer change |
-| `display` | bloom-display | AI computer use: screenshots, input, accessibility tree, window management |
 | `dev_enable` | bloom-dev | Enable on-device development mode |
 | `dev_disable` | bloom-dev | Disable on-device development mode |
 | `dev_status` | bloom-dev | Check dev environment status |
@@ -236,7 +228,6 @@ Canonical metadata for automation lives in `services/catalog.yaml`.
 
 | Service | Category | Port | Type |
 |---------|----------|------|------|
-| `bloom-lemonade` | ai | 8000 | Podman Quadlet |
 | `bloom-dufs` | sync | 5000 | Podman Quadlet |
 | `bloom-matrix` | communication | 6167 | Podman Quadlet |
 | `bloom-element` | communication | — | Podman Quadlet |
@@ -278,7 +269,6 @@ See `ARCHITECTURE.md` for structural rules and enforcement checklist.
 | `repo.ts` | `getRemoteUrl`, `inferRepoUrl` |
 | `audit.ts` | `dayStamp`, `sanitize`, `summarizeInput` |
 | `services.ts` | `loadManifest`, `saveManifest`, `loadServiceCatalog`, `installServicePackage`, `buildLocalImage`, `detectRunningServices`, `validateServiceName`, `validatePinnedImage` |
-| `lemonade.ts` | Lemonade-server model catalog and HTTP pull helpers |
 | `setup.ts` | `STEP_ORDER`, `createInitialState`, `advanceStep`, `getNextStep`, `isSetupComplete`, `getStepsSummary` |
 
 ## 🚀 Install

@@ -37,10 +37,10 @@ Rules for YAML, TOML, JSON, justfile, and GitHub Actions workflows.
 ```yaml
 # Good: service catalog entry
 services:
-  lemonade:
+  matrix:
     version: "0.1.0"
-    category: ai
-    image: ghcr.io/lemonade-sdk/lemonade-server:v9.4.1
+    category: communication
+    image: forgejo.ellis.link/continuwuation/continuwuity:latest
     optional: false
     preflight:
       commands: [podman, systemctl]

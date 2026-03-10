@@ -46,7 +46,7 @@ Reference packages are included at:
 |------|---------|-------|
 | `services/examples/demo-api/` | Standard service (`PublishPort`) | Basic non-socket service package layout |
 | `services/examples/demo-socket-echo/` | Socket-activated (`.socket` + `.container`) | Reference wiring for on-demand activation |
-| `services/lemonade/quadlet/` | Production HTTP service (`PublishPort`) | Real in-tree implementation |
+| `services/dufs/quadlet/` | Production HTTP service (`PublishPort`) | Real in-tree implementation |
 
 Use these as templates for frontmatter, Quadlet layout, health checks, and local install commands.
 
@@ -74,7 +74,6 @@ Copy/paste quickstart commands are in `services/examples/README.md`.
 
 | Service | Category | Port | Description |
 |---------|----------|------|-------------|
-| `lemonade` | ai | 8000 | Unified local AI via lemonade-server (LLM, STT, TTS, image gen) |
 | `matrix` | communication | 6167 | Continuwuity Matrix homeserver |
 | `element` | communication | — | Matrix bot bridge via matrix-bot-sdk |
 | `netbird` | networking | — | Secure mesh VPN via NetBird |

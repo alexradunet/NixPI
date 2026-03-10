@@ -29,7 +29,7 @@ graph TD
 |-----------|----------|----------|------|
 | **Skill** | Pi needs knowledge or a procedure to follow | meal-planning, troubleshooting guides, API references | Zero — just a markdown file |
 | **Extension** | Pi needs to register commands, tools, or react to session events | bloom-channels (Unix socket server), bloom-objects (object store) | Low — TypeScript, runs in-process |
-| **Service** | A standalone process needs to run independently of Pi's session | Lemonade (unified local AI), Matrix homeserver (always-on), Element bridge (always-on), dufs (WebDAV) | Medium — systemd unit, resource allocation |
+| **Service** | A standalone process needs to run independently of Pi's session | Matrix homeserver (always-on), Element bridge (always-on), dufs (WebDAV) | Medium — systemd unit, resource allocation |
 
 **Always prefer the lighter option.** A skill that teaches Pi to call an existing API is better than an extension wrapping that API, which is better than a service re-implementing it.
 
@@ -47,7 +47,6 @@ graph TB
         end
 
         subgraph "Service Containers (Podman Quadlet)"
-            lemonade[bloom-lemonade<br/>lemonade-server :8000]
             dufs[bloom-dufs<br/>WebDAV :5000]
             element[bloom-element<br/>Element Bridge]
             matrix[bloom-matrix<br/>Continuwuity Homeserver]
@@ -65,12 +64,10 @@ graph TB
 
     channels <-->|Unix socket JSON| element
     element <-->|Matrix CS API| matrix
-    lemonade -->|HTTP API| channels
     netbird <-->|WireGuard| netbird_cloud[NetBird Cloud]
     dufs -->|WebDAV| devices[Other Devices]
     systemd -->|manages| element
     systemd -->|manages| matrix
-    systemd -->|manages| lemonade
     systemd -->|manages| dufs
     systemd_sys -->|manages| netbird
 
@@ -96,11 +93,10 @@ graph TB
 
 ### 📦 The `bloom-` Prefix
 
-Bloom-managed services use a `bloom-` prefix on their **unit names** (e.g., `bloom-lemonade`, `bloom-element`). This is a management namespace — it does NOT mean the underlying image is Bloom-specific. NetBird runs as a system-level RPM service:
+Bloom-managed services use a `bloom-` prefix on their **unit names** (e.g., `bloom-matrix`, `bloom-element`). This is a management namespace — it does NOT mean the underlying image is Bloom-specific. NetBird runs as a system-level RPM service:
 
 | Unit Name | Type | Image / Runtime | Bloom-specific? |
 |-----------|------|-----------------|-----------------|
-| `bloom-lemonade` | Podman Quadlet (user) | `ghcr.io/lemonade-sdk/lemonade-server:v9.4.1` | No — upstream image |
 | `bloom-dufs` | Podman Quadlet (user) | `docker.io/sigoden/dufs:latest` | No — upstream image |
 | `bloom-element` | Podman Quadlet (user) | localhost/bloom-element:latest | Yes — custom bridge |
 | `bloom-matrix` | Podman Quadlet (user) | forgejo.ellis.link/continuwuation/continuwuity:latest | No — upstream image |
@@ -152,52 +148,6 @@ stateDiagram-v2
     end note
 ```
 
-## 📡 Media Pipeline
-
-When Element receives a voice note or image, the media flows through multiple services:
-
-```mermaid
-sequenceDiagram
-    participant Matrix as bloom-matrix
-    participant Bridge as bloom-element
-    participant FS as /var/lib/bloom/media/
-    participant Channels as bloom-channels
-    participant Pi as Pi Agent
-    participant STT as bloom-lemonade
-
-    Matrix->>Bridge: Incoming voice note (Matrix CS API)
-    Bridge->>Bridge: downloadMedia()
-    Bridge->>FS: Save as {timestamp}-{id}.ogg
-    Bridge->>Channels: Unix socket JSON with media metadata
-    Channels->>Pi: "[element: John] sent audio (15s, 24KB, audio/ogg). File: /var/lib/bloom/media/..."
-
-    Note over Pi: Pi decides to transcribe
-    Pi->>STT: POST http://localhost:8000/v1/audio/transcriptions<br/>file=@/var/lib/bloom/media/...ogg
-    STT->>Pi: {"text": "transcribed content"}
-    Pi->>Channels: Response text
-    Channels->>Bridge: Unix socket JSON response
-    Bridge->>Matrix: Send reply (Matrix CS API)
-```
-
-### 📡 Media Message Format (Channel Protocol)
-
-```json
-{
-  "type": "message",
-  "channel": "element",
-  "from": "John",
-  "timestamp": 1709568000,
-  "media": {
-    "kind": "audio",
-    "mimetype": "audio/ogg",
-    "filepath": "/var/lib/bloom/media/1709568000-abc123.ogg",
-    "duration": 15,
-    "size": 24576,
-    "caption": null
-  }
-}
-```
-
 ## 🗂️ File System Layout
 
 ```mermaid
@@ -215,7 +165,6 @@ graph LR
     end
 
     subgraph "Container Volumes"
-        lemonade_data["bloom-lemonade-data<br/>Lemonade model cache"]
         matrix_data["bloom-matrix-data<br/>Continuwuity homeserver data"]
         element_data["bloom-element-data<br/>Element bridge state"]
     end
@@ -225,14 +174,12 @@ graph LR
     end
 
     bloom_pkg --> config
-    config --> lemonade_data
 ```
 
 ## 📦 Available Services
 
 | Service | Category | Port | Type | Image / Runtime | Resources |
 |---------|----------|------|------|-----------------|-----------|
-| bloom-lemonade | ai | 8000 | Podman Quadlet | ghcr.io/lemonade-sdk/lemonade-server:v9.4.1 | 4GB RAM |
 | bloom-dufs | sync | 5000 | Podman Quadlet | docker.io/sigoden/dufs:latest | 64MB RAM |
 | bloom-element | communication | — | Podman Quadlet | localhost/bloom-element:latest | 128MB RAM |
 | bloom-matrix | communication | 6167 | Podman Quadlet | forgejo.ellis.link/continuwuation/continuwuity:latest | 512MB RAM |

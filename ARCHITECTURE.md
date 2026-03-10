@@ -58,7 +58,6 @@ lib/
   services-install.ts  # findLocalServicePackage (pure lookup)
   services-manifest.ts # Manifest types, loadManifest, saveManifest
   services-validation.ts # validateServiceName, validatePinnedImage, commandExists
-  lemonade.ts      # lemonade-server model catalog and HTTP pull helpers
   setup.ts         # first-boot setup wizard state machine (STEP_ORDER, advanceStep, getNextStep)
 ```
 

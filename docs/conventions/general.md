@@ -23,7 +23,7 @@ Cross-cutting rules that apply to every file type in the Bloom codebase.
    - Functions/variables: camelCase (`createLogger`, `guardBloom`)
    - Constants: UPPER_SNAKE_CASE (`DEFAULT_EDITOR_KEYBINDINGS`, `PI_CODING_AGENT_VERSION`)
    - Environment variables: UPPER_SNAKE_CASE (`BLOOM_DIR`, `WIFI_SSID`)
-   - systemd/Quadlet units: kebab-case with `bloom-` prefix (`bloom-lemonade.container`)
+   - systemd/Quadlet units: kebab-case with `bloom-` prefix (`bloom-dufs.container`)
 10. **No magic values.** Named constants for numbers, strings, and regex patterns that aren't immediately obvious.
 11. **Early returns** to reduce nesting. Guard clauses at the top of functions.
 12. **Error messages are specific.** Include what went wrong, what was expected, and what was received.
