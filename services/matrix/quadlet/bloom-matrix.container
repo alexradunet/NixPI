@@ -4,7 +4,7 @@ After=network-online.target
 Wants=network-online.target
 
 [Container]
-Image=forgejo.ellis.link/continuwuation/continuwuity:latest
+Image=forgejo.ellis.link/continuwuation/continuwuity:0.5.0-rc.6
 ContainerName=bloom-matrix
 Network=bloom.network
 PublishPort=6167:6167

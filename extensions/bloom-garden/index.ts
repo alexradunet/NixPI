@@ -17,10 +17,8 @@ import {
 	handlePersonaEvolve,
 	handleSkillCreate,
 	handleSkillList,
-	handleUpdateBlueprints,
-	readBlueprintVersions,
-	seedBlueprints,
 } from "./actions.js";
+import { handleUpdateBlueprints, readBlueprintVersions, seedBlueprints } from "./actions-blueprints.js";
 
 export default function (pi: ExtensionAPI) {
 	const bloomDir = getBloomDir();
@@ -29,7 +27,6 @@ export default function (pi: ExtensionAPI) {
 	pi.on("session_start", (_event, ctx) => {
 		ensureBloom(bloomDir);
 		seedBlueprints(bloomDir, packageDir);
-		process.env._BLOOM_DIR_RESOLVED = bloomDir;
 
 		const versions = readBlueprintVersions(bloomDir);
 		const updates = Object.keys(versions.updatesAvailable);

@@ -11,7 +11,7 @@ services:
   matrix:
     version: "0.1.0"
     category: communication
-    image: forgejo.ellis.link/continuwuation/continuwuity:latest
+    image: forgejo.ellis.link/continuwuation/continuwuity:0.5.0-rc.6
     optional: false
     preflight:
       commands: [podman, systemctl]
@@ -26,7 +26,7 @@ services:
   dufs:
     version: "0.1.0"
     category: sync
-    image: docker.io/sigoden/dufs:latest
+    image: docker.io/sigoden/dufs:v0.38.0
     optional: false
     preflight:
       commands: [podman, systemctl]

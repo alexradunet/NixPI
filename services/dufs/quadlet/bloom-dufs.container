@@ -4,7 +4,7 @@ After=network-online.target
 Wants=network-online.target
 
 [Container]
-Image=docker.io/sigoden/dufs:latest
+Image=docker.io/sigoden/dufs:v0.38.0
 ContainerName=bloom-dufs
 
 # Host networking for NetBird mesh reachability
@@ -20,6 +20,12 @@ PodmanArgs=--memory=128m
 PodmanArgs=--security-opt label=disable
 NoNewPrivileges=true
 LogDriver=journald
+
+HealthCmd=wget -qO- http://localhost:5000/ || exit 1
+HealthInterval=30s
+HealthRetries=3
+HealthStartPeriod=10s
+HealthTimeout=5s
 
 [Service]
 Restart=on-failure
