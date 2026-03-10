@@ -7,9 +7,9 @@ import { join } from "node:path";
 import type { ExtensionContext } from "@mariozechner/pi-coding-agent";
 import { run } from "../../lib/exec.js";
 import { loadServiceCatalog, servicePreflightErrors } from "../../lib/services-catalog.js";
-import { type Manifest, loadManifest, saveManifest } from "../../lib/services-manifest.js";
-import { detectRunningServices, installServicePackage } from "./service-io.js";
+import { loadManifest, type Manifest, saveManifest } from "../../lib/services-manifest.js";
 import { errorResult, requireConfirmation, truncate } from "../../lib/shared.js";
+import { detectRunningServices, installServicePackage } from "./service-io.js";
 
 export function handleManifestShow(manifestPath: string) {
 	const manifest = loadManifest(manifestPath);

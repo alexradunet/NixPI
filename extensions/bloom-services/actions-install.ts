@@ -9,8 +9,8 @@ import { parseFrontmatter } from "../../lib/frontmatter.js";
 import { loadServiceCatalog, servicePreflightErrors } from "../../lib/services-catalog.js";
 import { loadManifest, saveManifest } from "../../lib/services-manifest.js";
 import { validateServiceName } from "../../lib/services-validation.js";
-import { buildLocalImage, downloadServiceModels, installServicePackage } from "./service-io.js";
 import { createLogger, errorResult } from "../../lib/shared.js";
+import { buildLocalImage, downloadServiceModels, installServicePackage } from "./service-io.js";
 
 const log = createLogger("bloom-services");
 

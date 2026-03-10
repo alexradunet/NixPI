@@ -55,9 +55,7 @@ export default function (pi: ExtensionAPI) {
 					break;
 				}
 				case "list": {
-					const lines = result.topics.map(
-						(t) => `${t.status === "active" ? "* " : "  "}${t.name} [${t.status}]`,
-					);
+					const lines = result.topics.map((t) => `${t.status === "active" ? "* " : "  "}${t.name} [${t.status}]`);
 					ctx.ui.notify(lines.join("\n"), "info");
 					break;
 				}

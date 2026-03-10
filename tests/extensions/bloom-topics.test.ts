@@ -31,7 +31,11 @@ describe("handleTopicCommand", () => {
 
 	it("returns start action for 'new <name>'", () => {
 		const result = handleTopicCommand("new deploy-planning", null);
-		expect(result).toEqual({ action: "start", name: "deploy-planning", message: expect.stringContaining("deploy-planning") });
+		expect(result).toEqual({
+			action: "start",
+			name: "deploy-planning",
+			message: expect.stringContaining("deploy-planning"),
+		});
 	});
 
 	it("handles multi-word topic names for 'new'", () => {
