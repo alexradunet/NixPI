@@ -1,10 +1,4 @@
 export BLOOM_DIR="$HOME/Bloom"
 export XDG_RUNTIME_DIR="/run/user/$(id -u)"
-export WAYLAND_DISPLAY="wayland-1"
-_sway_sock="$(ls "$XDG_RUNTIME_DIR"/sway-ipc.*.sock 2>/dev/null | head -1)"
-if [ -S "$_sway_sock" ]; then
-    export SWAYSOCK="$_sway_sock"
-fi
-unset _sway_sock
-export BROWSER="chromium --ozone-platform=wayland"
+export BROWSER="chromium"
 export PATH="/usr/local/share/bloom/node_modules/.bin:$PATH"
