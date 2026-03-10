@@ -28,17 +28,6 @@ RUN dnf install -y \
     qemu-system-x86 \
     edk2-ovmf \
     chromium \
-    sway \
-    wayvnc \
-    novnc \
-    python3-websockify \
-    wlrctl \
-    grim \
-    slurp \
-    wl-clipboard \
-    foot \
-    at-spi2-core \
-    python3-pyatspi \
     tmux \
     openssh-server \
     firewalld \
@@ -91,8 +80,6 @@ RUN cd /usr/local/share/bloom && \
     npm run build && \
     npm prune --omit=dev
 
-RUN chmod +x /usr/local/share/bloom/os/scripts/ui-tree.py
-
 # Configure Pi settings defaults in /usr (immutable layer)
 RUN mkdir -p /usr/local/share/bloom/.pi/agent && \
     echo '{"packages": ["/usr/local/share/bloom"]}' > /usr/local/share/bloom/.pi/agent/settings.json
@@ -100,18 +87,6 @@ RUN mkdir -p /usr/local/share/bloom/.pi/agent && \
 # Shell config skel — Anaconda copies /etc/skel/ to new user's home
 COPY os/sysconfig/bloom-bashrc /etc/skel/.bashrc
 COPY os/sysconfig/bloom-bash_profile /etc/skel/.bash_profile
-
-# Display stack: Sway Wayland compositor + wayvnc + noVNC for AI computer use + remote desktop
-COPY os/sysconfig/sway-config /etc/bloom/sway-config
-COPY os/scripts/detect-display.sh /usr/local/share/bloom/os/scripts/detect-display.sh
-COPY os/scripts/start-sway.sh /usr/local/share/bloom/os/scripts/start-sway.sh
-RUN chmod +x /usr/local/share/bloom/os/scripts/detect-display.sh /usr/local/share/bloom/os/scripts/start-sway.sh
-COPY os/sysconfig/bloom-sway.service /usr/lib/systemd/system/bloom-sway.service
-COPY os/sysconfig/bloom-wayvnc.service /usr/lib/systemd/system/bloom-wayvnc.service
-COPY os/sysconfig/bloom-novnc.service /usr/lib/systemd/system/bloom-novnc.service
-COPY os/sysconfig/bloom-display.target /usr/lib/systemd/system/bloom-display.target
-COPY os/sysconfig/bloom-novnc.xml /etc/firewalld/services/bloom-novnc.xml
-RUN systemctl enable bloom-display.target
 
 # tmpfiles.d for /var directory structure (created at boot)
 COPY os/sysconfig/bloom-tmpfiles.conf /usr/lib/tmpfiles.d/bloom.conf
@@ -121,12 +96,6 @@ COPY os/sysconfig/bloom-sysctl.conf /usr/lib/sysctl.d/60-bloom-console.conf
 
 # Default Quadlet network definition used by service packages
 COPY os/sysconfig/bloom.network /usr/share/containers/systemd/bloom.network
-
-# Pre-deploy lemonade (local AI) quadlet so it auto-starts on first login
-# Other services are installed via setup wizard, but lemonade is required for Pi itself
-RUN mkdir -p /etc/skel/.config/containers/systemd
-COPY services/lemonade/quadlet/bloom-lemonade.container /etc/skel/.config/containers/systemd/bloom-lemonade.container
-COPY os/sysconfig/bloom.network /etc/skel/.config/containers/systemd/bloom.network
 
 # Install persona files
 RUN mkdir -p /usr/local/share/bloom/persona
