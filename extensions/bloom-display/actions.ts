@@ -7,6 +7,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { run } from "../../lib/exec.js";
 import { errorResult, truncate } from "../../lib/shared.js";
+import type { SwayNode } from "./types.js";
 
 const WAYLAND_DISPLAY = "wayland-1";
 const XDG_RUNTIME_DIR = process.env.XDG_RUNTIME_DIR ?? `/run/user/${process.getuid?.() ?? 1000}`;
@@ -175,16 +176,6 @@ export async function handleUiTree(params: { app?: string }, signal?: AbortSigna
 		content: [{ type: "text" as const, text: truncate(result.stdout || "[]") }],
 		details: { app: params.app ?? null },
 	};
-}
-
-/** Sway tree node shape (subset of swaymsg -t get_tree output). */
-interface SwayNode {
-	id: number;
-	name: string | null;
-	type: string;
-	focused: boolean;
-	nodes?: SwayNode[];
-	floating_nodes?: SwayNode[];
 }
 
 /** Recursively collect visible windows from the Sway tree. */
