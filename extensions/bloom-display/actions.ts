@@ -1,16 +1,41 @@
 /**
- * Handler / business logic for bloom-display.
+ * Handler / business logic for bloom-display (Wayland / Sway).
  */
+
+import { readdirSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { run } from "../../lib/exec.js";
 import { errorResult, truncate } from "../../lib/shared.js";
 
-const DISPLAY = ":99";
+const WAYLAND_DISPLAY = "wayland-1";
+const XDG_RUNTIME_DIR = process.env.XDG_RUNTIME_DIR ?? `/run/user/${process.getuid?.() ?? 1000}`;
 
-/** Run a command with DISPLAY=:99 set via env passthrough (no global mutation). */
+/** Discover the Sway IPC socket path from XDG_RUNTIME_DIR. */
+function swaysock(): string {
+	try {
+		const entries = readdirSync(XDG_RUNTIME_DIR);
+		const sock = entries.find((e) => e.startsWith("sway-ipc.") && e.endsWith(".sock"));
+		if (sock) return join(XDG_RUNTIME_DIR, sock);
+	} catch {
+		/* directory missing or unreadable */
+	}
+	return process.env.SWAYSOCK ?? join(XDG_RUNTIME_DIR, "sway-ipc.sock");
+}
+
+/** Wayland environment variables passed to child processes. */
+function waylandEnv(): Record<string, string> {
+	return {
+		WAYLAND_DISPLAY,
+		XDG_RUNTIME_DIR,
+		SWAYSOCK: swaysock(),
+		DBUS_SESSION_BUS_ADDRESS: process.env.DBUS_SESSION_BUS_ADDRESS ?? `unix:path=${XDG_RUNTIME_DIR}/bus`,
+	};
+}
+
+/** Run a command with Wayland env vars set via env passthrough (no global mutation). */
 async function runDisplay(cmd: string, args: string[], signal?: AbortSignal): ReturnType<typeof run> {
-	return run(cmd, args, signal, undefined, { DISPLAY });
+	return run(cmd, args, signal, undefined, waylandEnv());
 }
 
 /** Take a screenshot, optionally of a region. */
@@ -18,20 +43,22 @@ export async function handleScreenshot(
 	params: { region?: { x: number; y: number; w: number; h: number } },
 	signal?: AbortSignal,
 ) {
-	const args = ["--overwrite", "/tmp/bloom-screenshot.png"];
+	const outPath = "/tmp/bloom-screenshot.png";
+	const args: string[] = [];
 	if (params.region) {
 		const { x, y, w, h } = params.region;
-		args.unshift("--select", "--autoselect", `${x},${y},${w},${h}`);
+		args.push("-g", `${x},${y} ${w}x${h}`);
 	}
-	const result = await runDisplay("scrot", args, signal);
+	args.push(outPath);
+	const result = await runDisplay("grim", args, signal);
 	if (result.exitCode !== 0) {
 		return errorResult(`Screenshot failed:\n${result.stderr}`);
 	}
-	const buf = await readFile("/tmp/bloom-screenshot.png");
+	const buf = await readFile(outPath);
 	const base64 = buf.toString("base64");
 	return {
 		content: [{ type: "image" as const, data: base64, mimeType: "image/png" }],
-		details: { path: "/tmp/bloom-screenshot.png" },
+		details: { path: outPath },
 	};
 }
 
@@ -40,18 +67,19 @@ export async function handleClick(params: { x?: number; y?: number; button?: num
 	if (params.x === undefined || params.y === undefined) {
 		return errorResult("click requires x and y coordinates.");
 	}
-	const btn = String(params.button ?? 1);
-	const result = await runDisplay(
-		"xdotool",
-		["mousemove", "--sync", String(params.x), String(params.y), "click", btn],
-		signal,
-	);
-	if (result.exitCode !== 0) {
-		return errorResult(`Click failed:\n${result.stderr}`);
+	const btnMap: Record<number, string> = { 1: "left", 2: "middle", 3: "right" };
+	const btnName = btnMap[params.button ?? 1] ?? "left";
+	const moveResult = await runDisplay("wlrctl", ["pointer", "move", String(params.x), String(params.y)], signal);
+	if (moveResult.exitCode !== 0) {
+		return errorResult(`Click move failed:\n${moveResult.stderr}`);
+	}
+	const clickResult = await runDisplay("wlrctl", ["pointer", "click", btnName], signal);
+	if (clickResult.exitCode !== 0) {
+		return errorResult(`Click failed:\n${clickResult.stderr}`);
 	}
 	return {
-		content: [{ type: "text" as const, text: `Clicked (${params.x}, ${params.y}) button ${btn}.` }],
-		details: { x: params.x, y: params.y, button: btn },
+		content: [{ type: "text" as const, text: `Clicked (${params.x}, ${params.y}) button ${btnName}.` }],
+		details: { x: params.x, y: params.y, button: btnName },
 	};
 }
 
@@ -60,7 +88,7 @@ export async function handleType(params: { text?: string }, signal?: AbortSignal
 	if (!params.text) {
 		return errorResult("type requires text parameter.");
 	}
-	const result = await runDisplay("xdotool", ["type", "--delay", "50", "--", params.text], signal);
+	const result = await runDisplay("wlrctl", ["keyboard", "type", params.text], signal);
 	if (result.exitCode !== 0) {
 		return errorResult(`Type failed:\n${result.stderr}`);
 	}
@@ -75,7 +103,7 @@ export async function handleKey(params: { keys?: string }, signal?: AbortSignal)
 	if (!params.keys) {
 		return errorResult("key requires keys parameter (e.g. 'ctrl+l', 'Return').");
 	}
-	const result = await runDisplay("xdotool", ["key", params.keys], signal);
+	const result = await runDisplay("wlrctl", ["keyboard", "key", params.keys], signal);
 	if (result.exitCode !== 0) {
 		return errorResult(`Key press failed:\n${result.stderr}`);
 	}
@@ -90,7 +118,7 @@ export async function handleMove(params: { x?: number; y?: number }, signal?: Ab
 	if (params.x === undefined || params.y === undefined) {
 		return errorResult("move requires x and y coordinates.");
 	}
-	const result = await runDisplay("xdotool", ["mousemove", "--sync", String(params.x), String(params.y)], signal);
+	const result = await runDisplay("wlrctl", ["pointer", "move", String(params.x), String(params.y)], signal);
 	if (result.exitCode !== 0) {
 		return errorResult(`Mouse move failed:\n${result.stderr}`);
 	}
@@ -111,15 +139,15 @@ export async function handleScroll(
 	if (!params.direction) {
 		return errorResult("scroll requires direction ('up' or 'down').");
 	}
-	const scrollBtn = params.direction === "up" ? "4" : "5";
 	const n = params.clicks ?? 3;
-	const scrollArgs = ["mousemove", "--sync", String(params.x), String(params.y)];
-	for (let i = 0; i < n; i++) {
-		scrollArgs.push("click", scrollBtn);
+	const amount = params.direction === "up" ? -n : n;
+	const moveResult = await runDisplay("wlrctl", ["pointer", "move", String(params.x), String(params.y)], signal);
+	if (moveResult.exitCode !== 0) {
+		return errorResult(`Scroll move failed:\n${moveResult.stderr}`);
 	}
-	const result = await runDisplay("xdotool", scrollArgs, signal);
-	if (result.exitCode !== 0) {
-		return errorResult(`Scroll failed:\n${result.stderr}`);
+	const scrollResult = await runDisplay("wlrctl", ["pointer", "scroll", String(amount)], signal);
+	if (scrollResult.exitCode !== 0) {
+		return errorResult(`Scroll failed:\n${scrollResult.stderr}`);
 	}
 	return {
 		content: [
@@ -149,23 +177,43 @@ export async function handleUiTree(params: { app?: string }, signal?: AbortSigna
 	};
 }
 
-/** List windows via xdotool. */
+/** Sway tree node shape (subset of swaymsg -t get_tree output). */
+interface SwayNode {
+	id: number;
+	name: string | null;
+	type: string;
+	focused: boolean;
+	nodes?: SwayNode[];
+	floating_nodes?: SwayNode[];
+}
+
+/** Recursively collect visible windows from the Sway tree. */
+function collectWindows(node: SwayNode, out: Array<{ id: number; name: string; focused: boolean }>): void {
+	if (node.type === "con" && node.name) {
+		out.push({ id: node.id, name: node.name, focused: node.focused });
+	}
+	for (const child of node.nodes ?? []) {
+		collectWindows(child, out);
+	}
+	for (const child of node.floating_nodes ?? []) {
+		collectWindows(child, out);
+	}
+}
+
+/** List windows via swaymsg. */
 export async function handleWindows(signal?: AbortSignal) {
-	const result = await runDisplay("xdotool", ["search", "--onlyvisible", "--name", ""], signal);
+	const result = await runDisplay("swaymsg", ["-t", "get_tree"], signal);
 	if (result.exitCode !== 0) {
-		return errorResult(`Window search failed:\n${result.stderr}`);
+		return errorResult(`Window list failed:\n${result.stderr}`);
 	}
-	const ids = (result.stdout ?? "").trim().split("\n").filter(Boolean);
-	const windows: Array<{ id: string; name: string; focused: boolean }> = [];
-	const activeResult = await runDisplay("xdotool", ["getactivewindow"], signal);
-	const activeId = activeResult.exitCode === 0 ? (activeResult.stdout ?? "").trim() : "";
-	for (const id of ids) {
-		const nameResult = await runDisplay("xdotool", ["getwindowname", id], signal);
-		const name = nameResult.exitCode === 0 ? (nameResult.stdout ?? "").trim() : "";
-		if (name) {
-			windows.push({ id, name, focused: id === activeId });
-		}
+	let tree: SwayNode;
+	try {
+		tree = JSON.parse(result.stdout);
+	} catch {
+		return errorResult("Failed to parse swaymsg tree output.");
 	}
+	const windows: Array<{ id: number; name: string; focused: boolean }> = [];
+	collectWindows(tree, windows);
 	return {
 		content: [{ type: "text" as const, text: JSON.stringify(windows, null, 2) }],
 		details: { count: windows.length },
@@ -187,16 +235,14 @@ export async function handleLaunch(params: { command?: string }, signal?: AbortS
 	};
 }
 
-/** Focus a window. */
+/** Focus a window by Sway con_id or title. */
 export async function handleFocus(params: { target?: string }, signal?: AbortSignal) {
 	if (!params.target) {
 		return errorResult("focus requires target parameter (window title or ID).");
 	}
 	const isNumeric = /^\d+$/.test(params.target);
-	const args = isNumeric
-		? ["windowactivate", "--sync", params.target]
-		: ["search", "--name", params.target, "windowactivate", "--sync"];
-	const result = await runDisplay("xdotool", args, signal);
+	const criteria = isNumeric ? `[con_id=${params.target}]` : `[title="${params.target}"]`;
+	const result = await runDisplay("swaymsg", [`${criteria} focus`], signal);
 	if (result.exitCode !== 0) {
 		return errorResult(`Focus failed:\n${result.stderr}`);
 	}

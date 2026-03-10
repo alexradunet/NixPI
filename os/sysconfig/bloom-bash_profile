@@ -1,4 +1,4 @@
-# Source .bashrc for env vars (BLOOM_DIR, DISPLAY, PATH, etc.)
+# Source .bashrc for env vars (BLOOM_DIR, WAYLAND_DISPLAY, PATH, etc.)
 [ -f ~/.bashrc ] && . ~/.bashrc
 
 # Start Pi on interactive login (only one instance — atomic mkdir lock)

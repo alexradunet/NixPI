@@ -28,9 +28,15 @@ RUN dnf install -y \
     qemu-system-x86 \
     edk2-ovmf \
     chromium \
-    xorg-x11-server-Xvfb \
-    xdotool \
-    scrot \
+    sway \
+    wayvnc \
+    novnc \
+    python3-websockify \
+    wlrctl \
+    grim \
+    slurp \
+    wl-clipboard \
+    foot \
     at-spi2-core \
     python3-pyatspi \
     tmux \
@@ -95,9 +101,17 @@ RUN mkdir -p /usr/local/share/bloom/.pi/agent && \
 COPY os/sysconfig/bloom-bashrc /etc/skel/.bashrc
 COPY os/sysconfig/bloom-bash_profile /etc/skel/.bash_profile
 
-# Display stack: Xvfb headless framebuffer for AI computer use (no remote viewer)
-COPY os/sysconfig/bloom-display.service /usr/lib/systemd/system/bloom-display.service
-RUN systemctl enable bloom-display.service
+# Display stack: Sway Wayland compositor + wayvnc + noVNC for AI computer use + remote desktop
+COPY os/sysconfig/sway-config /etc/bloom/sway-config
+COPY os/scripts/detect-display.sh /usr/local/share/bloom/os/scripts/detect-display.sh
+COPY os/scripts/start-sway.sh /usr/local/share/bloom/os/scripts/start-sway.sh
+RUN chmod +x /usr/local/share/bloom/os/scripts/detect-display.sh /usr/local/share/bloom/os/scripts/start-sway.sh
+COPY os/sysconfig/bloom-sway.service /usr/lib/systemd/system/bloom-sway.service
+COPY os/sysconfig/bloom-wayvnc.service /usr/lib/systemd/system/bloom-wayvnc.service
+COPY os/sysconfig/bloom-novnc.service /usr/lib/systemd/system/bloom-novnc.service
+COPY os/sysconfig/bloom-display.target /usr/lib/systemd/system/bloom-display.target
+COPY os/sysconfig/bloom-novnc.xml /etc/firewalld/services/bloom-novnc.xml
+RUN systemctl enable bloom-display.target
 
 # tmpfiles.d for /var directory structure (created at boot)
 COPY os/sysconfig/bloom-tmpfiles.conf /usr/lib/tmpfiles.d/bloom.conf
