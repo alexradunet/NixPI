@@ -19,9 +19,9 @@ describe("createInitialState", () => {
 		}
 	});
 
-	it("has exactly 13 steps", () => {
+	it("has exactly 11 steps", () => {
 		const state = createInitialState();
-		expect(Object.keys(state.steps)).toHaveLength(13);
+		expect(Object.keys(state.steps)).toHaveLength(11);
 	});
 });
 
@@ -103,7 +103,7 @@ describe("getStepsSummary", () => {
 		const state = createInitialState();
 		state.steps.welcome = { status: "completed", at: new Date().toISOString() };
 		const summary = getStepsSummary(state);
-		expect(summary).toHaveLength(13);
+		expect(summary).toHaveLength(11);
 		expect(summary[0]).toEqual({ name: "welcome", status: "completed" });
 		expect(summary[1]).toEqual({ name: "network", status: "pending" });
 	});
