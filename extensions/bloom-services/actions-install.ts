@@ -133,8 +133,14 @@ export async function handleInstall(
 			}
 		}
 
-		await run("systemctl", ["--user", "daemon-reload"], signal);
-		await run("systemctl", ["--user", "start", `bloom-${dep}.service`], signal);
+		const reload = await run("systemctl", ["--user", "daemon-reload"], signal);
+		if (reload.exitCode !== 0) {
+			log.warn("dependency daemon-reload failed", { dep, stderr: reload.stderr });
+		}
+		const start = await run("systemctl", ["--user", "start", `bloom-${dep}.service`], signal);
+		if (start.exitCode !== 0) {
+			log.warn("dependency service start failed", { dep, stderr: start.stderr });
+		}
 
 		const depManifest = loadManifest(manifestPath);
 		depManifest.services[dep] = {

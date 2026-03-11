@@ -96,7 +96,11 @@ export function readObject(params: { type: string; slug: string; path?: string }
 		}
 	} else {
 		const bloomDir = getBloomDir();
-		filepath = path.join(bloomDir, "Objects", `${params.slug}.md`);
+		try {
+			filepath = safePath(path.join(bloomDir, "Objects"), `${params.slug}.md`);
+		} catch {
+			return errorResult("Path traversal blocked: invalid slug");
+		}
 	}
 
 	if (!fs.existsSync(filepath)) {
@@ -114,8 +118,14 @@ export function linkObjects(params: { ref_a: string; ref_b: string }) {
 	const bloomDir = getBloomDir();
 	const a = parseRef(params.ref_a);
 	const b = parseRef(params.ref_b);
-	const pathA = path.join(bloomDir, "Objects", `${a.slug}.md`);
-	const pathB = path.join(bloomDir, "Objects", `${b.slug}.md`);
+	let pathA: string;
+	let pathB: string;
+	try {
+		pathA = safePath(path.join(bloomDir, "Objects"), `${a.slug}.md`);
+		pathB = safePath(path.join(bloomDir, "Objects"), `${b.slug}.md`);
+	} catch {
+		return errorResult("Path traversal blocked: invalid slug");
+	}
 
 	if (!fs.existsSync(pathA)) return errorResult(`object not found: ${params.ref_a}`);
 	if (!fs.existsSync(pathB)) return errorResult(`object not found: ${params.ref_b}`);

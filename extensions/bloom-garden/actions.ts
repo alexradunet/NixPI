@@ -10,7 +10,7 @@ import { stringifyFrontmatter } from "../../lib/frontmatter.js";
 import { errorResult, nowIso, truncate } from "../../lib/shared.js";
 import { readBlueprintVersions } from "./actions-blueprints.js";
 
-const BLOOM_DIRS = ["Persona", "Skills", "Evolutions", "audit"];
+const BLOOM_DIRS = ["Persona", "Skills", "Evolutions", "Objects", "audit"];
 
 // --- Package helpers ---
 

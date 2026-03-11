@@ -15,6 +15,8 @@ const log = createLogger("bloom-channels");
 const HOMESERVER_URL = process.env.BLOOM_MATRIX_HOMESERVER ?? "http://localhost:6167";
 const STORAGE_PATH = join(os.homedir(), ".pi", "matrix-bot-state.json");
 
+const PENDING_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
 interface PendingContext {
 	roomId: string;
 	sender: string;
@@ -222,7 +224,17 @@ export function createMatrixBridge(pi: ExtensionAPI) {
 		}
 	}
 
+	function cleanStalePendingContexts(): void {
+		const now = Date.now();
+		for (const [id, ctx] of pendingContexts) {
+			if (now - ctx.createdAt > PENDING_TTL_MS) {
+				pendingContexts.delete(id);
+			}
+		}
+	}
+
 	async function handleAgentEnd(event: AgentEndEvent, ctx: ExtensionContext) {
+		cleanStalePendingContexts();
 		if (pendingContexts.size === 0 || !client) return;
 
 		// Find the message ID from the user prompt that triggered this agent turn

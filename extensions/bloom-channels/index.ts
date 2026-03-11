@@ -15,16 +15,16 @@ export { registerMatrixAccount } from "./actions.js";
 export default function (pi: ExtensionAPI) {
 	const bridge = createMatrixBridge(pi);
 
-	pi.on("session_start", (event, ctx) => {
-		bridge.handleSessionStart(event, ctx);
+	pi.on("session_start", async (event, ctx) => {
+		await bridge.handleSessionStart(event, ctx);
 	});
 
-	pi.on("agent_end", (event, ctx) => {
-		bridge.handleAgentEnd(event, ctx);
+	pi.on("agent_end", async (event, ctx) => {
+		await bridge.handleAgentEnd(event, ctx);
 	});
 
-	pi.on("session_shutdown", (event, ctx) => {
-		bridge.handleSessionShutdown(event, ctx);
+	pi.on("session_shutdown", async (event, ctx) => {
+		await bridge.handleSessionShutdown(event, ctx);
 	});
 
 	pi.registerCommand("matrix", {

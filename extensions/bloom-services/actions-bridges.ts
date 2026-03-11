@@ -7,6 +7,7 @@ import os from "node:os";
 import { join } from "node:path";
 import { run } from "../../lib/exec.js";
 import { loadBridgeCatalog } from "../../lib/services-catalog.js";
+import { validateServiceName } from "../../lib/services-validation.js";
 import { errorResult } from "../../lib/shared.js";
 
 const QUADLET_DIR = join(os.homedir(), ".config", "containers", "systemd");
@@ -68,6 +69,9 @@ export async function handleBridgeCreate(
 	repoDir: string,
 	signal: AbortSignal | undefined,
 ) {
+	const guard = validateServiceName(params.name);
+	if (guard) return errorResult(guard);
+
 	const catalog = loadBridgeCatalog(repoDir);
 	const entry = catalog[params.name];
 	if (!entry) {
@@ -142,6 +146,9 @@ export async function handleBridgeRemove(
 	},
 	signal: AbortSignal | undefined,
 ) {
+	const guard = validateServiceName(params.name);
+	if (guard) return errorResult(guard);
+
 	const unitPath = join(QUADLET_DIR, `bloom-bridge-${params.name}.container`);
 
 	// Stop the service (best-effort — may already be stopped)

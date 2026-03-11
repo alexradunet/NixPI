@@ -4,6 +4,8 @@
 import os from "node:os";
 import { run } from "../../lib/exec.js";
 import { loadManifest, type Manifest, saveManifest } from "../../lib/services-manifest.js";
+import { validateServiceName } from "../../lib/services-validation.js";
+import { errorResult } from "../../lib/shared.js";
 import { detectRunningServices } from "./service-io.js";
 
 export function handleManifestShow(manifestPath: string) {
@@ -130,6 +132,9 @@ export function handleManifestSetService(
 	},
 	manifestPath: string,
 ) {
+	const guard = validateServiceName(params.name);
+	if (guard) return errorResult(guard);
+
 	const manifest = loadManifest(manifestPath);
 	manifest.services[params.name] = {
 		image: params.image,
