@@ -125,7 +125,7 @@ export async function handlePair(
 
 	// Check matrix server is installed
 	const systemdDir = join(os.homedir(), ".config", "containers", "systemd");
-	if (!existsSync(join(systemdDir, "bloom-matrix.container"))) {
+	if (!existsSync(join(systemdDir, "bloom-matrix.service"))) {
 		return errorResult('Matrix server is not installed. Run service_install(name="matrix") first.');
 	}
 
