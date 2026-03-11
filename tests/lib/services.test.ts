@@ -316,7 +316,7 @@ describe("buildLocalImage", () => {
 	});
 
 	it("returns error when service source dir is missing", async () => {
-		const result = await buildLocalImage("element", "localhost/bloom-element:latest", "/tmp/__nonexistent__");
+		const result = await buildLocalImage("myservice", "localhost/bloom-myservice:latest", "/tmp/__nonexistent__");
 		expect(result.skipped).toBe(false);
 		expect(result.ok).toBe(false);
 		expect(result.note).toContain("not found");

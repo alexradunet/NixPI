@@ -2,7 +2,6 @@
  * Service I/O operations — package installation, image builds, model downloads, runtime detection.
  * Moved from lib/services-install.ts since these perform heavy I/O (filesystem writes, podman calls).
  */
-import { randomBytes } from "node:crypto";
 import {
 	existsSync,
 	mkdirSync,
@@ -95,16 +94,6 @@ export async function installServicePackage(
 		if (!existsSync(expectedSocket) && existsSync(installedSocket)) {
 			await run("systemctl", ["--user", "disable", "--now", `bloom-${name}.socket`], signal);
 			rmSync(installedSocket, { force: true });
-		}
-
-		const tokenDir = join(os.homedir(), ".config", "bloom", "channel-tokens");
-		mkdirSync(tokenDir, { recursive: true });
-		const tokenPath = join(tokenDir, name);
-		const tokenEnvPath = join(tokenDir, `${name}.env`);
-		if (!existsSync(tokenPath)) {
-			const token = randomBytes(32).toString("hex");
-			writeFileSync(tokenPath, `${token}\n`);
-			writeFileSync(tokenEnvPath, `BLOOM_CHANNEL_TOKEN=${token}\n`);
 		}
 
 		// Ensure service-specific env file exists so the container can start
