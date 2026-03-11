@@ -32,7 +32,6 @@ RUN dnf install -y \
     tmux \
     openssh-server \
     firewalld \
-    nginx \
     nodejs \
     npm \
     && dnf clean all \
@@ -121,13 +120,6 @@ RUN mkdir -p /usr/lib/systemd/system/getty@tty1.service.d \
             /usr/lib/systemd/system/serial-getty@ttyS0.service.d
 COPY os/sysconfig/getty-autologin.conf /usr/lib/systemd/system/getty@tty1.service.d/autologin.conf
 COPY os/sysconfig/getty-autologin.conf /usr/lib/systemd/system/serial-getty@ttyS0.service.d/autologin.conf
-
-# Nginx reverse proxy — route subdomains to backend services
-COPY os/sysconfig/bloom-nginx.conf /etc/nginx/conf.d/bloom.conf
-COPY os/sysconfig/bloom-status.html /usr/share/nginx/html/index.html
-RUN rm -f /etc/nginx/conf.d/default.conf
-RUN setsebool -P httpd_can_network_connect 1
-RUN systemctl enable nginx.service
 
 # Continuwuity Matrix homeserver — native OS service (binary extracted from container image)
 COPY --from=continuwuity-src /sbin/conduwuit /usr/local/bin/continuwuity

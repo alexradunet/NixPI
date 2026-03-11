@@ -60,20 +60,17 @@ export async function handleScaffold(
 	mkdirSync(quadletDir, { recursive: true });
 
 	const version = params.version ?? "0.1.0";
-	const network = params.network ?? "bloom.network";
+	const network = params.network ?? "host";
 	const memory = params.memory ?? "256m";
-	const containerPort = Math.max(1, Math.round(params.container_port ?? 8000));
 	const enableSocket = params.socket_activated ?? false;
-	const maybePublish =
-		!enableSocket && params.port ? `PublishPort=127.0.0.1:${Math.round(params.port)}:${containerPort}\n` : "";
 	const maybeSocketArgs = enableSocket ? "PodmanArgs=--preserve-fds=1\n" : "";
 	const installBlock = enableSocket ? "" : "\n[Install]\nWantedBy=default.target\n";
 
-	const containerUnit = `[Unit]\nDescription=Bloom ${params.name} — ${params.description}\nAfter=network-online.target\nWants=network-online.target\n${enableSocket ? "StopWhenUnneeded=true\n" : ""}\n[Container]\nImage=${params.image}\nContainerName=bloom-${params.name}\nNetwork=${network}\n${maybePublish}${maybeSocketArgs}PodmanArgs=--memory=${memory}\nNoNewPrivileges=true\nLogDriver=journald\n\n[Service]\nRestart=on-failure\nRestartSec=10\nTimeoutStartSec=300\n${installBlock}`;
+	const containerUnit = `[Unit]\nDescription=Bloom ${params.name} — ${params.description}\nAfter=network-online.target\nWants=network-online.target\n${enableSocket ? "StopWhenUnneeded=true\n" : ""}\n[Container]\nImage=${params.image}\nContainerName=bloom-${params.name}\nNetwork=${network}\n${maybeSocketArgs}PodmanArgs=--memory=${memory}\nNoNewPrivileges=true\nLogDriver=journald\n\n[Service]\nRestart=on-failure\nRestartSec=10\nTimeoutStartSec=300\n${installBlock}`;
 	writeFileSync(containerPath, containerUnit);
 
 	if (enableSocket && params.port) {
-		const socketUnit = `[Unit]\nDescription=Bloom ${params.name} — Socket activation listener\n\n[Socket]\nListenStream=127.0.0.1:${Math.round(params.port)}\nAccept=no\nService=bloom-${params.name}.service\nSocketMode=0660\n\n[Install]\nWantedBy=sockets.target\n`;
+		const socketUnit = `[Unit]\nDescription=Bloom ${params.name} — Socket activation listener\n\n[Socket]\nListenStream=${Math.round(params.port)}\nAccept=no\nService=bloom-${params.name}.service\nSocketMode=0660\n\n[Install]\nWantedBy=sockets.target\n`;
 		writeFileSync(socketPath, socketUnit);
 	}
 
