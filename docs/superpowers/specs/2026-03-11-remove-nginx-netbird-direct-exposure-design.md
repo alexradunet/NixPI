@@ -33,12 +33,12 @@ Most services already use host networking and are mesh-reachable. Only cinny nee
 
 | Service | Current State | Change Needed |
 |---------|--------------|---------------|
-| cinny | `PublishPort=127.0.0.1:18810:80` on `bloom.network` | Change to `Network=host`, remove `PublishPort`, adjust container to serve on port 18810 |
+| cinny | `PublishPort=127.0.0.1:18810:80` on `bloom.network` | Remove `bloom.network`, change `PublishPort` to `18810:80` (all interfaces). Cannot use `Network=host` because Cinny image serves on port 80 and host networking prevents port remapping. |
 | dufs | `Network=host`, port 5000 | **No change** — already directly exposed |
 | code-server | `Network=host`, port 8443 | **No change** — already directly exposed |
 | Matrix (continuwuity) | Native service, already binds `0.0.0.0:6167` | **No change** |
 
-**Cinny detail:** Switch cinny from `bloom.network` + `PublishPort` to `Network=host` for consistency with dufs and code-server. The container image (cinny) serves on port 80 internally — configure it or add a port mapping to serve on 18810 on the host. Update the comment from "nginx proxies /cinny to this" to reflect direct mesh access.
+**Cinny detail:** Remove `bloom.network` and change `PublishPort` from `127.0.0.1:18810:80` to `18810:80` (binds all interfaces). Unlike dufs/code-server, cinny cannot use `Network=host` because the cinny image serves on port 80 and host networking prevents port remapping (80→18810). Bridge networking with all-interface publishing achieves the same mesh reachability.
 
 **Template update:** Update `services/_template/quadlet/bloom-TEMPLATE.container` to use `Network=host` instead of `bloom.network` + `PublishPort=127.0.0.1:18800:18800`, matching the pattern established by dufs and code-server.
 
