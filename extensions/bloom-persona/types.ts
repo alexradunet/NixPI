@@ -21,7 +21,5 @@ export interface GuardrailsConfig {
 /** Persisted context state for cross-compaction continuity. */
 export interface BloomContext {
 	savedAt: string;
-	activeTopic?: string;
-	pendingChannels: number;
 	updateAvailable: boolean;
 }

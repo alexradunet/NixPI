@@ -68,21 +68,10 @@ export default function (pi: ExtensionAPI) {
 	pi.on("session_before_compact", async (event) => {
 		const { firstKeptEntryId, tokensBefore } = event.preparation;
 
-		// Save context before compaction
-		let activeTopic: string | undefined;
-		for (const entry of event.branchEntries) {
-			if (entry.type === "custom" && (entry as { customType?: string }).customType === "bloom-topic") {
-				const data = (entry as { data?: { name?: string; status?: string } }).data;
-				if (data?.status === "active") activeTopic = data.name;
-			}
-		}
-
 		const updateAvailable = checkUpdateAvailable();
 
 		saveContext({
 			savedAt: new Date().toISOString(),
-			activeTopic,
-			pendingChannels: 0,
 			updateAvailable,
 		});
 

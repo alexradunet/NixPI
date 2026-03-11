@@ -95,8 +95,6 @@ export function checkUpdateAvailable(): boolean {
 /** Build the restored-context system prompt block from persisted compaction state. */
 export function buildRestoredContextBlock(ctx: BloomContext): string {
 	const lines = ["\n\n[RESTORED CONTEXT]"];
-	if (ctx.activeTopic) lines.push(`Active topic: ${ctx.activeTopic}`);
-	if (ctx.pendingChannels > 0) lines.push(`Pending channel responses: ${ctx.pendingChannels}`);
 	if (ctx.updateAvailable) lines.push("OS update available — inform user if not already done.");
 	lines.push(`Context saved at: ${ctx.savedAt}`);
 	return lines.join("\n");
