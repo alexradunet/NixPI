@@ -1,0 +1,14 @@
+[Unit]
+Description=Set Bloom hostname
+DefaultDependencies=no
+Before=getty-pre.target systemd-logind.service
+After=systemd-remount-fs.service
+ConditionPathExists=!/etc/hostname
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/hostnamectl set-hostname bloom
+RemainAfterExit=yes
+
+[Install]
+WantedBy=sysinit.target

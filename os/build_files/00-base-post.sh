@@ -14,7 +14,8 @@ systemctl preset \
     sshd.service \
     netbird.service \
     bloom-matrix.service \
-    bloom-update-check.timer
+    bloom-update-check.timer \
+    bloom-hostname.service
 
 # Mask upstream auto-update timer (we have our own)
 systemctl mask bootc-fetch-apply-updates.timer

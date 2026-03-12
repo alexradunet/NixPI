@@ -92,7 +92,12 @@ Transient hostname: fedora
 ```
 
 **Analysis:** The image includes `os/system_files/etc/hostname` with content "bloom", which gets copied during build. However, bootc manages `/etc/hostname` itself — during installation, BIB removes the image's `/etc/hostname` and should apply `hostname = "bloom"` from `bib-config.toml`. But BIB's qcow2 output doesn't seem to honor the `[customizations] hostname` setting, so the system falls back to the kernel default "fedora". The `/etc/hostname` file from the image is stripped by bootc's `/etc` merge semantics.
-**Fix:** Set hostname at first boot via tmpfiles.d or a systemd oneshot service. Or use `hostnamectl set-hostname bloom` in the wizard's early steps.
+**Fix (applied):** Added `bloom-hostname.service` — a systemd oneshot that runs before getty (`Before=getty-pre.target`) and sets the hostname via `hostnamectl`. Only runs if `/etc/hostname` doesn't exist (`ConditionPathExists=!/etc/hostname`). The wizard's `step_welcome` retains a fallback `hostnamectl` call as a safety net.
+
+**Files changed:**
+- `os/system_files/usr/lib/systemd/system/bloom-hostname.service` (new)
+- `os/system_files/usr/lib/systemd/system-preset/01-bloom.preset`
+- `os/build_files/00-base-post.sh`
 
 ---
 
