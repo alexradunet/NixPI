@@ -4,7 +4,6 @@
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import { dirname, join } from "node:path";
-import { run } from "../../lib/exec.js";
 import {
 	advanceStep,
 	createInitialState,
@@ -50,29 +49,13 @@ export function saveState(state: SetupState): void {
 	renameSync(tmp, SETUP_STATE_PATH);
 }
 
-/** Mark setup as complete and enable the persistent Pi agent daemon. */
-export async function touchSetupComplete(): Promise<void> {
-	const dir = dirname(SETUP_COMPLETE_PATH);
+/** Mark persona customization as complete (wizard already handled OS-level setup). */
+export async function touchPersonaDone(): Promise<void> {
+	const markerPath = join(os.homedir(), ".bloom", "wizard-state", "persona-done");
+	const dir = dirname(markerPath);
 	if (!existsSync(dir)) mkdirSync(dir, { recursive: true, mode: 0o700 });
-	writeFileSync(SETUP_COMPLETE_PATH, new Date().toISOString(), "utf-8");
-
-	// Enable linger so user services survive logout
-	const user = os.userInfo().username;
-	await run("loginctl", ["enable-linger", user]);
-
-	// Enable and start the pi-daemon immediately
-	await run("systemctl", ["--user", "enable", "--now", "pi-daemon.service"]);
-
-	// Verify daemon is actually running (not crash-looping)
-	const check = await run("systemctl", ["--user", "is-active", "pi-daemon.service"]);
-	if (check.exitCode !== 0) {
-		log.warn("pi-daemon.service failed to start after setup completion", {
-			stdout: check.stdout.trim(),
-			stderr: check.stderr.trim(),
-		});
-	} else {
-		log.info("enabled pi-daemon.service and linger for persistent Matrix listening");
-	}
+	writeFileSync(markerPath, new Date().toISOString(), "utf-8");
+	log.info("persona customization complete");
 }
 
 /** Check if setup is already complete (sentinel file exists). */
@@ -114,17 +97,9 @@ export async function handleSetupAdvance(params: { step: StepName; result: "comp
 	state = advanceStep(state, step, result, params.reason);
 	saveState(state);
 
-	if (isSetupComplete(state)) {
-		await touchSetupComplete();
-		return {
-			content: [
-				{
-					type: "text" as const,
-					text: "Setup complete! All steps finished. The setup wizard will not run on next login.",
-				},
-			],
-			details: {},
-		};
+	// Write persona-done marker as soon as persona step completes
+	if (step === "persona") {
+		await touchPersonaDone();
 	}
 
 	const next = getNextStep(state);
@@ -135,6 +110,8 @@ export async function handleSetupAdvance(params: { step: StepName; result: "comp
 		lines.push("");
 		lines.push(`## Guidance for "${next}"`);
 		lines.push(STEP_GUIDANCE[next]);
+	} else {
+		lines.push("All setup steps complete! Persona customization is done.");
 	}
 
 	return {

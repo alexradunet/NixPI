@@ -4,6 +4,9 @@
  * @tools setup_status, setup_advance, setup_reset
  * @hooks before_agent_start
  */
+import { existsSync } from "node:fs";
+import os from "node:os";
+import { join } from "node:path";
 import { StringEnum } from "@mariozechner/pi-ai";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
@@ -65,7 +68,9 @@ export default function (pi: ExtensionAPI) {
 
 	// Inject first-boot skill into system prompt when setup is incomplete
 	pi.on("before_agent_start", async (event) => {
-		if (isSetupDone()) return;
+		if (!isSetupDone()) return; // wizard hasn't run yet
+		const personaDone = join(os.homedir(), ".bloom", "wizard-state", "persona-done");
+		if (existsSync(personaDone)) return; // persona already done
 
 		const setupPrompt = getSetupSystemPrompt();
 		if (setupPrompt) {
