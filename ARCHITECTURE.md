@@ -27,7 +27,6 @@ Some services are foundational to the system's identity and run as native system
 **Current OS-level infrastructure:**
 - **Continuity** (Matrix homeserver) — `bloom-matrix.service`, communication backbone
 - **NetBird** — mesh networking, device reachability
-- **Nginx** — reverse proxy for Matrix API and container services
 
 These are analogous to systemd, podman, and SSH — they're part of the OS, not optional services.
 
@@ -59,9 +58,11 @@ AI always knows the structure. Reviewers check one mechanical rule: "is there lo
 ```
 lib/
   shared.ts        # generic utilities (createLogger, nowIso, truncate, errorResult, guardBloom, requireConfirmation)
-  frontmatter.ts   # parseFrontmatter, stringifyFrontmatter, yaml
-  filesystem.ts    # safePath, getBloomDir
+  frontmatter.ts   # parseFrontmatter, stringifyFrontmatter
+  filesystem.ts    # safePath, getBloomDir, getQuadletDir, getUpdateStatusPath
   exec.ts          # command execution (run)
+  netbird.ts       # NetBird API client (DNS zones, records, mesh IP)
+  service-routing.ts # ensureServiceRouting (DNS record creation via NetBird)
   git.ts           # git utilities (parseGithubSlugFromUrl, slugifyBranchPart)
   repo.ts          # git remote helpers (getRemoteUrl, inferRepoUrl)
   audit.ts         # audit utilities (dayStamp, sanitize, summarizeInput)

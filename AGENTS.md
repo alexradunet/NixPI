@@ -226,7 +226,6 @@ Quick reference of every tool name available to Pi:
 |------|---------|------|
 | `bloom-matrix.service` | Continuwuity Matrix homeserver | Native systemd |
 | `netbird.service` | Mesh VPN networking | System RPM |
-| `nginx.service` | Reverse proxy | Native systemd |
 
 ### Subdomain Routing (`bloom.mesh`)
 

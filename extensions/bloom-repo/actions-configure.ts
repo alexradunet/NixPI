@@ -3,13 +3,12 @@
  */
 import { mkdirSync } from "node:fs";
 import os from "node:os";
+import { dirname } from "node:path";
 import { run } from "../../lib/exec.js";
 import { parseGithubSlugFromUrl } from "../../lib/git.js";
 import { getRemoteUrl, inferRepoUrl } from "../../lib/repo.js";
 import { errorResult } from "../../lib/shared.js";
 import { getRepoDir } from "./actions.js";
-
-const bloomDir = os.homedir() + "/.bloom";
 
 export async function handleConfigure(
 	params: {
@@ -21,7 +20,7 @@ export async function handleConfigure(
 	signal: AbortSignal | undefined,
 ) {
 	const repoDir = getRepoDir();
-	mkdirSync(bloomDir, { recursive: true });
+	mkdirSync(dirname(repoDir), { recursive: true });
 	const changes: string[] = [];
 	const notes: string[] = [];
 

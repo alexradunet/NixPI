@@ -40,7 +40,6 @@ graph TB
     subgraph "Bloom OS (Fedora bootc)"
         subgraph "OS-Level Infrastructure"
             matrix_native[bloom-matrix.service<br/>Continuwuity Homeserver :6167]
-            nginx[nginx.service<br/>Reverse Proxy + Cinny]
             netbird[netbird.service<br/>Mesh VPN]
         end
 
@@ -58,8 +57,6 @@ graph TB
     end
 
     bridges <-->|Appservice API| matrix_native
-    nginx -->|proxy /_matrix/| matrix_native
-    nginx -->|proxy /cinny| cinny
     netbird <-->|WireGuard| netbird_cloud[NetBird Cloud]
     dufs -->|WebDAV| devices[Other Devices]
 
@@ -103,7 +100,6 @@ Some services are foundational to the system's identity and run as native system
 |------|---------|
 | `bloom-matrix.service` | Continuwuity Matrix homeserver — communication backbone |
 | `netbird.service` | Mesh networking — device reachability |
-| `nginx.service` | Reverse proxy — proxies `/_matrix/` and web clients |
 
 These are analogous to systemd, podman, and SSH — they're part of the OS, not optional services.
 
@@ -196,7 +192,6 @@ graph LR
 | bloom-dufs | sync | 5000 | Podman Quadlet | 64MB RAM |
 | bloom-matrix | communication | 6167 | Native systemd | 512MB RAM |
 | netbird | networking | — | System RPM | 256MB RAM |
-| nginx | proxy | 80 | Native systemd | 64MB RAM |
 
 ## Adding a New Service
 

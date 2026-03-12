@@ -14,26 +14,26 @@ const BLOOM_ZONE_DOMAIN = "bloom.mesh";
 // Types
 // ---------------------------------------------------------------------------
 
-export interface NetBirdGroup {
+interface NetBirdGroup {
 	id: string;
 	name: string;
 }
 
-export interface NetBirdZone {
+interface NetBirdZone {
 	id: string;
 	name: string;
 	domain: string;
 	groups?: string[];
 }
 
-export interface NetBirdRecord {
+interface NetBirdRecord {
 	id: string;
 	name: string;
 	type: string;
 	value: string;
 }
 
-export interface DnsResult {
+interface DnsResult {
 	ok: boolean;
 	zoneId?: string;
 	recordId?: string;
@@ -45,7 +45,7 @@ export interface DnsResult {
 // ---------------------------------------------------------------------------
 
 /** Path to the NetBird API token env file. */
-export function netbirdEnvPath(): string {
+function netbirdEnvPath(): string {
 	return join(os.homedir(), ".config", "bloom", "netbird.env");
 }
 
@@ -179,7 +179,7 @@ async function createRecord(
 // ---------------------------------------------------------------------------
 
 /** Path to the cached zone ID file. */
-export function zoneCachePath(): string {
+function zoneCachePath(): string {
 	return join(os.homedir(), ".config", "bloom", "netbird-zone.json");
 }
 

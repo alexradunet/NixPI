@@ -5,6 +5,7 @@ import { existsSync, readFileSync } from "node:fs";
 import os from "node:os";
 import { join } from "node:path";
 import { run } from "../../lib/exec.js";
+import { getQuadletDir } from "../../lib/filesystem.js";
 import { parseFrontmatter } from "../../lib/frontmatter.js";
 import { ensureServiceRouting } from "../../lib/service-routing.js";
 import { loadServiceCatalog, servicePreflightErrors } from "../../lib/services-catalog.js";
@@ -110,7 +111,7 @@ export async function handleInstall(
 	// Auto-install dependencies (e.g., backend for frontend)
 	const deps = catalogEntry?.depends ?? [];
 	for (const dep of deps) {
-		const depUnit = join(os.homedir(), ".config", "containers", "systemd", `bloom-${dep}.container`);
+		const depUnit = join(getQuadletDir(), `bloom-${dep}.container`);
 		if (existsSync(depUnit)) continue; // already installed
 
 		const depCatalog = catalog[dep];

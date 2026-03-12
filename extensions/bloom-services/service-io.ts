@@ -15,8 +15,9 @@ import {
 import os from "node:os";
 import { join } from "node:path";
 import { run } from "../../lib/exec.js";
+import { getQuadletDir } from "../../lib/filesystem.js";
+import type { ServiceCatalogEntry } from "../../lib/services-catalog.js";
 import { findLocalServicePackage } from "../../lib/services-install.js";
-import type { ServiceCatalogEntry } from "../../lib/services-manifest.js";
 
 /** Template Cinny config with the device's hostname as homeserver URL. */
 function templateCinnyConfig(raw: string): string {
@@ -74,7 +75,7 @@ export async function installServicePackage(
 			};
 		}
 
-		const systemdDir = join(os.homedir(), ".config", "containers", "systemd");
+		const systemdDir = getQuadletDir();
 		const userSystemdDir = join(os.homedir(), ".config", "systemd", "user");
 		const skillDir = join(bloomDir, "Skills", name);
 		mkdirSync(systemdDir, { recursive: true });

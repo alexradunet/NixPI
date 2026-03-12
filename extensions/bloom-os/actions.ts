@@ -8,8 +8,6 @@ import { getUpdateStatusPath } from "../../lib/filesystem.js";
 import { errorResult, guardBloom, requireConfirmation, truncate } from "../../lib/shared.js";
 import type { ContainerInfo, UpdateStatus } from "./types.js";
 
-const statusFile = getUpdateStatusPath();
-
 // --- Bootc handler ---
 
 export async function handleBootc(
@@ -178,7 +176,7 @@ export async function handleSystemdControl(
 
 export async function handleUpdateStatus() {
 	try {
-		const raw = await readFile(statusFile, "utf-8");
+		const raw = await readFile(getUpdateStatusPath(), "utf-8");
 		const status = JSON.parse(raw) as UpdateStatus;
 		const text = status.available
 			? `Update available (checked ${status.checked}). Version: ${status.version || "unknown"}`
@@ -211,11 +209,8 @@ export async function handleScheduleReboot(
 
 // --- Update check hook handler ---
 
-let updateChecked = false;
-
 export async function checkPendingUpdates(systemPrompt: string): Promise<{ systemPrompt: string } | undefined> {
-	if (updateChecked) return;
-	updateChecked = true;
+	const statusFile = getUpdateStatusPath();
 	try {
 		const raw = await readFile(statusFile, "utf-8");
 		const status = JSON.parse(raw) as UpdateStatus;

@@ -6,11 +6,12 @@ import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import { join } from "node:path";
 import { run } from "../../lib/exec.js";
+import { getQuadletDir } from "../../lib/filesystem.js";
 import { loadBridgeCatalog } from "../../lib/services-catalog.js";
 import { validateServiceName } from "../../lib/services-validation.js";
 import { errorResult } from "../../lib/shared.js";
 
-const QUADLET_DIR = join(os.homedir(), ".config", "containers", "systemd");
+const QUADLET_DIR = getQuadletDir();
 
 /** Generate the Quadlet .container unit content for a bridge. */
 function bridgeContainerUnit(name: string, image: string, healthPort: number, configDir: string): string {

@@ -6,6 +6,7 @@ import os from "node:os";
 import { join } from "node:path";
 import type { ExtensionContext } from "@mariozechner/pi-coding-agent";
 import { run } from "../../lib/exec.js";
+import { getQuadletDir } from "../../lib/filesystem.js";
 import { loadServiceCatalog, servicePreflightErrors } from "../../lib/services-catalog.js";
 import { loadManifest, saveManifest } from "../../lib/services-manifest.js";
 import { errorResult, requireConfirmation, truncate } from "../../lib/shared.js";
@@ -45,7 +46,7 @@ export async function handleManifestApply(
 	let manifestChanged = false;
 	let needsReload = false;
 
-	const systemdDir = join(os.homedir(), ".config", "containers", "systemd");
+	const systemdDir = getQuadletDir();
 	const userSystemdDir = join(os.homedir(), ".config", "systemd", "user");
 
 	for (const [name, svc] of serviceEntries) {

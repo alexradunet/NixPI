@@ -95,7 +95,11 @@ export default function (pi: ExtensionAPI) {
 		},
 	});
 
+	let updateChecked = false;
+
 	pi.on("before_agent_start", async (event) => {
+		if (updateChecked) return;
+		updateChecked = true;
 		return checkPendingUpdates(event.systemPrompt);
 	});
 }

@@ -2,43 +2,46 @@
 
 ## Recurring Violations
 
-- **Empty/stub types.ts files**: 4 extensions have stub types.ts with only `export {};`: bloom-setup, bloom-repo, bloom-objects, bloom-services.
-- **Oversized files**: service-io.ts (272), netbird.ts (269), bloom-dev/index.ts (241), bloom-os/actions.ts (235).
-- **High export count**: lib/netbird.ts has 19 exports, 10 of which are unused outside the file.
-- **Missing JSDoc**: 13 exported symbols across 5 lib/ files lack JSDoc.
+- **Oversized files**: service-io.ts (272), netbird.ts (261), bloom-dev/index.ts (241), bloom-os/actions.ts (233).
+- **High export count**: lib/netbird.ts has 13 exports, 6 of which are unused outside the file (internal-only).
+- **Missing JSDoc**: 54 exported symbols across 13 files lack JSDoc (mostly actions handlers and daemon types).
+- **Stale nginx references**: nginx removed from OS image but referenced in 7 living docs.
 
-## Stale References (verified 2026-03-12)
+## Stale References (verified 2026-03-12, post-cleanup)
 
-### New since last audit:
-- AGENTS.md:292 — references lib/nginx.ts which does not exist
-- bloom.network deleted but referenced in 15+ files (CLAUDE.md, ARCHITECTURE.md, containers.md, services/README.md, skills/*, bloom-services/index.ts)
-- services/README.md:47-53 — references services/examples/ directory which does not exist
-- docs/service-architecture.md:91-93 — references nginx vhost functionality that no longer exists
-
-### Carried from previous audit:
-- docs/quick_deploy.md:119-120 — Sway/Wayland references (removed from OS)
+### Remaining:
+- nginx references in 7 living docs (ARCHITECTURE.md:30, AGENTS.md:229, README.md:81, service-architecture.md:43/61/62/106/199, cinny/SKILL.md:14/37/38/48, matrix/SKILL.md:26, bloom-live-tester.md:14)
+- bloom.network refs remain only in docs/plans/ (immutable, acceptable)
+- docs/quick_deploy.md:119-120 — Sway/Wayland references still present
 
 ### Fixed since last audit:
-- README.md Unix socket/bloom-channels references: cleaned up
-- .claude/agents/bloom-live-tester.md stale refs: cleaned up
-- .pi/AGENTS.md element reference: cleaned up
-- CLAUDE.md lib/containers.ts reference: cleaned up
+- AGENTS.md lib/nginx.ts reference: cleaned up (now shows netbird.ts)
+- services/README.md services/examples/ reference: cleaned up
+- bloom.network refs in living docs (CLAUDE.md, ARCHITECTURE.md, containers.md, services/README.md, bloom-services/index.ts): cleaned up
+- Empty/stub types.ts files (bloom-setup, bloom-repo, bloom-objects, bloom-services): removed
 
 ## Dead Code (verified 2026-03-12)
 
-- lib/netbird.ts: 10 exports never imported externally (netbirdEnvPath, listGroups, findAllGroupId, listZones, createZone, listRecords, createRecord, zoneCachePath, NetBirdGroup, NetBirdZone, NetBirdRecord, DnsResult)
-- lib/service-routing.ts: RoutingResult type never imported externally
+- lib/netbird.ts: 6 exports never imported externally (NetBirdGroup, NetBirdZone, NetBirdRecord, DnsResult, netbirdEnvPath, zoneCachePath) — internal-only, should drop `export`
+- 4 more exports (loadCachedZoneId, parseMeshIp, saveCachedZoneId) used only in tests — keep exported for testability
+- lib/service-routing.ts: RoutingResult correctly non-exported (fixed since last audit)
 
-## Security Concern
+## Security
 
-- RESOLVED: os/bib-config.toml removed from tracking. Example file renamed to os/bib-config.example.toml with placeholder password. os/bib-config.toml is gitignored.
+- RESOLVED: os/bib-config.toml removed from tracking. Example file with placeholder. Gitignored.
 
 ## CI/Workflow Notes
 
 - build-os.yml uses docker/login-action@v3 (no podman equivalent for GitHub Actions)
 - Template files (services/_template/) use console.log instead of createLogger (known exception)
 
-## Resolved Issues (from previous audits)
+## Convention Edge Cases
+
+- bloom-dev/index.ts (241 lines): pure wiring, 14 tool registrations. Not splittable without adding complexity.
+- Cinny Quadlet uses PublishPort instead of Network=host — intentional but violates convention rule 10.
+- Emojis in docs: sanctioned by docs/LEGEND.md as functional visual anchors.
+
+## Resolved Issues
 
 - lib/services.ts barrel: split into services-catalog, services-install, services-manifest, services-validation
 - bloom-services/actions.ts (760 lines): split into actions-apply, actions-bridges, etc.
@@ -46,16 +49,22 @@
 - bloom-channels extension: removed entirely (replaced by pi-daemon)
 - build-iso.sh shebang: fixed
 - README.md: bloom-channels/unix socket refs cleaned up
+- AGENTS.md: lib/nginx.ts ghost ref removed
+- services/README.md: services/examples/ ref removed
+
+## Complexity Hotspots
+
+- actions-install.ts handleInstall() (153 lines): duplicates install logic in dependency loop. Extract installSingleService().
+- service-io.ts installServicePackage() (91 lines): many operations but try/finally structured.
 
 ## Last Audit
 
-- Date: 2026-03-12
-- Files reviewed: ~118
+- Date: 2026-03-12 (post 5618b39 cleanup)
+- Files reviewed: 95 (excluding tests, node_modules, dist, .worktrees)
 - Auto-fixes applied: 0 (report-only)
-- Critical: 1 (security — committed password)
-- Stale documentation: 5 remaining items
-- Dead code: 12 unused exports in lib/netbird.ts
-- Convention violations: 13 missing JSDoc, 51 code blocks without language specifiers
-- Oversized files: 4
-- Stub files for deletion: 4
-- Clean files: ~65
+- Stale documentation: nginx ghost (7 files), quick_deploy Sway/Wayland (1 file)
+- Dead code: 6 internal-only exports in lib/netbird.ts
+- Missing JSDoc: 54 exports across 13 files
+- Oversized files: 4 (service-io.ts, netbird.ts, bloom-dev/index.ts, bloom-os/actions.ts)
+- Convention edge cases: 2 (bloom-dev/index.ts size, cinny PublishPort)
+- Clean files: ~58

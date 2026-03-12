@@ -78,7 +78,6 @@ OS-level infrastructure baked into the image:
 |------|------|------|
 | `bloom-matrix` | Continuwuity Matrix homeserver | Native systemd |
 | `netbird` | Mesh VPN | System RPM |
-| `nginx` | Reverse proxy | Native systemd |
 
 Container services:
 

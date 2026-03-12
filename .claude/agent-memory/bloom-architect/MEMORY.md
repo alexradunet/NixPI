@@ -6,7 +6,7 @@
 - Every extension is a directory: `extensions/bloom-{name}/index.ts + actions.ts + types.ts`
 - Always a directory, even for thin extensions -- consistency for AI-driven development
 - `index.ts` is registration only, `actions.ts` handles orchestration, lib/ has pure logic
-- All 11 extensions have types.ts (fixed from previous audit)
+- 4 extensions MISSING types.ts (post-cleanup 2026-03-12): bloom-objects, bloom-repo, bloom-services, bloom-setup
 - Tests live in `tests/` at project root (NOT colocated in extension dirs)
 
 ### lib/ actual files (2026-03-11, verified)
@@ -23,6 +23,8 @@
 - `services-validation.ts` -- validateServiceName, validatePinnedImage, commandExists
 - `matrix.ts` -- extractResponseText, generatePassword, matrixCredentialsPath
 - `setup.ts` -- setup wizard state machine: STEP_ORDER, advanceStep, etc.
+- `netbird.ts` -- NetBird API client (DNS zones, records, mesh IP, token loading)
+- `service-routing.ts` -- orchestration: ensureServiceRouting (calls netbird.ts)
 - lib/services.ts barrel and lib/lemonade.ts were removed during migration
 
 ### Service template (2026-03-08)
@@ -37,8 +39,8 @@
 - Element retired, replaced by Cinny Quadlet container
 - Unix socket channel bridge retired, replaced by matrix-bot-sdk in-process
 
-## Architecture State (2026-03-11)
-- 11 extensions, all directory-based with types.ts, 44 tools
+## Architecture State (2026-03-12, post-cleanup audit)
+- 11 extensions (9 directory-based, bloom-services has no base actions.ts, 4 missing types.ts)
 - Container services: dufs, cinny, code-server
 - Bridges: whatsapp, telegram, signal
 - OS infra: bloom-matrix, netbird, nginx
@@ -50,10 +52,13 @@
 - bloom-live-tester agent: lemonade, channels.sock refs
 - Coverage: README says 80%, actual thresholds are lib/55% extensions/15%
 
-## Data Inconsistencies (2026-03-11)
-- Credentials path: code=~/.pi/matrix-credentials.json, CLAUDE.md=~/.config/bloom/
-- Telegram health_port: AGENTS.md=29319, catalog.yaml=29300
-- Bridge appservices: actions-bridges.ts="/etc/continuwuity/appservices/", should be "/etc/bloom/appservices/"
+## Known Issues (2026-03-12)
+- ServiceCatalogEntry misplaced in lib/services-manifest.ts, should be in services-catalog.ts
+- loadBridgeCatalog/loadServiceCatalog are near-identical, should be consolidated
+- Module-level mutable `let updateChecked` in bloom-os/actions.ts
+- bloom-os/actions.ts eagerly evaluates statusFile at import time
+- QUADLET_DIR computed in 4 separate places
+- netbird.ts and service-routing.ts missing from ARCHITECTURE.md lib/ listing
 
 ## Pi SDK Notes
 - `StringEnum`, `Type`, `truncateHead` are VALUE exports -- peerDependency runtime imports correct

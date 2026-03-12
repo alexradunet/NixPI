@@ -6,6 +6,7 @@ import os from "node:os";
 import { join } from "node:path";
 import type { ExtensionContext } from "@mariozechner/pi-coding-agent";
 import { run } from "../../lib/exec.js";
+import { getQuadletDir } from "../../lib/filesystem.js";
 import { loadManifest } from "../../lib/services-manifest.js";
 import { validateServiceName } from "../../lib/services-validation.js";
 import { createLogger, errorResult, truncate } from "../../lib/shared.js";
@@ -30,7 +31,7 @@ export async function handleTest(
 
 	const timeoutSec = Math.max(10, Math.round(params.start_timeout_sec ?? 120));
 	const cleanup = params.cleanup ?? false;
-	const systemdDir = join(os.homedir(), ".config", "containers", "systemd");
+	const systemdDir = getQuadletDir();
 	const userSystemdDir = join(os.homedir(), ".config", "systemd", "user");
 	const containerDef = join(systemdDir, `bloom-${params.name}.container`);
 	const socketDef = join(userSystemdDir, `bloom-${params.name}.socket`);

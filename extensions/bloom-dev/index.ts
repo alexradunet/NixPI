@@ -38,6 +38,8 @@ function devGate(): ReturnType<typeof errorResult> | null {
 }
 
 export default function (pi: ExtensionAPI) {
+	const repoDir = join(bloomRuntime, "pi-bloom");
+
 	// --- Always registered (no gate) ---
 
 	pi.registerTool({
@@ -99,7 +101,6 @@ export default function (pi: ExtensionAPI) {
 		async execute(_toolCallId, params, signal) {
 			const gate = devGate();
 			if (gate) return gate;
-			const repoDir = join(bloomRuntime, "pi-bloom");
 			return handleDevBuild(repoDir, signal, params.tag);
 		},
 	});
@@ -141,7 +142,6 @@ export default function (pi: ExtensionAPI) {
 		async execute(_toolCallId, params, signal, _onUpdate, ctx) {
 			const gate = devGate();
 			if (gate) return gate;
-			const repoDir = join(bloomRuntime, "pi-bloom");
 			return handleDevLoop(params, signal, ctx, repoDir);
 		},
 	});
@@ -154,7 +154,6 @@ export default function (pi: ExtensionAPI) {
 		async execute(_toolCallId, _params, signal) {
 			const gate = devGate();
 			if (gate) return gate;
-			const repoDir = join(bloomRuntime, "pi-bloom");
 			return handleDevTest(repoDir, signal);
 		},
 	});
@@ -171,7 +170,6 @@ export default function (pi: ExtensionAPI) {
 		async execute(_toolCallId, params, signal, _onUpdate, ctx) {
 			const gate = devGate();
 			if (gate) return gate;
-			const repoDir = join(bloomRuntime, "pi-bloom");
 			return handleDevSubmitPr(params, repoDir, signal, ctx);
 		},
 	});
@@ -187,7 +185,6 @@ export default function (pi: ExtensionAPI) {
 		async execute(_toolCallId, params, signal, _onUpdate, ctx) {
 			const gate = devGate();
 			if (gate) return gate;
-			const repoDir = join(bloomRuntime, "pi-bloom");
 			return handleDevPushSkill(params, repoDir, signal, ctx);
 		},
 	});
@@ -203,7 +200,6 @@ export default function (pi: ExtensionAPI) {
 		async execute(_toolCallId, params, signal, _onUpdate, ctx) {
 			const gate = devGate();
 			if (gate) return gate;
-			const repoDir = join(bloomRuntime, "pi-bloom");
 			return handleDevPushService(params, repoDir, signal, ctx);
 		},
 	});
@@ -220,7 +216,6 @@ export default function (pi: ExtensionAPI) {
 		async execute(_toolCallId, params, signal, _onUpdate, ctx) {
 			const gate = devGate();
 			if (gate) return gate;
-			const repoDir = join(bloomRuntime, "pi-bloom");
 			return handleDevPushExtension(params, repoDir, signal, ctx);
 		},
 	});

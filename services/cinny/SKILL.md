@@ -11,7 +11,7 @@ Lightweight Matrix web client accessible at `http://<host>/cinny`.
 
 ## Overview
 
-Cinny provides a browser-based interface for messaging Pi and other Matrix users on the local Bloom homeserver. It runs as a Podman container and is proxied through nginx.
+Cinny provides a browser-based interface for messaging Pi and other Matrix users on the local Bloom homeserver. It runs as a Podman container served directly on port 18810.
 
 ## Setup
 
@@ -34,8 +34,8 @@ The config file at `~/.config/bloom/cinny-config.json` is created automatically 
 ## Configuration
 
 - Config: `~/.config/bloom/cinny-config.json` (auto-templated with device hostname at install time)
-- Homeserver: `http://<hostname>` — nginx proxies `/_matrix/` to the local homeserver on port 6167
-- Container port: 18810 (proxied by nginx at `/cinny/` and Cinny asset paths)
+- Homeserver: `http://<hostname>:6167` — connects directly to the local Continuwuity homeserver
+- Container port: 18810
 - Custom homeservers: allowed (so users can manually enter the URL if needed)
 - Login: use localpart only (e.g. `user`, not `@user:bloom`)
 
@@ -45,7 +45,6 @@ To use a different Matrix web client (Element Web, FluffyChat, etc.):
 
 1. Remove Cinny: `systemctl --user stop bloom-cinny && rm ~/.config/containers/systemd/bloom-cinny.container`
 2. Install your preferred client as a new service
-3. Update nginx config if needed
 
 ## Troubleshooting
 

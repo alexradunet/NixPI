@@ -3,7 +3,6 @@ import { existsSync, readFileSync } from "node:fs";
 import os from "node:os";
 import { join } from "node:path";
 import jsYaml from "js-yaml";
-import type { ServiceCatalogEntry } from "./services-manifest.js";
 import { commandExists, hasSubidRange } from "./services-validation.js";
 
 // ---------------------------------------------------------------------------
@@ -11,7 +10,7 @@ import { commandExists, hasSubidRange } from "./services-validation.js";
 // ---------------------------------------------------------------------------
 
 /** A single bridge entry from services/catalog.yaml. */
-export interface BridgeCatalogEntry {
+interface BridgeCatalogEntry {
 	image: string;
 	auth_method: string;
 	health_port: number;
@@ -22,8 +21,28 @@ export interface BridgeCatalogEntry {
 // Service catalog
 // ---------------------------------------------------------------------------
 
-/** Load the bridge catalog from the first catalog.yaml that exists among repo dir, system share, and cwd. */
-export function loadBridgeCatalog(repoDir: string): Record<string, BridgeCatalogEntry> {
+/** Entry for one service in the service catalog (`services/catalog.yaml`). */
+export interface ServiceCatalogEntry {
+	version?: string;
+	category?: string;
+	image?: string;
+	optional?: boolean;
+	depends?: string[];
+	/** Host port for direct mesh access and DNS routing. */
+	port?: number;
+	models?: Array<{
+		volume: string;
+		path: string;
+		url: string;
+	}>;
+	preflight?: {
+		commands?: string[];
+		rootless_subids?: boolean;
+	};
+}
+
+/** Load a section from the first catalog.yaml that exists among repo dir, system share, and cwd. */
+function loadCatalogSection<T>(repoDir: string, key: string): Record<string, T> {
 	const candidates = [
 		join(repoDir, "services", "catalog.yaml"),
 		"/usr/local/share/bloom/services/catalog.yaml",
@@ -33,8 +52,8 @@ export function loadBridgeCatalog(repoDir: string): Record<string, BridgeCatalog
 		if (!existsSync(candidate)) continue;
 		try {
 			const raw = readFileSync(candidate, "utf-8");
-			const doc = (jsYaml.load(raw) as { bridges?: Record<string, BridgeCatalogEntry> } | null) ?? {};
-			if (doc.bridges && typeof doc.bridges === "object") return doc.bridges;
+			const doc = (jsYaml.load(raw) as Record<string, Record<string, T>> | null) ?? {};
+			if (doc[key] && typeof doc[key] === "object") return doc[key];
 		} catch {
 			// ignore and continue
 		}
@@ -42,24 +61,14 @@ export function loadBridgeCatalog(repoDir: string): Record<string, BridgeCatalog
 	return {};
 }
 
+/** Load the bridge catalog from the first catalog.yaml that exists among repo dir, system share, and cwd. */
+export function loadBridgeCatalog(repoDir: string): Record<string, BridgeCatalogEntry> {
+	return loadCatalogSection<BridgeCatalogEntry>(repoDir, "bridges");
+}
+
 /** Load the service catalog from the first location that exists among repo dir, system share, and cwd. */
 export function loadServiceCatalog(repoDir: string): Record<string, ServiceCatalogEntry> {
-	const candidates = [
-		join(repoDir, "services", "catalog.yaml"),
-		"/usr/local/share/bloom/services/catalog.yaml",
-		join(process.cwd(), "services", "catalog.yaml"),
-	];
-	for (const candidate of candidates) {
-		if (!existsSync(candidate)) continue;
-		try {
-			const raw = readFileSync(candidate, "utf-8");
-			const doc = (jsYaml.load(raw) as { services?: Record<string, ServiceCatalogEntry> } | null) ?? {};
-			if (doc.services && typeof doc.services === "object") return doc.services;
-		} catch {
-			// ignore and continue
-		}
-	}
-	return {};
+	return loadCatalogSection<ServiceCatalogEntry>(repoDir, "services");
 }
 
 // ---------------------------------------------------------------------------

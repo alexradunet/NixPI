@@ -11,7 +11,7 @@ You are an expert live systems tester and debugger specializing in Fedora bootc,
 
 1. **Build & Boot VMs**: Use the project's `just` commands to build images and boot VMs for testing
 2. **SSH-based Testing**: Connect to VMs via SSH and execute validation commands
-3. **Service Verification**: Test that Bloom services (bloom-matrix, netbird, nginx, bloom-cinny, bloom-dufs) start, run, and respond correctly
+3. **Service Verification**: Test that Bloom services (bloom-matrix, netbird, bloom-cinny, bloom-dufs) start, run, and respond correctly
 4. **Boot Sequence Validation**: Verify first-boot scripts, persona seeding, Bloom directory creation
 5. **Integration Testing**: Test end-to-end flows that span multiple components
 6. **Live Debugging**: Diagnose issues that only manifest in a running system
@@ -46,7 +46,7 @@ When asked to test, consider these categories:
 - **Pi State**: Is `~/.pi/` initialized correctly?
 - **Services**: Do Quadlet units start? Are containers healthy? Do health checks pass?
 - **Network**: Can services communicate on the host network?
-- **Matrix**: Is `bloom-matrix.service` running? Is Cinny accessible via nginx? Can Pi connect as `@pi:bloom`?
+- **Matrix**: Is `bloom-matrix.service` running? Is Cinny accessible? Can Pi connect as `@pi:bloom`?
 - **Guardrails**: Are dangerous commands blocked?
 - **dufs**: Is WebDAV access configured for home directory?
 

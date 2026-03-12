@@ -23,7 +23,7 @@ The Matrix server starts automatically on boot. User accounts are created during
 ## Configuration
 
 - Server name: `bloom`
-- Port: `6167` (proxied via nginx at `/_matrix/`)
+- Port: `6167`
 - Registration: token-required (see `/var/lib/continuwuity/registration_token`)
 - Federation: disabled
 - Data: `/var/lib/continuwuity/`

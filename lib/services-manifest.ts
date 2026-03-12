@@ -24,26 +24,6 @@ export interface Manifest {
 	services: Record<string, ManifestService>;
 }
 
-/** Entry for one service in the service catalog (`services/catalog.yaml`). */
-export interface ServiceCatalogEntry {
-	version?: string;
-	category?: string;
-	image?: string;
-	optional?: boolean;
-	depends?: string[];
-	/** Host port for direct mesh access and DNS routing. */
-	port?: number;
-	models?: Array<{
-		volume: string;
-		path: string;
-		url: string;
-	}>;
-	preflight?: {
-		commands?: string[];
-		rootless_subids?: boolean;
-	};
-}
-
 // ---------------------------------------------------------------------------
 // Manifest I/O
 // ---------------------------------------------------------------------------
