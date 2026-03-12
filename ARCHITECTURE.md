@@ -66,8 +66,7 @@ lib/
   git.ts           # git utilities (parseGithubSlugFromUrl, slugifyBranchPart)
   repo.ts          # git remote helpers (getRemoteUrl, inferRepoUrl)
   audit.ts         # audit utilities (dayStamp, sanitize, summarizeInput)
-  services-catalog.ts  # loadServiceCatalog, servicePreflightErrors
-  services-install.ts  # findLocalServicePackage (pure lookup)
+  services-catalog.ts  # loadServiceCatalog, servicePreflightErrors, findLocalServicePackage
   services-manifest.ts # Manifest types, loadManifest, saveManifest
   services-validation.ts # validateServiceName, validatePinnedImage, commandExists
   setup.ts         # first-boot setup wizard state machine (STEP_ORDER, advanceStep, getNextStep)

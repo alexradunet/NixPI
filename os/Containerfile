@@ -60,9 +60,9 @@ COPY os/sysconfig/bloom-sudoers /etc/sudoers.d/10-bloom
 RUN chmod 0440 /etc/sudoers.d/10-bloom
 
 ARG PI_CODING_AGENT_VERSION=0.57.1
-ARG BIOME_VERSION=2.4.5
+ARG BIOME_VERSION=2.4.6
 ARG TYPESCRIPT_VERSION=5.9.3
-ARG CLAUDE_CODE_VERSION=2.1.69
+ARG CLAUDE_CODE_VERSION=2.1.73
 
 # Install global CLI tooling (pinned versions; keep npm cache out of /var for bootc lint)
 RUN HOME=/tmp npm install -g --cache /tmp/npm-cache \
@@ -109,7 +109,10 @@ RUN chmod +x /usr/local/bin/bloom-greeting.sh
 # Enabled after first-boot setup completes via bloom-setup
 COPY os/sysconfig/pi-daemon.service /usr/lib/systemd/user/pi-daemon.service
 
-# Enable SSH for remote access
+# Enable SSH for remote access (password auth only — no key-based auth)
+RUN mkdir -p /etc/ssh/sshd_config.d && \
+    printf 'PasswordAuthentication yes\nPubkeyAuthentication no\n' \
+        > /etc/ssh/sshd_config.d/50-bloom.conf
 RUN systemctl enable sshd.service
 
 # Auto-login on VT1 and serial console — Pi handles setup and authentication

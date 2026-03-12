@@ -28,17 +28,17 @@ services:
 
 bridges:
   whatsapp:
-    image: dock.mau.dev/mautrix/whatsapp:latest
+    image: dock.mau.dev/mautrix/whatsapp:v26.02
     auth_method: qr_code
     health_port: 29318
     description: Bridge WhatsApp conversations to Matrix
   telegram:
-    image: dock.mau.dev/mautrix/telegram:latest
+    image: dock.mau.dev/mautrix/telegram:v0.15.3
     auth_method: phone_code
     health_port: 29300
     description: Bridge Telegram conversations to Matrix
   signal:
-    image: dock.mau.dev/mautrix/signal:latest
+    image: dock.mau.dev/mautrix/signal:v26.02.2
     auth_method: qr_code
     health_port: 29328
     description: Bridge Signal conversations to Matrix

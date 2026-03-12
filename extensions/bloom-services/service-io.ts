@@ -1,7 +1,4 @@
-/**
- * Service I/O operations — package installation, image builds, model downloads, runtime detection.
- * Moved from lib/services-install.ts since these perform heavy I/O (filesystem writes, podman calls).
- */
+/** Service I/O operations — package installation, image builds, model downloads, runtime detection. */
 import {
 	existsSync,
 	mkdirSync,
@@ -17,7 +14,7 @@ import { join } from "node:path";
 import { run } from "../../lib/exec.js";
 import { getQuadletDir } from "../../lib/filesystem.js";
 import type { ServiceCatalogEntry } from "../../lib/services-catalog.js";
-import { findLocalServicePackage } from "../../lib/services-install.js";
+import { findLocalServicePackage } from "../../lib/services-catalog.js";
 
 /** Template Cinny config with the device's hostname as homeserver URL. */
 function templateCinnyConfig(raw: string): string {
@@ -33,7 +30,7 @@ function templateCinnyConfig(raw: string): string {
 	}
 }
 
-/** Install a service from a bundled local package. Copies Quadlet files, SKILL.md, and generates channel tokens. */
+/** Install a service from a bundled local package. Copies Quadlet files, SKILL.md, and config files. */
 export async function installServicePackage(
 	name: string,
 	_version: string,
@@ -52,79 +49,56 @@ export async function installServicePackage(
 		};
 	}
 
-	const tempDir = mkdtempSync(join(os.tmpdir(), `bloom-manifest-${name}-`));
+	const systemdDir = getQuadletDir();
+	const userSystemdDir = join(os.homedir(), ".config", "systemd", "user");
+	const skillDir = join(bloomDir, "Skills", name);
+	mkdirSync(systemdDir, { recursive: true });
+	mkdirSync(userSystemdDir, { recursive: true });
+	mkdirSync(skillDir, { recursive: true });
 
-	try {
-		const localTempQuadlet = join(tempDir, "quadlet");
-		mkdirSync(localTempQuadlet, { recursive: true });
-		for (const fileName of readdirSync(localPackage.quadletDir)) {
-			const src = join(localPackage.quadletDir, fileName);
-			if (!statSync(src).isFile()) continue;
-			writeFileSync(join(localTempQuadlet, fileName), readFileSync(src));
-		}
-		writeFileSync(join(tempDir, "SKILL.md"), readFileSync(localPackage.skillPath));
-
-		const quadletSrc = join(tempDir, "quadlet");
-		const skillSrc = join(tempDir, "SKILL.md");
-		if (!existsSync(quadletSrc) || !existsSync(skillSrc)) {
-			return {
-				ok: false,
-				source: "local",
-				ref: name,
-				note: `Service package for ${name} missing quadlet/ or SKILL.md`,
-			};
-		}
-
-		const systemdDir = getQuadletDir();
-		const userSystemdDir = join(os.homedir(), ".config", "systemd", "user");
-		const skillDir = join(bloomDir, "Skills", name);
-		mkdirSync(systemdDir, { recursive: true });
-		mkdirSync(userSystemdDir, { recursive: true });
-		mkdirSync(skillDir, { recursive: true });
-
-		for (const fileName of readdirSync(quadletSrc)) {
-			const src = join(quadletSrc, fileName);
-			if (!statSync(src).isFile()) continue;
-			const destDir = fileName.endsWith(".socket") ? userSystemdDir : systemdDir;
-			writeFileSync(join(destDir, fileName), readFileSync(src));
-		}
-		writeFileSync(join(skillDir, "SKILL.md"), readFileSync(skillSrc));
-
-		const expectedSocket = join(quadletSrc, `bloom-${name}.socket`);
-		const installedSocket = join(userSystemdDir, `bloom-${name}.socket`);
-		if (!existsSync(expectedSocket) && existsSync(installedSocket)) {
-			await run("systemctl", ["--user", "disable", "--now", `bloom-${name}.socket`], signal);
-			rmSync(installedSocket, { force: true });
-		}
-
-		// Ensure service-specific env file exists so the container can start
-		const configDir = join(os.homedir(), ".config", "bloom");
-		mkdirSync(configDir, { recursive: true });
-		const serviceEnvPath = join(configDir, `${name}.env`);
-		if (!existsSync(serviceEnvPath)) {
-			writeFileSync(serviceEnvPath, "");
-		}
-
-		// Copy extra config files (e.g., cinny-config.json) from service package
-		for (const fileName of readdirSync(localPackage.serviceDir)) {
-			if (!fileName.endsWith(".json") && !fileName.endsWith(".toml")) continue;
-			const src = join(localPackage.serviceDir, fileName);
-			if (!statSync(src).isFile()) continue;
-			const dest = join(configDir, fileName);
-			if (!existsSync(dest)) {
-				let content = readFileSync(src, "utf-8");
-				// Template Cinny config with actual homeserver URL
-				if (fileName === "cinny-config.json") {
-					content = templateCinnyConfig(content);
-				}
-				writeFileSync(dest, content);
-			}
-		}
-
-		return { ok: true, source: "local", ref: name };
-	} finally {
-		rmSync(tempDir, { recursive: true, force: true });
+	// Copy quadlet files directly to their destinations
+	for (const fileName of readdirSync(localPackage.quadletDir)) {
+		const src = join(localPackage.quadletDir, fileName);
+		if (!statSync(src).isFile()) continue;
+		const destDir = fileName.endsWith(".socket") ? userSystemdDir : systemdDir;
+		writeFileSync(join(destDir, fileName), readFileSync(src));
 	}
+
+	// Copy skill file
+	writeFileSync(join(skillDir, "SKILL.md"), readFileSync(localPackage.skillPath));
+
+	// Clean up stale socket unit if package no longer includes one
+	const expectedSocket = join(localPackage.quadletDir, `bloom-${name}.socket`);
+	const installedSocket = join(userSystemdDir, `bloom-${name}.socket`);
+	if (!existsSync(expectedSocket) && existsSync(installedSocket)) {
+		await run("systemctl", ["--user", "disable", "--now", `bloom-${name}.socket`], signal);
+		rmSync(installedSocket, { force: true });
+	}
+
+	// Ensure service-specific env file exists so the container can start
+	const configDir = join(os.homedir(), ".config", "bloom");
+	mkdirSync(configDir, { recursive: true });
+	const serviceEnvPath = join(configDir, `${name}.env`);
+	if (!existsSync(serviceEnvPath)) {
+		writeFileSync(serviceEnvPath, "");
+	}
+
+	// Copy extra config files (e.g., cinny-config.json) from service package
+	for (const fileName of readdirSync(localPackage.serviceDir)) {
+		if (!fileName.endsWith(".json") && !fileName.endsWith(".toml")) continue;
+		const src = join(localPackage.serviceDir, fileName);
+		if (!statSync(src).isFile()) continue;
+		const dest = join(configDir, fileName);
+		if (!existsSync(dest)) {
+			let content = readFileSync(src, "utf-8");
+			if (fileName === "cinny-config.json") {
+				content = templateCinnyConfig(content);
+			}
+			writeFileSync(dest, content);
+		}
+	}
+
+	return { ok: true, source: "local", ref: name };
 }
 
 /** Build a local container image if the image ref starts with localhost/. */
