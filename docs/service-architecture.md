@@ -153,9 +153,12 @@ Keep this distinction clear:
 - daemon: core platform runtime
 - service packages: optional user workloads
 
+For the daemon's runtime modes, proactive job model, and module layout, see [docs/daemon-architecture.md](daemon-architecture.md).
+
 ## Related
 
 - [README.md](../README.md)
 - [ARCHITECTURE.md](../ARCHITECTURE.md)
+- [docs/daemon-architecture.md](daemon-architecture.md)
 - [docs/supply-chain.md](supply-chain.md)
 - [services/README.md](../services/README.md)

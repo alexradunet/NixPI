@@ -260,6 +260,11 @@ Hooks:
 
 `pi-daemon.service` is the always-on Matrix daemon.
 
+Developer overview:
+
+- see [docs/daemon-architecture.md](docs/daemon-architecture.md) for the readable runtime walkthrough
+- use this section as the compact reference for paths and current behavior
+
 Current behavior:
 
 - starts in single-agent mode if no agent overlays exist
@@ -271,6 +276,34 @@ Current behavior:
 - runs heartbeat jobs as synthetic proactive turns and can suppress configured no-op replies such as `HEARTBEAT_OK`
 - prunes duplicate-event and reply-budget state over time so long-lived sessions stay bounded
 
+Proactive job frontmatter shape:
+
+```yaml
+proactive:
+  jobs:
+    - id: daily-heartbeat
+      kind: heartbeat
+      room: "!ops:bloom"
+      interval_minutes: 1440
+      prompt: |
+        Review the room and host state.
+        Reply HEARTBEAT_OK if nothing needs surfacing.
+      quiet_if_noop: true
+      no_op_token: HEARTBEAT_OK
+    - id: morning-check
+      kind: cron
+      room: "!ops:bloom"
+      cron: "0 9 * * *"
+      prompt: Send the morning operational check-in.
+```
+
+Notes:
+
+- `cron` currently supports `@hourly`, `@daily`, and fixed `minute hour * * *`
+- duplicate proactive job ids are rejected within the same room for a single agent overlay
+- heartbeat failures back off by the configured interval instead of immediately looping
+- generated starter `AGENTS.md` files do not include proactive tutorial text in the runtime prompt body
+
 Key daemon files:
 
 | Path | Purpose |
@@ -279,8 +312,12 @@ Key daemon files:
 | `core/daemon/contracts/matrix.ts` | Bloom-owned Matrix bridge contract |
 | `core/daemon/runtime/matrix-js-sdk-bridge.ts` | official Matrix SDK bridge and per-identity client lifecycle |
 | `core/daemon/runtime/pi-room-session.ts` | Pi SDK-backed room session lifecycle |
+| `core/daemon/single-agent-runtime.ts` | extracted single-agent room runtime, retries, and shutdown behavior |
 | `core/daemon/agent-supervisor.ts` | multi-agent routing and session orchestration |
+| `core/daemon/multi-agent-runtime.ts` | extracted multi-agent bridge, supervisor, and scheduler lifecycle |
+| `core/daemon/lifecycle.ts` | shared retry/backoff helper for daemon startup |
 | `core/daemon/scheduler.ts` | daemon-owned heartbeat and cron-style proactive scheduling |
+| `core/daemon/room-failures.ts` | single-agent room failure window and quarantine handling |
 | `core/daemon/router.ts` | routing policy |
 | `core/daemon/room-state.ts` | duplicate, cooldown, and reply-budget tracking |
 
@@ -323,6 +360,7 @@ Additional service documentation in-tree:
 
 - [README.md](README.md)
 - [ARCHITECTURE.md](ARCHITECTURE.md)
+- [docs/daemon-architecture.md](docs/daemon-architecture.md)
 - [docs/memory-model.md](docs/memory-model.md)
 - [docs/service-architecture.md](docs/service-architecture.md)
 - [docs/quick_deploy.md](docs/quick_deploy.md)

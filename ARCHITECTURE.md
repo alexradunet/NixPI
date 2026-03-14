@@ -77,8 +77,12 @@ The daemon is a first-class part of the current architecture.
 | `core/daemon/contracts/matrix.ts` | Bloom-owned Matrix bridge contract |
 | `core/daemon/runtime/matrix-js-sdk-bridge.ts` | official Matrix SDK bridge with per-identity clients |
 | `core/daemon/runtime/pi-room-session.ts` | Pi SDK-backed room session lifecycle |
+| `core/daemon/single-agent-runtime.ts` | extracted single-agent runtime lifecycle and message flow |
 | `core/daemon/agent-supervisor.ts` | room routing, typing, session lifecycle, sequential handoff |
+| `core/daemon/multi-agent-runtime.ts` | extracted multi-agent runtime lifecycle and scheduler wiring |
+| `core/daemon/lifecycle.ts` | shared startup retry/backoff helper |
 | `core/daemon/scheduler.ts` | daemon-owned proactive heartbeat and cron-style scheduling |
+| `core/daemon/room-failures.ts` | room failure window and quarantine handling |
 
 ### Runtime Model
 
@@ -90,8 +94,12 @@ The daemon is a first-class part of the current architecture.
 6. Idle room sessions are disposed after `BLOOM_DAEMON_IDLE_TIMEOUT_MS` unless more traffic arrives.
 7. In multi-agent mode, the daemon may also dispatch synthetic proactive turns from agent-declared heartbeat or cron jobs.
 8. During supervisor shutdown, new sequential multi-agent handoffs and proactive dispatches are suppressed so room shutdown cannot enqueue fresh work.
+9. Heartbeat failures back off by their configured interval; they do not spin in immediate retry loops.
+10. Proactive scheduler state is persisted per `(agent, room, job)` so identical job ids can exist in different rooms.
 
 This is custom Bloom orchestration code and should be treated as such when reviewing changes.
+
+For the more narrative developer-facing walkthrough, see [docs/daemon-architecture.md](docs/daemon-architecture.md).
 
 ## Bloom Directory
 

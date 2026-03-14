@@ -124,6 +124,38 @@ Reference material for OS-level infrastructure also lives under `services/`:
 
 Each room session is backed by Pi's in-process SDK session lifecycle, and Matrix transport uses the official `matrix-js-sdk` with in-memory sync state.
 
+For the full runtime map, proactive job semantics, and helper/module layout, see [docs/daemon-architecture.md](docs/daemon-architecture.md).
+
+### Proactive Job Shape
+
+Agent overlays may declare optional proactive jobs in frontmatter:
+
+```yaml
+proactive:
+  jobs:
+    - id: daily-heartbeat
+      kind: heartbeat
+      room: "!ops:bloom"
+      interval_minutes: 1440
+      prompt: |
+        Review the room and host state.
+        Reply HEARTBEAT_OK if nothing needs surfacing.
+      quiet_if_noop: true
+      no_op_token: HEARTBEAT_OK
+    - id: morning-check
+      kind: cron
+      room: "!ops:bloom"
+      cron: "0 9 * * *"
+      prompt: Send the morning operational check-in.
+```
+
+Current constraints:
+
+- `heartbeat` jobs use `interval_minutes`
+- `cron` jobs currently support only `@hourly`, `@daily`, and fixed `minute hour * * *` expressions
+- job ids must be unique per `(room, id)` within an agent overlay
+- scheduler state is persisted per `(agent, room, job)` so the same agent can schedule the same job id in different rooms independently
+
 ## Build and Test
 
 ```bash
@@ -151,6 +183,7 @@ just vm-ssh
 
 - [AGENTS.md](AGENTS.md) for the complete tool, hook, path, and feature reference
 - [ARCHITECTURE.md](ARCHITECTURE.md) for the current structure and design rules
+- [docs/daemon-architecture.md](docs/daemon-architecture.md) for the daemon runtime model, proactive jobs, and helper layout
 - [docs/memory-model.md](docs/memory-model.md) for the long-term memory model and promotion rules
 - [docs/service-architecture.md](docs/service-architecture.md) for the Skill / Extension / Service model
 - [docs/pibloom-setup.md](docs/pibloom-setup.md) for first boot
