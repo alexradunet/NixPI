@@ -1,4 +1,4 @@
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 /**
  * Pi Daemon — Matrix room agent supervisor.
  *
@@ -23,6 +23,7 @@ import type { MatrixTextEvent } from "./contracts/matrix.js";
 import type { SessionEvent } from "./contracts/session.js";
 import type { BloomSessionLike } from "./contracts/session.js";
 import { classifySender, extractMentions } from "./router.js";
+import { collectScheduledJobs, loadSchedulerState, saveSchedulerState } from "./proactive.js";
 import { MatrixJsSdkBridge } from "./runtime/matrix-js-sdk-bridge.js";
 import { PiRoomSession, type PiRoomSessionOptions } from "./runtime/pi-room-session.js";
 import { type ScheduledJob, Scheduler, type SchedulerJobState } from "./scheduler.js";
@@ -109,8 +110,23 @@ async function runMultiAgentDaemon(agents: readonly AgentDefinition[]): Promise<
 			? new Scheduler({
 					jobs: scheduledJobs,
 					onTrigger: (job) => supervisor.dispatchProactiveJob(job),
-					loadState: loadSchedulerState,
-					saveState: saveSchedulerState,
+					loadState: () => loadSchedulerState(SCHEDULER_STATE_PATH),
+					saveState: (state) => {
+						try {
+							saveSchedulerState(SCHEDULER_STATE_PATH, state);
+						} catch (error) {
+							log.warn("failed to persist scheduler state", { error: String(error) });
+						}
+					},
+					onError: (job, error) => {
+						log.warn("proactive job failed", {
+							jobId: job.jobId,
+							agentId: job.agentId,
+							roomId: job.roomId,
+							kind: job.kind,
+							error: String(error),
+						});
+					},
 				})
 			: null;
 	async function shutdown(signal: string): Promise<void> {
@@ -321,42 +337,6 @@ function handleProcessError(codeRoomId: string, code: number, failures: Map<stri
 	}
 
 	failures.set(codeRoomId, next);
-}
-
-function collectScheduledJobs(agents: readonly AgentDefinition[]): ScheduledJob[] {
-	return agents.flatMap((agent) =>
-		(agent.proactive?.jobs ?? []).map((job) => ({
-			id: job.id,
-			agentId: agent.id,
-			roomId: job.room,
-			kind: job.kind,
-			prompt: job.prompt,
-			...(job.intervalMinutes ? { intervalMinutes: job.intervalMinutes } : {}),
-			...(job.cron ? { cron: job.cron } : {}),
-			...(job.quietIfNoop !== undefined ? { quietIfNoop: job.quietIfNoop } : {}),
-			...(job.noOpToken ? { noOpToken: job.noOpToken } : {}),
-		})),
-	);
-}
-
-function loadSchedulerState(): Record<string, SchedulerJobState> {
-	try {
-		const raw = readFileSync(SCHEDULER_STATE_PATH, "utf-8");
-		const parsed = JSON.parse(raw);
-		if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {};
-		return parsed as Record<string, SchedulerJobState>;
-	} catch {
-		return {};
-	}
-}
-
-function saveSchedulerState(state: Record<string, SchedulerJobState>): void {
-	try {
-		mkdirSync(join(os.homedir(), ".pi", "pi-daemon"), { recursive: true });
-		writeFileSync(SCHEDULER_STATE_PATH, `${JSON.stringify(state, null, 2)}\n`, "utf-8");
-	} catch (error) {
-		log.warn("failed to persist scheduler state", { error: String(error) });
-	}
 }
 
 async function startWithRetry(startFn: () => Promise<void>, onError?: () => Promise<void>): Promise<void> {

@@ -23,6 +23,7 @@ export interface SchedulerOptions {
 	onTrigger: (job: TriggeredJob) => Promise<unknown>;
 	loadState: () => Record<string, SchedulerJobState>;
 	saveState: (state: Record<string, SchedulerJobState>) => void;
+	onError?: (job: TriggeredJob, error: unknown) => void;
 	now?: () => number;
 	setTimeoutImpl?: typeof setTimeout;
 	clearTimeoutImpl?: typeof clearTimeout;
@@ -34,6 +35,7 @@ export class Scheduler {
 	private readonly jobs: ScheduledJob[];
 	private readonly onTrigger: (job: TriggeredJob) => Promise<unknown>;
 	private readonly saveState: (state: Record<string, SchedulerJobState>) => void;
+	private readonly onError: (job: TriggeredJob, error: unknown) => void;
 	private readonly now: () => number;
 	private readonly setTimeoutImpl: typeof setTimeout;
 	private readonly clearTimeoutImpl: typeof clearTimeout;
@@ -45,6 +47,7 @@ export class Scheduler {
 		this.jobs = options.jobs;
 		this.onTrigger = options.onTrigger;
 		this.saveState = options.saveState;
+		this.onError = options.onError ?? (() => {});
 		this.now = options.now ?? (() => Date.now());
 		this.setTimeoutImpl = options.setTimeoutImpl ?? setTimeout;
 		this.clearTimeoutImpl = options.clearTimeoutImpl ?? clearTimeout;
@@ -73,7 +76,7 @@ export class Scheduler {
 		);
 		const delayMs = Math.max(0, nextRunAt - now);
 		this.timer = this.setTimeoutImpl(() => {
-			void this.runDueJobs().then(() => this.scheduleNext());
+			void this.runDueJobs().finally(() => this.scheduleNext());
 		}, delayMs);
 	}
 
@@ -84,12 +87,17 @@ export class Scheduler {
 			const nextRunAt = computeNextRunAt(job, now, this.state[stateKey]?.lastRunAt);
 			if (nextRunAt > now) continue;
 
-			await this.onTrigger({
+			const triggeredJob: TriggeredJob = {
 				...job,
 				jobId: job.id,
-			});
-			this.state[stateKey] = { lastRunAt: now };
-			this.saveState(this.state);
+			};
+			try {
+				await this.onTrigger(triggeredJob);
+				this.state[stateKey] = { lastRunAt: now };
+				this.saveState(this.state);
+			} catch (error) {
+				this.onError(triggeredJob, error);
+			}
 		}
 	}
 

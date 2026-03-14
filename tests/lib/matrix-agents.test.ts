@@ -104,5 +104,8 @@ describe("generateAgentInstructionsMarkdown", () => {
 		});
 		expect(parsed.body).toContain("# Planner");
 		expect(parsed.body).toContain("Focus on decomposition and sequencing.");
+		expect(parsed.body).toContain("Optional proactive jobs example");
+		expect(parsed.body).toContain("kind: heartbeat");
+		expect(parsed.body).toContain('no_op_token: "HEARTBEAT_OK"');
 	});
 });

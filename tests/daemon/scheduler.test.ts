@@ -106,4 +106,41 @@ describe("Scheduler", () => {
 		expect(clearTimeoutImpl).toHaveBeenCalled();
 		vi.useRealTimers();
 	});
+
+	it("does not persist lastRunAt when a trigger fails and keeps scheduling", async () => {
+		const callback = vi.fn(async () => {
+			throw new Error("boom");
+		});
+		const persistState = vi.fn();
+		const timeouts: Array<() => void> = [];
+		const setTimeoutImpl = vi.fn((fn: () => void, _delay: number) => {
+			timeouts.push(fn);
+			return 1 as unknown as ReturnType<typeof setTimeout>;
+		});
+		const scheduler = new Scheduler({
+			jobs: [
+				{
+					id: "daily-heartbeat",
+					agentId: "host",
+					roomId: "!ops:bloom",
+					kind: "heartbeat",
+					intervalMinutes: 1440,
+					prompt: "Heartbeat",
+				},
+			],
+			now: () => Date.UTC(2026, 2, 14, 12, 0, 0),
+			onTrigger: callback,
+			loadState: () => ({}),
+			saveState: persistState,
+			setTimeoutImpl: setTimeoutImpl as unknown as typeof setTimeout,
+		});
+
+		scheduler.start();
+		await timeouts[0]?.();
+		await Promise.resolve();
+
+		expect(callback).toHaveBeenCalledTimes(1);
+		expect(persistState).not.toHaveBeenCalled();
+		expect(setTimeoutImpl).toHaveBeenCalledTimes(2);
+	});
 });

@@ -303,4 +303,31 @@ proactive:
 			},
 		]);
 	});
+
+	it("rejects proactive jobs with invalid heartbeat intervals", () => {
+		const bloomDir = makeBloomDir();
+		writeAgent(
+			bloomDir,
+			"host",
+			`---
+id: host
+name: Host
+matrix:
+  username: pi
+proactive:
+  jobs:
+    - id: bad-heartbeat
+      kind: heartbeat
+      room: "!ops:bloom"
+      interval_minutes: 0
+      prompt: Invalid
+---
+# Host
+`,
+		);
+
+		const result = loadAgentDefinitionsResult({ bloomDir });
+		expect(result.agents).toEqual([]);
+		expect(result.errors).toEqual([expect.stringContaining("invalid interval_minutes")]);
+	});
 });
