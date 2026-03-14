@@ -2,8 +2,8 @@ import { describe, expect, it, vi } from "vitest";
 
 import type { AgentDefinition } from "../../daemon/agent-registry.js";
 import type { RoomEnvelope } from "../../daemon/router.js";
+import type { SessionEvent } from "../../daemon/session-events.js";
 import { AgentSupervisor } from "../../daemon/agent-supervisor.js";
-import type { RpcEvent } from "../../daemon/rpc-protocol.js";
 
 function makeAgent(
 	id: string,
@@ -38,15 +38,15 @@ class FakeSession {
 	});
 
 	constructor(
-		public readonly opts: {
-			agent: AgentDefinition;
-			onAgentEnd: (agentId: string, text: string) => void;
-			onEvent: (agentId: string, event: RpcEvent) => void;
-			onExit: (agentId: string, code: number | null) => void;
-		},
+			public readonly opts: {
+				agent: AgentDefinition;
+				onAgentEnd: (agentId: string, text: string) => void;
+				onEvent: (agentId: string, event: SessionEvent) => void;
+				onExit: (agentId: string, code: number | null) => void;
+			},
 	) {}
 
-	sendMessage(text: string): void {
+	async sendMessage(text: string): Promise<void> {
 		this.sentMessages.push(text);
 	}
 
@@ -54,7 +54,7 @@ class FakeSession {
 		this.opts.onAgentEnd(this.opts.agent.id, text);
 	}
 
-	triggerEvent(event: RpcEvent): void {
+	triggerEvent(event: SessionEvent): void {
 		this.opts.onEvent(this.opts.agent.id, event);
 	}
 
@@ -82,7 +82,6 @@ describe("AgentSupervisor", () => {
 		const supervisor = new AgentSupervisor({
 			agents: [host, planner],
 			matrixPool,
-			socketDir: "/tmp/sockets",
 			sessionBaseDir: "/tmp/sessions",
 			idleTimeoutMs: 60_000,
 			createSession: (opts) => {
@@ -135,7 +134,6 @@ describe("AgentSupervisor", () => {
 		const supervisor = new AgentSupervisor({
 			agents: [host, planner],
 			matrixPool,
-			socketDir: "/tmp/sockets",
 			sessionBaseDir: "/tmp/sessions",
 			idleTimeoutMs: 60_000,
 			createSession: (opts) => {
@@ -178,7 +176,6 @@ describe("AgentSupervisor", () => {
 		const supervisor = new AgentSupervisor({
 			agents: [critic, planner],
 			matrixPool,
-			socketDir: "/tmp/sockets",
 			sessionBaseDir: "/tmp/sessions",
 			idleTimeoutMs: 60_000,
 			createSession: (opts) => {
@@ -233,7 +230,6 @@ describe("AgentSupervisor", () => {
 		const supervisor = new AgentSupervisor({
 			agents: [host, planner],
 			matrixPool,
-			socketDir: "/tmp/sockets",
 			sessionBaseDir: "/tmp/sessions",
 			idleTimeoutMs: 60_000,
 			createSession: (opts) => {
@@ -284,7 +280,6 @@ describe("AgentSupervisor", () => {
 		const supervisor = new AgentSupervisor({
 			agents: [host],
 			matrixPool,
-			socketDir: "/tmp/sockets",
 			sessionBaseDir: "/tmp/sessions",
 			idleTimeoutMs: 60_000,
 			createSession: (opts) => {

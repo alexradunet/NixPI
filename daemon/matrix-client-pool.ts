@@ -1,7 +1,8 @@
 import { existsSync, mkdirSync, readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
-import { AutojoinRoomsMixin, MatrixClient, SimpleFsStorageProvider } from "matrix-bot-sdk";
+import { join } from "node:path";
+import { MatrixClient } from "matrix-bot-sdk";
 import type { AgentDefinition } from "./agent-registry.js";
+import { createMatrixClient } from "./matrix-client.js";
 import { classifySender, extractMentions, type RoomEnvelope } from "./router.js";
 
 interface AgentMatrixCredentials {
@@ -43,17 +44,15 @@ export class MatrixClientPool {
 		for (const agent of this.options.agents) {
 			const credentials = this.loadCredentials(agent.id);
 			const storagePath = join(this.options.storageDir, `${agent.id}.json`);
-			const storageDir = dirname(storagePath);
-			if (!existsSync(storageDir)) mkdirSync(storageDir, { recursive: true });
-
-			const storage = new SimpleFsStorageProvider(storagePath);
-			const client = new MatrixClient(credentials.homeserver, credentials.accessToken, storage);
-			if (agent.matrix.autojoin) {
-				AutojoinRoomsMixin.setupOnClient(client);
-			}
-			client.on("room.message", (roomId: string, event: Record<string, unknown>) => {
-				void this.handleEvent(agent, credentials.userId, roomId, event);
-			});
+				const client = createMatrixClient({
+					homeserver: credentials.homeserver,
+					accessToken: credentials.accessToken,
+					storagePath,
+					autojoin: agent.matrix.autojoin,
+				});
+				client.on("room.message", (roomId: string, event: Record<string, unknown>) => {
+					void this.handleEvent(agent, credentials.userId, roomId, event);
+				});
 			await client.start();
 			this.clients.set(agent.id, { agent, credentials, client });
 		}

@@ -243,9 +243,8 @@ Current behavior:
 - starts in single-agent mode if no agent overlays exist
 - starts in multi-agent mode if at least one `~/Bloom/Agents/*/AGENTS.md` is valid
 - skips malformed agent overlays with warnings instead of aborting startup
-- uses `pi --mode rpc`
-- keeps one room process per room in single-agent mode
-- keeps one room process per `(room, agent)` pair in multi-agent mode
+- keeps one room session per room in single-agent mode
+- keeps one room session per `(room, agent)` pair in multi-agent mode
 - prunes duplicate-event and reply-budget state over time so long-lived sessions stay bounded
 
 Key daemon files:
@@ -253,7 +252,7 @@ Key daemon files:
 | Path | Purpose |
 |------|---------|
 | `daemon/index.ts` | bootstrap and mode selection |
-| `daemon/room-process.ts` | Pi subprocess and socket transport |
+| `daemon/pi-room-session.ts` | Pi SDK-backed room session lifecycle |
 | `daemon/agent-supervisor.ts` | multi-agent routing and session orchestration |
 | `daemon/router.ts` | routing policy |
 | `daemon/room-state.ts` | duplicate, cooldown, and reply-budget tracking |

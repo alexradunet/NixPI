@@ -5,18 +5,18 @@
  * - single-agent fallback: current `@pi:bloom` room daemon
  * - multi-agent mode: one Matrix client per configured agent, one Pi session per `(room, agent)`
  */
-import { mkdirSync } from "node:fs";
 import os from "node:os";
 import { join } from "node:path";
 import { loadAgentDefinitionsResult, type AgentDefinition } from "./agent-registry.js";
 import { AgentSupervisor } from "./agent-supervisor.js";
 import { MatrixClientPool } from "./matrix-client-pool.js";
 import { matrixCredentialsPath } from "../lib/matrix.js";
+import { PiRoomSession, type PiRoomSessionOptions } from "./pi-room-session.js";
 import { sanitizeRoomAlias } from "../lib/room-alias.js";
 import { createLogger } from "../lib/shared.js";
 import { type IncomingMessage, MatrixListener } from "./matrix-listener.js";
-import { RoomProcess } from "./room-process.js";
-import type { RpcEvent } from "./rpc-protocol.js";
+import type { SessionEvent } from "./session-events.js";
+import type { BloomSessionLike } from "./session-like.js";
 
 const log = createLogger("pi-daemon");
 
@@ -25,7 +25,6 @@ const SESSION_BASE = join(os.homedir(), ".pi", "agent", "sessions", "bloom-rooms
 const STORAGE_PATH = join(os.homedir(), ".pi", "pi-daemon", "matrix-state.json");
 const MATRIX_AGENT_CREDENTIALS_DIR = join(os.homedir(), ".pi", "matrix-agents");
 const MATRIX_AGENT_STORAGE_DIR = join(os.homedir(), ".pi", "pi-daemon", "matrix-agents");
-const SOCKET_DIR = join(process.env.XDG_RUNTIME_DIR ?? join(os.homedir(), ".run"), "bloom");
 const TYPING_TIMEOUT_MS = 30_000;
 const TYPING_REFRESH_MS = 20_000;
 
@@ -40,8 +39,7 @@ interface RoomFailureState {
 }
 
 async function main(): Promise<void> {
-	log.info("starting pi-daemon", { idleTimeoutMs: IDLE_TIMEOUT_MS, socketDir: SOCKET_DIR });
-	mkdirSync(SOCKET_DIR, { recursive: true });
+	log.info("starting pi-daemon", { idleTimeoutMs: IDLE_TIMEOUT_MS });
 
 	const { agents, errors } = loadAgentDefinitionsResult();
 	for (const error of errors) {
@@ -74,7 +72,6 @@ async function runMultiAgentDaemon(agents: readonly AgentDefinition[]): Promise<
 	supervisor = new AgentSupervisor({
 		agents,
 		matrixPool: pool,
-		socketDir: SOCKET_DIR,
 		sessionBaseDir: SESSION_BASE,
 		idleTimeoutMs: IDLE_TIMEOUT_MS,
 	});
@@ -98,7 +95,7 @@ async function runMultiAgentDaemon(agents: readonly AgentDefinition[]): Promise<
 }
 
 async function runSingleAgentDaemon(): Promise<void> {
-	const rooms = new Map<string, RoomProcess>();
+	const rooms = new Map<string, BloomSessionLike>();
 	const preambleSent = new Set<string>();
 	const roomFailures = new Map<string, RoomFailureState>();
 	const listener = new MatrixListener({
@@ -109,6 +106,8 @@ async function runSingleAgentDaemon(): Promise<void> {
 		},
 	});
 	const typingIntervals = new Map<string, ReturnType<typeof setInterval>>();
+
+	const createSession = (options: PiRoomSessionOptions): BloomSessionLike => new PiRoomSession(options);
 
 	function startTyping(roomId: string): void {
 		if (typingIntervals.has(roomId)) return;
@@ -138,7 +137,7 @@ async function runSingleAgentDaemon(): Promise<void> {
 		});
 	}
 
-	function handleRoomEvent(roomId: string, event: RpcEvent): void {
+	function handleRoomEvent(roomId: string, event: SessionEvent): void {
 		if (event.type === "agent_start") {
 			startTyping(roomId);
 		} else if (event.type === "agent_end") {
@@ -146,7 +145,7 @@ async function runSingleAgentDaemon(): Promise<void> {
 		}
 	}
 
-	async function getOrSpawn(roomId: string, alias: string): Promise<RoomProcess> {
+	async function getOrSpawn(roomId: string, alias: string): Promise<BloomSessionLike> {
 		const failureState = roomFailures.get(roomId);
 		if (failureState && failureState.quarantinedUntil > Date.now()) {
 			throw new Error("room temporarily quarantined after repeated failures");
@@ -159,11 +158,10 @@ async function runSingleAgentDaemon(): Promise<void> {
 		const sanitized = sanitizeRoomAlias(alias);
 		const sessionDir = join(SESSION_BASE, sanitized);
 
-		const rp = new RoomProcess({
+		const rp = createSession({
 			roomId,
 			roomAlias: alias,
 			sanitizedAlias: sanitized,
-			socketDir: SOCKET_DIR,
 			sessionDir,
 			idleTimeoutMs: IDLE_TIMEOUT_MS,
 			onAgentEnd: async (text) => {
@@ -201,12 +199,12 @@ async function runSingleAgentDaemon(): Promise<void> {
 			const prefix = `[matrix: ${message.sender}] `;
 			if (!preambleSent.has(roomId)) {
 				const preamble = `[system] You are Pi in Matrix room ${alias}. Respond to messages from this room.\n\n`;
-				rp.sendMessage(preamble + prefix + message.body);
-				preambleSent.add(roomId);
-			} else {
-				rp.sendMessage(prefix + message.body);
-			}
-		} catch (err) {
+					await rp.sendMessage(preamble + prefix + message.body);
+					preambleSent.add(roomId);
+				} else {
+					await rp.sendMessage(prefix + message.body);
+				}
+			} catch (err) {
 			const errStr = String(err);
 			log.error("failed to handle message", { roomId, error: errStr, mode: "single-agent" });
 			stopTyping(roomId);
@@ -252,15 +250,15 @@ function handleProcessError(codeRoomId: string, code: number, failures: Map<stri
 
 	if (next.count >= ROOM_FAILURE_THRESHOLD) {
 		next.quarantinedUntil = now + ROOM_QUARANTINE_MS;
-		log.error("room quarantined after repeated process failures", {
-			roomId: codeRoomId,
-			code,
-			failures: next.count,
-			quarantinedUntil: new Date(next.quarantinedUntil).toISOString(),
-		});
-	} else {
-		log.warn("room process failed", { roomId: codeRoomId, code, failures: next.count });
-	}
+			log.error("room session quarantined after repeated failures", {
+				roomId: codeRoomId,
+				code,
+				failures: next.count,
+				quarantinedUntil: new Date(next.quarantinedUntil).toISOString(),
+			});
+		} else {
+			log.warn("room session failed", { roomId: codeRoomId, code, failures: next.count });
+		}
 
 	failures.set(codeRoomId, next);
 }

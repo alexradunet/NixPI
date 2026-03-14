@@ -2,7 +2,8 @@ import type { AgentDefinition } from "./agent-registry.js";
 import { AgentSession, type AgentSessionOptions } from "./agent-session.js";
 import { createRoomState } from "./room-state.js";
 import { routeRoomEnvelope, type RoomEnvelope } from "./router.js";
-import type { RpcEvent } from "./rpc-protocol.js";
+import type { SessionEvent } from "./session-events.js";
+import type { BloomSessionLike } from "./session-like.js";
 import { createLogger } from "../lib/shared.js";
 
 const log = createLogger("agent-supervisor");
@@ -31,31 +32,22 @@ export interface MatrixPoolLike {
 	stop(): void;
 }
 
-export interface AgentSessionLike {
-	alive: boolean;
-	spawn(): Promise<void>;
-	sendMessage(text: string): void;
-	dispose(): void;
-}
-
 export interface AgentSupervisorOptions {
 	agents: readonly AgentDefinition[];
 	matrixPool: MatrixPoolLike;
-	socketDir: string;
 	sessionBaseDir: string;
 	idleTimeoutMs: number;
-	createSession?: (opts: AgentSessionOptions) => AgentSessionLike;
+	createSession?: (opts: AgentSessionOptions) => BloomSessionLike;
 }
 
 export class AgentSupervisor {
 	private readonly agents: readonly AgentDefinition[];
 	private readonly matrixPool: MatrixPoolLike;
-	private readonly socketDir: string;
 	private readonly sessionBaseDir: string;
 	private readonly idleTimeoutMs: number;
-	private readonly createSession: (opts: AgentSessionOptions) => AgentSessionLike;
+	private readonly createSession: (opts: AgentSessionOptions) => BloomSessionLike;
 	private readonly roomState = createRoomState();
-	private readonly sessions = new Map<string, AgentSessionLike>();
+	private readonly sessions = new Map<string, BloomSessionLike>();
 	private readonly preambleSent = new Set<string>();
 	private readonly typingIntervals = new Map<string, ReturnType<typeof setInterval>>();
 	private readonly sequentialChains = new Map<string, SequentialChain>();
@@ -65,7 +57,6 @@ export class AgentSupervisor {
 	constructor(options: AgentSupervisorOptions) {
 		this.agents = options.agents;
 		this.matrixPool = options.matrixPool;
-		this.socketDir = options.socketDir;
 		this.sessionBaseDir = options.sessionBaseDir;
 		this.idleTimeoutMs = options.idleTimeoutMs;
 		this.createSession = options.createSession ?? ((opts) => new AgentSession(opts));
@@ -127,17 +118,17 @@ export class AgentSupervisor {
 		try {
 			const agent = this.requireAgent(agentId);
 			const alias = await this.matrixPool.getRoomAlias(agentId, roomId);
-			const session = await this.getOrSpawnSession(roomId, alias, agent);
-			const key = this.sessionKey(roomId, agentId);
+				const session = await this.getOrSpawnSession(roomId, alias, agent);
+				const key = this.sessionKey(roomId, agentId);
 
-			if (!this.preambleSent.has(key)) {
-				session.sendMessage(`${this.buildPreamble(agent, alias)}\n\n${message}`);
-				this.preambleSent.add(key);
-			} else {
-				session.sendMessage(message);
-			}
-		} catch (error) {
-			this.stopTyping(roomId, agentId);
+				if (!this.preambleSent.has(key)) {
+					await session.sendMessage(`${this.buildPreamble(agent, alias)}\n\n${message}`);
+					this.preambleSent.add(key);
+				} else {
+					await session.sendMessage(message);
+				}
+			} catch (error) {
+				this.stopTyping(roomId, agentId);
 			throw error;
 		}
 	}
@@ -192,7 +183,7 @@ export class AgentSupervisor {
 		this.enqueueWaitingChain(roomId, nextAgentId, chainKey);
 	}
 
-	private async getOrSpawnSession(roomId: string, roomAlias: string, agent: AgentDefinition): Promise<AgentSessionLike> {
+	private async getOrSpawnSession(roomId: string, roomAlias: string, agent: AgentDefinition): Promise<BloomSessionLike> {
 		const key = this.sessionKey(roomId, agent.id);
 		const existing = this.sessions.get(key);
 		if (existing?.alive) return existing;
@@ -202,7 +193,6 @@ export class AgentSupervisor {
 			roomId,
 			roomAlias,
 			agent,
-			socketDir: this.socketDir,
 			sessionBaseDir: this.sessionBaseDir,
 			idleTimeoutMs: this.idleTimeoutMs,
 			onAgentEnd: (finishedAgentId, text) => {
@@ -230,7 +220,7 @@ export class AgentSupervisor {
 		return session;
 	}
 
-	private handleSessionEvent(roomId: string, agentId: string, event: RpcEvent): void {
+	private handleSessionEvent(roomId: string, agentId: string, event: SessionEvent): void {
 		if (event.type === "agent_start") {
 			this.startTyping(roomId, agentId);
 		} else if (event.type === "agent_end") {

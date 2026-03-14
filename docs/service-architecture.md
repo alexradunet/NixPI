@@ -136,8 +136,7 @@ Bridge creation currently:
 
 ## Daemon and Services
 
-The room daemon is not a service package. It is OS-level infrastructure that coordinates Pi RPC subprocesses for Matrix
-rooms.
+The room daemon is not a service package. It is OS-level infrastructure that coordinates Pi sessions for Matrix rooms.
 
 Keep this distinction clear:
 

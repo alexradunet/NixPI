@@ -7,7 +7,7 @@ This repository contains:
 
 - the Pi package: extensions, skills, persona blueprints, and bundled service packages
 - the Bloom OS image: `os/Containerfile`, systemd units, and first-boot tooling
-- the Matrix room daemon: a long-running service that bridges Matrix rooms to Pi RPC subprocesses
+- the Matrix room daemon: a long-running service that bridges Matrix rooms to Pi SDK-backed sessions
 
 ## What Ships Today
 
@@ -59,7 +59,7 @@ Operational hardening in the current tree:
 |------|---------|
 | `extensions/` | Pi extensions |
 | `lib/` | shared logic and host/runtime helpers |
-| `daemon/` | Matrix room daemon and RPC room/session orchestration |
+| `daemon/` | Matrix room daemon and room/session orchestration |
 | `skills/` | bundled skills seeded into `~/Bloom/Skills/` |
 | `services/` | bundled service packages and service template |
 | `persona/` | default persona layers seeded into `~/Bloom/Persona/` |
@@ -111,10 +111,10 @@ Reference material for OS-level infrastructure also lives under `services/`:
 
 - single-agent fallback when no valid agent definitions exist in `~/Bloom/Agents/*/AGENTS.md`
 - multi-agent mode when one or more agent overlays parse successfully, with one Matrix client per configured agent and
-  one Pi RPC subprocess per `(room, agent)` pair
+  one Pi session per `(room, agent)` pair
 - malformed agent overlays are logged and skipped instead of aborting daemon startup
 
-Each room process runs `pi --mode rpc` and communicates over JSON lines.
+Each room session is backed by Pi's in-process SDK session lifecycle.
 
 ## Build and Test
 

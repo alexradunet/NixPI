@@ -2,10 +2,10 @@
  * Matrix listener — connects to homeserver via matrix-bot-sdk and routes messages.
  */
 import { existsSync, mkdirSync, readFileSync } from "node:fs";
-import { dirname } from "node:path";
-import { AutojoinRoomsMixin, MatrixClient, SimpleFsStorageProvider } from "matrix-bot-sdk";
+import { MatrixClient } from "matrix-bot-sdk";
 import type { MatrixCredentials } from "../lib/matrix.js";
 import { createLogger } from "../lib/shared.js";
+import { createMatrixClient } from "./matrix-client.js";
 
 const log = createLogger("matrix-listener");
 
@@ -36,15 +36,13 @@ export class MatrixListener {
 			throw new Error(`No credentials at ${this.options.credentialsPath}`);
 		}
 
-		const storageDir = dirname(this.options.storagePath);
-		if (!existsSync(storageDir)) mkdirSync(storageDir, { recursive: true });
-
-		const storage = new SimpleFsStorageProvider(this.options.storagePath);
-		this.client = new MatrixClient(creds.homeserver, creds.botAccessToken, storage);
+		this.client = createMatrixClient({
+			homeserver: creds.homeserver,
+			accessToken: creds.botAccessToken,
+			storagePath: this.options.storagePath,
+			autojoin: true,
+		});
 		this.botUserId = creds.botUserId;
-		this.disableDmWarmup(this.client);
-
-		AutojoinRoomsMixin.setupOnClient(this.client);
 		this.client.on("room.message", (roomId: string, event: Record<string, unknown>) => {
 			void this.handleEvent(roomId, event);
 		});
@@ -87,16 +85,6 @@ export class MatrixListener {
 		} catch {
 			return null;
 		}
-	}
-
-	private disableDmWarmup(client: MatrixClient): void {
-		const dms = (client as MatrixClient & { dms?: { update?: () => Promise<void> } }).dms;
-		if (!dms?.update) return;
-
-		// Bloom never uses the SDK's DM cache in the daemon path, and fresh accounts on
-		// Conduwuit return M_NOT_FOUND for m.direct during startup. Skipping the warmup
-		// avoids a noisy-but-benign startup error from matrix-bot-sdk.
-		dms.update = async () => undefined;
 	}
 
 	private async handleEvent(roomId: string, event: Record<string, unknown>): Promise<void> {
