@@ -1,6 +1,7 @@
 /** Shared utilities: text truncation, error formatting, and Bloom directory resolution. */
 import type { ExtensionContext } from "@mariozechner/pi-coding-agent";
 import { truncateHead } from "@mariozechner/pi-coding-agent";
+import { consumeConfirmationDecision, ensurePendingConfirmation } from "./confirmations.js";
 
 /** Truncate text to 2000 lines / 50KB using Pi's truncateHead utility. */
 export function truncate(text: string): string {
@@ -24,7 +25,17 @@ export async function requireConfirmation(
 ): Promise<string | null> {
 	const requireUi = options?.requireUi ?? true;
 	if (!ctx.hasUI) {
-		return requireUi ? `Cannot perform "${action}" without interactive user confirmation.` : null;
+		if (!requireUi) return null;
+
+		const decision = consumeConfirmationDecision(ctx, action);
+		if (decision === "approved") return null;
+		if (decision === "denied") return `User declined: ${action}`;
+
+		const pending = ensurePendingConfirmation(ctx, action);
+		if (!pending) {
+			return `Cannot perform "${action}" without interactive user confirmation.`;
+		}
+		return `Confirmation required for "${action}". Reply here with "confirm ${pending.token}" to approve or "deny ${pending.token}" to cancel.`;
 	}
 	const confirmed = await ctx.ui.confirm("Confirm action", `Allow: ${action}?`);
 	if (!confirmed) return `User declined: ${action}`;

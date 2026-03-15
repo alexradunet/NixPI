@@ -9,7 +9,8 @@
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
 import { getBloomDir } from "../../lib/filesystem.js";
-import { errorResult, requireConfirmation } from "../../lib/shared.js";
+import { resolveConfirmationReply } from "../../lib/confirmations.js";
+import { requireConfirmation } from "../../lib/shared.js";
 import { handleUpdateBlueprints, readBlueprintVersions, seedBlueprints } from "./actions-blueprints.js";
 import {
 	type AgentCreateParams,
@@ -91,6 +92,28 @@ export default function (pi: ExtensionAPI) {
 		if (paths) return { skillPaths: paths };
 	});
 
+	pi.on("input", async (event, ctx) => {
+		if (event.source === "extension") {
+			return { action: "continue" as const };
+		}
+
+		const resolution = resolveConfirmationReply(ctx, event.text);
+		if (!resolution) {
+			return { action: "continue" as const };
+		}
+
+		if (resolution.ambiguous) {
+			pi.sendUserMessage(
+				`The user ${resolution.status === "approved" ? "approved" : "denied"} the most recent pending confirmation for "${resolution.record.action}". Resume carefully and mention the token if you need to disambiguate future confirmations.`,
+			);
+		} else {
+			pi.sendUserMessage(
+				`The user ${resolution.status === "approved" ? "approved" : "denied"} confirmation ${resolution.record.token} for "${resolution.record.action}". Resume the blocked task if appropriate.`,
+			);
+		}
+		return { action: "handled" as const };
+	});
+
 	pi.registerTool({
 		name: "skill_create",
 		label: "Create Skill",
@@ -135,7 +158,7 @@ export default function (pi: ExtensionAPI) {
 		async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
 			const createParams = params as AgentCreateParams;
 			const denied = await requireConfirmation(ctx, `Create Matrix agent ${createParams.id}`);
-			if (denied) return errorResult(denied);
+			if (denied) return { content: [{ type: "text" as const, text: denied }], details: {}, isError: true };
 			return handleAgentCreate(bloomDir, createParams);
 		},
 	});
@@ -151,7 +174,10 @@ export default function (pi: ExtensionAPI) {
 			title: Type.String({ description: "Short description of the proposed change" }),
 			proposal: Type.String({ description: "Detailed description of what to change and why" }),
 		}),
-		async execute(_toolCallId, params) {
+		async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
+			const slug = "slug" in params && typeof params.slug === "string" ? params.slug : "persona change";
+			const denied = await requireConfirmation(ctx, `Apply persona evolution ${slug}`);
+			if (denied) return { content: [{ type: "text" as const, text: denied }], details: {}, isError: true };
 			return handlePersonaEvolve(bloomDir, params);
 		},
 	});

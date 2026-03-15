@@ -11,6 +11,9 @@ export interface MockExtensionContext {
 	cwd: string;
 	isIdle: ReturnType<typeof vi.fn>;
 	sessionManager: {
+		getSessionFile: ReturnType<typeof vi.fn>;
+		getSessionDir: ReturnType<typeof vi.fn>;
+		getSessionId: ReturnType<typeof vi.fn>;
 		getEntries: ReturnType<typeof vi.fn>;
 		getLeafEntry: ReturnType<typeof vi.fn>;
 	};
@@ -29,6 +32,9 @@ export function createMockExtensionContext(overrides?: Partial<MockExtensionCont
 		cwd: "/tmp/test",
 		isIdle: vi.fn().mockReturnValue(true),
 		sessionManager: {
+			getSessionFile: vi.fn().mockReturnValue("/tmp/test-session.jsonl"),
+			getSessionDir: vi.fn().mockReturnValue("/tmp"),
+			getSessionId: vi.fn().mockReturnValue("test-session"),
 			getEntries: vi.fn().mockReturnValue([]),
 			getLeafEntry: vi.fn().mockReturnValue(null),
 		},

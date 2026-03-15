@@ -1,3 +1,6 @@
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { getBloomDir, safePath } from "../../core/lib/filesystem.js";
 import { parseFrontmatter, stringifyFrontmatter } from "../../core/lib/frontmatter.js";
@@ -284,10 +287,19 @@ describe("createLogger", () => {
 // requireConfirmation
 // ---------------------------------------------------------------------------
 describe("requireConfirmation", () => {
-	it("returns error when no UI and requireUi is true", async () => {
-		const ctx = { hasUI: false } as never;
+	it("returns Matrix confirmation instructions when no UI and requireUi is true", async () => {
+		const dir = fs.mkdtempSync(path.join(os.tmpdir(), "shared-confirm-"));
+		const ctx = {
+			hasUI: false,
+			sessionManager: {
+				getSessionFile: () => path.join(dir, "session.jsonl"),
+				getSessionDir: () => dir,
+				getSessionId: () => "session",
+			},
+		} as never;
 		const result = await requireConfirmation(ctx, "delete file");
-		expect(result).toBe('Cannot perform "delete file" without interactive user confirmation.');
+		expect(result).toMatch(/^Confirmation required for "delete file"\. Reply here with "confirm [a-z0-9]{6}" to approve or "deny [a-z0-9]{6}" to cancel\.$/);
+		fs.rmSync(dir, { recursive: true, force: true });
 	});
 
 	it("returns null when no UI and requireUi is false", async () => {
@@ -306,6 +318,44 @@ describe("requireConfirmation", () => {
 		const ctx = { hasUI: true, ui: { confirm: async () => false } } as never;
 		const result = await requireConfirmation(ctx, "delete file");
 		expect(result).toBe("User declined: delete file");
+	});
+
+	it("consumes an approved Matrix confirmation on retry", async () => {
+		const dir = fs.mkdtempSync(path.join(os.tmpdir(), "shared-confirm-"));
+		const sessionFile = path.join(dir, "session.jsonl");
+		const token = "abc123";
+		fs.writeFileSync(
+			`${sessionFile}.bloom-confirmations.json`,
+			JSON.stringify({
+				records: [
+					{
+						token,
+						action: "delete file",
+						status: "approved",
+						createdAt: "2026-03-15T00:00:00Z",
+						updatedAt: "2026-03-15T00:00:00Z",
+					},
+				],
+			}),
+		);
+		const ctx = {
+			hasUI: false,
+			sessionManager: {
+				getSessionFile: () => sessionFile,
+				getSessionDir: () => dir,
+				getSessionId: () => "session",
+			},
+		} as never;
+
+		const result = await requireConfirmation(ctx, "delete file");
+
+		expect(result).toBeNull();
+		const saved = JSON.parse(fs.readFileSync(`${sessionFile}.bloom-confirmations.json`, "utf-8")) as {
+			records: Array<{ token: string; status: string }>;
+		};
+		expect(saved.records[0]?.token).toBe(token);
+		expect(saved.records[0]?.status).toBe("consumed");
+		fs.rmSync(dir, { recursive: true, force: true });
 	});
 });
 

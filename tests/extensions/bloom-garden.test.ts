@@ -2,6 +2,8 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { createMockExtensionAPI } from "../helpers/mock-extension-api.js";
+import { createMockExtensionContext } from "../helpers/mock-extension-context.js";
 import {
 	ensureBloom,
 	getPackageDir,
@@ -35,6 +37,93 @@ describe("ensureBloom", () => {
 	it("is idempotent — calling twice does not throw", () => {
 		ensureBloom(bloomDir);
 		expect(() => ensureBloom(bloomDir)).not.toThrow();
+	});
+});
+
+describe("bloom-garden extension", () => {
+	it("requires confirmation for agent_create without UI and resumes after Matrix approval", async () => {
+		const handleAgentCreateMock = vi.fn().mockResolvedValue({
+			content: [{ type: "text" as const, text: "created agent: finance" }],
+			details: {},
+		});
+
+		vi.doMock("../../core/pi-extensions/bloom-garden/actions.js", async () => {
+			const actual = await vi.importActual<typeof import("../../core/pi-extensions/bloom-garden/actions.js")>(
+				"../../core/pi-extensions/bloom-garden/actions.js",
+			);
+			return {
+				...actual,
+				handleAgentCreate: handleAgentCreateMock,
+			};
+		});
+
+		vi.resetModules();
+		const api = createMockExtensionAPI();
+		const mod = await import("../../core/pi-extensions/bloom-garden/index.js");
+		mod.default(api as never);
+
+		const tool = api._registeredTools.find((entry) => entry.name === "agent_create") as {
+			execute: (
+				toolCallId: string,
+				params: {
+					id: string;
+					name: string;
+					description: string;
+					role_prompt: string;
+				},
+				signal: AbortSignal | undefined,
+				onUpdate: undefined,
+				ctx: ReturnType<typeof createMockExtensionContext>,
+			) => Promise<{ content: Array<{ text: string }> }>;
+		};
+		const ctx = createMockExtensionContext({ hasUI: false });
+		const sessionFile = path.join(bloomDir, "session.jsonl");
+		ctx.sessionManager.getSessionFile.mockReturnValue(sessionFile);
+		ctx.sessionManager.getSessionDir.mockReturnValue(bloomDir);
+		ctx.sessionManager.getSessionId.mockReturnValue("session");
+
+		const first = await tool.execute(
+			"tool-call",
+			{
+				id: "finance",
+				name: "Finance",
+				description: "Expert in personal finance",
+				role_prompt: "Help with budgeting, saving, and planning.",
+			},
+			undefined,
+			undefined,
+			ctx,
+		);
+
+		expect(first.content[0]?.text).toContain('Confirmation required for "Create Matrix agent finance"');
+		expect(handleAgentCreateMock).not.toHaveBeenCalled();
+
+		const pendingReply = await api.fireEvent("input", { source: "user", text: "confirm" }, ctx);
+
+		expect(pendingReply).toEqual({ action: "handled" });
+		expect(api._sentMessages).toContainEqual({
+			message: expect.stringContaining('approved'),
+			options: undefined,
+		});
+
+		const second = await tool.execute(
+			"tool-call",
+			{
+				id: "finance",
+				name: "Finance",
+				description: "Expert in personal finance",
+				role_prompt: "Help with budgeting, saving, and planning.",
+			},
+			undefined,
+			undefined,
+			ctx,
+		);
+
+		expect(second.content[0]?.text).toContain("created agent: finance");
+		expect(handleAgentCreateMock).toHaveBeenCalledWith(
+			expect.any(String),
+			expect.objectContaining({ id: "finance" }),
+		);
 	});
 });
 
