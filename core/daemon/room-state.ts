@@ -1,3 +1,5 @@
+import { enforceMapLimit, pruneExpiredEntries } from "./ordered-cache.js";
+
 export interface RoomStateOptions {
 	processedEventTtlMs?: number;
 	rootReplyTtlMs?: number;
@@ -113,29 +115,9 @@ export function markReplySent(
 }
 
 function pruneState(state: RoomState, now: number): void {
-	for (const [eventId, timestamp] of state.processedEvents) {
-		if (now - timestamp > state.processedEventTtlMs) {
-			state.processedEvents.delete(eventId);
-		}
-	}
-	for (const [key, timestamp] of state.lastReplyAtByRoomAgent) {
-		if (now - timestamp > state.roomAgentTtlMs) {
-			state.lastReplyAtByRoomAgent.delete(key);
-		}
-	}
-	for (const [key, rootState] of state.rootReplies) {
-		if (now - rootState.lastTouchedAt > state.rootReplyTtlMs) {
-			state.rootReplies.delete(key);
-		}
-	}
-}
-
-function enforceMapLimit<K, V>(map: Map<K, V>, maxEntries: number): void {
-	while (map.size > maxEntries) {
-		const oldest = map.keys().next().value;
-		if (oldest === undefined) break;
-		map.delete(oldest);
-	}
+	pruneExpiredEntries(state.processedEvents, now, (timestamp) => timestamp, state.processedEventTtlMs);
+	pruneExpiredEntries(state.lastReplyAtByRoomAgent, now, (timestamp) => timestamp, state.roomAgentTtlMs);
+	pruneExpiredEntries(state.rootReplies, now, (rootState) => rootState.lastTouchedAt, state.rootReplyTtlMs);
 }
 
 function roomAgentKey(roomId: string, agentId: string): string {

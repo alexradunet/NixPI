@@ -20,7 +20,6 @@ export interface MultiAgentRuntimeOptions {
 	agents: readonly AgentDefinition[];
 	sessionBaseDir: string;
 	idleTimeoutMs: number;
-	matrixAgentStorageDir: string;
 	loadAgentCredentials: (agentId: string) => MatrixAgentCredentials;
 	loadSchedulerState: () => Record<string, SchedulerJobState>;
 	saveSchedulerState: (state: Record<string, SchedulerJobState>) => void;
@@ -35,15 +34,14 @@ export interface MultiAgentRuntimeOptions {
 export function createMultiAgentRuntime(options: MultiAgentRuntimeOptions): MultiAgentRuntime {
 	const identities = options.agents.map((agent) => {
 		const credentials = options.loadAgentCredentials(agent.id);
-		return {
-			id: agent.id,
-			userId: agent.matrix.userId,
-			homeserver: credentials.homeserver,
-			accessToken: credentials.accessToken,
-			storagePath: join(options.matrixAgentStorageDir, `${agent.id}.json`),
-			autojoin: agent.matrix.autojoin,
-		};
-	});
+			return {
+				id: agent.id,
+				userId: agent.matrix.userId,
+				homeserver: credentials.homeserver,
+				accessToken: credentials.accessToken,
+				autojoin: agent.matrix.autojoin,
+			};
+		});
 	const bridge =
 		options.createBridge?.(identities) ??
 		new MatrixJsSdkBridge({
@@ -109,11 +107,11 @@ export function createMultiAgentRuntime(options: MultiAgentRuntimeOptions): Mult
 				bridge.stop();
 				throw error;
 			}
-		},
-		async stop() {
-			scheduler?.stop();
-			await supervisor.shutdown();
-			bridge.stop();
-		},
-	};
+			},
+			async stop() {
+				scheduler?.stop();
+				await supervisor.shutdown();
+				bridge.stop();
+			},
+		};
 }

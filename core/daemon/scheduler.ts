@@ -1,3 +1,5 @@
+import { CronExpressionParser } from "cron-parser";
+
 export interface ScheduledJob {
 	id: string;
 	agentId: string;
@@ -29,8 +31,6 @@ export interface SchedulerOptions {
 	setTimeoutImpl?: typeof setTimeout;
 	clearTimeoutImpl?: typeof clearTimeout;
 }
-
-type ParsedCron = { kind: "hourly"; minute: number } | { kind: "daily"; minute: number; hour: number };
 
 export class Scheduler {
 	private readonly jobs: ScheduledJob[];
@@ -135,38 +135,27 @@ export function computeNextRunAt(job: ScheduledJob, now: number, lastRunAt?: num
 		return lastRunAt + intervalMs;
 	}
 
-	const parsed = parseCron(job.cron ?? "");
-	const current = new Date(now);
-	const next = new Date(now);
-	next.setUTCSeconds(0, 0);
-	if (parsed.kind === "hourly") {
-		next.setUTCMinutes(parsed.minute, 0, 0);
-		if (next.getTime() <= current.getTime()) {
-			next.setUTCHours(next.getUTCHours() + 1);
-		}
-		return next.getTime();
-	}
-
-	next.setUTCHours(parsed.hour, parsed.minute, 0, 0);
-	if (next.getTime() <= current.getTime()) {
-		next.setUTCDate(next.getUTCDate() + 1);
-	}
-	return next.getTime();
+	const expression = normalizeSupportedCronExpression(job.cron ?? "");
+	const cron = CronExpressionParser.parse(expression, {
+		currentDate: new Date(now),
+		tz: "UTC",
+	});
+	return cron.next().toDate().getTime();
 }
 
 export function isSupportedCronExpression(expression: string): boolean {
 	try {
-		parseCron(expression);
+		normalizeSupportedCronExpression(expression);
 		return true;
 	} catch {
 		return false;
 	}
 }
 
-function parseCron(expression: string): ParsedCron {
+function normalizeSupportedCronExpression(expression: string): string {
 	const trimmed = expression.trim();
-	if (trimmed === "@daily") return { kind: "daily", minute: 0, hour: 0 };
-	if (trimmed === "@hourly") return { kind: "hourly", minute: 0 };
+	if (trimmed === "@daily") return "0 0 * * *";
+	if (trimmed === "@hourly") return "0 * * * *";
 
 	const parts = trimmed.split(/\s+/);
 	if (parts.length !== 5) {
@@ -184,5 +173,5 @@ function parseCron(expression: string): ParsedCron {
 	if (!Number.isInteger(hour) || hour < 0 || hour > 23) {
 		throw new Error(`Unsupported cron expression: ${expression}`);
 	}
-	return { kind: "daily", minute, hour };
+	return `${minute} ${hour} * * *`;
 }

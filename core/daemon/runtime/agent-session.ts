@@ -39,18 +39,6 @@ export class AgentSession implements BloomSessionLike {
 		return this.session.alive;
 	}
 
-	get isStreaming(): boolean {
-		return false;
-	}
-
-	get agentId(): string {
-		return this.opts.agent.id;
-	}
-
-	get sessionDir(): string {
-		return join(this.opts.sessionBaseDir, this.sanitizedRoomAlias, this.opts.agent.id);
-	}
-
 	async spawn(): Promise<void> {
 		await this.session.spawn();
 	}

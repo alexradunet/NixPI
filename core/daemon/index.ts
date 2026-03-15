@@ -2,9 +2,8 @@ import { readFileSync } from "node:fs";
 /**
  * Pi Daemon — Matrix room agent supervisor.
  *
- * Runs in two modes:
- * - single-agent fallback: current `@pi:bloom` room daemon
- * - multi-agent mode: one Matrix client per configured agent, one Pi session per `(room, agent)`
+ * Always runs through the multi-agent supervisor.
+ * When no valid overlays exist, a default host agent is synthesized from the primary Pi account.
  */
 import os from "node:os";
 import { join } from "node:path";
@@ -19,48 +18,59 @@ import { type AgentDefinition, loadAgentDefinitionsResult } from "./agent-regist
 import { startWithRetry } from "./lifecycle.js";
 import { createMultiAgentRuntime } from "./multi-agent-runtime.js";
 import { loadSchedulerState, saveSchedulerState } from "./proactive.js";
-import { createSingleAgentRuntime } from "./single-agent-runtime.js";
 
 const log = createLogger("pi-daemon");
 
 const IDLE_TIMEOUT_MS = Number.parseInt(process.env.BLOOM_DAEMON_IDLE_TIMEOUT_MS ?? "", 10) || 15 * 60 * 1000;
 const SESSION_BASE = join(os.homedir(), ".pi", "agent", "sessions", "bloom-rooms");
-const STORAGE_PATH = join(os.homedir(), ".pi", "pi-daemon", "matrix-state.json");
 const SCHEDULER_STATE_PATH = join(os.homedir(), ".pi", "pi-daemon", "scheduler-state.json");
-const MATRIX_AGENT_STORAGE_DIR = join(os.homedir(), ".pi", "pi-daemon", "matrix-agents");
-
-const ROOM_FAILURE_WINDOW_MS = 60_000;
-const ROOM_FAILURE_THRESHOLD = 3;
-const ROOM_QUARANTINE_MS = 5 * 60_000;
 
 async function main(): Promise<void> {
 	log.info("starting pi-daemon", { idleTimeoutMs: IDLE_TIMEOUT_MS });
 
-	const { agents, errors } = loadAgentDefinitionsResult();
+	const credentials = loadPrimaryMatrixCredentials();
+	const { agents: configuredAgents, errors } = loadAgentDefinitionsResult();
 	for (const error of errors) {
 		log.warn("skipping invalid agent definition", { error });
 	}
-	if (agents.length === 0) {
-		log.info("no valid multi-agent definitions found, using single-agent fallback", {
+	const agents =
+		configuredAgents.length > 0
+			? configuredAgents
+			: [createDefaultAgent(credentials)];
+
+	if (configuredAgents.length === 0) {
+		log.info("no valid multi-agent definitions found, using default host agent", {
 			invalidDefinitions: errors.length,
 		});
-		await runSingleAgentDaemon();
-		return;
+		await runDaemon(agents, (agentId) => {
+			if (agentId !== "host") {
+				throw new Error(`No Matrix credentials at synthetic agent ${agentId}`);
+			}
+			return {
+				homeserver: credentials.homeserver,
+				userId: credentials.botUserId,
+				accessToken: credentials.botAccessToken,
+				password: credentials.botPassword,
+				username: credentials.botUserId.slice(1, credentials.botUserId.indexOf(":")),
+			};
+		});
+	} else {
+		log.info("multi-agent definitions found, starting supervisor", {
+			agents: agents.map((agent) => agent.id),
+		});
+		await runDaemon(agents, loadAgentMatrixCredentials);
 	}
-
-	log.info("multi-agent definitions found, starting supervisor", {
-		agents: agents.map((agent) => agent.id),
-	});
-	await runMultiAgentDaemon(agents);
 }
 
-async function runMultiAgentDaemon(agents: readonly AgentDefinition[]): Promise<void> {
+async function runDaemon(
+	agents: readonly AgentDefinition[],
+	loadAgentCredentials: (agentId: string) => MatrixAgentCredentials,
+): Promise<void> {
 	const runtime = createMultiAgentRuntime({
 		agents,
 		sessionBaseDir: SESSION_BASE,
 		idleTimeoutMs: IDLE_TIMEOUT_MS,
-		matrixAgentStorageDir: MATRIX_AGENT_STORAGE_DIR,
-		loadAgentCredentials: loadAgentMatrixCredentials,
+		loadAgentCredentials,
 		loadSchedulerState: () => loadSchedulerState(SCHEDULER_STATE_PATH),
 		saveSchedulerState: (state) => {
 			try {
@@ -80,7 +90,7 @@ async function runMultiAgentDaemon(agents: readonly AgentDefinition[]): Promise<
 		},
 	});
 	async function shutdown(signal: string): Promise<void> {
-		log.info("shutting down", { signal, mode: "multi-agent" });
+		log.info("shutting down", { signal, mode: "unified" });
 		await runtime.stop();
 		await new Promise((r) => setTimeout(r, 100));
 		process.exit(0);
@@ -93,7 +103,7 @@ async function runMultiAgentDaemon(agents: readonly AgentDefinition[]): Promise<
 		async () => {
 			await runtime.start();
 			log.info("pi-daemon running", {
-				mode: "multi-agent",
+				mode: "unified",
 				agents: agents.map((agent) => agent.id),
 				proactiveJobs: runtime.proactiveJobs,
 			});
@@ -112,31 +122,6 @@ async function runMultiAgentDaemon(agents: readonly AgentDefinition[]): Promise<
 	);
 }
 
-async function runSingleAgentDaemon(): Promise<void> {
-	const runtime = createSingleAgentRuntime({
-		storagePath: STORAGE_PATH,
-		sessionBaseDir: SESSION_BASE,
-		idleTimeoutMs: IDLE_TIMEOUT_MS,
-		roomFailureWindowMs: ROOM_FAILURE_WINDOW_MS,
-		roomFailureThreshold: ROOM_FAILURE_THRESHOLD,
-		roomQuarantineMs: ROOM_QUARANTINE_MS,
-		credentials: loadPrimaryMatrixCredentials(),
-	});
-
-	async function shutdown(signal: string): Promise<void> {
-		log.info("shutting down", { signal, mode: "single-agent" });
-		await runtime.stop();
-		await new Promise((r) => setTimeout(r, 5000));
-		process.exit(0);
-	}
-
-	process.on("SIGTERM", () => void shutdown("SIGTERM"));
-	process.on("SIGINT", () => void shutdown("SIGINT"));
-
-	await runtime.start();
-	log.info("pi-daemon running", { mode: "single-agent" });
-}
-
 function loadPrimaryMatrixCredentials(): MatrixCredentials {
 	const path = matrixCredentialsPath();
 	try {
@@ -153,6 +138,28 @@ function loadAgentMatrixCredentials(agentId: string): MatrixAgentCredentials {
 	} catch {
 		throw new Error(`No Matrix credentials at ${path}`);
 	}
+}
+
+function createDefaultAgent(credentials: MatrixCredentials): AgentDefinition {
+	const username = credentials.botUserId.slice(1, credentials.botUserId.indexOf(":"));
+	return {
+		id: "host",
+		name: "Pi",
+		description: "Default Bloom host agent",
+		instructionsPath: "<builtin>",
+		instructionsBody: "You are Pi. Respond helpfully to Matrix room messages.",
+		matrix: {
+			username,
+			userId: credentials.botUserId,
+			autojoin: true,
+		},
+		respond: {
+			mode: "host",
+			allowAgentMentions: true,
+			maxPublicTurnsPerRoot: 2,
+			cooldownMs: 1500,
+		},
+	};
 }
 
 main().catch((err) => {

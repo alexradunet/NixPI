@@ -69,7 +69,7 @@ describe("AgentSupervisor", () => {
 		const host = makeAgent("host", "@pi:bloom", "host");
 		const planner = makeAgent("planner", "@planner:bloom", "mentioned");
 		const createdSessions: FakeSession[] = [];
-		const matrixPool = {
+		const matrixBridge = {
 			getRoomAlias: vi.fn().mockResolvedValue("#general:bloom"),
 			sendText: vi.fn().mockResolvedValue(undefined),
 			setTyping: vi.fn().mockResolvedValue(undefined),
@@ -77,7 +77,7 @@ describe("AgentSupervisor", () => {
 		};
 		const supervisor = new AgentSupervisor({
 			agents: [host, planner],
-			matrixPool,
+			matrixBridge,
 			sessionBaseDir: "/tmp/sessions",
 			idleTimeoutMs: 60_000,
 			createSession: (opts) => {
@@ -112,7 +112,7 @@ describe("AgentSupervisor", () => {
 		expect(createdSessions[0]?.sentMessages[0]).toContain("# host");
 		expect(createdSessions[0]?.sentMessages[0]).toContain("[matrix: @alex:bloom] hello there");
 		expect(createdSessions[0]?.sentMessages[1]).toBe("[matrix: @alex:bloom] hello again");
-		expect(matrixPool.getRoomAlias).toHaveBeenCalledWith("host", "!room:bloom");
+		expect(matrixBridge.getRoomAlias).toHaveBeenCalledWith("host", "!room:bloom");
 
 		await supervisor.shutdown();
 	});
@@ -121,7 +121,7 @@ describe("AgentSupervisor", () => {
 		const host = makeAgent("host", "@pi:bloom", "host");
 		const planner = makeAgent("planner", "@planner:bloom", "mentioned");
 		const createdSessions: FakeSession[] = [];
-		const matrixPool = {
+		const matrixBridge = {
 			getRoomAlias: vi.fn().mockResolvedValue("#general:bloom"),
 			sendText: vi.fn().mockResolvedValue(undefined),
 			setTyping: vi.fn().mockResolvedValue(undefined),
@@ -129,7 +129,7 @@ describe("AgentSupervisor", () => {
 		};
 		const supervisor = new AgentSupervisor({
 			agents: [host, planner],
-			matrixPool,
+			matrixBridge,
 			sessionBaseDir: "/tmp/sessions",
 			idleTimeoutMs: 60_000,
 			createSession: (opts) => {
@@ -151,10 +151,10 @@ describe("AgentSupervisor", () => {
 
 		expect(createdSessions).toHaveLength(1);
 		expect(createdSessions[0]?.opts.agent.id).toBe("planner");
-		expect(matrixPool.setTyping).toHaveBeenCalledWith("planner", "!room:bloom", true, 30_000);
+		expect(matrixBridge.setTyping).toHaveBeenCalledWith("planner", "!room:bloom", true, 30_000);
 		createdSessions[0]?.triggerAgentEnd("Here is the plan.");
 		await flushAsyncWork();
-		expect(matrixPool.sendText).toHaveBeenCalledWith("planner", "!room:bloom", "Here is the plan.");
+		expect(matrixBridge.sendText).toHaveBeenCalledWith("planner", "!room:bloom", "Here is the plan.");
 
 		await supervisor.shutdown();
 	});
@@ -163,7 +163,7 @@ describe("AgentSupervisor", () => {
 		const critic = makeAgent("critic", "@critic:bloom", "mentioned");
 		const planner = makeAgent("planner", "@planner:bloom", "mentioned");
 		const createdSessions: FakeSession[] = [];
-		const matrixPool = {
+		const matrixBridge = {
 			getRoomAlias: vi.fn().mockResolvedValue("#general:bloom"),
 			sendText: vi.fn().mockResolvedValue(undefined),
 			setTyping: vi.fn().mockResolvedValue(undefined),
@@ -171,7 +171,7 @@ describe("AgentSupervisor", () => {
 		};
 		const supervisor = new AgentSupervisor({
 			agents: [critic, planner],
-			matrixPool,
+			matrixBridge,
 			sessionBaseDir: "/tmp/sessions",
 			idleTimeoutMs: 60_000,
 			createSession: (opts) => {
@@ -200,7 +200,7 @@ describe("AgentSupervisor", () => {
 		createdSessions[0]?.triggerAgentEnd("1. Clear junk\n2. Sort essentials\n3. Reset the desk");
 		await flushAsyncWork();
 
-		expect(matrixPool.sendText).toHaveBeenCalledWith(
+		expect(matrixBridge.sendText).toHaveBeenCalledWith(
 			"planner",
 			"!room:bloom",
 			"1. Clear junk\n2. Sort essentials\n3. Reset the desk",
@@ -219,7 +219,7 @@ describe("AgentSupervisor", () => {
 		const host = makeAgent("host", "@pi:bloom", "host");
 		const planner = makeAgent("planner", "@planner:bloom", "mentioned");
 		const createdSessions: FakeSession[] = [];
-		const matrixPool = {
+		const matrixBridge = {
 			getRoomAlias: vi.fn().mockResolvedValue("#general:bloom"),
 			sendText: vi.fn().mockResolvedValue(undefined),
 			setTyping: vi.fn().mockResolvedValue(undefined),
@@ -227,7 +227,7 @@ describe("AgentSupervisor", () => {
 		};
 		const supervisor = new AgentSupervisor({
 			agents: [host, planner],
-			matrixPool,
+			matrixBridge,
 			sessionBaseDir: "/tmp/sessions",
 			idleTimeoutMs: 60_000,
 			createSession: (opts) => {
@@ -260,8 +260,8 @@ describe("AgentSupervisor", () => {
 
 		createdSessions[1]?.triggerEvent({ type: "agent_start" });
 		createdSessions[1]?.triggerEvent({ type: "agent_end" });
-		expect(matrixPool.setTyping).toHaveBeenCalledWith("planner", "!room:bloom", true, 30_000);
-		expect(matrixPool.setTyping).toHaveBeenCalledWith("planner", "!room:bloom", false, 30_000);
+		expect(matrixBridge.setTyping).toHaveBeenCalledWith("planner", "!room:bloom", true, 30_000);
+		expect(matrixBridge.setTyping).toHaveBeenCalledWith("planner", "!room:bloom", false, 30_000);
 
 		await supervisor.shutdown();
 	});
@@ -269,7 +269,7 @@ describe("AgentSupervisor", () => {
 	it("recreates a dead session when the same target agent is needed again", async () => {
 		const host = makeAgent("host", "@pi:bloom", "host");
 		const createdSessions: FakeSession[] = [];
-		const matrixPool = {
+		const matrixBridge = {
 			getRoomAlias: vi.fn().mockResolvedValue("#general:bloom"),
 			sendText: vi.fn().mockResolvedValue(undefined),
 			setTyping: vi.fn().mockResolvedValue(undefined),
@@ -277,7 +277,7 @@ describe("AgentSupervisor", () => {
 		};
 		const supervisor = new AgentSupervisor({
 			agents: [host],
-			matrixPool,
+			matrixBridge,
 			sessionBaseDir: "/tmp/sessions",
 			idleTimeoutMs: 60_000,
 			createSession: (opts) => {
@@ -308,7 +308,7 @@ describe("AgentSupervisor", () => {
 	it("dispatches proactive jobs directly to the target agent and suppresses configured no-op replies", async () => {
 		const host = makeAgent("host", "@pi:bloom", "host");
 		const createdSessions: FakeSession[] = [];
-		const matrixPool = {
+		const matrixBridge = {
 			getRoomAlias: vi.fn().mockResolvedValue("#ops:bloom"),
 			sendText: vi.fn().mockResolvedValue(undefined),
 			setTyping: vi.fn().mockResolvedValue(undefined),
@@ -316,7 +316,7 @@ describe("AgentSupervisor", () => {
 		};
 		const supervisor = new AgentSupervisor({
 			agents: [host],
-			matrixPool,
+			matrixBridge,
 			sessionBaseDir: "/tmp/sessions",
 			idleTimeoutMs: 60_000,
 			createSession: (opts) => {
@@ -343,7 +343,7 @@ describe("AgentSupervisor", () => {
 
 		createdSessions[0]?.triggerAgentEnd("HEARTBEAT_OK");
 		await flushAsyncWork();
-		expect(matrixPool.sendText).not.toHaveBeenCalled();
+		expect(matrixBridge.sendText).not.toHaveBeenCalled();
 
 		await supervisor.dispatchProactiveJob({
 			id: "daily-heartbeat",
@@ -357,7 +357,7 @@ describe("AgentSupervisor", () => {
 		});
 		createdSessions[0]?.triggerAgentEnd("The dufs service failed overnight.");
 		await flushAsyncWork();
-		expect(matrixPool.sendText).toHaveBeenCalledWith("host", "!ops:bloom", "The dufs service failed overnight.");
+		expect(matrixBridge.sendText).toHaveBeenCalledWith("host", "!ops:bloom", "The dufs service failed overnight.");
 
 		await supervisor.shutdown();
 	});
@@ -365,7 +365,7 @@ describe("AgentSupervisor", () => {
 	it("still delivers proactive replies when quiet_if_noop is disabled or the token does not match", async () => {
 		const host = makeAgent("host", "@pi:bloom", "host");
 		const createdSessions: FakeSession[] = [];
-		const matrixPool = {
+		const matrixBridge = {
 			getRoomAlias: vi.fn().mockResolvedValue("#ops:bloom"),
 			sendText: vi.fn().mockResolvedValue(undefined),
 			setTyping: vi.fn().mockResolvedValue(undefined),
@@ -373,7 +373,7 @@ describe("AgentSupervisor", () => {
 		};
 		const supervisor = new AgentSupervisor({
 			agents: [host],
-			matrixPool,
+			matrixBridge,
 			sessionBaseDir: "/tmp/sessions",
 			idleTimeoutMs: 60_000,
 			createSession: (opts) => {
@@ -409,8 +409,8 @@ describe("AgentSupervisor", () => {
 		createdSessions[0]?.triggerAgentEnd("HEARTBEAT_OK but with context");
 		await flushAsyncWork();
 
-		expect(matrixPool.sendText).toHaveBeenNthCalledWith(1, "host", "!ops:bloom", "HEARTBEAT_OK");
-		expect(matrixPool.sendText).toHaveBeenNthCalledWith(2, "host", "!ops:bloom", "HEARTBEAT_OK but with context");
+		expect(matrixBridge.sendText).toHaveBeenNthCalledWith(1, "host", "!ops:bloom", "HEARTBEAT_OK");
+		expect(matrixBridge.sendText).toHaveBeenNthCalledWith(2, "host", "!ops:bloom", "HEARTBEAT_OK but with context");
 
 		await supervisor.shutdown();
 	});

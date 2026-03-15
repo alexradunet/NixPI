@@ -1,7 +1,6 @@
 import os from "node:os";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const createSingleAgentRuntimeMock = vi.fn();
 const createMultiAgentRuntimeMock = vi.fn();
 const startWithRetryMock = vi.fn();
 const loadAgentDefinitionsResultMock = vi.fn();
@@ -53,10 +52,6 @@ vi.mock("../../core/daemon/proactive.js", () => ({
 	saveSchedulerState: saveSchedulerStateMock,
 }));
 
-vi.mock("../../core/daemon/single-agent-runtime.js", () => ({
-	createSingleAgentRuntime: createSingleAgentRuntimeMock,
-}));
-
 describe("daemon bootstrap", () => {
 	const processOnSpy = vi.spyOn(process, "on").mockImplementation(() => process);
 	const homeDir = os.homedir();
@@ -69,7 +64,13 @@ describe("daemon bootstrap", () => {
 		matrixCredentialsPathMock.mockReturnValue("/tmp/matrix.json");
 		matrixAgentCredentialsPathMock.mockImplementation((agentId: string) => `/tmp/${agentId}.json`);
 		readFileSyncMock.mockReturnValue(
-			JSON.stringify({ homeserver: "http://matrix", accessToken: "token", userId: "@pi:bloom" }),
+			JSON.stringify({
+				homeserver: "http://matrix",
+				botAccessToken: "token",
+				botPassword: "secret",
+				botUserId: "@pi:bloom",
+				registrationToken: "reg-token",
+			}),
 		);
 		startWithRetryMock.mockImplementation(async (start: () => Promise<void>) => {
 			await start();
@@ -80,24 +81,34 @@ describe("daemon bootstrap", () => {
 		processOnSpy.mockClear();
 	});
 
-	it("starts the single-agent runtime when no valid agent definitions exist", async () => {
-		const startMock = vi.fn().mockResolvedValue(undefined);
-		const stopMock = vi.fn().mockResolvedValue(undefined);
-		createSingleAgentRuntimeMock.mockReturnValue({ start: startMock, stop: stopMock });
+	it("starts the unified runtime with a default host agent when no valid agent definitions exist", async () => {
+		const runtime = {
+			start: vi.fn().mockResolvedValue(undefined),
+			stop: vi.fn().mockResolvedValue(undefined),
+			proactiveJobs: 0,
+		};
+		createMultiAgentRuntimeMock.mockReturnValue(runtime);
 		loadAgentDefinitionsResultMock.mockReturnValue({ agents: [], errors: ["bad overlay"] });
 
 		await import("../../core/daemon/index.js");
 
 		expect(logWarnMock).toHaveBeenCalledWith("skipping invalid agent definition", { error: "bad overlay" });
-		expect(createSingleAgentRuntimeMock).toHaveBeenCalledWith(
+		expect(createMultiAgentRuntimeMock).toHaveBeenCalledWith(
 			expect.objectContaining({
-				storagePath: `${homeDir}/.pi/pi-daemon/matrix-state.json`,
+				agents: [
+					expect.objectContaining({
+						id: "host",
+						name: "Pi",
+						instructionsPath: "<builtin>",
+						matrix: expect.objectContaining({ userId: "@pi:bloom" }),
+						respond: expect.objectContaining({ mode: "host" }),
+					}),
+				],
 				sessionBaseDir: `${homeDir}/.pi/agent/sessions/bloom-rooms`,
-				credentials: { homeserver: "http://matrix", accessToken: "token", userId: "@pi:bloom" },
 			}),
 		);
-		expect(startMock).toHaveBeenCalledTimes(1);
-		expect(createMultiAgentRuntimeMock).not.toHaveBeenCalled();
+		expect(startWithRetryMock).toHaveBeenCalledTimes(1);
+		expect(runtime.start).toHaveBeenCalledTimes(1);
 	});
 
 	it("starts the multi-agent runtime when valid agent definitions exist", async () => {
@@ -119,11 +130,9 @@ describe("daemon bootstrap", () => {
 			expect.objectContaining({
 				agents: [{ id: "ops" }, { id: "support" }],
 				sessionBaseDir: `${homeDir}/.pi/agent/sessions/bloom-rooms`,
-				matrixAgentStorageDir: `${homeDir}/.pi/pi-daemon/matrix-agents`,
 			}),
 		);
 		expect(startWithRetryMock).toHaveBeenCalledTimes(1);
 		expect(runtime.start).toHaveBeenCalledTimes(1);
-		expect(createSingleAgentRuntimeMock).not.toHaveBeenCalled();
 	});
 });

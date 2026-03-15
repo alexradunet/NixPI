@@ -43,7 +43,6 @@ describe("createMultiAgentRuntime", () => {
 			agents: [makeAgent("host")],
 			sessionBaseDir: "/tmp/sessions",
 			idleTimeoutMs: 60_000,
-			matrixAgentStorageDir: "/tmp/matrix-agents",
 			loadAgentCredentials: () => ({
 				homeserver: "http://localhost:6167",
 				userId: "@host:bloom",
@@ -103,7 +102,6 @@ describe("createMultiAgentRuntime", () => {
 			agents: [agent],
 			sessionBaseDir: "/tmp/sessions",
 			idleTimeoutMs: 60_000,
-			matrixAgentStorageDir: "/tmp/matrix-agents",
 			loadAgentCredentials: () => ({
 				homeserver: "http://localhost:6167",
 				userId: "@host:bloom",
@@ -163,7 +161,6 @@ describe("createMultiAgentRuntime", () => {
 			agents: [agent],
 			sessionBaseDir: "/tmp/sessions",
 			idleTimeoutMs: 60_000,
-			matrixAgentStorageDir: "/tmp/matrix-agents",
 			loadAgentCredentials: () => ({
 				homeserver: "http://localhost:6167",
 				userId: "@host:bloom",
@@ -212,7 +209,6 @@ describe("createMultiAgentRuntime", () => {
 			agents: [makeAgent("host")],
 			sessionBaseDir: "/tmp/sessions",
 			idleTimeoutMs: 60_000,
-			matrixAgentStorageDir: "/tmp/matrix-agents",
 			loadAgentCredentials: () => ({
 				homeserver: "http://localhost:6167",
 				userId: "@host:bloom",

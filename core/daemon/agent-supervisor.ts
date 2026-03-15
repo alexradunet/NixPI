@@ -1,5 +1,6 @@
 import { createLogger } from "../lib/shared.js";
 import type { AgentDefinition } from "./agent-registry.js";
+import { ConversationState } from "./conversation-state.js";
 import type { BloomSessionLike, SessionEvent } from "./contracts/session.js";
 import { createRoomState } from "./room-state.js";
 import { type RoomEnvelope, routeRoomEnvelope } from "./router.js";
@@ -11,27 +12,6 @@ const TYPING_TIMEOUT_MS = 30_000;
 const TYPING_REFRESH_MS = 20_000;
 const TOTAL_REPLY_BUDGET = 4;
 
-interface SequentialChainReply {
-	agentId: string;
-	text: string;
-}
-
-interface SequentialChain {
-	key: string;
-	roomId: string;
-	rootEventId: string;
-	originalMessage: string;
-	remainingAgentIds: string[];
-	replies: SequentialChainReply[];
-}
-
-interface PendingProactiveJob {
-	jobId: string;
-	kind: TriggeredJob["kind"];
-	quietIfNoop: boolean;
-	noOpToken?: string;
-}
-
 export interface MatrixBridgeLike {
 	sendText(agentId: string, roomId: string, text: string): Promise<void>;
 	setTyping(agentId: string, roomId: string, typing: boolean, timeoutMs?: number): Promise<void>;
@@ -42,7 +22,6 @@ export interface MatrixBridgeLike {
 export interface AgentSupervisorOptions {
 	agents: readonly AgentDefinition[];
 	matrixBridge?: MatrixBridgeLike;
-	matrixPool?: MatrixBridgeLike;
 	sessionBaseDir: string;
 	idleTimeoutMs: number;
 	createSession?: (opts: AgentSessionOptions) => BloomSessionLike;
@@ -55,17 +34,15 @@ export class AgentSupervisor {
 	private readonly idleTimeoutMs: number;
 	private readonly createSession: (opts: AgentSessionOptions) => BloomSessionLike;
 	private readonly roomState = createRoomState();
+	private readonly conversationState = new ConversationState();
 	private readonly sessions = new Map<string, BloomSessionLike>();
 	private readonly preambleSent = new Set<string>();
 	private readonly typingIntervals = new Map<string, ReturnType<typeof setInterval>>();
-	private readonly sequentialChains = new Map<string, SequentialChain>();
-	private readonly waitingChainsByRoomAgent = new Map<string, string[]>();
-	private readonly pendingProactiveJobs = new Map<string, PendingProactiveJob[]>();
 	private shuttingDown = false;
 
 	constructor(options: AgentSupervisorOptions) {
 		this.agents = options.agents;
-		this.matrixBridge = options.matrixBridge ?? options.matrixPool ?? missingMatrixBridge();
+		this.matrixBridge = options.matrixBridge ?? missingMatrixBridge();
 		this.sessionBaseDir = options.sessionBaseDir;
 		this.idleTimeoutMs = options.idleTimeoutMs;
 		this.createSession = options.createSession ?? ((opts) => new AgentSession(opts));
@@ -82,28 +59,23 @@ export class AgentSupervisor {
 		if (!firstAgentId) return;
 
 		if (remainingAgentIds.length > 0) {
-			const chainKey = this.chainKey(envelope.roomId, envelope.eventId);
-			const chain: SequentialChain = {
-				key: chainKey,
-				roomId: envelope.roomId,
-				rootEventId: envelope.eventId,
-				originalMessage: this.buildInitialMessage(envelope),
-				remainingAgentIds: [...remainingAgentIds],
-				replies: [],
-			};
-			this.sequentialChains.set(chainKey, chain);
+			const chain = this.conversationState.startSequentialChain(envelope, remainingAgentIds);
 
 			try {
 				await this.dispatchMessageToAgent(envelope.roomId, firstAgentId, chain.originalMessage);
-				this.enqueueWaitingChain(envelope.roomId, firstAgentId, chainKey);
+				this.conversationState.enqueueWaitingChain(envelope.roomId, firstAgentId, chain.key);
 			} catch (error) {
-				this.sequentialChains.delete(chainKey);
+				this.conversationState.cancelSequentialChain(chain.key);
 				throw error;
 			}
 			return;
 		}
 
-		await this.dispatchMessageToAgent(envelope.roomId, firstAgentId, this.buildInitialMessage(envelope));
+		await this.dispatchMessageToAgent(
+			envelope.roomId,
+			firstAgentId,
+			`[matrix: ${envelope.senderUserId}] ${envelope.body}`,
+		);
 	}
 
 	async shutdown(): Promise<void> {
@@ -112,14 +84,11 @@ export class AgentSupervisor {
 			clearInterval(interval);
 		}
 		this.typingIntervals.clear();
-		this.sequentialChains.clear();
-		this.waitingChainsByRoomAgent.clear();
-		this.pendingProactiveJobs.clear();
+		this.conversationState.clear();
 		for (const session of this.sessions.values()) {
 			session.dispose();
 		}
 		this.sessions.clear();
-		this.matrixBridge.stop();
 	}
 
 	async dispatchProactiveJob(job: TriggeredJob): Promise<void> {
@@ -130,7 +99,7 @@ export class AgentSupervisor {
 			job.prompt,
 		].join("\n\n");
 		await this.dispatchMessageToAgent(job.roomId, job.agentId, message);
-		this.enqueueProactiveJob(job.roomId, job.agentId, {
+		this.conversationState.enqueueProactiveJob(job.roomId, job.agentId, {
 			jobId: job.jobId,
 			kind: job.kind,
 			quietIfNoop: job.quietIfNoop ?? false,
@@ -159,36 +128,9 @@ export class AgentSupervisor {
 		}
 	}
 
-	private buildInitialMessage(envelope: RoomEnvelope): string {
-		return `[matrix: ${envelope.senderUserId}] ${envelope.body}`;
-	}
-
-	private buildSequentialHandoffMessage(chain: SequentialChain, nextAgentId: string): string {
-		const nextAgent = this.requireAgent(nextAgentId);
-		const priorReplies = chain.replies
-			.map(({ agentId, text }) => {
-				const priorAgent = this.requireAgent(agentId);
-				return [`${priorAgent.name} (${priorAgent.matrix.userId}) replied:`, text].join("\n");
-			})
-			.join("\n\n");
-
-		return [
-			"[system] This is a sequential multi-agent handoff.",
-			"The original room message was:",
-			chain.originalMessage,
-			"",
-			"Previous agent replies in order:",
-			priorReplies,
-			"",
-			`Now respond as ${nextAgent.name} (${nextAgent.matrix.userId}).`,
-			"Continue from the prior reply instead of starting independently.",
-			"If the human asked for critique or follow-up, address the previous agent's output directly.",
-		].join("\n");
-	}
-
 	private async handleAgentResponse(roomId: string, agentId: string, text: string): Promise<void> {
 		if (this.shuttingDown) return;
-		const proactiveJob = this.dequeueProactiveJob(roomId, agentId);
+		const proactiveJob = this.conversationState.dequeueProactiveJob(roomId, agentId);
 		if (proactiveJob) {
 			if (proactiveJob.quietIfNoop && proactiveJob.noOpToken && text.trim() === proactiveJob.noOpToken) {
 				return;
@@ -197,22 +139,22 @@ export class AgentSupervisor {
 		await this.matrixBridge.sendText(agentId, roomId, text);
 		if (this.shuttingDown) return;
 
-		const chainKey = this.dequeueWaitingChain(roomId, agentId);
-		if (!chainKey) return;
+		const progress = this.conversationState.appendChainReply(roomId, agentId, text);
+		if (!progress) return;
 
-		const chain = this.sequentialChains.get(chainKey);
-		if (!chain) return;
-
-		chain.replies.push({ agentId, text });
-		const nextAgentId = chain.remainingAgentIds.shift();
+		const { chain, nextAgentId } = progress;
 		if (!nextAgentId) {
-			this.sequentialChains.delete(chainKey);
 			return;
 		}
 
-		await this.dispatchMessageToAgent(roomId, nextAgentId, this.buildSequentialHandoffMessage(chain, nextAgentId));
+		const nextAgent = this.requireAgent(nextAgentId);
+		await this.dispatchMessageToAgent(
+			roomId,
+			nextAgentId,
+			this.conversationState.buildSequentialHandoffMessage(chain, nextAgent, (id) => this.requireAgent(id)),
+		);
 		if (this.shuttingDown) return;
-		this.enqueueWaitingChain(roomId, nextAgentId, chainKey);
+		this.conversationState.enqueueWaitingChain(roomId, nextAgentId, chain.key);
 	}
 
 	private async getOrSpawnSession(
@@ -310,53 +252,6 @@ export class AgentSupervisor {
 		return `${roomId}::${agentId}`;
 	}
 
-	private chainKey(roomId: string, rootEventId: string): string {
-		return `${roomId}::${rootEventId}`;
-	}
-
-	private roomAgentKey(roomId: string, agentId: string): string {
-		return `${roomId}::${agentId}`;
-	}
-
-	private enqueueWaitingChain(roomId: string, agentId: string, chainKey: string): void {
-		const key = this.roomAgentKey(roomId, agentId);
-		const queue = this.waitingChainsByRoomAgent.get(key) ?? [];
-		queue.push(chainKey);
-		this.waitingChainsByRoomAgent.set(key, queue);
-	}
-
-	private dequeueWaitingChain(roomId: string, agentId: string): string | undefined {
-		const key = this.roomAgentKey(roomId, agentId);
-		const queue = this.waitingChainsByRoomAgent.get(key);
-		if (!queue || queue.length === 0) return undefined;
-		const chainKey = queue.shift();
-		if (queue.length === 0) {
-			this.waitingChainsByRoomAgent.delete(key);
-		} else {
-			this.waitingChainsByRoomAgent.set(key, queue);
-		}
-		return chainKey;
-	}
-
-	private enqueueProactiveJob(roomId: string, agentId: string, job: PendingProactiveJob): void {
-		const key = this.roomAgentKey(roomId, agentId);
-		const queue = this.pendingProactiveJobs.get(key) ?? [];
-		queue.push(job);
-		this.pendingProactiveJobs.set(key, queue);
-	}
-
-	private dequeueProactiveJob(roomId: string, agentId: string): PendingProactiveJob | undefined {
-		const key = this.roomAgentKey(roomId, agentId);
-		const queue = this.pendingProactiveJobs.get(key);
-		if (!queue || queue.length === 0) return undefined;
-		const job = queue.shift();
-		if (queue.length === 0) {
-			this.pendingProactiveJobs.delete(key);
-		} else {
-			this.pendingProactiveJobs.set(key, queue);
-		}
-		return job;
-	}
 }
 
 function missingMatrixBridge(): never {

@@ -11,7 +11,6 @@ export interface MatrixIdentity {
 	userId: string;
 	homeserver: string;
 	accessToken: string;
-	storagePath: string;
 	autojoin?: boolean;
 }
 

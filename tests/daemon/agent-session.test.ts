@@ -94,10 +94,6 @@ describe("AgentSession", () => {
 		await hostSession.spawn();
 		await plannerSession.spawn();
 
-		expect(hostSession.agentId).toBe("host");
-		expect(plannerSession.agentId).toBe("planner");
-		expect(hostSession.sessionDir).toBe(join(sessionBaseDir, "general_bloom", "host"));
-		expect(plannerSession.sessionDir).toBe(join(sessionBaseDir, "general_bloom", "planner"));
 		expect(createdSessions[0]?.opts).toMatchObject({
 			sanitizedAlias: "general_bloom-host",
 			sessionDir: join(sessionBaseDir, "general_bloom", "host"),

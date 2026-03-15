@@ -137,7 +137,6 @@ describe("MatrixJsSdkBridge", () => {
 					userId: "@pi:bloom",
 					homeserver: "http://localhost:6167",
 					accessToken: "host-token",
-					storagePath: "/tmp/host.json",
 					autojoin: true,
 				},
 				{
@@ -145,7 +144,6 @@ describe("MatrixJsSdkBridge", () => {
 					userId: "@planner:bloom",
 					homeserver: "http://localhost:6167",
 					accessToken: "planner-token",
-					storagePath: "/tmp/planner.json",
 					autojoin: true,
 				},
 			],
@@ -185,14 +183,12 @@ describe("MatrixJsSdkBridge", () => {
 					userId: "@pi:bloom",
 					homeserver: "http://localhost:6167",
 					accessToken: "host-token",
-					storagePath: "/tmp/host.json",
 				},
 				{
 					id: "planner",
 					userId: "@planner:bloom",
 					homeserver: "http://localhost:6167",
 					accessToken: "planner-token",
-					storagePath: "/tmp/planner.json",
 				},
 			],
 		});
@@ -225,7 +221,6 @@ describe("MatrixJsSdkBridge", () => {
 					userId: "@pi:bloom",
 					homeserver: "http://localhost:6167",
 					accessToken: "host-token",
-					storagePath: "/tmp/host.json",
 					autojoin: true,
 				},
 			],
@@ -258,14 +253,12 @@ describe("MatrixJsSdkBridge", () => {
 					userId: "@pi:bloom",
 					homeserver: "http://localhost:6167",
 					accessToken: "host-token",
-					storagePath: "/tmp/host.json",
 				},
 				{
 					id: "planner",
 					userId: "@planner:bloom",
 					homeserver: "http://localhost:6167",
 					accessToken: "planner-token",
-					storagePath: "/tmp/planner.json",
 				},
 			],
 		});
@@ -290,7 +283,6 @@ describe("MatrixJsSdkBridge", () => {
 					userId: "@pi:bloom",
 					homeserver: "http://localhost:6167",
 					accessToken: "host-token",
-					storagePath: "/tmp/host.json",
 				},
 			],
 		});

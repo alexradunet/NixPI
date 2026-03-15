@@ -1,5 +1,6 @@
 import { ClientEvent, type MatrixClient, type MatrixEvent, MemoryStore, SyncState, createClient } from "matrix-js-sdk";
 import type { MatrixBridge, MatrixIdentity, MatrixTextEvent } from "../contracts/matrix.js";
+import { enforceMapLimit, pruneExpiredEntries } from "../ordered-cache.js";
 
 interface ClientEntry {
 	identity: MatrixIdentity;
@@ -161,15 +162,7 @@ export class MatrixJsSdkBridge implements MatrixBridge {
 	}
 
 	private pruneSeenEventIds(now: number): void {
-		for (const [eventId, timestamp] of this.seenEventIds) {
-			if (now - timestamp > SEEN_EVENT_TTL_MS) {
-				this.seenEventIds.delete(eventId);
-			}
-		}
-		while (this.seenEventIds.size >= MAX_SEEN_EVENT_IDS) {
-			const oldest = this.seenEventIds.keys().next().value;
-			if (!oldest) break;
-			this.seenEventIds.delete(oldest);
-		}
+		pruneExpiredEntries(this.seenEventIds, now, (timestamp) => timestamp, SEEN_EVENT_TTL_MS);
+		enforceMapLimit(this.seenEventIds, MAX_SEEN_EVENT_IDS - 1);
 	}
 }

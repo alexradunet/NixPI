@@ -12,41 +12,24 @@ It exists to:
 
 - bridge Matrix rooms into Pi sessions
 - preserve room continuity outside interactive local sessions
-- support both simple single-agent deployments and optional multi-agent overlays
+- support simple default-host deployments and optional multi-agent overlays
 - schedule proactive turns without external orchestration
 
 ## 📡 How The Daemon Works
 
-Bloom has two runtime modes:
+Bloom runs through one supervisor/runtime path:
 
-- single-agent mode: one Matrix identity, one Pi session per room
-- multi-agent mode: one Matrix identity per agent overlay, one Pi session per `(room, agent)`
+- if valid agent overlays exist, it uses those Matrix identities
+- if no valid overlays exist, it synthesizes a default host agent from the primary Pi account
+- session management is always one Pi session per `(room, agent)`
 
 At startup:
 
 1. Bloom loads `~/Bloom/Agents/*/AGENTS.md`
-2. if no valid overlays exist, the daemon starts in single-agent fallback mode
-3. if at least one valid overlay exists, the daemon starts in multi-agent mode
-4. malformed overlays are skipped with warnings instead of aborting startup
+2. if no valid overlays exist, the daemon synthesizes a default host agent from the primary Pi credentials
+3. malformed overlays are skipped with warnings instead of aborting startup
 
-### Single-Agent Path
-
-Primary files:
-
-- [`../core/daemon/single-agent-runtime.ts`](../core/daemon/single-agent-runtime.ts)
-- [`../core/daemon/runtime/pi-room-session.ts`](../core/daemon/runtime/pi-room-session.ts)
-- [`../core/daemon/room-failures.ts`](../core/daemon/room-failures.ts)
-
-Current behavior:
-
-- one Matrix identity: the primary Pi account
-- one Pi session per room
-- room alias lookup before first message preamble
-- typing state while the agent is actively responding
-- repeated room failures can quarantine that room temporarily
-- Matrix send failures on final reply forwarding are best-effort and do not crash the runtime
-
-### Multi-Agent Path
+### Runtime Path
 
 Primary files:
 
@@ -57,7 +40,7 @@ Primary files:
 
 Current behavior:
 
-- one Matrix client per configured agent identity
+- one Matrix client per configured or synthesized agent identity
 - one Pi session per `(room, agent)`
 - routing based on host mode, mentions, cooldowns, and per-root reply budgets
 - sequential handoff when multiple agents are explicitly targeted in order
@@ -111,7 +94,6 @@ Important current failure behavior:
 
 - startup uses retry/backoff instead of one-shot failure
 - malformed agent overlays are skipped, not fatal
-- room failure quarantine applies only to single-agent room sessions
 - duplicate-event and cooldown state is bounded and pruned over time
 
 ## 🔗 Related
