@@ -19,6 +19,8 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      SIGNING_SECRET: ${{ secrets.SIGNING_SECRET }}
     steps:
       - uses: actions/checkout@v4
 
@@ -70,13 +72,13 @@ jobs:
           podman push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest.${{ steps.date.outputs.date }}
 
       - name: Install Cosign
-        if: ${{ secrets.SIGNING_SECRET != '' }}
+        if: ${{ env.SIGNING_SECRET != '' }}
         uses: sigstore/cosign-installer@v4.0.0
 
       - name: Sign container image
-        if: ${{ secrets.SIGNING_SECRET != '' }}
+        if: ${{ env.SIGNING_SECRET != '' }}
         env:
-          COSIGN_PRIVATE_KEY: ${{ secrets.SIGNING_SECRET }}
+          COSIGN_PRIVATE_KEY: ${{ env.SIGNING_SECRET }}
         run: |
           cosign sign -y --key env://COSIGN_PRIVATE_KEY \
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}

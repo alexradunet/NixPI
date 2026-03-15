@@ -639,69 +639,29 @@ step_git() {
 step_ai() {
 	echo ""
 	echo "--- AI Provider ---"
-	echo "Pi needs an AI model to work. You can set up an API key now,"
-	echo "or skip and use /login inside Pi to authenticate via browser."
-	echo ""
-	echo "Supported API key providers:"
-	echo "  1) Anthropic     (ANTHROPIC_API_KEY)"
-	echo "  2) OpenAI        (OPENAI_API_KEY)"
-	echo "  3) Google Gemini (GEMINI_API_KEY)"
-	echo "  4) OpenRouter    (OPENROUTER_API_KEY)"
-	echo "  s) Skip — configure later with /login or /model"
-	echo ""
-
-	local choice
-	read -rp "Choose [1-4, s]: " choice
-
-	if [[ "${choice,,}" == "s" || -z "$choice" ]]; then
-		echo ""
-		echo "Skipped. After setup, run /login in Pi to authenticate,"
-		echo "then /model to select your preferred AI model."
-		mark_done_with ai "skipped"
-		return
-	fi
-
-	local provider key_name auth_key
-	local default_model
-	case "$choice" in
-		1) provider="anthropic"; key_name="Anthropic" ;;
-		2) provider="openai"; key_name="OpenAI" ;;
-		3) provider="google"; key_name="Google Gemini" ;;
-		4) provider="openrouter"; key_name="OpenRouter" ;;
-		*) echo "Invalid choice. You can configure later with /login."; mark_done_with ai "skipped"; return ;;
-	esac
-
-	read -rsp "${key_name} API key: " auth_key
-	echo ""
-
-	if [[ -z "$auth_key" ]]; then
-		echo "No key entered. You can configure later with /login."
-		mark_done_with ai "skipped"
-		return
-	fi
-
-	# Write auth.json
-	mkdir -p "$PI_DIR/agent"
-	cat > "$PI_DIR/agent/auth.json" <<-AUTH
-	{
-	  "${provider}": "${auth_key}"
-	}
-	AUTH
-	chmod 600 "$PI_DIR/agent/auth.json"
-
-	default_model=$(default_model_for_provider "$provider")
-	write_pi_settings_defaults "$provider" "$default_model"
-
-	echo "${key_name} API key saved."
-	echo "Default model set to ${default_model}."
-	echo "Use /model in Pi to change it later."
-	mark_done_with ai "$provider"
+	echo "Skipping API-key setup in the wizard."
+	echo "After setup, run /login in Pi to authenticate,"
+	echo "then /model to select your preferred AI model."
+	mark_done_with ai "skipped"
 }
 
 step_services() {
 	echo ""
-	echo "--- Optional Services ---"
+	echo "--- Services ---"
 	local installed=""
+	local mesh_ip mesh_fqdn
+	mesh_ip=$(read_checkpoint_data netbird)
+	mesh_fqdn=$(netbird_fqdn)
+
+	echo "  Installing Bloom Home landing page..."
+	write_service_home_runtime "home" "$mesh_ip" "$mesh_fqdn"
+	if install_service home; then
+		echo "  Bloom Home installed."
+		installed="home"
+		write_service_home_runtime "$installed" "$mesh_ip" "$mesh_fqdn"
+	else
+		echo "  Bloom Home installation failed."
+	fi
 
 	read -rp "Install Bloom Web Chat? (Cinny web client for Matrix over NetBird) [y/N]: " cinny_answer
 	if [[ "${cinny_answer,,}" == "y" ]]; then
@@ -709,6 +669,7 @@ step_services() {
 		if install_service cinny; then
 			echo "  Cinny installed."
 			installed="${installed} cinny"
+			write_service_home_runtime "$installed" "$mesh_ip" "$mesh_fqdn"
 		else
 			echo "  Cinny installation failed."
 		fi
@@ -720,11 +681,13 @@ step_services() {
 		if install_service dufs; then
 			echo "  dufs installed."
 			installed="${installed} dufs"
+			write_service_home_runtime "$installed" "$mesh_ip" "$mesh_fqdn"
 		else
 			echo "  dufs installation failed."
 		fi
 	fi
 
+	write_service_home_runtime "$installed" "$mesh_ip" "$mesh_fqdn"
 	mark_done_with services "${installed:-none}"
 }
 
