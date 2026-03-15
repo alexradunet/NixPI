@@ -1,3 +1,4 @@
+import os from "node:os";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const createSingleAgentRuntimeMock = vi.fn();
@@ -58,6 +59,7 @@ vi.mock("../../core/daemon/single-agent-runtime.js", () => ({
 
 describe("daemon bootstrap", () => {
 	const processOnSpy = vi.spyOn(process, "on").mockImplementation(() => process);
+	const homeDir = os.homedir();
 
 	beforeEach(() => {
 		vi.resetModules();
@@ -89,8 +91,8 @@ describe("daemon bootstrap", () => {
 		expect(logWarnMock).toHaveBeenCalledWith("skipping invalid agent definition", { error: "bad overlay" });
 		expect(createSingleAgentRuntimeMock).toHaveBeenCalledWith(
 			expect.objectContaining({
-				storagePath: "/home/alex/.pi/pi-daemon/matrix-state.json",
-				sessionBaseDir: "/home/alex/.pi/agent/sessions/bloom-rooms",
+				storagePath: `${homeDir}/.pi/pi-daemon/matrix-state.json`,
+				sessionBaseDir: `${homeDir}/.pi/agent/sessions/bloom-rooms`,
 				credentials: { homeserver: "http://matrix", accessToken: "token", userId: "@pi:bloom" },
 			}),
 		);
@@ -116,8 +118,8 @@ describe("daemon bootstrap", () => {
 		expect(createMultiAgentRuntimeMock).toHaveBeenCalledWith(
 			expect.objectContaining({
 				agents: [{ id: "ops" }, { id: "support" }],
-				sessionBaseDir: "/home/alex/.pi/agent/sessions/bloom-rooms",
-				matrixAgentStorageDir: "/home/alex/.pi/pi-daemon/matrix-agents",
+				sessionBaseDir: `${homeDir}/.pi/agent/sessions/bloom-rooms`,
+				matrixAgentStorageDir: `${homeDir}/.pi/pi-daemon/matrix-agents`,
 			}),
 		);
 		expect(startWithRetryMock).toHaveBeenCalledTimes(1);

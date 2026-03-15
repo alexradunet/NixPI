@@ -133,7 +133,11 @@ describe("handleManifestApply", () => {
 			},
 			"/tmp/Bloom/manifest.yaml",
 		);
-		expect(writeServiceHomeRuntimeMock).toHaveBeenCalledWith("/home/alex/.config/bloom", "/tmp/repo", undefined);
+		expect(writeServiceHomeRuntimeMock).toHaveBeenCalledWith(
+			path.join(os.homedir(), ".config", "bloom"),
+			"/tmp/repo",
+			undefined,
+		);
 		expect(result.content[0].text).toContain("Installed app from bundled local package");
 	});
 });

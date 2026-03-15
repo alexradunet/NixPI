@@ -1,3 +1,4 @@
+import os from "node:os";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const runMock = vi.fn();
@@ -89,7 +90,7 @@ describe("bloom-services manifest handlers", () => {
 			},
 			"/tmp/Bloom/manifest.yaml",
 		);
-		expect(writeServiceHomeRuntimeMock).toHaveBeenCalledWith("/home/alex/.config/bloom", "/tmp/repo", undefined);
+		expect(writeServiceHomeRuntimeMock).toHaveBeenCalledWith(`${os.homedir()}/.config/bloom`, "/tmp/repo", undefined);
 		expect(result.content[0].text).toContain("Manifest updated. Resolved");
 	});
 
@@ -112,7 +113,7 @@ describe("bloom-services manifest handlers", () => {
 			},
 			"/tmp/Bloom/manifest.yaml",
 		);
-		expect(writeServiceHomeRuntimeMock).toHaveBeenCalledWith("/home/alex/.config/bloom", "/tmp/repo");
+		expect(writeServiceHomeRuntimeMock).toHaveBeenCalledWith(`${os.homedir()}/.config/bloom`, "/tmp/repo");
 		expect(result.content[0].text).toContain("Service dufs set in manifest");
 	});
 });
