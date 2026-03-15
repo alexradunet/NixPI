@@ -21,7 +21,6 @@
 		"@sinclair/typebox": "*"
 	},
 	"dependencies": {
-		"cron-parser": "^5.5.0",
 		"hosted-git-info": "^9.0.2",
 		"js-yaml": "^4.1.0",
 		"matrix-js-sdk": "^41.1.0"

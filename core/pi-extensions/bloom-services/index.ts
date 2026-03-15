@@ -10,6 +10,7 @@ import { join } from "node:path";
 import { StringEnum } from "@mariozechner/pi-ai";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
+import { defineTool, registerTools, type RegisteredExtensionTool } from "../../lib/extension-tools.js";
 import { getBloomDir } from "../../lib/filesystem.js";
 import { handleManifestApply } from "./actions-apply.js";
 import { handleBridgeCreate, handleBridgeRemove, handleBridgeStatus } from "./actions-bridges.js";
@@ -24,7 +25,8 @@ export default function (pi: ExtensionAPI) {
 	const dotBloomDir = join(os.homedir(), ".bloom");
 	const repoDir = join(dotBloomDir, "pi-bloom");
 
-	pi.registerTool({
+	const tools: RegisteredExtensionTool[] = [
+		defineTool({
 		name: "service_scaffold",
 		label: "Scaffold Service Package",
 		description: "Generate a new Bloom service package (quadlet + SKILL.md) from a template.",
@@ -55,11 +57,31 @@ export default function (pi: ExtensionAPI) {
 			overwrite: Type.Optional(Type.Boolean({ description: "Overwrite existing files if present", default: false })),
 		}),
 		async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
-			return handleScaffold(params, ctx);
+			return handleScaffold(
+				params as {
+					name: string;
+					description: string;
+					image: string;
+					version?: string;
+					category?: string;
+					optional?: boolean;
+					port?: number;
+					container_port?: number;
+					web_service?: boolean;
+					title?: string;
+					icon_text?: string;
+					path_hint?: string;
+					access_path?: string;
+					network?: string;
+					memory?: string;
+					socket_activated?: boolean;
+					overwrite?: boolean;
+				},
+				ctx,
+			);
 		},
-	});
-
-	pi.registerTool({
+	}),
+	defineTool({
 		name: "service_install",
 		label: "Install Service Package",
 		description: "Install a service package from a bundled local package to Quadlet + Bloom skill paths.",
@@ -72,11 +94,16 @@ export default function (pi: ExtensionAPI) {
 			),
 		}),
 		async execute(_toolCallId, params, signal) {
-			return handleInstall(params, bloomDir, manifestPath, repoDir, signal);
+			return handleInstall(
+				params as { name: string; version?: string; start?: boolean; update_manifest?: boolean },
+				bloomDir,
+				manifestPath,
+				repoDir,
+				signal,
+			);
 		},
-	});
-
-	pi.registerTool({
+	}),
+	defineTool({
 		name: "service_test",
 		label: "Test Service",
 		description: "Smoke-test installed service unit: reload, start, wait, inspect status/logs, optional cleanup.",
@@ -86,15 +113,15 @@ export default function (pi: ExtensionAPI) {
 			cleanup: Type.Optional(Type.Boolean({ description: "Stop unit(s) after test", default: false })),
 		}),
 		async execute(_toolCallId, params, signal) {
-			return handleTest(params, signal);
+			return handleTest(params as { name: string; start_timeout_sec?: number; cleanup?: boolean }, signal);
 		},
-	});
+	}),
 
 	// -----------------------------------------------------------------------
 	// Manifest tools
 	// -----------------------------------------------------------------------
 
-	pi.registerTool({
+	defineTool({
 		name: "manifest_show",
 		label: "Show Manifest",
 		description: "Display the declarative service manifest from ~/Bloom/manifest.yaml",
@@ -102,9 +129,8 @@ export default function (pi: ExtensionAPI) {
 		async execute() {
 			return handleManifestShow(manifestPath);
 		},
-	});
-
-	pi.registerTool({
+	}),
+	defineTool({
 		name: "manifest_sync",
 		label: "Sync Manifest",
 		description:
@@ -118,11 +144,10 @@ export default function (pi: ExtensionAPI) {
 			),
 		}),
 		async execute(_toolCallId, params, signal) {
-			return handleManifestSync(params, manifestPath, repoDir, signal);
+			return handleManifestSync(params as { mode?: "detect" | "update" }, manifestPath, repoDir, signal);
 		},
-	});
-
-	pi.registerTool({
+	}),
+	defineTool({
 		name: "manifest_set_service",
 		label: "Set Manifest Service",
 		description: "Add or update a service entry in the manifest.",
@@ -133,11 +158,14 @@ export default function (pi: ExtensionAPI) {
 			enabled: Type.Optional(Type.Boolean({ description: "Whether service should be running (default: true)" })),
 		}),
 		async execute(_toolCallId, params) {
-			return handleManifestSetService(params, manifestPath, repoDir);
+			return handleManifestSetService(
+				params as { name: string; image: string; version?: string; enabled?: boolean },
+				manifestPath,
+				repoDir,
+			);
 		},
-	});
-
-	pi.registerTool({
+	}),
+	defineTool({
 		name: "manifest_apply",
 		label: "Apply Manifest",
 		description:
@@ -152,15 +180,22 @@ export default function (pi: ExtensionAPI) {
 			dry_run: Type.Optional(Type.Boolean({ description: "Preview actions without mutating system", default: false })),
 		}),
 		async execute(_toolCallId, params, signal, _onUpdate, ctx) {
-			return handleManifestApply(params, bloomDir, manifestPath, repoDir, signal, ctx);
+			return handleManifestApply(
+				params as { install_missing?: boolean; dry_run?: boolean },
+				bloomDir,
+				manifestPath,
+				repoDir,
+				signal,
+				ctx,
+			);
 		},
-	});
+	}),
 
 	// -----------------------------------------------------------------------
 	// Bridge tools
 	// -----------------------------------------------------------------------
 
-	pi.registerTool({
+	defineTool({
 		name: "bridge_create",
 		label: "Create Matrix Bridge",
 		description:
@@ -169,11 +204,10 @@ export default function (pi: ExtensionAPI) {
 			name: Type.String({ description: "Bridge name: whatsapp, telegram, or signal" }),
 		}),
 		async execute(_toolCallId, params, signal) {
-			return handleBridgeCreate(params, repoDir, signal);
+			return handleBridgeCreate(params as { name: string }, repoDir, signal);
 		},
-	});
-
-	pi.registerTool({
+	}),
+	defineTool({
 		name: "bridge_remove",
 		label: "Remove Matrix Bridge",
 		description: "Stop a running Matrix bridge service, remove its Quadlet unit, and reload systemd.",
@@ -181,11 +215,10 @@ export default function (pi: ExtensionAPI) {
 			name: Type.String({ description: "Bridge name to remove (e.g. whatsapp)" }),
 		}),
 		async execute(_toolCallId, params, signal) {
-			return handleBridgeRemove(params, signal);
+			return handleBridgeRemove(params as { name: string }, signal);
 		},
-	});
-
-	pi.registerTool({
+	}),
+	defineTool({
 		name: "bridge_status",
 		label: "Matrix Bridge Status",
 		description: "List all running bloom-bridge-* containers and their current status.",
@@ -193,7 +226,9 @@ export default function (pi: ExtensionAPI) {
 		async execute(_toolCallId, _params, signal) {
 			return handleBridgeStatus(signal);
 		},
-	});
+	}),
+	];
+	registerTools(pi, tools);
 
 	// -----------------------------------------------------------------------
 	// Session start hook (service status + manifest drift detection)

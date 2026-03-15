@@ -9,6 +9,7 @@ import { join } from "node:path";
 import { StringEnum } from "@mariozechner/pi-ai";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
+import { defineTool, registerTools, type RegisteredExtensionTool } from "../../lib/extension-tools.js";
 import { errorResult } from "../../lib/shared.js";
 import { handleDevBuild, handleDevLoop, handleDevRollback, handleDevSwitch } from "./actions-build.js";
 import {
@@ -42,7 +43,8 @@ export default function (pi: ExtensionAPI) {
 
 	// --- Always registered (no gate) ---
 
-	pi.registerTool({
+	const tools: RegisteredExtensionTool[] = [
+		defineTool({
 		name: "dev_enable",
 		label: "Enable Dev Mode",
 		description: "Enable on-device development mode by writing the dev sentinel file.",
@@ -50,9 +52,8 @@ export default function (pi: ExtensionAPI) {
 		async execute() {
 			return handleDevEnable(bloomRuntime);
 		},
-	});
-
-	pi.registerTool({
+	}),
+	defineTool({
 		name: "dev_disable",
 		label: "Disable Dev Mode",
 		description: "Disable on-device development mode by removing the dev sentinel file.",
@@ -60,9 +61,8 @@ export default function (pi: ExtensionAPI) {
 		async execute() {
 			return handleDevDisable(bloomRuntime);
 		},
-	});
-
-	pi.registerTool({
+	}),
+	defineTool({
 		name: "dev_status",
 		label: "Dev Status",
 		description: "Check the current development environment status: dev mode, repo, code-server, local build.",
@@ -70,11 +70,11 @@ export default function (pi: ExtensionAPI) {
 		async execute(_toolCallId, _params, signal) {
 			return handleDevStatus(bloomRuntime, signal);
 		},
-	});
+	}),
 
 	// --- Dev-mode gated tools ---
 
-	pi.registerTool({
+	defineTool({
 		name: "dev_code_server",
 		label: "Code Server",
 		description: "Start or stop the code-server development environment.",
@@ -85,13 +85,13 @@ export default function (pi: ExtensionAPI) {
 			}),
 		}),
 		async execute(_toolCallId, params, signal) {
+			const typedParams = params as { action: "start" | "stop" | "restart" | "status" };
 			const gate = devGate();
 			if (gate) return gate;
-			return handleDevCodeServer(params.action, signal);
+			return handleDevCodeServer(typedParams.action, signal);
 		},
-	});
-
-	pi.registerTool({
+	}),
+	defineTool({
 		name: "dev_build",
 		label: "Dev Build",
 		description: "Build a local container image from the Bloom repo.",
@@ -99,13 +99,13 @@ export default function (pi: ExtensionAPI) {
 			tag: Type.Optional(Type.String({ description: "Image tag (default: localhost/bloom:dev)" })),
 		}),
 		async execute(_toolCallId, params, signal) {
+			const typedParams = params as { tag?: string };
 			const gate = devGate();
 			if (gate) return gate;
-			return handleDevBuild(repoDir, signal, params.tag);
+			return handleDevBuild(repoDir, signal, typedParams.tag);
 		},
-	});
-
-	pi.registerTool({
+	}),
+	defineTool({
 		name: "dev_switch",
 		label: "Dev Switch",
 		description: "Switch the running OS to a local or remote container image.",
@@ -113,13 +113,13 @@ export default function (pi: ExtensionAPI) {
 			image_ref: Type.String({ description: "Image reference to switch to (e.g. localhost/bloom:dev)" }),
 		}),
 		async execute(_toolCallId, params, signal, _onUpdate, ctx) {
+			const typedParams = params as { image_ref: string };
 			const gate = devGate();
 			if (gate) return gate;
-			return handleDevSwitch(params.image_ref, signal, ctx);
+			return handleDevSwitch(typedParams.image_ref, signal, ctx);
 		},
-	});
-
-	pi.registerTool({
+	}),
+	defineTool({
 		name: "dev_rollback",
 		label: "Dev Rollback",
 		description: "Rollback to the previous OS deployment.",
@@ -129,9 +129,8 @@ export default function (pi: ExtensionAPI) {
 			if (gate) return gate;
 			return handleDevRollback(signal, ctx);
 		},
-	});
-
-	pi.registerTool({
+	}),
+	defineTool({
 		name: "dev_loop",
 		label: "Dev Loop",
 		description: "Run the edit-build-switch development loop: build local image, switch to it, reboot.",
@@ -140,13 +139,13 @@ export default function (pi: ExtensionAPI) {
 			skip_reboot: Type.Optional(Type.Boolean({ description: "If true, stage the switch but skip automatic reboot" })),
 		}),
 		async execute(_toolCallId, params, signal, _onUpdate, ctx) {
+			const typedParams = params as { tag?: string; skip_reboot?: boolean };
 			const gate = devGate();
 			if (gate) return gate;
-			return handleDevLoop(params, signal, ctx, repoDir);
+			return handleDevLoop(typedParams, signal, ctx, repoDir);
 		},
-	});
-
-	pi.registerTool({
+	}),
+	defineTool({
 		name: "dev_test",
 		label: "Dev Test",
 		description: "Run tests and linting against the local Bloom repo.",
@@ -156,9 +155,8 @@ export default function (pi: ExtensionAPI) {
 			if (gate) return gate;
 			return handleDevTest(repoDir, signal);
 		},
-	});
-
-	pi.registerTool({
+	}),
+	defineTool({
 		name: "dev_submit_pr",
 		label: "Dev Submit PR",
 		description: "Submit a pull request from local repo changes to upstream.",
@@ -168,13 +166,13 @@ export default function (pi: ExtensionAPI) {
 			branch: Type.Optional(Type.String({ description: "Branch name (auto-generated from title if omitted)" })),
 		}),
 		async execute(_toolCallId, params, signal, _onUpdate, ctx) {
+			const typedParams = params as { title: string; body?: string; branch?: string };
 			const gate = devGate();
 			if (gate) return gate;
-			return handleDevSubmitPr(params, repoDir, signal, ctx);
+			return handleDevSubmitPr(typedParams, repoDir, signal, ctx);
 		},
-	});
-
-	pi.registerTool({
+	}),
+	defineTool({
 		name: "dev_push_skill",
 		label: "Push Skill",
 		description: "Push a skill from ~/Bloom/Skills/ into the repo and open a PR.",
@@ -183,13 +181,13 @@ export default function (pi: ExtensionAPI) {
 			title: Type.Optional(Type.String({ description: "PR title (auto-generated if omitted)" })),
 		}),
 		async execute(_toolCallId, params, signal, _onUpdate, ctx) {
+			const typedParams = params as { skill_name: string; title?: string };
 			const gate = devGate();
 			if (gate) return gate;
-			return handleDevPushSkill(params, repoDir, signal, ctx);
+			return handleDevPushSkill(typedParams, repoDir, signal, ctx);
 		},
-	});
-
-	pi.registerTool({
+	}),
+	defineTool({
 		name: "dev_push_service",
 		label: "Push Service",
 		description: "Push a service into the repo and open a PR.",
@@ -198,13 +196,13 @@ export default function (pi: ExtensionAPI) {
 			title: Type.Optional(Type.String({ description: "PR title (auto-generated if omitted)" })),
 		}),
 		async execute(_toolCallId, params, signal, _onUpdate, ctx) {
+			const typedParams = params as { service_name: string; title?: string };
 			const gate = devGate();
 			if (gate) return gate;
-			return handleDevPushService(params, repoDir, signal, ctx);
+			return handleDevPushService(typedParams, repoDir, signal, ctx);
 		},
-	});
-
-	pi.registerTool({
+	}),
+	defineTool({
 		name: "dev_push_extension",
 		label: "Push Extension",
 		description: "Push an extension into the repo and open a PR.",
@@ -219,13 +217,13 @@ export default function (pi: ExtensionAPI) {
 			title: Type.Optional(Type.String({ description: "PR title (auto-generated if omitted)" })),
 		}),
 		async execute(_toolCallId, params, signal, _onUpdate, ctx) {
+			const typedParams = params as { extension_name: string; source_path?: string; title?: string };
 			const gate = devGate();
 			if (gate) return gate;
-			return handleDevPushExtension(params, repoDir, signal, ctx);
+			return handleDevPushExtension(typedParams, repoDir, signal, ctx);
 		},
-	});
-
-	pi.registerTool({
+	}),
+	defineTool({
 		name: "dev_install_package",
 		label: "Install Package",
 		description: "Install a Pi package from a local path or URL (falls back to local scope on immutable systems).",
@@ -233,9 +231,12 @@ export default function (pi: ExtensionAPI) {
 			source: Type.String({ description: "Local path to the Pi package directory or URL" }),
 		}),
 		async execute(_toolCallId, params, signal) {
+			const typedParams = params as { source: string };
 			const gate = devGate();
 			if (gate) return gate;
-			return handleDevInstallPackage(params, signal);
+			return handleDevInstallPackage(typedParams, signal);
 		},
-	});
+	}),
+	];
+	registerTools(pi, tools);
 }

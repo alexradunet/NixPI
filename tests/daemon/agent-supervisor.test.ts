@@ -159,7 +159,7 @@ describe("AgentSupervisor", () => {
 		await supervisor.shutdown();
 	});
 
-	it("sequences multi-agent mentions in mention order and hands prior output to the next agent", async () => {
+	it("uses the first mention when multiple agents are mentioned", async () => {
 		const critic = makeAgent("critic", "@critic:bloom", "mentioned");
 		const planner = makeAgent("planner", "@planner:bloom", "mentioned");
 		const createdSessions: FakeSession[] = [];
@@ -205,12 +205,7 @@ describe("AgentSupervisor", () => {
 			"!room:bloom",
 			"1. Clear junk\n2. Sort essentials\n3. Reset the desk",
 		);
-		expect(createdSessions).toHaveLength(2);
-		expect(createdSessions[1]?.opts.agent.id).toBe("critic");
-		expect(createdSessions[1]?.sentMessages[0]).toContain("[system] This is a sequential multi-agent handoff.");
-		expect(createdSessions[1]?.sentMessages[0]).toContain("Planner (@planner:bloom) replied:");
-		expect(createdSessions[1]?.sentMessages[0]).toContain("1. Clear junk");
-		expect(createdSessions[1]?.sentMessages[0]).toContain("Now respond as Critic (@critic:bloom).");
+		expect(createdSessions).toHaveLength(1);
 
 		await supervisor.shutdown();
 	});

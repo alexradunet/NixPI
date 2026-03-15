@@ -2,6 +2,7 @@ import { vi } from "vitest";
 
 export interface RegisteredTool {
 	name: string;
+	execute?: unknown;
 	[key: string]: unknown;
 }
 

@@ -107,7 +107,7 @@ describe("routeRoomEnvelope", () => {
 		expect(result).toEqual({ targets: ["planner"], reason: "explicit-mention" });
 	});
 
-	it("routes multiple explicit mentions to multiple agents in mention order", () => {
+	it("routes multiple explicit mentions to the first eligible agent in mention order", () => {
 		const state = createRoomState();
 		const result = routeRoomEnvelope(
 			{
@@ -123,7 +123,7 @@ describe("routeRoomEnvelope", () => {
 			state,
 		);
 
-		expect(result).toEqual({ targets: ["planner", "critic"], reason: "explicit-mention" });
+		expect(result).toEqual({ targets: ["planner"], reason: "explicit-mention" });
 	});
 
 	it("never auto-targets silent agents", () => {

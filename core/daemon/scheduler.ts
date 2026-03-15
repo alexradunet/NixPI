@@ -1,5 +1,3 @@
-import { CronExpressionParser } from "cron-parser";
-
 export interface ScheduledJob {
 	id: string;
 	agentId: string;
@@ -135,12 +133,7 @@ export function computeNextRunAt(job: ScheduledJob, now: number, lastRunAt?: num
 		return lastRunAt + intervalMs;
 	}
 
-	const expression = normalizeSupportedCronExpression(job.cron ?? "");
-	const cron = CronExpressionParser.parse(expression, {
-		currentDate: new Date(now),
-		tz: "UTC",
-	});
-	return cron.next().toDate().getTime();
+	return computeNextCronRunAt(normalizeSupportedCronExpression(job.cron ?? ""), now);
 }
 
 export function isSupportedCronExpression(expression: string): boolean {
@@ -174,4 +167,25 @@ function normalizeSupportedCronExpression(expression: string): string {
 		throw new Error(`Unsupported cron expression: ${expression}`);
 	}
 	return `${minute} ${hour} * * *`;
+}
+
+function computeNextCronRunAt(expression: string, now: number): number {
+	if (expression === "0 * * * *") {
+		const next = new Date(now);
+		next.setUTCMinutes(0, 0, 0);
+		next.setUTCHours(next.getUTCHours() + 1);
+		return next.getTime();
+	}
+
+	const [minutePart, hourPart] = expression.split(" ", 2);
+	const minute = Number.parseInt(minutePart ?? "", 10);
+	const hour = Number.parseInt(hourPart ?? "", 10);
+	const next = new Date(now);
+	next.setUTCSeconds(0, 0);
+	next.setUTCMinutes(minute);
+	next.setUTCHours(hour);
+	if (next.getTime() <= now) {
+		next.setUTCDate(next.getUTCDate() + 1);
+	}
+	return next.getTime();
 }

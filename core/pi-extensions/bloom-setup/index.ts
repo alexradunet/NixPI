@@ -10,6 +10,7 @@ import { join } from "node:path";
 import { StringEnum } from "@mariozechner/pi-ai";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
+import { defineTool, registerTools, type RegisteredExtensionTool } from "../../lib/extension-tools.js";
 import { STEP_ORDER } from "../../lib/setup.js";
 import {
 	getSetupSystemPrompt,
@@ -20,7 +21,8 @@ import {
 } from "./actions.js";
 
 export default function (pi: ExtensionAPI) {
-	pi.registerTool({
+	const tools: RegisteredExtensionTool[] = [
+		defineTool({
 		name: "setup_status",
 		label: "Setup Status",
 		description:
@@ -29,9 +31,8 @@ export default function (pi: ExtensionAPI) {
 		async execute() {
 			return handleSetupStatus();
 		},
-	});
-
-	pi.registerTool({
+	}),
+	defineTool({
 		name: "setup_advance",
 		label: "Advance Setup Step",
 		description: "Mark a setup step as completed or skipped, persist state, and return guidance for the next step.",
@@ -45,11 +46,10 @@ export default function (pi: ExtensionAPI) {
 			reason: Type.Optional(Type.String({ description: "Reason for skipping (required when result is 'skipped')" })),
 		}),
 		async execute(_toolCallId, params) {
-			return await handleSetupAdvance(params);
+			return await handleSetupAdvance(params as { step: (typeof STEP_ORDER)[number]; result: "completed" | "skipped"; reason?: string });
 		},
-	});
-
-	pi.registerTool({
+	}),
+	defineTool({
 		name: "setup_reset",
 		label: "Reset Setup Step",
 		description:
@@ -62,9 +62,11 @@ export default function (pi: ExtensionAPI) {
 			),
 		}),
 		async execute(_toolCallId, params) {
-			return handleSetupReset(params);
+			return handleSetupReset(params as { step?: (typeof STEP_ORDER)[number] });
 		},
-	});
+	}),
+	];
+	registerTools(pi, tools);
 
 	// Inject persona setup guidance after the wizard has completed.
 	pi.on("before_agent_start", async (event) => {

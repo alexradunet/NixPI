@@ -1,10 +1,11 @@
+import { join } from "node:path";
 import { createLogger } from "../lib/shared.js";
+import { sanitizeRoomAlias } from "../lib/room-alias.js";
 import type { AgentDefinition } from "./agent-registry.js";
-import { ConversationState } from "./conversation-state.js";
 import type { BloomSessionLike, SessionEvent } from "./contracts/session.js";
 import { createRoomState } from "./room-state.js";
 import { type RoomEnvelope, routeRoomEnvelope } from "./router.js";
-import { AgentSession, type AgentSessionOptions } from "./runtime/agent-session.js";
+import { PiRoomSession, type PiRoomSessionOptions } from "./runtime/pi-room-session.js";
 import type { TriggeredJob } from "./scheduler.js";
 
 const log = createLogger("agent-supervisor");
@@ -27,6 +28,24 @@ export interface AgentSupervisorOptions {
 	createSession?: (opts: AgentSessionOptions) => BloomSessionLike;
 }
 
+export interface AgentSessionOptions {
+	roomId: string;
+	roomAlias: string;
+	agent: AgentDefinition;
+	sessionBaseDir: string;
+	idleTimeoutMs: number;
+	onAgentEnd: (agentId: string, text: string) => void;
+	onEvent: (agentId: string, event: SessionEvent) => void;
+	onExit: (agentId: string, code: number | null) => void;
+}
+
+interface PendingProactiveJob {
+	jobId: string;
+	kind: TriggeredJob["kind"];
+	quietIfNoop: boolean;
+	noOpToken?: string;
+}
+
 export class AgentSupervisor {
 	private readonly agents: readonly AgentDefinition[];
 	private readonly matrixBridge: MatrixBridgeLike;
@@ -34,7 +53,7 @@ export class AgentSupervisor {
 	private readonly idleTimeoutMs: number;
 	private readonly createSession: (opts: AgentSessionOptions) => BloomSessionLike;
 	private readonly roomState = createRoomState();
-	private readonly conversationState = new ConversationState();
+	private readonly pendingProactiveJobs = new Map<string, PendingProactiveJob[]>();
 	private readonly sessions = new Map<string, BloomSessionLike>();
 	private readonly preambleSent = new Set<string>();
 	private readonly typingIntervals = new Map<string, ReturnType<typeof setInterval>>();
@@ -45,7 +64,7 @@ export class AgentSupervisor {
 		this.matrixBridge = options.matrixBridge ?? missingMatrixBridge();
 		this.sessionBaseDir = options.sessionBaseDir;
 		this.idleTimeoutMs = options.idleTimeoutMs;
-		this.createSession = options.createSession ?? ((opts) => new AgentSession(opts));
+		this.createSession = options.createSession ?? ((opts) => new PiRoomSession(buildPiRoomSessionOptions(opts)));
 	}
 
 	async handleEnvelope(envelope: RoomEnvelope): Promise<void> {
@@ -55,25 +74,12 @@ export class AgentSupervisor {
 		});
 		if (decision.targets.length === 0) return;
 
-		const [firstAgentId, ...remainingAgentIds] = decision.targets;
-		if (!firstAgentId) return;
-
-		if (remainingAgentIds.length > 0) {
-			const chain = this.conversationState.startSequentialChain(envelope, remainingAgentIds);
-
-			try {
-				await this.dispatchMessageToAgent(envelope.roomId, firstAgentId, chain.originalMessage);
-				this.conversationState.enqueueWaitingChain(envelope.roomId, firstAgentId, chain.key);
-			} catch (error) {
-				this.conversationState.cancelSequentialChain(chain.key);
-				throw error;
-			}
-			return;
-		}
+		const [targetAgentId] = decision.targets;
+		if (!targetAgentId) return;
 
 		await this.dispatchMessageToAgent(
 			envelope.roomId,
-			firstAgentId,
+			targetAgentId,
 			`[matrix: ${envelope.senderUserId}] ${envelope.body}`,
 		);
 	}
@@ -84,7 +90,7 @@ export class AgentSupervisor {
 			clearInterval(interval);
 		}
 		this.typingIntervals.clear();
-		this.conversationState.clear();
+		this.pendingProactiveJobs.clear();
 		for (const session of this.sessions.values()) {
 			session.dispose();
 		}
@@ -99,7 +105,7 @@ export class AgentSupervisor {
 			job.prompt,
 		].join("\n\n");
 		await this.dispatchMessageToAgent(job.roomId, job.agentId, message);
-		this.conversationState.enqueueProactiveJob(job.roomId, job.agentId, {
+		this.enqueueProactiveJob(job.roomId, job.agentId, {
 			jobId: job.jobId,
 			kind: job.kind,
 			quietIfNoop: job.quietIfNoop ?? false,
@@ -130,31 +136,13 @@ export class AgentSupervisor {
 
 	private async handleAgentResponse(roomId: string, agentId: string, text: string): Promise<void> {
 		if (this.shuttingDown) return;
-		const proactiveJob = this.conversationState.dequeueProactiveJob(roomId, agentId);
+		const proactiveJob = this.dequeueProactiveJob(roomId, agentId);
 		if (proactiveJob) {
 			if (proactiveJob.quietIfNoop && proactiveJob.noOpToken && text.trim() === proactiveJob.noOpToken) {
 				return;
 			}
 		}
 		await this.matrixBridge.sendText(agentId, roomId, text);
-		if (this.shuttingDown) return;
-
-		const progress = this.conversationState.appendChainReply(roomId, agentId, text);
-		if (!progress) return;
-
-		const { chain, nextAgentId } = progress;
-		if (!nextAgentId) {
-			return;
-		}
-
-		const nextAgent = this.requireAgent(nextAgentId);
-		await this.dispatchMessageToAgent(
-			roomId,
-			nextAgentId,
-			this.conversationState.buildSequentialHandoffMessage(chain, nextAgent, (id) => this.requireAgent(id)),
-		);
-		if (this.shuttingDown) return;
-		this.conversationState.enqueueWaitingChain(roomId, nextAgentId, chain.key);
 	}
 
 	private async getOrSpawnSession(
@@ -252,8 +240,42 @@ export class AgentSupervisor {
 		return `${roomId}::${agentId}`;
 	}
 
+	private enqueueProactiveJob(roomId: string, agentId: string, job: PendingProactiveJob): void {
+		const key = this.sessionKey(roomId, agentId);
+		const queue = this.pendingProactiveJobs.get(key) ?? [];
+		queue.push(job);
+		this.pendingProactiveJobs.set(key, queue);
+	}
+
+	private dequeueProactiveJob(roomId: string, agentId: string): PendingProactiveJob | undefined {
+		const key = this.sessionKey(roomId, agentId);
+		const queue = this.pendingProactiveJobs.get(key);
+		if (!queue || queue.length === 0) return undefined;
+		const job = queue.shift();
+		if (queue.length === 0) {
+			this.pendingProactiveJobs.delete(key);
+		} else {
+			this.pendingProactiveJobs.set(key, queue);
+		}
+		return job;
+	}
+
 }
 
 function missingMatrixBridge(): never {
 	throw new Error("AgentSupervisor requires a Matrix bridge");
+}
+
+function buildPiRoomSessionOptions(opts: AgentSessionOptions): PiRoomSessionOptions {
+	const sanitizedRoomAlias = sanitizeRoomAlias(opts.roomAlias);
+	return {
+		roomId: opts.roomId,
+		roomAlias: opts.roomAlias,
+		sanitizedAlias: `${sanitizedRoomAlias}-${opts.agent.id}`,
+		sessionDir: join(opts.sessionBaseDir, sanitizedRoomAlias, opts.agent.id),
+		idleTimeoutMs: opts.idleTimeoutMs,
+		onAgentEnd: (text) => opts.onAgentEnd(opts.agent.id, text),
+		onEvent: (event) => opts.onEvent(opts.agent.id, event),
+		onExit: (code) => opts.onExit(opts.agent.id, code),
+	};
 }

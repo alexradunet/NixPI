@@ -7,12 +7,14 @@
 import { StringEnum } from "@mariozechner/pi-ai";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
+import { defineTool, registerTools, type RegisteredExtensionTool } from "../../lib/extension-tools.js";
 import { handleConfigure } from "./actions-configure.js";
 import { handleSubmitPr } from "./actions-submit-pr.js";
 import { handleStatus, handleSync } from "./actions.js";
 
 export default function (pi: ExtensionAPI) {
-	pi.registerTool({
+	const tools: RegisteredExtensionTool[] = [
+		defineTool({
 		name: "bloom_repo",
 		label: "Bloom Repository",
 		description: "Configure, check status, or sync the local Bloom repo for self-evolution PRs.",
@@ -28,20 +30,28 @@ export default function (pi: ExtensionAPI) {
 			branch: Type.Optional(Type.String({ description: "Branch to sync (sync only, default: main)" })),
 		}),
 		async execute(_toolCallId, params, signal) {
-			switch (params.action) {
+			const typedParams = params as {
+				action: "configure" | "status" | "sync";
+				repo_url?: string;
+				fork_url?: string;
+				git_name?: string;
+				git_email?: string;
+				branch?: string;
+			};
+			switch (typedParams.action) {
 				case "configure":
-					return handleConfigure(params, signal);
+					return handleConfigure(typedParams, signal);
 				case "status":
 					return handleStatus(signal);
 				case "sync": {
-					const branch = (params.branch ?? "main").trim() || "main";
+					const branch = (typedParams.branch ?? "main").trim() || "main";
 					return handleSync(branch, signal);
 				}
 			}
+			throw new Error(`Unsupported bloom_repo action: ${String(typedParams.action)}`);
 		},
-	});
-
-	pi.registerTool({
+	}),
+	defineTool({
 		name: "bloom_repo_submit_pr",
 		label: "Submit Bloom Fix PR",
 		description: "Create branch + commit + push + PR from local repo changes to upstream.",
@@ -55,7 +65,21 @@ export default function (pi: ExtensionAPI) {
 			add_all: Type.Optional(Type.Boolean({ description: "Stage all local changes before commit", default: true })),
 		}),
 		async execute(_toolCallId, params, signal, _onUpdate, ctx) {
-			return handleSubmitPr(params, signal, ctx);
+			return handleSubmitPr(
+				params as {
+					title: string;
+					body?: string;
+					commit_message?: string;
+					branch?: string;
+					base?: string;
+					draft?: boolean;
+					add_all?: boolean;
+				},
+				signal,
+				ctx,
+			);
 		},
-	});
+	}),
+	];
+	registerTools(pi, tools);
 }

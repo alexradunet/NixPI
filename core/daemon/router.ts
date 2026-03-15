@@ -20,7 +20,7 @@ export interface RoomEnvelope {
 }
 
 export interface RouteDecision {
-	targets: string[];
+	targets: [string] | [];
 	reason:
 		| "host-default"
 		| "explicit-mention"
@@ -38,7 +38,7 @@ export interface RouteOptions {
 }
 
 interface InitialTargetDecision {
-	targets: AgentDefinition[];
+	targets: [AgentDefinition] | [];
 	reason: RouteDecision["reason"];
 }
 
@@ -76,34 +76,40 @@ export function routeRoomEnvelope(
 	const initialDecision = getInitialTargetDecision(envelope, agents);
 	if (initialDecision.targets.length === 0) return { targets: [], reason: "ignored-policy" };
 
-	const budgetEligible = initialDecision.targets.filter((agent) =>
-		canReplyForRoot(
-			state,
-			envelope.roomId,
-			rootEventId,
-			agent.id,
-			agent.respond.maxPublicTurnsPerRoot,
-			totalReplyBudget,
-			envelope.timestamp,
-		),
+	const [targetAgent] = initialDecision.targets;
+	if (!targetAgent) {
+		return { targets: [], reason: "ignored-policy" };
+	}
+
+	const canReply = canReplyForRoot(
+		state,
+		envelope.roomId,
+		rootEventId,
+		targetAgent.id,
+		targetAgent.respond.maxPublicTurnsPerRoot,
+		totalReplyBudget,
+		envelope.timestamp,
 	);
-	if (budgetEligible.length === 0) {
+	if (!canReply) {
 		return { targets: [], reason: "ignored-budget" };
 	}
 
-	const cooldownEligible = budgetEligible.filter(
-		(agent) => !isAgentCoolingDown(state, envelope.roomId, agent.id, envelope.timestamp, agent.respond.cooldownMs),
-	);
-	if (cooldownEligible.length === 0) {
+	if (
+		isAgentCoolingDown(
+			state,
+			envelope.roomId,
+			targetAgent.id,
+			envelope.timestamp,
+			targetAgent.respond.cooldownMs,
+		)
+	) {
 		return { targets: [], reason: "ignored-cooldown" };
 	}
 
-	for (const agent of cooldownEligible) {
-		markReplySent(state, envelope.roomId, rootEventId, agent.id, envelope.timestamp);
-	}
+	markReplySent(state, envelope.roomId, rootEventId, targetAgent.id, envelope.timestamp);
 
 	return {
-		targets: cooldownEligible.map((agent) => agent.id),
+		targets: [targetAgent.id],
 		reason: initialDecision.reason,
 	};
 }
@@ -143,7 +149,8 @@ function getHumanTargetDecision(
 	agents: readonly AgentDefinition[],
 ): InitialTargetDecision {
 	if (hadExplicitMention && mentionedAgents.length > 0) {
-		return { targets: [...mentionedAgents], reason: "explicit-mention" };
+		const [firstMentionedAgent] = mentionedAgents;
+		return firstMentionedAgent ? { targets: [firstMentionedAgent], reason: "explicit-mention" } : { targets: [], reason: "ignored-policy" };
 	}
 
 	const hostAgent = agents.find((agent) => agent.respond.mode === "host");
@@ -155,7 +162,7 @@ function getAgentTargetDecision(
 	senderAgentId: string | undefined,
 	mentionedAgents: readonly AgentDefinition[],
 ): InitialTargetDecision {
-	const targets = mentionedAgents.filter((agent) => agent.id !== senderAgentId && agent.respond.allowAgentMentions);
-	if (targets.length === 0) return { targets: [], reason: "ignored-policy" };
-	return { targets, reason: "agent-mention" };
+	const target = mentionedAgents.find((agent) => agent.id !== senderAgentId && agent.respond.allowAgentMentions);
+	if (!target) return { targets: [], reason: "ignored-policy" };
+	return { targets: [target], reason: "agent-mention" };
 }

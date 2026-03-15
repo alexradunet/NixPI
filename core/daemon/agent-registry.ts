@@ -1,5 +1,7 @@
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
+import { Type, type Static } from "@sinclair/typebox";
+import { Value } from "@sinclair/typebox/value";
 import { getBloomDir } from "../lib/filesystem.js";
 import { parseFrontmatter } from "../lib/frontmatter.js";
 import { isSupportedCronExpression } from "./scheduler.js";
@@ -43,31 +45,6 @@ export interface ProactiveJobDefinition {
 	noOpToken?: string;
 }
 
-interface AgentFrontmatter extends Record<string, unknown> {
-	id?: unknown;
-	name?: unknown;
-	description?: unknown;
-	matrix?: {
-		username?: unknown;
-		autojoin?: unknown;
-	};
-	model?: unknown;
-	thinking?: unknown;
-	respond?: {
-		mode?: unknown;
-		allow_agent_mentions?: unknown;
-		max_public_turns_per_root?: unknown;
-		cooldown_ms?: unknown;
-	};
-	tools?: {
-		allow?: unknown;
-		deny?: unknown;
-	};
-	proactive?: {
-		jobs?: unknown;
-	};
-}
-
 export interface LoadAgentDefinitionsOptions {
 	bloomDir?: string;
 	serverName?: string;
@@ -83,8 +60,53 @@ const DEFAULT_RESPOND_MODE = "mentioned";
 const DEFAULT_ALLOW_AGENT_MENTIONS = true;
 const DEFAULT_MAX_PUBLIC_TURNS_PER_ROOT = 2;
 const DEFAULT_COOLDOWN_MS = 1500;
-const THINKING_LEVELS = new Set(["off", "minimal", "low", "medium", "high", "xhigh"]);
-const RESPOND_MODES = new Set(["host", "mentioned", "silent"]);
+const THINKING_LEVELS = ["off", "minimal", "low", "medium", "high", "xhigh"] as const;
+const RESPOND_MODES = ["host", "mentioned", "silent"] as const;
+
+const ProactiveJobSchema = Type.Object({
+	id: Type.String({ minLength: 1 }),
+	kind: Type.Union([Type.Literal("heartbeat"), Type.Literal("cron")]),
+	room: Type.String({ minLength: 1 }),
+	prompt: Type.String({ minLength: 1 }),
+	interval_minutes: Type.Optional(Type.Number()),
+	cron: Type.Optional(Type.String()),
+	quiet_if_noop: Type.Optional(Type.Boolean()),
+	no_op_token: Type.Optional(Type.String()),
+});
+
+const AgentFrontmatterSchema = Type.Object({
+	id: Type.String({ minLength: 1 }),
+	name: Type.String({ minLength: 1 }),
+	description: Type.Optional(Type.String()),
+	matrix: Type.Object({
+		username: Type.String({ minLength: 1 }),
+		autojoin: Type.Optional(Type.Boolean()),
+	}),
+	model: Type.Optional(Type.String()),
+	thinking: Type.Optional(Type.Union(THINKING_LEVELS.map((level) => Type.Literal(level)))),
+	respond: Type.Optional(
+		Type.Object({
+			mode: Type.Optional(Type.Union(RESPOND_MODES.map((mode) => Type.Literal(mode)))),
+			allow_agent_mentions: Type.Optional(Type.Boolean()),
+			max_public_turns_per_root: Type.Optional(Type.Number()),
+			cooldown_ms: Type.Optional(Type.Number()),
+		}),
+	),
+	tools: Type.Optional(
+		Type.Object({
+			allow: Type.Optional(Type.Array(Type.String())),
+			deny: Type.Optional(Type.Array(Type.String())),
+		}),
+	),
+	proactive: Type.Optional(
+		Type.Object({
+			jobs: Type.Optional(Type.Array(ProactiveJobSchema)),
+		}),
+	),
+});
+
+type AgentFrontmatter = Static<typeof AgentFrontmatterSchema>;
+type ProactiveJobFrontmatter = Static<typeof ProactiveJobSchema>;
 
 export function loadAgentDefinitions(options: LoadAgentDefinitionsOptions = {}): AgentDefinition[] {
 	return loadAgentDefinitionsResult(options).agents;
@@ -125,97 +147,65 @@ function normalizeAgentDefinition(
 	instructionsPath: string,
 	serverName: string,
 ): AgentDefinition {
-	const id = requireString(attributes.id, "id", instructionsPath);
-	const name = requireString(attributes.name, "name", instructionsPath);
-	const matrix = requireObject(attributes.matrix, "matrix", instructionsPath);
-	const username = requireString(matrix.username, "matrix.username", instructionsPath);
-	const autojoin = typeof matrix.autojoin === "boolean" ? matrix.autojoin : true;
-
-	const respondObj = toRecord(attributes.respond);
-	const respondMode = normalizeRespondMode(respondObj?.mode, instructionsPath);
-	const allowAgentMentions =
-		typeof respondObj?.allow_agent_mentions === "boolean"
-			? respondObj.allow_agent_mentions
-			: DEFAULT_ALLOW_AGENT_MENTIONS;
-	const maxPublicTurnsPerRoot =
-		typeof respondObj?.max_public_turns_per_root === "number"
-			? respondObj.max_public_turns_per_root
-			: DEFAULT_MAX_PUBLIC_TURNS_PER_ROOT;
-	const cooldownMs = typeof respondObj?.cooldown_ms === "number" ? respondObj.cooldown_ms : DEFAULT_COOLDOWN_MS;
+	const normalized = parseAgentFrontmatter(attributes, instructionsPath);
+	const autojoin = normalized.matrix.autojoin ?? true;
 
 	return {
-		id,
-		name,
-		...(typeof attributes.description === "string" ? { description: attributes.description } : {}),
+		id: normalized.id,
+		name: normalized.name,
+		...(normalized.description ? { description: normalized.description } : {}),
 		instructionsPath,
 		instructionsBody,
 		matrix: {
-			username,
-			userId: `@${username}:${serverName}`,
+			username: normalized.matrix.username,
+			userId: `@${normalized.matrix.username}:${serverName}`,
 			autojoin,
 		},
-		...(typeof attributes.model === "string" ? { model: attributes.model } : {}),
-		...(normalizeThinking(attributes.thinking, instructionsPath)
-			? { thinking: normalizeThinking(attributes.thinking, instructionsPath) }
-			: {}),
+		...(normalized.model ? { model: normalized.model } : {}),
+		...(normalized.thinking ? { thinking: normalized.thinking } : {}),
 		respond: {
-			mode: respondMode,
-			allowAgentMentions,
-			maxPublicTurnsPerRoot,
-			cooldownMs,
+			mode: normalized.respond?.mode ?? DEFAULT_RESPOND_MODE,
+			allowAgentMentions: normalized.respond?.allow_agent_mentions ?? DEFAULT_ALLOW_AGENT_MENTIONS,
+			maxPublicTurnsPerRoot:
+				normalized.respond?.max_public_turns_per_root ?? DEFAULT_MAX_PUBLIC_TURNS_PER_ROOT,
+			cooldownMs: normalized.respond?.cooldown_ms ?? DEFAULT_COOLDOWN_MS,
 		},
-		...(normalizeTools(attributes.tools, instructionsPath)
-			? { tools: normalizeTools(attributes.tools, instructionsPath) }
-			: {}),
-		...(normalizeProactive(attributes.proactive, instructionsPath)
-			? { proactive: normalizeProactive(attributes.proactive, instructionsPath) }
+		...(normalizeTools(normalized.tools) ? { tools: normalizeTools(normalized.tools) } : {}),
+		...(normalizeProactive(normalized.proactive, instructionsPath)
+			? { proactive: normalizeProactive(normalized.proactive, instructionsPath) }
 			: {}),
 	};
 }
 
-function requireString(value: unknown, field: string, instructionsPath: string): string {
-	if (typeof value !== "string" || !value.trim()) {
+function parseAgentFrontmatter(attributes: unknown, instructionsPath: string): AgentFrontmatter {
+	if (Value.Check(AgentFrontmatterSchema, attributes)) {
+		return attributes;
+	}
+
+	const firstError = [...Value.Errors(AgentFrontmatterSchema, attributes)][0];
+	if (!firstError) {
+		throw new Error(`${instructionsPath}: invalid agent frontmatter`);
+	}
+
+	const field = formatFieldPath(firstError.path);
+	if (firstError.message.includes("Expected required property")) {
 		throw new Error(`${instructionsPath}: missing required field '${field}'`);
 	}
-	return value;
-}
-
-function requireObject(value: unknown, field: string, instructionsPath: string): Record<string, unknown> {
-	const obj = toRecord(value);
-	if (!obj) throw new Error(`${instructionsPath}: missing required field '${field}'`);
-	return obj;
-}
-
-function toRecord(value: unknown): Record<string, unknown> | null {
-	if (!value || typeof value !== "object" || Array.isArray(value)) return null;
-	return value as Record<string, unknown>;
-}
-
-function normalizeRespondMode(value: unknown, instructionsPath: string): "host" | "mentioned" | "silent" {
-	if (value === undefined) return DEFAULT_RESPOND_MODE;
-	if (typeof value !== "string" || !RESPOND_MODES.has(value)) {
-		throw new Error(`${instructionsPath}: invalid respond.mode '${String(value)}'`);
+	if (field === "thinking") {
+		throw new Error(`${instructionsPath}: invalid thinking '${String(readPath(attributes, firstError.path))}'`);
 	}
-	return value as "host" | "mentioned" | "silent";
-}
-
-function normalizeThinking(value: unknown, instructionsPath: string): AgentDefinition["thinking"] | undefined {
-	if (value === undefined) return undefined;
-	if (typeof value !== "string" || !THINKING_LEVELS.has(value)) {
-		throw new Error(`${instructionsPath}: invalid thinking '${String(value)}'`);
+	if (field === "respond.mode") {
+		throw new Error(`${instructionsPath}: invalid respond.mode '${String(readPath(attributes, firstError.path))}'`);
 	}
-	return value as AgentDefinition["thinking"];
+	throw new Error(`${instructionsPath}: invalid ${field}`);
 }
 
 function normalizeTools(
 	value: AgentFrontmatter["tools"],
-	instructionsPath: string,
 ): AgentDefinition["tools"] | undefined {
-	const tools = toRecord(value);
-	if (!tools) return undefined;
-
-	const allow = normalizeStringArray(tools.allow, "tools.allow", instructionsPath);
-	const deny = normalizeStringArray(tools.deny, "tools.deny", instructionsPath);
+	if (!value) return undefined;
+	const allow = value.allow;
+	const deny = value.deny;
 	if (!allow && !deny) return undefined;
 	return {
 		...(allow ? { allow } : {}),
@@ -223,27 +213,13 @@ function normalizeTools(
 	};
 }
 
-function normalizeStringArray(value: unknown, field: string, instructionsPath: string): string[] | undefined {
-	if (value === undefined) return undefined;
-	if (!Array.isArray(value) || value.some((item) => typeof item !== "string")) {
-		throw new Error(`${instructionsPath}: invalid ${field}`);
-	}
-	return value;
-}
-
 function normalizeProactive(
 	value: AgentFrontmatter["proactive"],
 	instructionsPath: string,
 ): AgentDefinition["proactive"] {
-	const proactive = toRecord(value);
-	if (!proactive) return undefined;
-
-	const rawJobs = proactive.jobs;
+	if (!value) return undefined;
+	const rawJobs = value.jobs;
 	if (rawJobs === undefined) return undefined;
-	if (!Array.isArray(rawJobs)) {
-		throw new Error(`${instructionsPath}: invalid proactive.jobs`);
-	}
-
 	const jobs = rawJobs.map((rawJob, index) =>
 		normalizeProactiveJob(rawJob, `${instructionsPath}: proactive.jobs[${index}]`),
 	);
@@ -258,36 +234,20 @@ function normalizeProactive(
 	return jobs.length > 0 ? { jobs } : undefined;
 }
 
-function normalizeProactiveJob(value: unknown, source: string): ProactiveJobDefinition {
-	const job = toRecord(value);
-	if (!job) throw new Error(`${source}: invalid proactive job`);
-
-	const id = requireString(job.id, "id", source);
-	const room = requireString(job.room, "room", source);
-	const prompt = requireString(job.prompt, "prompt", source);
-	const kind = normalizeProactiveJobKind(job.kind, source);
-
+function normalizeProactiveJob(job: ProactiveJobFrontmatter, source: string): ProactiveJobDefinition {
 	const common = {
-		id,
-		kind,
-		room,
-		prompt,
+		id: job.id,
+		kind: job.kind,
+		room: job.room,
+		prompt: job.prompt,
 		...getNoOpBehavior(job),
 	};
 
-	return kind === "heartbeat" ? normalizeHeartbeatJob(job, source, common) : normalizeCronJob(job, source, common);
-}
-
-function normalizeProactiveJobKind(value: unknown, source: string): "heartbeat" | "cron" {
-	const kind = value;
-	if (kind !== "heartbeat" && kind !== "cron") {
-		throw new Error(`${source}: invalid kind '${String(kind)}'`);
-	}
-	return kind;
+	return job.kind === "heartbeat" ? normalizeHeartbeatJob(job, source, common) : normalizeCronJob(job, source, common);
 }
 
 function getNoOpBehavior(
-	job: Record<string, unknown>,
+	job: ProactiveJobFrontmatter,
 ): Partial<Pick<ProactiveJobDefinition, "quietIfNoop" | "noOpToken">> {
 	return {
 		...(typeof job.quiet_if_noop === "boolean" ? { quietIfNoop: job.quiet_if_noop } : {}),
@@ -296,7 +256,7 @@ function getNoOpBehavior(
 }
 
 function normalizeHeartbeatJob(
-	job: Record<string, unknown>,
+	job: ProactiveJobFrontmatter,
 	source: string,
 	common: Pick<ProactiveJobDefinition, "id" | "kind" | "room" | "prompt"> &
 		Partial<Pick<ProactiveJobDefinition, "quietIfNoop" | "noOpToken">>,
@@ -311,7 +271,7 @@ function normalizeHeartbeatJob(
 }
 
 function normalizeCronJob(
-	job: Record<string, unknown>,
+	job: ProactiveJobFrontmatter,
 	source: string,
 	common: Pick<ProactiveJobDefinition, "id" | "kind" | "room" | "prompt"> &
 		Partial<Pick<ProactiveJobDefinition, "quietIfNoop" | "noOpToken">>,
@@ -326,4 +286,20 @@ function normalizeCronJob(
 		...common,
 		cron: job.cron,
 	};
+}
+
+function formatFieldPath(path: string): string {
+	const cleaned = path.replace(/^\//, "").replaceAll("/", ".");
+	return cleaned || "<root>";
+}
+
+function readPath(value: unknown, path: string): unknown {
+	if (!path) return value;
+	const segments = path.replace(/^\//, "").split("/").filter(Boolean);
+	let current = value as Record<string, unknown> | unknown;
+	for (const segment of segments) {
+		if (!current || typeof current !== "object" || Array.isArray(current)) return undefined;
+		current = (current as Record<string, unknown>)[segment];
+	}
+	return current;
 }
