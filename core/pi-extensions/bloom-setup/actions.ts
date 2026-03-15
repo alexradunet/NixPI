@@ -4,6 +4,7 @@
 import { existsSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import { dirname, join } from "node:path";
+import { run } from "../../lib/exec.js";
 import { atomicWriteFile, ensureDir } from "../../lib/fs-utils.js";
 import {
 	type SetupState,
@@ -58,6 +59,20 @@ export async function touchPersonaDone(): Promise<void> {
 /** Check if setup is already complete (sentinel file exists). */
 export function isSetupDone(): boolean {
 	return existsSync(SETUP_COMPLETE_PATH);
+}
+
+async function reconcilePiDaemon(): Promise<"enabled" | "failed"> {
+	const enable = await run("systemctl", ["--user", "enable", "--now", "pi-daemon.service"]);
+	if (enable.exitCode === 0) {
+		log.info("enabled pi-daemon after setup completion");
+		return "enabled";
+	}
+
+	log.warn("failed to enable pi-daemon after setup completion", {
+		exitCode: enable.exitCode,
+		stderr: enable.stderr,
+	});
+	return "failed";
 }
 
 /** Handle setup_status tool call. */
@@ -121,7 +136,13 @@ export async function handleSetupAdvance(params: { step: StepName; result: "comp
 		lines.push(`## Guidance for "${next}"`);
 		lines.push(STEP_GUIDANCE[next]);
 	} else {
+		const daemonState = await reconcilePiDaemon();
 		lines.push("All setup steps complete! Persona customization is done.");
+		if (daemonState === "enabled") {
+			lines.push("`pi-daemon.service` was enabled and started.");
+		} else {
+			lines.push("Warning: setup completed, but `pi-daemon.service` could not be enabled automatically.");
+		}
 	}
 
 	return {

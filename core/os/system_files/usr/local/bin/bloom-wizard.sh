@@ -995,10 +995,8 @@ step_services() {
 finalize() {
 	touch "$SETUP_COMPLETE"
 	loginctl enable-linger "$USER"
-	if pi_ai_ready; then
-		systemctl --user enable --now pi-daemon.service 2>/dev/null || true
-	else
-		systemctl --user disable --now pi-daemon.service 2>/dev/null || true
+	if ! systemctl --user enable --now pi-daemon.service; then
+		echo "warning: failed to enable pi-daemon.service during wizard finalization" >&2
 	fi
 
 	local mesh_ip

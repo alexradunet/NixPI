@@ -5,6 +5,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { type MockExtensionAPI, createMockExtensionAPI } from "../helpers/mock-extension-api.js";
 import { type TempGarden, createTempGarden } from "../helpers/temp-garden.js";
 
+const runMock = vi.fn();
+
+vi.mock("../../core/lib/exec.js", () => ({
+	run: (...args: unknown[]) => runMock(...args),
+}));
+
 let temp: TempGarden;
 let api: MockExtensionAPI;
 let originalHome: string | undefined;
@@ -16,6 +22,8 @@ beforeEach(async () => {
 	api = createMockExtensionAPI();
 	originalHome = process.env.HOME;
 	process.env.HOME = temp.gardenDir;
+	runMock.mockReset();
+	runMock.mockResolvedValue({ stdout: "", stderr: "", exitCode: 0 });
 	vi.resetModules();
 });
 
@@ -116,5 +124,24 @@ describe("bloom-setup startup gating", () => {
 		const result = await api.fireEvent("before_agent_start", { systemPrompt: "BASE_PROMPT" });
 
 		expect(result).toBeUndefined();
+	});
+});
+
+describe("setup_advance daemon reconciliation", () => {
+	it("enables pi-daemon when setup completes", async () => {
+		mkdirSync(path.join(os.homedir(), ".bloom"), { recursive: true });
+		writeFileSync(path.join(os.homedir(), ".bloom", ".setup-complete"), "done", "utf-8");
+
+		await loadExtension();
+		const tool = api._registeredTools.find((entry) => entry.name === "setup_advance") as {
+			execute: (toolCallId: string, params: { step: "persona"; result: "completed" }) => Promise<{
+				content: Array<{ text: string }>;
+			}>;
+		};
+
+		const result = await tool.execute("tool-call", { step: "persona", result: "completed" });
+
+		expect(runMock).toHaveBeenCalledWith("systemctl", ["--user", "enable", "--now", "pi-daemon.service"]);
+		expect(result.content[0]?.text).toContain("`pi-daemon.service` was enabled and started.");
 	});
 });

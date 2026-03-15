@@ -94,7 +94,7 @@ Current behavior:
 - after the wizard completes, opening Pi causes it to check `setup_status()` before normal conversation
 - if any Pi-side setup step is still pending, Pi starts that setup flow first and defers unrelated conversation until the step is completed or skipped
 - after all Pi-side setup steps are done, Pi resumes normal conversation and the `persona` step remains marked complete
-- the wizard enables `pi-daemon.service` only when both Pi auth and default model settings are present
+- the wizard enables `pi-daemon.service` as part of setup completion, and later sessions re-enable it if needed
 - the wizard provisions built-in Bloom Home so NetBird peers have a stable page listing installed services, URLs, and shareable host info
 
 ## 🔗 Related

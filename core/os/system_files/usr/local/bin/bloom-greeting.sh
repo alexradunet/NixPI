@@ -5,14 +5,6 @@ set -euo pipefail
 
 BLOOM_PKG="/usr/local/share/bloom"
 PI_SETTINGS="$HOME/.pi/agent/settings.json"
-PI_AUTH="$HOME/.pi/agent/auth.json"
-
-pi_ai_ready() {
-	[[ -f "$PI_AUTH" ]] || return 1
-	[[ -f "$PI_SETTINGS" ]] || return 1
-	grep -q '"defaultProvider"[[:space:]]*:' "$PI_SETTINGS" || return 1
-	grep -q '"defaultModel"[[:space:]]*:' "$PI_SETTINGS" || return 1
-}
 
 # Ensure Pi settings include the Bloom package (idempotent)
 if [[ -d "$BLOOM_PKG" ]]; then
@@ -29,9 +21,9 @@ if [[ -d "$BLOOM_PKG" ]]; then
     fi
 fi
 
-# Start the Matrix daemon once Pi has enough AI config to answer requests.
-if pi_ai_ready; then
-    if ! systemctl --user --quiet is-active pi-daemon.service 2>/dev/null; then
-        systemctl --user enable --now pi-daemon.service >/dev/null 2>&1 || true
+# Keep the Matrix daemon online for this user session after setup completes.
+if [[ -f "$HOME/.bloom/.setup-complete" ]] && ! systemctl --user --quiet is-active pi-daemon.service 2>/dev/null; then
+    if ! systemctl --user enable --now pi-daemon.service >/dev/null 2>&1; then
+        echo "warning: failed to enable pi-daemon.service from bloom-greeting" >&2
     fi
 fi
