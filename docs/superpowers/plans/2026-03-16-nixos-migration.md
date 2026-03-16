@@ -771,9 +771,13 @@ git commit -m "feat: add bloom-matrix NixOS module (continuwuity Matrix server)"
     serviceConfig = {
       Type       = "simple";
       ExecStart  = "${pkgs.nodejs}/bin/node /usr/local/share/bloom/dist/core/daemon/index.js";
+      # Explicit PATH: NixOS user sessions inherit /run/current-system/sw/bin via PAM,
+      # but adding it explicitly ensures the pi agent binary and system tools are always
+      # reachable regardless of how the service is started (loginctl, systemctl --user, etc.).
       Environment = [
         "HOME=%h"
         "BLOOM_DIR=%h/Bloom"
+        "PATH=${lib.makeBinPath [ piAgent pkgs.nodejs ]}:/run/current-system/sw/bin"
       ];
       Restart    = "on-failure";
       RestartSec = 15;
