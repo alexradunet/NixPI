@@ -1,7 +1,7 @@
 {
 	"name": "bloom",
 	"version": "0.1.0",
-	"description": "Bloom — Pi-native OS platform on Fedora bootc",
+	"description": "Bloom — Pi-native OS platform on NixOS",
 	"type": "module",
 	"private": true,
 	"engines": {
