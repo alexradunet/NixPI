@@ -14,7 +14,7 @@
       enable = true;
       settings = {
         PasswordAuthentication = true;
-        PubkeyAuthentication = "no";
+        PubkeyAuthentication = "yes";
         PermitRootLogin = "no";
       };
     };

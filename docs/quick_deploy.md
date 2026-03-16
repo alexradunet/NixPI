@@ -4,6 +4,16 @@
 
 Audience: operators and maintainers building images or booting test VMs.
 
+> 🛡️ **Security Note: NetBird is Mandatory**
+>
+> NetBird is the network security boundary for all Bloom services. The firewall
+> trusts only the NetBird interface (`wt0`). Without NetBird running, all services
+> (Matrix, Bloom Home, dufs, code-server) are exposed to the local network.
+>
+> **Complete NetBird setup and verify `wt0` is active before exposing this
+> machine to any network.** See [security-model.md](security-model.md) for the
+> full threat model.
+
 ## 🌱 Why This Guide Exists
 
 This guide is the operational path for building and booting Bloom from the current `justfile`.

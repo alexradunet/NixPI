@@ -151,7 +151,7 @@ function createDefaultAgent(credentials: MatrixCredentials): AgentDefinition {
 		matrix: {
 			username,
 			userId: credentials.botUserId,
-			autojoin: true,
+			autojoin: false,
 		},
 		respond: {
 			mode: "host",

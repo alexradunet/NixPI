@@ -1023,10 +1023,32 @@ finalize() {
 	local ai_provider
 	ai_provider=$(read_checkpoint_data ai)
 
+	# Security warning if NetBird is not connected
+	local netbird_connected=false
+	if command -v netbird >/dev/null 2>&1; then
+		local nb_status
+		nb_status=$(netbird status 2>/dev/null || true)
+		if echo "$nb_status" | grep -q "Connected"; then
+			netbird_connected=true
+		fi
+	fi
+
 	echo ""
 	echo "========================================="
 	echo "  Setup complete!"
 	echo ""
+
+	if [[ "$netbird_connected" != true ]]; then
+		echo "  ⚠️  SECURITY WARNING: NetBird is not connected!"
+		echo ""
+		echo "  Without NetBird, all services are exposed to the local network."
+		echo "  This is a security risk. Connect to NetBird before exposing"
+		echo "  this machine to any untrusted network."
+		echo ""
+		echo "  To connect: sudo netbird up --setup-key <your-key>"
+		echo ""
+	fi
+
 	[[ -n "$mesh_ip" ]] && echo "  Mesh IP: ${mesh_ip} (access from any NetBird peer)"
 	[[ -n "$mesh_fqdn" ]] && echo "  NetBird name: ${mesh_fqdn}"
 	[[ -n "$matrix_user" ]] && echo "  Matrix user: @${matrix_user}:bloom"

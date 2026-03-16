@@ -4,6 +4,18 @@
 
 Audience: operators bringing up a fresh Bloom host.
 
+> 🛡️ **Security Note: NetBird is Mandatory**
+>
+> NetBird is the network security boundary for all Bloom services. The firewall
+> configuration (`trustedInterfaces = ["wt0"]`) only protects services when the
+> NetBird interface (`wt0`) is active. Without NetBird:
+> - Matrix, Bloom Home (port 8080), dufs (port 5000), and code-server (port 8443)
+>   are exposed to the local network
+> - A compromised local device could access OS tools via prompt injection
+>
+> **Complete NetBird setup and verify `wt0` is active before exposing this
+> machine to any network.**
+
 ## 🌱 Why Setup Is Split In Two
 
 Bloom separates deterministic machine setup from Pi-guided personalization.

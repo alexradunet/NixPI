@@ -148,7 +148,7 @@ function normalizeAgentDefinition(
 	serverName: string,
 ): AgentDefinition {
 	const normalized = parseAgentFrontmatter(attributes, instructionsPath);
-	const autojoin = normalized.matrix.autojoin ?? true;
+	const autojoin = normalized.matrix.autojoin ?? false;
 
 	return {
 		id: normalized.id,

@@ -204,6 +204,7 @@ Tools:
 - `skill_create`
 - `skill_list`
 - `agent_create`
+- `mention_agent`
 - `persona_evolve`
 
 Hooks / commands:
@@ -301,6 +302,34 @@ Notes:
 - duplicate proactive job ids are rejected within the same room for a single agent overlay
 - heartbeat failures back off by the configured interval instead of immediately looping
 
+### Agent-to-Agent Collaboration
+
+Agents can trigger each other via Matrix mentions:
+
+1. Agent A sends a message containing `@agent-b:bloom` (Agent B's Matrix User ID)
+2. The router detects the mention and forwards the message to Agent B
+3. Agent B receives the message and can respond
+
+Example:
+```
+Pickle: @cookie:bloom Please remember that I prefer dark mode
+Cookie: Got it! I'll remember that preference.
+```
+
+Routing rules for agent mentions:
+- The mention must be the agent's full Matrix User ID (`@username:server`)
+- Target agent must have `respond.allow_agent_mentions: true` (default: true)
+- An agent cannot trigger itself (prevents loops)
+- Standard cooldown and reply budget rules apply
+
+Frontmatter configuration:
+```yaml
+respond:
+  allow_agent_mentions: true   # Allow other agents to mention this agent
+```
+
+Alternatively, use the `mention_agent` tool from `bloom-garden` to format mentions correctly.
+
 Key daemon files:
 
 | Path | Purpose |
@@ -357,6 +386,22 @@ Built-in infrastructure:
 - service manifests live in `~/Bloom/manifest.yaml`
 - service image trust rules are documented in [docs/supply-chain.md](docs/supply-chain.md)
 - PR-based repo workflow is documented in [docs/fleet-pr-workflow.md](docs/fleet-pr-workflow.md)
+
+### High-Sensitivity Bloom Paths
+
+The following paths in `~/Bloom/` have elevated security impact. If an attacker
+gains a foothold (e.g., via a compromised mesh container), writes to these paths
+can establish persistence or bypass safety controls:
+
+| Path | Sensitivity | Why |
+|------|-------------|-----|
+| `~/Bloom/Agents/` | **Critical** | Loaded by the daemon on every restart. A new `AGENTS.md` creates a persistent agent with arbitrary instructions and proactive jobs that survives reboots. |
+| `~/Bloom/guardrails.yaml` | **Critical** | User-override for shell command blocks. An empty or permissive file disables all shell command blocks. |
+| `~/Bloom/Objects/` | **High** | Injected into Pi's context at session start. Writing here achieves persistent system-prompt injection. |
+| `~/Bloom/Persona/` | **High** | Injected into Pi's context at session start. Writing here achieves persistent system-prompt injection. |
+
+**Guidance:** Writes to `Agents/` and `guardrails.yaml` should be surfaced to the
+user explicitly, not done silently. These are high-sensitivity operations.
 
 ## 📚 Reference Routing
 
