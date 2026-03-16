@@ -39,7 +39,14 @@ rollback:
 vm:
     #!/usr/bin/env bash
     set -euo pipefail
+    disk="/tmp/bloom-vm-disk.qcow2"
     vars="/tmp/bloom-ovmf-vars.fd"
+    # Nix store images are read-only; copy to /tmp so QEMU can write
+    if [ ! -f "$disk" ] || [ "{{ output }}/nixos.qcow2" -nt "$disk" ]; then
+        echo "Copying disk image to $disk..."
+        cp "{{ output }}/nixos.qcow2" "$disk"
+        chmod 644 "$disk"
+    fi
     cp "{{ ovmf_vars }}" "$vars"
     echo "Starting VM... Press Ctrl+A X to exit"
     qemu-system-x86_64 \
@@ -50,7 +57,7 @@ vm:
         -smp 2 \
         -drive if=pflash,format=raw,readonly=on,file={{ ovmf }} \
         -drive if=pflash,format=raw,file="$vars" \
-        -drive file={{ output }}/nixos.qcow2,format=qcow2,if=virtio \
+        -drive file="$disk",format=qcow2,if=virtio \
         -netdev user,id=net0,hostfwd=tcp::2222-:22,hostfwd=tcp::5000-:5000,hostfwd=tcp::8080-:8080,hostfwd=tcp::8081-:8081,hostfwd=tcp::8888-:80 \
         -device virtio-net-pci,netdev=net0 \
         -nographic \
@@ -60,7 +67,13 @@ vm:
 vm-gui:
     #!/usr/bin/env bash
     set -euo pipefail
+    disk="/tmp/bloom-vm-disk.qcow2"
     vars="/tmp/bloom-ovmf-vars.fd"
+    if [ ! -f "$disk" ] || [ "{{ output }}/nixos.qcow2" -nt "$disk" ]; then
+        echo "Copying disk image to $disk..."
+        cp "{{ output }}/nixos.qcow2" "$disk"
+        chmod 644 "$disk"
+    fi
     cp "{{ ovmf_vars }}" "$vars"
     qemu-system-x86_64 \
         -machine q35 \
@@ -70,7 +83,7 @@ vm-gui:
         -smp 2 \
         -drive if=pflash,format=raw,readonly=on,file={{ ovmf }} \
         -drive if=pflash,format=raw,file="$vars" \
-        -drive file={{ output }}/nixos.qcow2,format=qcow2,if=virtio \
+        -drive file="$disk",format=qcow2,if=virtio \
         -netdev user,id=net0,hostfwd=tcp::2222-:22,hostfwd=tcp::5000-:5000,hostfwd=tcp::8080-:8080,hostfwd=tcp::8081-:8081,hostfwd=tcp::8888-:80 \
         -device virtio-net-pci,netdev=net0 \
         -device virtio-vga-gl \
@@ -112,7 +125,7 @@ vm-ssh:
 
 # Kill the running QEMU VM
 vm-kill:
-    pkill -f "[q]emu-system-x86_64.*nixos.qcow2" || true
+    pkill -f "[q]emu-system-x86_64.*bloom-vm-disk" || true
 
 # Remove build results
 clean:
