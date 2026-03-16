@@ -21,6 +21,12 @@
       Environment     = "PATH=/run/current-system/sw/bin:${lib.makeBinPath (with pkgs; [ nix git jq ])}";
       ExecStart       = pkgs.writeShellScript "bloom-update" (builtins.readFile ../../../core/scripts/bloom-update.sh);
       RemainAfterExit = false;
+
+      # Partial sandboxing — service runs as root for nixos-rebuild.
+      PrivateTmp = true;
+      # ProtectHome omitted — bloom-update.sh writes status to /home/pi/.bloom/
+      # ProtectSystem omitted — nixos-rebuild writes to /nix/store and /etc
+      # NoNewPrivileges omitted — nixos-rebuild requires privilege escalation
     };
   };
 

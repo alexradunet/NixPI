@@ -36,9 +36,28 @@
       Environment = "CONTINUWUITY_CONFIG=/etc/bloom/matrix.toml";
       Restart     = "on-failure";
       RestartSec  = 5;
-      DynamicUser = true;
+
+      # Sandboxing — systemd automatically adds ReadWritePaths for StateDirectory.
+      DynamicUser      = true;
       StateDirectory   = "continuwuity";
       RuntimeDirectory = "continuwuity";
+
+      PrivateTmp              = true;
+      ProtectSystem           = "strict";
+      ProtectHome             = true;
+      NoNewPrivileges         = true;
+      # DynamicUser already drops all caps; explicit for clarity.
+      CapabilityBoundingSet   = "";
+      AmbientCapabilities     = "";
+      RestrictNamespaces      = true;
+      LockPersonality         = true;
+      # conduwuit is a Rust binary with no JIT — W+X memory is not needed.
+      # If bloom-matrix fails to start, remove MemoryDenyWriteExecute first.
+      MemoryDenyWriteExecute  = true;
+      RestrictRealtime        = true;
+      RestrictSUIDSGID        = true;
+      SystemCallFilter        = [ "@system-service" ];
+      SystemCallArchitectures = "native";
     };
   };
 }

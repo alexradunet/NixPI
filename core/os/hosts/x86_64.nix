@@ -1,5 +1,5 @@
 # core/os/hosts/x86_64.nix
-{ pkgs, lib, ... }:
+{ pkgs, lib, nixpkgs, ... }:
 
 {
   imports = [
@@ -12,6 +12,10 @@
 
   system.stateVersion = "25.05";
   nixpkgs.hostPlatform = "x86_64-linux";
+
+  # Pin <nixpkgs> on the device to the flake lock so that `nix run nixpkgs#...`
+  # uses the same nixpkgs revision as the system was built with.
+  nix.registry.nixpkgs.flake = nixpkgs;
 
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;

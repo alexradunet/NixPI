@@ -32,21 +32,21 @@
           inherit system pkgs;
           format = "qcow";
           modules = [ ./core/os/hosts/x86_64.nix ];
-          specialArgs = { inherit piAgent bloomApp; };
+          specialArgs = { inherit nixpkgs piAgent bloomApp; };
         };
 
         raw = nixos-generators.nixosGenerate {
           inherit system pkgs;
           format = "raw";
           modules = [ ./core/os/hosts/x86_64.nix ];
-          specialArgs = { inherit piAgent bloomApp; };
+          specialArgs = { inherit nixpkgs piAgent bloomApp; };
         };
 
         iso = nixos-generators.nixosGenerate {
           inherit system pkgs;
           format = "install-iso";
           modules = [ ./core/os/hosts/x86_64.nix ];
-          specialArgs = { inherit piAgent bloomApp; };
+          specialArgs = { inherit nixpkgs piAgent bloomApp; };
         };
       };
 
