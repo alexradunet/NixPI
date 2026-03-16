@@ -2,7 +2,7 @@
 
 > 📖 [Emoji Legend](docs/LEGEND.md)
 
-Very opinionated Fedora BootC OS build personally for me and my workflows and how I imagine a PC will be in the future. My goal is to leverage the current AI Agents Technology to build an AI Firsts OS designed specifically for one end user to act like a personal life assistant and knowledge management system.
+Very opinionated NixOS build personally for me and my workflows and how I imagine a PC will be in the future. My goal is to leverage the current AI Agents Technology to build an AI Firsts OS designed specifically for one end user to act like a personal life assistant and knowledge management system.
 
 It is very experimental and I am still currently developing it based on my needs and my own code engineering preferences.
 
@@ -32,7 +32,7 @@ Current platform capabilities:
 - Bloom directory management and blueprint seeding for `~/Bloom/`
 - persona injection, shell guardrails, durable-memory digest injection, and compaction context persistence
 - audit logging for tool calls and tool results
-- host OS management tools for `bootc`, containers, systemd, health, and reboot scheduling
+- host OS management tools for NixOS updates, containers, systemd, health, and reboot scheduling
 - repo bootstrap, sync, and PR submission helpers
 - service scaffolding, installation, smoke testing, manifest management, and bridge lifecycle tools
 - markdown-native durable memory in `~/Bloom/Objects/`
