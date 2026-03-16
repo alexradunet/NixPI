@@ -9,11 +9,17 @@ Method: Attacker/failure persona walkthrough, Pareto-prioritized
 ## Context
 
 Bloom is a NixOS-based personal AI-first OS. The primary security perimeter is a NetBird
-WireGuard mesh network. All services (Matrix, Pi daemon, web services) are only accessible
-from within the mesh. This is the intended and correct security model.
+WireGuard mesh network. The NixOS firewall confirms this intent:
+
+```nix
+networking.firewall.trustedInterfaces = [ "wt0" ];
+```
+
+`wt0` is the NetBird interface. Only mesh peers reach Bloom services. Everything behind
+the mesh is relatively trusted.
 
 The review evaluated both the personal instance and the template's responsibilities to
-downstream forkers who may deploy it without full security awareness.
+downstream forkers who may deploy without full security awareness.
 
 ---
 
@@ -21,11 +27,11 @@ downstream forkers who may deploy it without full security awareness.
 
 **NetBird is the load-bearing security boundary.**
 
-Everything behind the mesh is relatively trusted. The threat model is:
+Threat actors within scope:
 
-- Compromised mesh peer (device you own that gets compromised)
-- Compromised service container already running on the host
-- Template forker who deploys without NetBird or with it misconfigured
+- A compromised device on the NetBird mesh
+- A compromised service container already running on the host (inside the mesh)
+- A template forker who deploys without NetBird or with it misconfigured
 
 This is a simple, defensible model. The 20% of fixes below protect against 80% of
 realistic threats within it.
@@ -41,117 +47,128 @@ realistic threats within it.
 **What the problem is:**
 NetBird is the perimeter. If it is not running, Matrix, Bloom Home (port 8080), dufs
 (port 5000), code-server (port 8443), and the Matrix bridges are all exposed on the local
-network and potentially beyond. Currently the setup docs present NetBird as a component to
-configure, not as a security prerequisite that gates everything else.
+network. The firewall trusts `wt0` (the NetBird interface) — but without NetBird active,
+`wt0` does not exist and the firewall rule provides no protection.
+
+Currently the setup docs present NetBird as a component to configure, not as a security
+prerequisite that gates everything else.
 
 **Blast radius for forkers:**
-A forker who skips NetBird setup — or who misconfigures it — has no secondary containment.
-The entire attack surface of Persona 1 (Matrix room participant → prompt injection → OS
-tools) is wide open from any local network device.
+A forker who skips or misconfigures NetBird setup has no secondary containment. Matrix room
+access → prompt injection → OS tools (nixos_update, systemd_control, container) is fully
+exposed to local network devices.
 
 **Proposed remediation:**
 - Add a prominent security note to `docs/pibloom-setup.md` and `docs/quick_deploy.md`:
   "NetBird is not optional. It is the network security boundary for all Bloom services.
-  Complete NetBird setup before exposing this machine to any network."
-- Add a preflight check in the first-boot wizard that warns if NetBird is not active.
-- Document the threat model explicitly: what is protected inside the mesh, what is not.
+  Complete NetBird setup and verify `wt0` is active before exposing this machine to any
+  network."
+- Add a preflight check in the first-boot wizard (`bloom-wizard.sh`) that warns if
+  `netbird status` is not connected.
+- Document the threat model explicitly in a `docs/security-model.md`: what is protected
+  inside the mesh, what is not, what happens if NetBird is absent.
 
 ---
 
-### Finding 2 — Default SSH password seeded in NixOS flake
+### Finding 2 — SSH is password-only with no path to key-based auth
 
-**Severity:** High
+**Severity:** Medium-High
 
 **What the problem is:**
-The NixOS configuration seeds `initialPassword = "bloom"` for the `pi` user to enable
-first-boot SSH access. This is a known credential. Any compromised NetBird mesh peer — or
-any host that gains mesh access — can SSH into the machine with this password.
+`bloom-network.nix` configures SSH as:
 
-The git history documents the intent (`fix: add initialPassword = "bloom" to pi user for
-first-boot SSH access`), meaning this is an intentional setup convenience, not an oversight.
-But it is not automatically rotated.
+```nix
+PasswordAuthentication = true;
+PubkeyAuthentication = "no";
+```
 
-**Blast radius:**
-Inside the mesh: a compromised peer device can pivot directly to the host via SSH.
-For forkers: if NetBird is misconfigured or not set up, this is an internet-exposed
-known-credential SSH endpoint.
+Password auth is enabled; public key auth is explicitly disabled. The `pi` user has no
+initial password set (`bloom-shell.nix:37`), and TTY auto-login prompts for password
+creation on first boot — so SSH is effectively blocked until the user sets a password.
+This is the correct initial state.
 
-**Proposed remediation (choose one or combine):**
-- Force a mandatory password change on first interactive login (`chage -d 0 pi` or
-  equivalent NixOS option).
-- Generate a random initial password at image build time and surface it only at the
-  physical console on first boot.
-- Disable password auth entirely and require SSH key provisioning as part of first-boot
-  setup (preferred for a template).
-- At minimum, document prominently: "Change the default password before connecting to any
-  network."
+The problem is structural: once a password is set, it is the only SSH gate. There is no
+system-level path to key-based SSH without modifying the NixOS flake. For a template:
+
+- Forkers who want to harden SSH (keys only, disable password) cannot do so without a
+  flake change — it is not documented as a configuration point.
+- Whatever password the user chooses in the first-boot wizard is the sole SSH credential.
+  No password strength requirements are enforced.
+- A compromised NetBird peer can brute-force or replay a weak password over SSH.
+
+**Proposed remediation:**
+- Add `PubkeyAuthentication = "yes"` (or remove the explicit `"no"`) and document key
+  provisioning as the recommended hardening step after first boot.
+- Alternatively, expose `bloom.sshKeyOnly = true` as a NixOS option in the template that
+  switches to keys-only when the user is ready.
+- At minimum, document SSH authentication options clearly for forkers in the setup guide.
 
 ---
 
-### Finding 3 — Bridge container images tag-pinned, not digest-pinned
+### Finding 3 — Remote container images tag-pinned, not digest-pinned
 
 **Severity:** Medium
 
 **What the problem is:**
-`services/catalog.yaml` pins bridge images to tags, not digests:
+`services/catalog.yaml` pins remote images to tags, not digests:
 
+Under `services:`:
 ```yaml
-whatsapp:
-  image: dock.mau.dev/mautrix/whatsapp:v26.02
-telegram:
-  image: dock.mau.dev/mautrix/telegram:v0.15.3
-signal:
-  image: dock.mau.dev/mautrix/signal:v26.02.2
+dufs:  docker.io/sigoden/dufs:v0.38.0
+```
+
+Under `bridges:`:
+```yaml
+whatsapp:  dock.mau.dev/mautrix/whatsapp:v26.02
+telegram:  dock.mau.dev/mautrix/telegram:v0.15.3
+signal:    dock.mau.dev/mautrix/signal:v26.02.2
 ```
 
 The supply chain policy (`docs/supply-chain.md`) already requires digest pinning for remote
-images. The catalog does not comply.
+images. None of the four remote images comply — in either section of the catalog.
 
 Bridge containers are high-value targets: they run inside the NetBird mesh, hold Matrix
 bridge credentials, and can read and post to Matrix rooms where Pi participates. A
-compromised bridge image is already inside the security perimeter.
-
-**Blast radius:**
-A tag mutation on `dock.mau.dev` delivers a compromised bridge on the next `podman pull`.
-The compromised bridge can send crafted Matrix messages to Pi's rooms, enabling prompt
-injection from inside the mesh.
+compromised bridge image is already inside the security perimeter. `dufs` serves files from
+`~/Public/Bloom` over WebDAV — a compromised dufs image has read access to that path.
 
 **Proposed remediation:**
-- Pin all three bridge images to digests in `services/catalog.yaml`.
-- Add a CI or `just` lint step that rejects `latest` or undigested remote image refs in the
-  catalog (extending the existing `validatePinnedImage()` logic from `service_scaffold` to
-  cover the catalog itself).
+- Pin all four remote images to digests in `services/catalog.yaml`: `dufs` under
+  `services:`, and `whatsapp`/`telegram`/`signal` under `bridges:`.
+- Extend the existing `validatePinnedImage()` logic from `service_scaffold` to also lint
+  `services/catalog.yaml` entries directly — either as a `just` recipe or CI check — so
+  tag-only remote images are caught before they reach the catalog.
 
 ---
 
-### Finding 4 — Pi-writable `~/Bloom/` enables persistent foothold
+### Finding 4 — Pi-writable `~/Bloom/` enables persistent foothold after breach
 
 **Severity:** Medium
 
 **What the problem is:**
-Several subdirectories of `~/Bloom/` are Pi-writable by design (Pi creates agents, skills,
-objects, episodes). However, three of these have outsized security impact:
+Several `~/Bloom/` subdirectories are Pi-writable by design. Three have outsized security
+impact if a prior foothold is achieved (e.g., via a compromised mesh container sending a
+crafted Matrix message):
 
-- `~/Bloom/Agents/` — loaded by the daemon on every restart. Writing a new `AGENTS.md`
-  here creates a persistent agent with arbitrary instructions and proactive jobs.
-- `~/Bloom/guardrails.yaml` — the user-override path, loaded first. An empty or permissive
-  file here disables all shell command blocks.
-- `~/Bloom/Objects/` and `~/Bloom/Personas/` — injected into Pi's context at every session
+- `~/Bloom/Agents/` — loaded by the daemon on every restart (`agent-registry.ts`).
+  Writing a new `AGENTS.md` creates a persistent agent with arbitrary instructions and
+  proactive jobs that survives reboots.
+- `~/Bloom/guardrails.yaml` — user-override path, loaded first in `bloom-persona/actions.ts:37`.
+  An empty or permissive file disables all shell command blocks.
+- `~/Bloom/Objects/` and `~/Bloom/Persona/` — injected into Pi's context at every session
   start via `before_agent_start`. Writing here achieves persistent system-prompt injection.
 
-This is not a standalone attack. It requires a prior foothold (compromised mesh peer sending
-a successful prompt injection, or a compromised container). But once achieved, it provides
-persistence that survives daemon restarts, NixOS rebuilds (since `~/Bloom/` is user state,
-not OS state), and compaction.
+Note: `~/Bloom/` is user state, not OS state, so NixOS rebuilds do not clear it.
 
 **Proposed remediation:**
 - Document `~/Bloom/Agents/` and `~/Bloom/guardrails.yaml` as high-sensitivity paths in
   AGENTS.md and the setup guide.
-- Pi's persona/skill should include explicit guidance: writes to `Agents/` and
-  `guardrails.yaml` are high-sensitivity and should be surfaced to the user before
-  executing, not done silently.
-- Consider making `guardrails.yaml` read-only to the Pi process (set permissions, or store
-  it outside `~/Bloom/`).
+- Add guidance to Pi's persona/skill: writes to `Agents/` and `guardrails.yaml` are
+  high-sensitivity operations that should be surfaced to the user explicitly, not done
+  silently.
+- Consider storing the default `guardrails.yaml` in a read-only location (e.g., the Nix
+  store) and only loading user overrides from `~/Bloom/guardrails.yaml` when the file
+  exists, so the default cannot be silently replaced with an empty file.
 
 ---
 
@@ -160,42 +177,49 @@ not OS state), and compaction.
 **Severity:** Low-Medium
 
 **What the problem is:**
-`AgentDefinition.matrix.autojoin` defaults to `true` in `agent-registry.ts`. The daemon
-accepts any Matrix room invite without user confirmation. Inside the NetBird mesh this is
-lower risk (invites come from trusted peers), but it means new rooms become Pi command
-surfaces without the user being explicitly aware.
+`autojoin` defaults to `true` in two places:
 
-For a public template, new users may not realise that inviting Pi to a room grants that
-room's participants command-level access to their OS tools.
+- `agent-registry.ts:151` — the registry fallback for overlay agents
+- `core/daemon/index.ts:154` — the synthesized default host agent, hardcoded
+
+The daemon accepts Matrix room invites without user confirmation. Inside the NetBird mesh
+this is lower risk, but it means new rooms become Pi command surfaces without the user
+being explicitly aware. For template forkers, this is undocumented behavior.
 
 **Proposed remediation:**
-- Default `autojoin` to `false` in the agent registry.
-- Document the `autojoin: true` opt-in clearly: "Enabling autojoin means Pi will join any
-  room it is invited to. All participants in that room can interact with Pi and its OS
-  tools."
-- For the default host agent synthesized from primary credentials, keep autojoin off unless
-  explicitly enabled.
+- Default `autojoin` to `false` in `agent-registry.ts` (registry fallback).
+- Change the hardcoded `autojoin: true` in `index.ts:154` (`createDefaultAgent`) to
+  `false` as well — both code paths need updating.
+- Document the autojoin opt-in clearly: "Enabling autojoin means Pi will join any room it
+  is invited to. All participants in that room can interact with Pi and its OS tools."
 
 ---
 
 ## What Was Explicitly Descoped
 
-- General prompt injection from internet attackers: mitigated by NetBird perimeter.
-- Misbehaving proactive job circuit breaker timing: low practical impact, low priority.
-- In-memory routing state lost on restart: minor UX issue, not a security concern.
-- Message length limits: token-waste risk only, not exploitable within the mesh.
+- **General prompt injection from internet attackers:** Descoped for the personal
+  deployment (mitigated by NetBird perimeter + firewall). For template forkers without
+  NetBird, this is the primary risk — addressed by Finding 1, which makes NetBird a
+  documented hard requirement.
+- **Misbehaving proactive job circuit breaker timing:** Low practical impact on a personal
+  instance. No user-facing blast radius.
+- **In-memory routing state lost on restart:** Minor UX issue (possible duplicate
+  responses), not a security concern.
+- **Message length limits:** Token-waste risk only, not exploitable within the mesh.
+- **WiFi PSK in Nix store (`bloom-network.nix` TODO):** Already noted in the code. Out of
+  scope for this review; sops-nix or agenix integration is a separate effort.
 
 ---
 
 ## Design Principle Reinforced
 
-The security model should stay simple:
+The security model stays simple:
 
-1. **NetBird is the perimeter.** Everything inside is trusted. Make this explicit.
-2. **Fix the seams where the perimeter assumption can silently fail** (default password,
-   undigested bridge images).
-3. **Limit blast radius if the perimeter is ever breached** (Bloom directory sensitivity,
-   autojoin default).
+1. **NetBird is the perimeter.** The firewall already enforces this (`trustedInterfaces = ["wt0"]`).
+   Make it explicit in documentation and the first-boot wizard.
+2. **Fix the seams where the perimeter assumption can silently fail** — digest-pinned
+   images, documented SSH hardening path.
+3. **Limit blast radius if the perimeter is ever breached** — Bloom directory write
+   sensitivity, autojoin default off.
 
-No secondary auth layers, no complex ACLs. Just make the perimeter solid and document it
-clearly.
+No secondary auth layers, no complex ACLs. Make the perimeter solid and document it.
