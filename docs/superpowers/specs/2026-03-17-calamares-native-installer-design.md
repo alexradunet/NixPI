@@ -63,15 +63,18 @@ core/calamares/
 
 **3. Custom Calamares QML pages**
 
-Three new wizard pages inserted before the partition step:
+Four new wizard pages inserted before the partition step:
 
 | Page | Fields | Storage key |
 |------|--------|-------------|
-| `BloomNetbird` | NetBird setup key (password field, link to app.netbird.io) | `bloom_netbird_key` |
 | `BloomGit` | Full name, email address | `bloom_git_name`, `bloom_git_email` |
+| `BloomMatrix` | Matrix username (the chat handle, e.g. `alice`) | `bloom_matrix_username` |
+| `BloomNetbird` | NetBird setup key (password field, link to app.netbird.io) | `bloom_netbird_key` |
 | `BloomServices` | FluffyChat checkbox, dufs checkbox | `bloom_services` (comma-separated) |
 
 All fields are optional — the first-boot service handles missing keys gracefully (skips the step).
+
+`bloom_matrix_username` is distinct from the OS login username (which is always `pi`). It is the user's chosen Matrix handle and maps to `PREFILL_USERNAME` in `prefill.env` (the key `bloom-wizard.sh` already reads for Matrix account creation).
 
 **4. `core/os/modules/bloom-firstboot.nix` + `core/scripts/bloom-firstboot.sh`**
 
@@ -94,10 +97,11 @@ These are no longer needed. The installer now produces a Bloom system directly.
 3. `keyboard` — unchanged
 4. `users` — unchanged (sets password for `pi` user)
 5. `bloom-git` — NEW: name + email
-6. `bloom-netbird` — NEW: NetBird setup key
-7. `bloom-services` — NEW: optional services selection
-8. `partition` — unchanged (full GUI partitioning)
-9. `summary` — unchanged
+6. `bloom-matrix` — NEW: Matrix username (chat handle)
+7. `bloom-netbird` — NEW: NetBird setup key
+8. `bloom-services` — NEW: optional services selection
+9. `partition` — unchanged (full GUI partitioning)
+10. `summary` — unchanged
 
 The `packagechooser` page (desktop environment selection) is removed. Bloom always installs headless with its own service stack.
 
@@ -204,12 +208,25 @@ A Calamares Python job module (not `shellprocess` — that module cannot read gl
 **`/mnt/home/pi/.bloom/prefill.env`**
 ```bash
 PREFILL_NETBIRD_KEY=<gs.value("bloom_netbird_key") or "">
-PREFILL_USERNAME=<gs.value("username")>
+PREFILL_USERNAME=<gs.value("bloom_matrix_username") or "">
 PREFILL_NAME=<gs.value("bloom_git_name") or "">
 PREFILL_EMAIL=<gs.value("bloom_git_email") or "">
 PREFILL_SERVICES=<gs.value("bloom_services") or "">
 ```
+`PREFILL_USERNAME` maps to the Matrix handle (`bloom_matrix_username`), not the OS login name. The OS login name is always `pi` (locked by `users.conf`) and is not written to `prefill.env`.
+
 File written with `chmod 600`, owned by `pi` (uid looked up via `pwd.getpwnam("pi")`). Parent directory `~pi/.bloom/` created if absent.
+
+**`/mnt/home/pi/.pi/agent/settings.json`**
+```json
+{
+  "packages": ["/usr/local/share/bloom"],
+  "defaultProvider": "localai",
+  "defaultModel": "omnicoder-9b-q4_k_m",
+  "defaultThinkingLevel": "medium"
+}
+```
+Written at install time with `chmod 600`. This replaces `step_ai` from `bloom-wizard.sh`; `pi-daemon.service` has its required `settings.json` on first boot without any first-boot step. Parent directory `~pi/.pi/agent/` created if absent.
 
 **`/mnt/home/pi/.gitconfig`**
 ```ini
@@ -257,6 +274,24 @@ The target directory is created before the copy. If no `.nmconnection` files exi
     };
     unitConfig.ConditionPathExists = "!/home/pi/.bloom/.setup-complete";
   };
+
+  # Passwordless sudo rules required by bloom-firstboot.sh in the non-TTY service context.
+  # These are narrow, command-specific grants — not full sudo.
+  security.sudo.extraRules = [
+    {
+      users = [ "pi" ];
+      commands = [
+        # Read the Matrix registration token (owned by the continuwuity service UID)
+        { command = "/run/current-system/sw/bin/cat /var/lib/continuwuity/registration_token"; options = [ "NOPASSWD" ]; }
+        # Read the first-boot Matrix token from the journal
+        { command = "/run/current-system/sw/bin/journalctl -u bloom-matrix --no-pager"; options = [ "NOPASSWD" ]; }
+        # Connect to NetBird mesh
+        { command = "/run/current-system/sw/bin/netbird up --setup-key *"; options = [ "NOPASSWD" ]; }
+        # Start NetBird daemon if not running
+        { command = "/run/current-system/sw/bin/systemctl start netbird.service"; options = [ "NOPASSWD" ]; }
+      ];
+    }
+  ];
 }
 ```
 
@@ -264,12 +299,15 @@ The `wants = [ "bloom-matrix.service" "netbird.service" ]` ensures those service
 
 ### `bloom-firstboot.sh`
 
-A stripped, non-interactive version of `bloom-wizard.sh`. Reads `~/.bloom/prefill.env`. Only runs the service-dependent steps:
+A stripped, non-interactive version of `bloom-wizard.sh`. Reads `~/.bloom/prefill.env`. Execution order:
 
-1. **`step_netbird`** — starts netbird daemon, connects using `PREFILL_NETBIRD_KEY`; skipped if key is empty
-2. **`step_matrix`** — polls `http://localhost:6167/_matrix/client/versions` in a retry loop (up to 60s, 1s interval) until the homeserver is accepting connections, then registers bot + user accounts using `PREFILL_USERNAME`
-3. **`step_services`** — iterates `PREFILL_SERVICES` (comma-separated list, e.g. `"fluffychat,dufs"`) and installs each named service; skipped if empty
-4. **`finalize`** — enables linger for `pi`, starts `pi-daemon.service`, writes `.setup-complete`
+1. **`loginctl enable-linger pi`** — run unconditionally at startup, before any steps, so that `systemctl --user` commands in subsequent steps work correctly (user services require linger to be active).
+2. **`step_netbird`** — starts netbird daemon via `sudo systemctl start netbird.service`, then connects with `sudo netbird up --setup-key $PREFILL_NETBIRD_KEY`; skipped if `PREFILL_NETBIRD_KEY` is empty.
+3. **`step_matrix`** — polls `http://localhost:6167/_matrix/client/versions` in a retry loop (up to 60s, 1s interval). Once the homeserver is accepting connections, reads the registration token via `sudo cat /var/lib/continuwuity/registration_token` and registers bot + user accounts using `PREFILL_USERNAME`. Skipped if `PREFILL_USERNAME` is empty.
+4. **`step_services`** — iterates `PREFILL_SERVICES` (comma-separated, e.g. `"fluffychat,dufs"`), calling `install_service <name>` for each. Also calls `install_home_infrastructure` unconditionally to set up the Bloom Home landing page. `$BLOOM_SERVICES` resolves to `/usr/local/share/bloom/services`, populated by `bloomApp` which is installed as part of `nixosModules.bloom`. Skipped entirely if `PREFILL_SERVICES` is empty (Bloom Home is still installed).
+5. **`finalize`** — starts `pi-daemon.service` via `systemctl --user`, writes `~/.bloom/.setup-complete`.
+
+`settings.json` (AI provider config) is written by the `bloom_prefill` Calamares module at install time, so `step_ai` is not needed in this script — `pi-daemon` has its configuration before first boot.
 
 All interactive prompts from `bloom-wizard.sh` are removed. Non-fatal failures are logged to the journal and do not block subsequent steps or login.
 
@@ -282,8 +320,9 @@ All interactive prompts from `bloom-wizard.sh` are removed. Non-fatal failures a
 | ADD | `core/calamares/package.nix` |
 | ADD | `core/calamares/bloom_nixos/main.py` |
 | ADD | `core/calamares/bloom_nixos/module.desc` |
-| ADD | `core/calamares/pages/BloomNetbird.qml` |
 | ADD | `core/calamares/pages/BloomGit.qml` |
+| ADD | `core/calamares/pages/BloomMatrix.qml` |
+| ADD | `core/calamares/pages/BloomNetbird.qml` |
 | ADD | `core/calamares/pages/BloomServices.qml` |
 | ADD | `core/calamares/config/bloom-settings.conf` |
 | ADD | `core/calamares/config/bloom-nixos.conf` |
