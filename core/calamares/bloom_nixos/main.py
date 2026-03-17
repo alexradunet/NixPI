@@ -50,13 +50,12 @@ def _run():
         )
 
     # ── Step 2: Write host-config.nix ────────────────────────────────────────
-    locale_data   = gs.value("locale") or {}
-    keyboard_data = gs.value("keyboard") or {}
-    timezone      = gs.value("timezoneName") or "UTC"
-    lang          = locale_data.get("language", "en_US.UTF-8")
-    kb_layout     = keyboard_data.get("layout", "us")
-    kb_variant    = keyboard_data.get("variant", "")
-    vconsole      = keyboard_data.get("vconsole", "us")
+    # Calamares stores these as plain strings, not dicts.
+    timezone  = gs.value("timezoneName")          or "UTC"
+    lang      = gs.value("locale")                or "en_US.UTF-8"
+    kb_layout = gs.value("keyboardLayout")        or "us"
+    kb_variant = gs.value("keyboardVariant")      or ""
+    vconsole  = gs.value("keyboardVConsoleKeymap") or kb_layout
 
     # Bloom OS requires UEFI. Return an error if EFI partition is not detected.
     efi_partition = gs.value("efiSystemPartition")
