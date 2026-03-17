@@ -1,17 +1,14 @@
 # core/os/hosts/x86_64-installer.nix
 # Graphical installer ISO configuration for Bloom OS.
-# Uses Calamares GUI installer with LXQt desktop.
+# Uses Calamares GUI installer with GNOME desktop (auto-starts Calamares via GDM).
 # Custom calamares-nixos-extensions override provides Bloom-specific wizard pages.
-{ lib, modulesPath, ... }:
+{ lib, pkgs, modulesPath, ... }:
 
 {
   imports = [
-    # Calamares + GNOME installer base (provides Calamares, display manager, etc.)
-    # We override the desktop to LXQt below.
+    # Calamares + GNOME installer base — handles GDM autologin, Calamares
+    # autostart, polkit agent, and display manager out of the box.
     "${modulesPath}/installer/cd-dvd/installation-cd-graphical-calamares-gnome.nix"
-
-    # LXQt desktop configuration
-    ../modules/bloom-desktop.nix
   ];
 
   # Replace upstream calamares-nixos-extensions with our custom Bloom version.
@@ -25,12 +22,13 @@
     })
   ];
 
-  # Override: Use LXQt instead of GNOME
-  services.desktopManager.gnome.enable = lib.mkForce false;
-  services.displayManager.gdm.enable   = lib.mkForce false;
+  # Support all locales (Calamares needs this for the locale selection step)
+  i18n.supportedLocales = [ "all" ];
 
-  # Ensure LightDM for LXQt
-  services.xserver.displayManager.lightdm.enable = lib.mkDefault true;
+  # Extra tools available in the live environment
+  environment.systemPackages = with pkgs; [
+    gparted
+  ];
 
   # ISO-specific settings
   isoImage.volumeID  = lib.mkDefault "BLOOM_INSTALLER";
@@ -45,7 +43,7 @@
   environment.etc."issue".text = ''
     Welcome to Bloom OS Installer!
 
-    Double-click the desktop icon to launch the installer.
+    The installer will launch automatically on the desktop.
 
     For help, visit: https://github.com/alexradunet/piBloom
 
@@ -55,9 +53,8 @@
     "browser.startup.homepage" = "https://github.com/alexradunet/piBloom";
   };
 
-  networking.hostName = lib.mkDefault "bloom-installer";
-
-  services.libinput.enable = true;
-  networking.networkmanager.enable    = true;
-  networking.wireless.enable          = lib.mkForce false;
+  networking.hostName          = lib.mkDefault "bloom-installer";
+  networking.networkmanager.enable = true;
+  networking.wireless.enable   = lib.mkForce false;
+  services.libinput.enable     = true;
 }

@@ -58,7 +58,21 @@
       "Bash(qemu-img info:*)",
       "WebFetch(domain:www.npmjs.com)",
       "Bash(bash -c '\n  if [[ -f \"core/scripts/prefill.env\" ]]; then\n    mkdir -p \"$HOME/.bloom\"\n    cp \"core/scripts/prefill.env\" \"$HOME/.bloom/prefill.env\"\n    echo \"Staged core/scripts/prefill.env → ~/.bloom/prefill.env\"\n  fi\n')",
-      "Bash(xxd)"
+      "Bash(xxd)",
+      "Bash(/tmp/verify_plan.sh:*)",
+      "Bash(chmod +x /tmp/verify_plan.sh)",
+      "Bash(/tmp/verify_plan.sh)",
+      "Bash(/tmp/code_quality.sh:*)",
+      "Bash(chmod +x /tmp/code_quality.sh)",
+      "Bash(/tmp/code_quality.sh)",
+      "Bash(nix-instantiate:*)",
+      "Bash(/tmp/spec_check.txt:*)",
+      "Bash(/tmp/quality_check.txt:*)",
+      "Bash(bash -n core/scripts/bloom-firstboot.sh)",
+      "Bash(bash -n core/scripts/bloom-wizard.sh)",
+      "Bash(echo \"exit: $?\")",
+      "Bash(nix log:*)",
+      "Bash(wc:*)"
     ]
   }
 }

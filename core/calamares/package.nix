@@ -15,17 +15,19 @@ upstreamCalamares.overrideAttrs (old: {
     # Replace the standard nixos module with our bloom_nixos module
     rm -rf $out/modules/nixos
     cp -r ${./bloom_nixos} $out/modules/bloom-nixos
+    chmod -R u+w $out/modules/bloom-nixos
 
     # Add the bloom_prefill module
     cp -r ${./bloom_prefill} $out/modules/bloom-prefill
+    chmod -R u+w $out/modules/bloom-prefill
 
-    # Add our QML wizard pages
-    mkdir -p $out/pages
-    cp ${./pages}/*.qml $out/pages/
 
-    # Override Calamares config with our sequence and module configs
-    cp ${./config/bloom-settings.conf} $out/settings.conf
-    cp ${./config/bloom-nixos.conf}    $out/modules/bloom-nixos/bloom-nixos.conf
-    cp ${./config/users.conf}          $out/modules/users/users.conf
+    # Override Calamares config with our sequence and module configs.
+    # installPhase copies config/* → etc/calamares/ and does @out@ substitution,
+    # so settings.conf must live at config/settings.conf in the source tree.
+    cp ${./config/bloom-settings.conf} $out/config/settings.conf
+    # Module-specific configs belong in config/modules/ (→ etc/calamares/modules/)
+    cp ${./config/bloom-nixos.conf}    $out/config/modules/bloom-nixos.conf
+    cp ${./config/users.conf}          $out/config/modules/users.conf
   '';
 })

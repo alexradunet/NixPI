@@ -6,7 +6,7 @@
 # Writes to target:
 #   ~pi/.bloom/prefill.env      — first-boot automation config
 #   ~pi/.pi/agent/settings.json — AI provider config for pi-daemon
-#   ~pi/.gitconfig              — git identity (if name+email provided)
+#   ~pi/.gitconfig              — git name from Calamares fullName (no email at install time)
 #   /etc/NetworkManager/system-connections/*.nmconnection — WiFi credentials
 
 import glob
@@ -52,11 +52,13 @@ def run():
     root = gs.value("rootMountPoint") or "/mnt"
     pi_home = os.path.join(root, "home", "pi")
 
-    netbird_key = gs.value("bloom_netbird_key")    or ""
-    matrix_user = gs.value("bloom_matrix_username") or ""
-    git_name    = gs.value("bloom_git_name")       or ""
-    git_email   = gs.value("bloom_git_email")      or ""
-    services    = gs.value("bloom_services")       or ""
+    # git name and Matrix username are derived from the users page — no separate
+    # wizard pages needed. fullName is the display name; username is the login.
+    git_name    = gs.value("fullName")  or ""
+    matrix_user = gs.value("username")  or ""
+    git_email   = ""
+    netbird_key = ""
+    services    = ""
 
     # ── prefill.env ──────────────────────────────────────────────────────────
     prefill_dir  = os.path.join(pi_home, ".bloom")

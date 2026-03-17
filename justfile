@@ -203,8 +203,8 @@ test-iso-gui:
     disk="/tmp/bloom-test-disk-gui.qcow2"
     vars="/tmp/bloom-ovmf-vars-gui.fd"
     
-    # Find any ISO in result directory
-    ISO=$(find {{ output }} -name "*.iso" 2>/dev/null | head -1)
+    # Find the actual ISO file (result is a symlink to a store directory containing iso/)
+    ISO=$(find -L {{ output }} -name "*.iso" -type f 2>/dev/null | head -1)
     if [ -z "$ISO" ]; then
         echo "Error: No ISO found in {{ output }}/"
         echo "Run 'just iso-gui' first to build the graphical installer."
