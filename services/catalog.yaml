@@ -4,7 +4,6 @@ services:
   fluffychat:
     version: "0.1.0"
     category: messaging
-    image: localhost/bloom-fluffychat:latest
     optional: true
     home_visible: true
     port: 8081
@@ -13,11 +12,10 @@ services:
     icon_text: MX
     access_path: /
     preflight:
-      commands: [podman, systemctl]
+      commands: [systemctl]
   dufs:
     version: "0.1.0"
     category: sync
-    image: docker.io/sigoden/dufs:v0.38.0@sha256:5158803010c90441b576004901f8aa7ae8288ac0990f08c7650de0deb2e0651e
     optional: false
     home_visible: true
     port: 5000
@@ -27,21 +25,19 @@ services:
     path_hint: ~/Public/Bloom
     access_path: /
     preflight:
-      commands: [podman, systemctl]
+      commands: [systemctl]
   code-server:
     version: "0.1.0"
     category: development
-    image: localhost/bloom-code-server:latest
     optional: true
     home_visible: true
     port: 8443
     title: Code Server
     description: Browser-based code editor running on the Bloom node
     icon_text: VS
-    path_hint: /home/coder/project
     access_path: /
     preflight:
-      commands: [podman, systemctl]
+      commands: [systemctl]
 
 bridges:
   whatsapp:

@@ -13,10 +13,10 @@ let
     # Source .bashrc for env vars (BLOOM_DIR, PATH, etc.)
     [ -f ~/.bashrc ] && . ~/.bashrc
 
-    # First-boot wizard (runs once, before Pi)
-    if [ -t 0 ] && [ ! -f "$HOME/.bloom/.setup-complete" ]; then
-      bloom-wizard.sh
-    fi
+    # First-boot wizard — loop until complete, Ctrl+C restarts it
+    while [ -t 0 ] && [ ! -f "$HOME/.bloom/.setup-complete" ]; do
+      bloom-wizard.sh || true
+    done
 
     # Start Pi on interactive login (only after setup, only one instance — atomic mkdir lock)
     if [ -t 0 ] && [ -f "$HOME/.bloom/.setup-complete" ] && [ -z "$PI_SESSION" ] && mkdir /tmp/.bloom-pi-session 2>/dev/null; then
@@ -31,7 +31,7 @@ in
   users.users.pi = {
     isNormalUser = true;
     group = "pi";
-    extraGroups = [ "wheel" "networkmanager" "podman" ];
+    extraGroups = [ "wheel" "networkmanager" ];
     home = "/home/pi";
     shell = pkgs.bash;
     # No initial password - user is auto-logged in via TTY and prompted to set one.

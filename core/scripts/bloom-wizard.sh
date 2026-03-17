@@ -9,7 +9,6 @@ WIZARD_STATE="$HOME/.bloom/wizard-state"
 SETUP_COMPLETE="$HOME/.bloom/.setup-complete"
 BLOOM_DIR="${BLOOM_DIR:-$HOME/Bloom}"
 BLOOM_SERVICES="/usr/local/share/bloom/services"
-QUADLET_DIR="$HOME/.config/containers/systemd"
 SYSTEMD_USER_DIR="$HOME/.config/systemd/user"
 BLOOM_CONFIG="$HOME/.config/bloom"
 PI_DIR="$HOME/.pi"
@@ -523,38 +522,51 @@ write_service_home_runtime() {
 	HTML
 }
 
+nginx_prefix() {
+	dirname "$(dirname "$(readlink -f "$(which nginx)")")"
+}
+
 install_home_infrastructure() {
-	mkdir -p "$QUADLET_DIR" "$BLOOM_CONFIG/home"
-	cat > "$QUADLET_DIR/bloom-home.container" <<-'UNIT'
+	local prefix tmpdir
+	prefix=$(nginx_prefix)
+	tmpdir="$BLOOM_CONFIG/home/tmp"
+	mkdir -p "$BLOOM_CONFIG/home" "$tmpdir" "$SYSTEMD_USER_DIR"
+
+	cat > "$BLOOM_CONFIG/home/nginx.conf" <<-NGINX
+	daemon off;
+	pid /run/user/${UID}/bloom-home-nginx.pid;
+	error_log stderr;
+	events { worker_connections 64; }
+	http {
+	    include ${prefix}/conf/mime.types;
+	    default_type application/octet-stream;
+	    access_log off;
+	    client_body_temp_path ${tmpdir};
+	    server {
+	        listen 8080;
+	        root ${BLOOM_CONFIG}/home;
+	        try_files \$uri \$uri/ =404;
+	    }
+	}
+	NGINX
+
+	cat > "$SYSTEMD_USER_DIR/bloom-home.service" <<-'UNIT'
 	[Unit]
-	Description=Bloom Home - NetBird service landing page
+	Description=Bloom Home — service landing page
 	After=network-online.target
 	Wants=network-online.target
 
-	[Container]
-	Image=docker.io/library/nginx:1.29.1-alpine
-	ContainerName=bloom-home
-
-	PublishPort=8080:80
-
-	Volume=%h/.config/bloom/home:/usr/share/nginx/html:ro
-
-	PodmanArgs=--memory=96m
-	PodmanArgs=--security-opt label=disable
-	NoNewPrivileges=true
-	LogDriver=journald
-
 	[Service]
+	ExecStart=/run/current-system/sw/bin/nginx -c %E/bloom/home/nginx.conf
 	Restart=on-failure
 	RestartSec=10
-	TimeoutStartSec=120
 
 	[Install]
 	WantedBy=default.target
 	UNIT
 
 	systemctl --user daemon-reload
-	systemctl --user start bloom-home.service
+	systemctl --user enable --now bloom-home.service
 }
 
 write_fluffychat_runtime_config() {
@@ -577,29 +589,6 @@ write_fluffychat_runtime_config() {
 	CONFIG
 }
 
-build_local_service_image_if_needed() {
-	local name="$1"
-	local svc_dir="${BLOOM_SERVICES}/${name}"
-	local image_ref=""
-
-	case "$name" in
-		fluffychat) image_ref="localhost/bloom-fluffychat:latest" ;;
-		code-server) image_ref="localhost/bloom-code-server:latest" ;;
-		*) return 0 ;;
-	esac
-
-	if [[ ! -f "$svc_dir/Containerfile" ]]; then
-		echo "  Missing Containerfile for ${name}: ${svc_dir}/Containerfile" >&2
-		return 1
-	fi
-
-	echo "  Building local image ${image_ref}..."
-	if ! podman build -t "$image_ref" -f "$svc_dir/Containerfile" "$svc_dir"; then
-		echo "  Failed to build local image ${image_ref}." >&2
-		return 1
-	fi
-}
-
 # --- Service install helper ---
 
 # Install a service from the bundled package.
@@ -613,52 +602,98 @@ install_service() {
 		return 1
 	fi
 
-	# Copy quadlet files (route .socket and .container to different dirs)
-	mkdir -p "$QUADLET_DIR" "$SYSTEMD_USER_DIR"
-	for f in "$svc_dir/quadlet/"*; do
-		[[ -f "$f" ]] || continue
-		case "$f" in
-			*.socket) cp "$f" "$SYSTEMD_USER_DIR/" ;;
-			*)        cp "$f" "$QUADLET_DIR/" ;;
-		esac
-	done
+	mkdir -p "$SYSTEMD_USER_DIR"
 
-	# Copy config files (.json, .toml)
-	mkdir -p "$BLOOM_CONFIG"
-	for f in "$svc_dir"/*.json "$svc_dir"/*.toml; do
-		[[ -f "$f" ]] || continue
-		local basename
-		basename=$(basename "$f")
-		[[ -f "$BLOOM_CONFIG/$basename" ]] && continue
-		cp "$f" "$BLOOM_CONFIG/$basename"
-	done
+	case "$name" in
+		dufs)
+			mkdir -p "$HOME/Public/Bloom"
+			cat > "$SYSTEMD_USER_DIR/bloom-dufs.service" <<-'UNIT'
+			[Unit]
+			Description=Bloom Files — WebDAV file server
+			After=network-online.target
+			Wants=network-online.target
 
-	# Create empty env file if missing
-	[[ -f "$BLOOM_CONFIG/${name}.env" ]] || touch "$BLOOM_CONFIG/${name}.env"
+			[Service]
+			ExecStart=/run/current-system/sw/bin/dufs %h/Public/Bloom -A -b 0.0.0.0 -p 5000
+			Restart=on-failure
+			RestartSec=10
 
-	if [[ "$name" == "dufs" ]]; then
-		mkdir -p "$HOME/Public/Bloom"
-	fi
-	if [[ "$name" == "fluffychat" ]]; then
-		write_fluffychat_runtime_config
-	fi
+			[Install]
+			WantedBy=default.target
+			UNIT
+			;;
+		fluffychat)
+			write_fluffychat_runtime_config
+			local prefix tmpdir
+			prefix=$(nginx_prefix)
+			tmpdir="$BLOOM_CONFIG/fluffychat/tmp"
+			mkdir -p "$BLOOM_CONFIG/fluffychat" "$tmpdir"
+			cat > "$BLOOM_CONFIG/fluffychat/nginx.conf" <<-NGINX
+			daemon off;
+			pid /run/user/${UID}/bloom-fluffychat-nginx.pid;
+			error_log stderr;
+			events { worker_connections 64; }
+			http {
+			    include ${prefix}/conf/mime.types;
+			    default_type application/octet-stream;
+			    access_log off;
+			    client_body_temp_path ${tmpdir};
+			    server {
+			        listen 8081;
+			        location /config.json {
+			            alias ${BLOOM_CONFIG}/fluffychat/config.json;
+			        }
+			        location / {
+			            root /etc/bloom/fluffychat-web;
+			            try_files \$uri \$uri/ /index.html;
+			        }
+			    }
+			}
+			NGINX
+			cat > "$SYSTEMD_USER_DIR/bloom-fluffychat.service" <<-'UNIT'
+			[Unit]
+			Description=Bloom FluffyChat — web Matrix client
+			After=network-online.target
+			Wants=network-online.target
 
-	if ! build_local_service_image_if_needed "$name"; then
-		return 1
-	fi
+			[Service]
+			ExecStart=/run/current-system/sw/bin/nginx -c %E/bloom/fluffychat/nginx.conf
+			Restart=on-failure
+			RestartSec=10
+
+			[Install]
+			WantedBy=default.target
+			UNIT
+			;;
+		code-server)
+			cat > "$SYSTEMD_USER_DIR/bloom-code-server.service" <<-'UNIT'
+			[Unit]
+			Description=Bloom code-server — browser code editor
+			After=network-online.target
+			Wants=network-online.target
+
+			[Service]
+			ExecStart=/run/current-system/sw/bin/code-server --bind-addr 0.0.0.0:8443 --auth none --disable-telemetry
+			Restart=on-failure
+			RestartSec=10
+
+			[Install]
+			WantedBy=default.target
+			UNIT
+			;;
+		*)
+			echo "  Unknown service: ${name}" >&2
+			return 1
+			;;
+	esac
 
 	# Copy SKILL.md
 	local skill_dir="$BLOOM_DIR/Skills/${name}"
 	mkdir -p "$skill_dir"
 	[[ -f "$svc_dir/SKILL.md" ]] && cp "$svc_dir/SKILL.md" "$skill_dir/"
 
-	# Reload and start — Quadlet units are auto-enabled via WantedBy in .container,
-	# so we only need to start (enable would fail on generator-created transient units)
 	systemctl --user daemon-reload
-	local target="bloom-${name}.service"
-	# Prefer socket activation if socket unit exists
-	[[ -f "$SYSTEMD_USER_DIR/bloom-${name}.socket" ]] && target="bloom-${name}.socket"
-	systemctl --user start "$target"
+	systemctl --user enable --now "bloom-${name}.service"
 }
 
 # --- Step functions ---

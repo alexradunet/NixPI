@@ -49,14 +49,17 @@
         '';
       };
 
+    environment.etc."bloom/fluffychat-web".source = pkgs.fluffychat-web;
+
     environment.systemPackages = with pkgs; [
       git git-lfs gh
       ripgrep fd bat htop jq curl wget unzip openssl
       just shellcheck biome typescript
-      podman buildah skopeo oras
       qemu OVMF
       vscode chromium
       netbird
+      # optional services (installed on demand by the wizard)
+      dufs code-server nginx
     ];
   };
 }
