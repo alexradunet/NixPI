@@ -5,6 +5,13 @@
 # If interrupted (Ctrl+C), resumes from the last incomplete step on next login.
 set -euo pipefail
 
+# Logging setup - save wizard output for future reference
+WIZARD_LOG="$HOME/.bloom/wizard.log"
+mkdir -p "$(dirname "$WIZARD_LOG")"
+exec > >(tee -a "$WIZARD_LOG") 2>&1
+
+echo "=== Bloom Wizard Started: $(date) ==="
+
 WIZARD_STATE="$HOME/.bloom/wizard-state"
 SETUP_COMPLETE="$HOME/.bloom/.setup-complete"
 BLOOM_DIR="${BLOOM_DIR:-$HOME/Bloom}"

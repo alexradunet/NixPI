@@ -29,7 +29,8 @@ in
       RemainAfterExit = true;
       User = u;
       ExecStart = "${pkgs.bash}/bin/bash ${../../scripts/bloom-firstboot.sh}";
-      StandardOutput = "journal+console";
+      StandardOutput = "journal";
+      StandardError = "journal";
       # systemctl --user needs XDG_RUNTIME_DIR to reach the user bus socket.
       # UID 1000 is deterministic for the first normal user in NixOS.
       Environment = "XDG_RUNTIME_DIR=/run/user/1000";

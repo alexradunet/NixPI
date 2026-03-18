@@ -6,6 +6,13 @@
 # bloom-wizard.sh on next login to resume from the last incomplete checkpoint.
 set -euo pipefail
 
+# Logging setup - log to file for debugging
+FIRSTBOOT_LOG="$HOME/.bloom/firstboot.log"
+mkdir -p "$(dirname "$FIRSTBOOT_LOG")"
+exec > >(tee -a "$FIRSTBOOT_LOG") 2>&1
+
+echo "=== Bloom Firstboot Started: $(date) ==="
+
 WIZARD_STATE="$HOME/.bloom/wizard-state"
 SETUP_COMPLETE="$HOME/.bloom/.setup-complete"
 BLOOM_DIR="${BLOOM_DIR:-$HOME/Bloom}"
