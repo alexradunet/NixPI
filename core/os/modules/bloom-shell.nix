@@ -175,7 +175,7 @@ in
 
       # Autostart Pi in a terminal
       exec $term -e bash -c 'bloom-greeting.sh && exec pi'
-    '';
+      '';
   };
 
   systemd.tmpfiles.rules = [
