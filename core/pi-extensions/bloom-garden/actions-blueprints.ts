@@ -107,15 +107,12 @@ export function seedBlueprints(bloomDir: string, packageDir: string): void {
 		seedFile(src, dest, key, version, versions);
 	}
 
-	if (fs.existsSync(skillsDir)) {
-		for (const entry of fs.readdirSync(skillsDir, { withFileTypes: true })) {
-			if (!entry.isDirectory()) continue;
-			const key = `skills/${entry.name}/SKILL.md`;
-			const src = path.join(skillsDir, entry.name, "SKILL.md");
-			const dest = path.join(bloomDir, "Skills", entry.name, "SKILL.md");
-			seedFile(src, dest, key, version, versions);
-		}
-	}
+	// Skills are intentionally NOT seeded to ~/Bloom/Skills/.
+	// The package path already exposes them to the agent via the `packages`
+	// setting in settings.json.  Seeding them here creates duplicate sources
+	// that cause "collision" warnings at startup (package = user priority,
+	// ~/Bloom/Skills/ = temp priority, same name → conflict).
+	// ~/Bloom/Skills/ is reserved for user-created custom skills only.
 
 	// Seed guardrails policy
 	seedFile(

@@ -126,6 +126,7 @@
         # Consuming flake.nix must provide piAgent and bloomApp in specialArgs.
         bloom = { piAgent, bloomApp, ... }: {
           imports = [
+            ./core/os/modules/bloom-options.nix
             ./core/os/modules/bloom-app.nix
             ./core/os/modules/bloom-llm.nix
             ./core/os/modules/bloom-matrix.nix

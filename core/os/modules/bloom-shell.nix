@@ -1,7 +1,9 @@
 # core/os/modules/bloom-shell.nix
-{ pkgs, lib, ... }:
+{ pkgs, lib, config, ... }:
 
 let
+  u = config.bloom.username;
+
   bashrc = pkgs.writeText "bloom-bashrc" ''
     export BLOOM_DIR="$HOME/Bloom"
     export XDG_RUNTIME_DIR="/run/user/$(id -u)"
@@ -28,43 +30,42 @@ let
   '';
 in
 {
-  users.users.pi = {
+  users.users.${u} = {
     isNormalUser = true;
-    group = "pi";
-    extraGroups = [ "wheel" "networkmanager" ];
-    home = "/home/pi";
-    shell = pkgs.bash;
-    # No initial password - user is auto-logged in via TTY and prompted to set one.
-    # SSH access requires password to be set first.
+    group        = u;
+    extraGroups  = [ "wheel" "networkmanager" ];
+    home         = "/home/${u}";
+    shell        = pkgs.bash;
+    # No initial password — set by the Calamares bloom_prefill module via chpasswd.
   };
-  users.groups.pi = {};
+  users.groups.${u} = {};
 
   security.sudo.extraRules = [
     {
-      users = [ "pi" ];
+      users    = [ u ];
       commands = [ { command = "ALL"; options = [ "NOPASSWD" ]; } ];
     }
   ];
 
-  services.getty.autologinUser = lib.mkForce "pi";
+  services.getty.autologinUser = lib.mkForce u;
 
   systemd.services."serial-getty@ttyS0" = {
     overrideStrategy = "asDropin";
     serviceConfig.ExecStart = lib.mkForce [
       ""
-      "${pkgs.util-linux}/sbin/agetty --autologin pi --keep-baud 115200,57600,38400,9600 ttyS0 $TERM"
+      "${pkgs.util-linux}/sbin/agetty --autologin ${u} --keep-baud 115200,57600,38400,9600 ttyS0 $TERM"
     ];
   };
 
   environment.etc = {
-    "skel/.bashrc".source = bashrc;
+    "skel/.bashrc".source       = bashrc;
     "skel/.bash_profile".source = bashProfile;
     "issue".text = "Bloom OS\n";
   };
 
   systemd.tmpfiles.rules = [
-    "C /home/pi/.bashrc      0644 pi pi - /etc/skel/.bashrc"
-    "C /home/pi/.bash_profile 0644 pi pi - /etc/skel/.bash_profile"
+    "C /home/${u}/.bashrc       0644 ${u} ${u} - /etc/skel/.bashrc"
+    "C /home/${u}/.bash_profile 0644 ${u} ${u} - /etc/skel/.bash_profile"
   ];
 
   boot.kernel.sysctl."kernel.printk" = "4 4 1 7";

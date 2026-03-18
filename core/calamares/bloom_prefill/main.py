@@ -51,18 +51,21 @@ def _write_owned(path, content, mode=0o600):
 def run():
     gs = libcalamares.globalstorage
     root = gs.value("rootMountPoint") or "/mnt"
-    pi_home = os.path.join(root, "home", "pi")
-
-    # git name and Matrix username are derived from the users page — no separate
-    # wizard pages needed. fullName is the display name; username is the login.
+    # fullName / username come from the Calamares users page (show phase).
+    # username is what the user typed — it becomes the system username via
+    # bloom.username in host-config.nix (bloom-shell.nix declares the account).
     git_name    = gs.value("fullName")  or ""
-    matrix_user = gs.value("username")  or ""
+    username    = gs.value("username")  or "pi"
+    matrix_user = username
     git_email   = ""
     netbird_key = ""
     services    = ""
 
+    # Home directory matches the username the installer will create.
+    user_home = os.path.join(root, "home", username)
+
     # ── prefill.env ──────────────────────────────────────────────────────────
-    prefill_dir  = os.path.join(pi_home, ".bloom")
+    prefill_dir  = os.path.join(user_home, ".bloom")
     prefill_path = os.path.join(prefill_dir, "prefill.env")
     _makedirs_owned(prefill_dir)
 
@@ -81,7 +84,7 @@ def run():
     libcalamares.utils.debug(f"bloom_prefill: wrote {prefill_path}")
 
     # ── settings.json ────────────────────────────────────────────────────────
-    settings_dir  = os.path.join(pi_home, ".pi", "agent")
+    settings_dir  = os.path.join(user_home, ".pi", "agent")
     settings_path = os.path.join(settings_dir, "settings.json")
     _makedirs_owned(settings_dir)
 
@@ -96,7 +99,7 @@ def run():
 
     # ── .gitconfig ───────────────────────────────────────────────────────────
     if git_name and git_email:
-        gitconfig_path = os.path.join(pi_home, ".gitconfig")
+        gitconfig_path = os.path.join(user_home, ".gitconfig")
         gitconfig = f"[user]\n    name = {git_name}\n    email = {git_email}\n"
         _write_owned(gitconfig_path, gitconfig, mode=0o644)
         libcalamares.utils.debug(f"bloom_prefill: wrote {gitconfig_path}")
