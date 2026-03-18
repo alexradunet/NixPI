@@ -32,7 +32,8 @@ Neither path touches the Nix store. No secrets infrastructure (sops-nix, agenix)
 ### Files Changed
 
 - `core/os/modules/bloom-network.nix` — remove `options.bloom.wifi` block and `environment.etc` nmconnection block
-- `core/os/modules/bloom-options.nix` — remove wifi options if declared there
+
+Note: `bloom-options.nix` does not declare wifi options (it only contains `bloom.username`) and requires no changes.
 
 ---
 
@@ -59,16 +60,18 @@ Additionally, `.bashrc` manually sets `XDG_RUNTIME_DIR="/run/user/$(id -u)"`. Ni
 
 ### Solution
 
-**Sway config:** Extract the config to `environment.etc."sway/config"`. Sway reads `/etc/sway/config` as its system-wide config by default. NixOS manages the file — it updates on every `nixos-rebuild switch`.
+**Sway config:** Extract the config to `environment.etc."xdg/sway/config"` (→ `/etc/xdg/sway/config`). Sway's config lookup order is: `$SWAY_CONFIG` → `~/.config/sway/config` → `~/.sway/config` → `/etc/xdg/sway/config` → `/etc/sway/config`. The correct `environment.etc` path for a NixOS system-wide config is `xdg/sway/config`, which maps to `/etc/xdg/sway/config` — picked up before `/etc/sway/config` and consistent with `$XDG_CONFIG_DIRS` on NixOS.
 
 Remove the `if [ ! -f ~/.config/sway/config ]` bash block and the heredoc from `.bash_profile`.
+
+**Migration note:** Existing installs that already had `~/.config/sway/config` written by the old bash code will continue using that file (it takes precedence over `/etc/xdg/sway/config`). This is acceptable — the file is functionally identical to the new system config. The rebuild-safe guarantee applies to new installs and any user who manually removes `~/.config/sway/config`.
 
 **XDG_RUNTIME_DIR:** Remove the `export XDG_RUNTIME_DIR=...` line from the `.bashrc` template in `bloom-shell.nix`. No replacement needed.
 
 ### Files Changed
 
 - `core/os/modules/bloom-shell.nix`:
-  - Add `environment.etc."sway/config".text = ''...sway config content...''`
+  - Add `environment.etc."xdg/sway/config".text = ''...sway config content...''`
   - Remove Sway config heredoc from `bashProfile`
   - Remove `XDG_RUNTIME_DIR` export from `bashrc`
 
@@ -105,11 +108,15 @@ nix.settings.trusted-public-keys = [
 ];
 ```
 
-**Step 3 — GitHub Actions workflow:** Add `.github/workflows/cache.yml`. On every push to `main`, the workflow:
-1. Installs Nix with the Determinate Systems action
-2. Authenticates to Cachix using `CACHIX_AUTH_TOKEN` (stored in GitHub Actions secrets)
-3. Builds `nix build .#checks.x86_64-linux.bloom-config`
-4. Pushes the resulting closure to the Cachix cache
+**Step 3 — Extend the existing `build-os.yml` workflow:** The existing `.github/workflows/build-os.yml` already uses `DeterminateSystems/magic-nix-cache-action`, which caches Nix build artifacts within GitHub's infrastructure (speeds up CI). This is separate from Cachix — `magic-nix-cache-action` is GitHub-internal and not accessible to on-device `nixos-rebuild`.
+
+Cachix provides a public substituter that on-device users can pull from. Modify `build-os.yml` as follows:
+
+1. Add `cachix/cachix-action` step immediately **before** the existing build steps (after `magic-nix-cache-action`). `cachix-action` must precede builds to act as a substituter and to automatically capture all built store paths.
+2. Add an explicit `nix build .#checks.x86_64-linux.bloom-config` step alongside the existing `nix build .#bloom-app` step — the existing eval step (`nix eval .#nixosConfigurations.bloom-x86_64.config.system.stateVersion`) evaluates only a single attribute and does not build the full system closure. Note: `checks.x86_64-linux.bloom-config` builds `nixosConfigurations.bloom-installed-test` (the Calamares-installed config) — this is distinct from `bloom-x86_64` (the bare-metal config) but represents what end users actually run. Both `bloom-app` and `bloom-config` closures should be pushed to Cachix.
+3. `cachix-action` automatically pushes all new store paths built during the job to `bloom-os.cachix.org`.
+
+No new workflow file is needed. `magic-nix-cache-action` and `cachix-action` coexist: the former speeds up CI, the latter populates the public substituter for on-device use.
 
 The signing key lives only in GitHub Actions secrets — never in the repo.
 
@@ -122,7 +129,7 @@ The signing key lives only in GitHub Actions secrets — never in the repo.
 ### Files Changed
 
 - `core/os/modules/bloom-update.nix` — uncomment and fill in substituters
-- `.github/workflows/cache.yml` — new file
+- `.github/workflows/build-os.yml` — add Cachix push step (no new workflow file needed)
 
 ---
 
@@ -130,7 +137,7 @@ The signing key lives only in GitHub Actions secrets — never in the repo.
 
 ### Problem
 
-`flake.nix` has no `devShells` output. Contributors must either install Bloom OS or manually figure out what tools are needed (Node, TypeScript, vitest, biome, shellcheck, jq, etc.). These tools are listed as system packages in `bloom-network.nix` but require a full OS install to get.
+`flake.nix` has no `devShells` output. Contributors must either install Bloom OS or manually figure out what tools are needed (Node, TypeScript, vitest, biome, shellcheck, jq, etc.). Some of these tools appear in `environment.systemPackages` in `bloom-network.nix` (biome, shellcheck, jq, typescript), but they require a full OS install to get. Others (vitest, nodejs) are not system packages at all — they're currently only available via the npm workspace or not at all outside the OS.
 
 ### Solution
 
@@ -142,7 +149,7 @@ Add `devShells.${system}.default` to `flake.nix`. Running `nix develop` from the
 |------|---------|
 | `nodejs` | Runtime for daemon and extensions |
 | `typescript` | Type checking |
-| `vitest` (via npm) | Test runner |
+| `vitest` | Test runner (available in nixpkgs) |
 | `biome` | Linting and formatting |
 | `shellcheck` | Shell script linting |
 | `jq` | JSON manipulation |
@@ -150,6 +157,8 @@ Add `devShells.${system}.default` to `flake.nix`. Running `nix develop` from the
 | `just` | Task runner (`just test`, `just lint`) |
 
 The `devShell` does **not** include Nix-specific system services (localai, continuwuity) — those run on the OS. The shell is for code authoring and testing only.
+
+The dev shell is **additive** — the tools listed also appear in `environment.systemPackages` in `bloom-network.nix` for the installed OS. That list is not changed; the dev shell simply makes those same tools available without a full OS install.
 
 ### Files Changed
 
@@ -170,5 +179,7 @@ The `devShell` does **not** include Nix-specific system services (localai, conti
 
 1. Remove WiFi option (smallest change, immediate security improvement)
 2. Sway config + shell cleanup (self-contained NixOS module change)
-3. Dev shell (flake.nix addition, unblocks contributors)
-4. Cachix (requires external account setup, then small code change + CI file)
+3. Dev shell (flake.nix addition, unblocks contributors for code authoring and testing)
+4. Cachix (requires external Cachix account setup first, then code change + CI step; unblocks contributors and end users from slow on-device build times)
+
+Steps 3 and 4 both benefit contributors but in different ways: the dev shell enables working on the codebase without a Bloom OS install; Cachix eliminates 20–60+ minute `nixos-rebuild` times on-device. Cachix is last only because it requires creating an external account — the code change itself is small.
