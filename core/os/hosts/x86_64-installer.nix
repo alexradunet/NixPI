@@ -11,6 +11,9 @@
     "${modulesPath}/installer/cd-dvd/installation-cd-graphical-calamares-gnome.nix"
   ];
 
+  # Allow unfree packages (required for WiFi firmware and other hardware drivers)
+  nixpkgs.config.allowUnfree = true;
+
   # Replace upstream calamares-nixos-extensions with our custom Bloom version.
   # Use prev.callPackage so package.nix receives the pre-overlay pkgs and the
   # pre-overlay calamares-nixos-extensions — prevents infinite recursion.
