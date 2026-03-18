@@ -28,8 +28,8 @@
   };
   # Software rendering fallback for problematic hardware
   environment.variables.LIBGL_ALWAYS_SOFTWARE = "0";  # Use hardware accel when available
-  # Qt platform plugin for Calamares - ensure xcb is available
-  environment.variables.QT_QPA_PLATFORM = "xcb";
+  # Qt platform plugin for Calamares - use xcb for stability (force override base module)
+  environment.variables.QT_QPA_PLATFORM = lib.mkForce "xcb";
   environment.variables.QT_QPA_PLATFORMTHEME = "gtk2";
 
   # Replace upstream calamares-nixos-extensions with our custom Bloom version.
