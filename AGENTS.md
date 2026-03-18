@@ -6,15 +6,15 @@ This file is the Bloom reference index for current tools, hooks, runtime paths, 
 
 ## 🌱 Current Model
 
-Bloom extends Pi through three mechanisms:
+Bloom extends Pi through two runtime mechanisms plus one packaged asset layer:
 
 | Layer | What | Current use |
 |------|------|-------------|
-| 📜 Skill | bundled or user-created `SKILL.md` files | guidance, procedures, service docs |
+| 📜 Skill | bundled or user-created `SKILL.md` files | guidance, procedures, local workflows |
 | 🧩 Extension | in-process TypeScript | tools, hooks, commands, stateful host integration |
-| 📦 Service | packaged container workloads | optional long-running user services |
+| 📦 Service | packaged workload assets in `services/` | optional reference packages, not a default runtime control plane |
 
-OS-level infrastructure is separate from service packages and baked into the image:
+OS-level infrastructure is separate from packaged workloads and baked into the image:
 
 - `bloom-matrix.service`
 - `netbird.service`
@@ -23,7 +23,7 @@ OS-level infrastructure is separate from service packages and baked into the ima
 Repository structure note:
 
 - `core/` is Bloom itself: OS image assets, daemon, persona, bundled skills, built-in extensions, and shared runtime code
-- `core/pi-extensions/` contains all Pi-facing Bloom extensions, including dev and repo helpers
+- `core/pi-extensions/` contains the Pi-facing Bloom extensions loaded by the default runtime
 
 ## 🌿 Bloom Directory
 
@@ -37,7 +37,6 @@ Default Bloom home is `~/Bloom/` unless `BLOOM_DIR` is set.
 | `~/Bloom/Objects/` | flat-file object store |
 | `~/Bloom/Episodes/` | append-only episodic memory |
 | `~/Bloom/Agents/` | multi-agent overlays (`AGENTS.md`) |
-| `~/Bloom/manifest.yaml` | declarative service manifest |
 | `~/Bloom/guardrails.yaml` | command-block policy override |
 | `~/Bloom/blueprint-versions.json` | blueprint seeding state |
 
@@ -50,9 +49,7 @@ Related state outside `~/Bloom/`:
 | `~/.pi/matrix-credentials.json` | primary Matrix credentials |
 | `~/.pi/matrix-agents/` | per-agent Matrix credentials |
 | `~/.pi/agent/sessions/bloom-rooms/` | daemon session directories |
-| `~/.config/containers/systemd/` | installed Quadlet units |
-| `~/.config/systemd/user/` | user socket units and user services |
-| `~/.config/bloom/` | service env/config files |
+| `~/.bloom/pi-bloom/` | local repo clone used for human-reviewed proposal work |
 
 ## 🧩 Extensions
 
@@ -86,18 +83,18 @@ Purpose:
 Notes:
 
 - llama-server (from `pkgs.llama-cpp`) runs on port `11435` with the `Qwen3.5-4B-Q4_K_M` model pre-seeded
-- no tools or hooks — provider registration only
+- no tools or hooks; provider registration only
 
 ### `bloom-os`
 
 Purpose:
 
-- host OS management for NixOS, systemd, containers, and updates
+- host OS management for NixOS, local proposal validation, systemd, and updates
 
 Tools:
 
 - `nixos_update`
-- `container`
+- `nix_config_proposal`
 - `systemd_control`
 - `system_health`
 - `update_status`
@@ -106,50 +103,6 @@ Tools:
 Hooks:
 
 - `before_agent_start` injects pending-update guidance once per session
-
-### `bloom-repo`
-
-Purpose:
-
-- bootstrap and sync the repo clone in `~/.bloom/pi-bloom`
-- submit PRs through a fork/upstream workflow
-
-Tools:
-
-- `bloom_repo`
-  - actions: `configure`, `status`, `sync`
-- `bloom_repo_submit_pr`
-
-### `bloom-services`
-
-Purpose:
-
-- scaffold service packages
-- install packaged services
-- manage declarative service state and Matrix bridges
-
-Tools:
-
-- `service_scaffold`
-- `service_install`
-- `service_test`
-- `manifest_show`
-- `manifest_sync`
-- `manifest_set_service`
-- `manifest_apply`
-- `bridge_create`
-- `bridge_remove`
-- `bridge_status`
-
-Hooks:
-
-- `session_start` reports service and manifest status to the UI
-
-Notes:
-
-- `service_install` rebuilds `localhost/*` images during install instead of trusting an already-present mutable tag
-- `manifest_apply` attempts persistent `enable --now` / `disable --now` first, then falls back to start/stop when the unit cannot be enabled
-- corrupt `~/Bloom/manifest.yaml` files are moved aside to `manifest.yaml.corrupt-*` before Bloom recreates an empty manifest
 
 ### `bloom-episodes`
 
@@ -188,50 +141,17 @@ Purpose:
 
 - create and seed the Bloom directory
 - discover skills
-- provision Matrix agents
-- record persona evolutions
+- expose basic Bloom bootstrap and status
 
 Tools:
 
 - `garden_status`
-- `skill_create`
-- `skill_list`
-- `agent_create`
-- `mention_agent`
-- `persona_evolve`
 
 Hooks / commands:
 
 - `session_start`
 - `resources_discover`
 - `/bloom` with `init`, `status`, `update-blueprints`
-
-### `bloom-dev`
-
-Purpose:
-
-- on-device developer workflow helpers
-
-Tools:
-
-- `dev_enable`
-- `dev_disable`
-- `dev_status`
-- `dev_code_server`
-- `dev_build`
-- `dev_switch`
-- `dev_rollback`
-- `dev_loop`
-- `dev_test`
-- `dev_submit_pr`
-- `dev_push_skill`
-- `dev_push_service`
-- `dev_push_extension`
-- `dev_install_package`
-
-Notes:
-
-- most tools are gated by the dev sentinel in `~/.bloom/.dev-enabled`
 
 ### `bloom-setup`
 
@@ -303,40 +223,12 @@ Agents can trigger each other via Matrix mentions:
 2. The router detects the mention and forwards the message to Agent B
 3. Agent B receives the message and can respond
 
-Example:
-```
-Pickle: @cookie:bloom Please remember that I prefer dark mode
-Cookie: Got it! I'll remember that preference.
-```
-
 Routing rules for agent mentions:
+
 - The mention must be the agent's full Matrix User ID (`@username:server`)
 - Target agent must have `respond.allow_agent_mentions: true` (default: true)
-- An agent cannot trigger itself (prevents loops)
+- An agent cannot trigger itself
 - Standard cooldown and reply budget rules apply
-
-Frontmatter configuration:
-```yaml
-respond:
-  allow_agent_mentions: true   # Allow other agents to mention this agent
-```
-
-Alternatively, use the `mention_agent` tool from `bloom-garden` to format mentions correctly.
-
-Key daemon files:
-
-| Path | Purpose |
-|------|---------|
-| `core/daemon/index.ts` | bootstrap and default-host fallback selection |
-| `core/daemon/contracts/matrix.ts` | Bloom-owned Matrix bridge contract |
-| `core/daemon/runtime/matrix-js-sdk-bridge.ts` | official Matrix SDK bridge and per-identity client lifecycle |
-| `core/daemon/runtime/pi-room-session.ts` | Pi SDK-backed room session lifecycle |
-| `core/daemon/agent-supervisor.ts` | room routing, session orchestration, and proactive dispatch |
-| `core/daemon/multi-agent-runtime.ts` | unified bridge, supervisor, and scheduler lifecycle |
-| `core/daemon/lifecycle.ts` | shared retry/backoff helper for daemon startup |
-| `core/daemon/scheduler.ts` | daemon-owned heartbeat and cron-style proactive scheduling |
-| `core/daemon/router.ts` | routing policy |
-| `core/daemon/room-state.ts` | duplicate, cooldown, and reply-budget tracking |
 
 ## 📜 Bundled Skills
 
@@ -348,7 +240,6 @@ Bundled skill directories seeded into `~/Bloom/Skills/`:
 - `os-operations`
 - `recovery`
 - `self-evolution`
-- `service-management`
 
 ## 📦 Bundled Service Packages
 
@@ -356,10 +247,10 @@ Current packages in `services/`:
 
 | Package | Status |
 |---------|--------|
-| `cinny` | packaged web client installable via `service_install` |
-| `dufs` | packaged service installable via `service_install` |
-| `code-server` | packaged service with local image build flow |
-| `_template` | scaffold source for new packages |
+| `cinny` | packaged web client asset |
+| `dufs` | packaged file-service asset |
+| `code-server` | packaged editor-service asset |
+| `_template` | reference scaffold source for new packages |
 
 Additional service documentation in-tree:
 
@@ -377,15 +268,12 @@ Built-in infrastructure:
 ## 🛡️ Safety And Trust
 
 - shell command guardrails are loaded from `~/Bloom/guardrails.yaml` if present, else from the packaged default
-- service manifests live in `~/Bloom/manifest.yaml`
-- service image trust rules are documented in [docs/supply-chain.md](docs/supply-chain.md)
-- PR-based repo workflow is documented in [docs/fleet-pr-workflow.md](docs/fleet-pr-workflow.md)
+- packaged workload image policy is documented in [docs/supply-chain.md](docs/supply-chain.md)
+- local proposal workflow is documented in [docs/fleet-pr-workflow.md](docs/fleet-pr-workflow.md)
 
 ### High-Sensitivity Bloom Paths
 
-The following paths in `~/Bloom/` have elevated security impact. If an attacker
-gains a foothold (e.g., via a compromised mesh container), writes to these paths
-can establish persistence or bypass safety controls:
+The following paths in `~/Bloom/` have elevated security impact:
 
 | Path | Sensitivity | Why |
 |------|-------------|-----|
@@ -394,16 +282,11 @@ can establish persistence or bypass safety controls:
 | `~/Bloom/Objects/` | **High** | Injected into Pi's context at session start. Writing here achieves persistent system-prompt injection. |
 | `~/Bloom/Persona/` | **High** | Injected into Pi's context at session start. Writing here achieves persistent system-prompt injection. |
 
-**Guidance:** Writes to `Agents/` and `guardrails.yaml` should be surfaced to the
-user explicitly, not done silently. These are high-sensitivity operations.
-
 ## 📚 Reference Routing
-
-Use this file when you need exact current-state facts.
 
 - For repo rules and architecture intent: [ARCHITECTURE.md](ARCHITECTURE.md)
 - For daemon walkthroughs: [docs/daemon-architecture.md](docs/daemon-architecture.md)
-- For service/package model: [docs/service-architecture.md](docs/service-architecture.md)
+- For capability packaging: [docs/service-architecture.md](docs/service-architecture.md)
 - For operator workflows: [docs/README.md](docs/README.md)
 
 ## 🔗 Related Docs

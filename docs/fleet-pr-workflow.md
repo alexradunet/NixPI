@@ -1,79 +1,65 @@
-# Fleet PR Workflow
+# Fleet Change Workflow
 
 > 📖 [Emoji Legend](LEGEND.md)
 
-Audience: maintainers contributing from a Bloom device.
+Audience: maintainers using Bloom to prepare local repo changes for later human review and external publish.
 
 ## 🌱 Why This Flow Exists
 
-Bloom assumes the on-device clone participates in a fork-and-PR workflow rather than direct pushes to `main`.
+Bloom should be able to propose code and configuration changes locally without being able to publish them autonomously.
 
-This keeps device-side contribution aligned with the repo tooling shipped in Bloom.
+This keeps the useful part of agentic development:
 
-## 🚀 How To Contribute From A Device
+- inspect the repo
+- edit files locally
+- run validation
+- prepare a reviewable diff
 
-Bloom assumes the repo clone used for contribution lives at:
+while forcing the approval boundary to stay with the human and the external controller:
+
+- human reviews the diff in VS Code or another editor
+- human decides whether to commit and open a PR
+- CI or a separate controller handles publish, merge, and rollout
+
+## 🚀 Local Proposal Flow
+
+Bloom assumes the local working clone lives at:
 
 - `~/.bloom/pi-bloom`
 
-Supported repo tools:
+Recommended workflow:
 
-- `bloom_repo`
-- `bloom_repo_submit_pr`
-- `bloom-dev` PR helpers for pushing skills, services, and extensions
-
-Recommended flow:
-
-1. authenticate GitHub on the device
-2. configure the clone and remotes
-3. inspect repo status
-4. sync from upstream
-5. make and validate changes
-6. submit a PR
-
-Example commands:
-
-```bash
-gh auth login
-gh auth status
-cd ~/.bloom/pi-bloom
-npm run build
-npm run check
-npm run test
-```
-
-Tool calls:
-
-```text
-bloom_repo(action="configure", repo_url="https://github.com/alexradunet/piBloom.git")
-bloom_repo(action="status")
-bloom_repo(action="sync", branch="main")
-bloom_repo_submit_pr(title="docs: ...")
-```
+1. Ask Bloom to inspect the repo and prepare a local change.
+2. Let Bloom edit files and run local validation such as:
+   - `npm run build`
+   - `npm run test:unit`
+   - `npm run test:integration`
+   - `npm run test:e2e`
+3. Review the resulting diff in VS Code.
+4. Decide whether to keep, revise, commit, or discard the change.
+5. Use your normal git/GitHub workflow outside Bloom to publish the change.
 
 ## 📚 Reference
 
-`bloom_repo` actions:
+Bloom's role in this model:
 
-- `configure`
-- `status`
-- `sync`
+- propose local edits
+- explain what changed and why
+- run local checks
+- prepare code for human review
+
+Bloom does not publish in this model:
+
+- no remote push
+- no PR creation
+- no merge
+- no rollout trigger
 
 Current repo assumptions:
 
 - local path is `~/.bloom/pi-bloom`
-- `upstream` is the canonical repo
-- `origin` is the writable fork or alternative push target
-
-`bloom_repo_submit_pr` behavior:
-
-- confirms with the user
-- verifies git and GitHub auth state
-- can optionally stage all changes via `add_all=true`
-- creates or switches to the target branch
-- commits staged changes
-- pushes to `origin`
-- creates a PR against `upstream`
+- the clone is a working area for proposals and review
+- remote publishing is handled by the human or an external controller
 
 ## 🔗 Related
 

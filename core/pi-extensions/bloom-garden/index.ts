@@ -1,7 +1,7 @@
 /**
- * bloom-garden — Bloom directory management, blueprint seeding, skill creation, agent provisioning, persona evolution.
+ * bloom-garden — Bloom directory bootstrap, status, and blueprint seeding.
  *
- * @tools garden_status, skill_create, skill_list, agent_create, mention_agent, persona_evolve
+ * @tools garden_status
  * @commands /bloom (init | status | update-blueprints)
  * @hooks session_start, resources_discover
  * @see {@link ../../AGENTS.md#bloom-garden} Extension reference
@@ -10,25 +10,10 @@ import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
 import { type RegisteredExtensionTool, defineTool, registerTools } from "../../lib/extension-tools.js";
 import { getBloomDir } from "../../lib/filesystem.js";
-import { formatResumeMessage, resolveInteractionReply } from "../../lib/interactions.js";
-import { requestSelection, requireConfirmation } from "../../lib/shared.js";
 import { handleUpdateBlueprints, readBlueprintVersions, seedBlueprints } from "./actions-blueprints.js";
-import {
-	type AgentCreateParams,
-	discoverSkillPaths,
-	ensureBloom,
-	getPackageDir,
-	handleAgentCreate,
-	handleGardenStatus,
-	handleMentionAgent,
-	handlePersonaEvolve,
-	handleSkillCreate,
-	handleSkillList,
-} from "./actions.js";
+import { discoverSkillPaths, ensureBloom, getPackageDir, handleGardenStatus } from "./actions.js";
 
 type BloomCommandContext = Parameters<Parameters<ExtensionAPI["registerCommand"]>[1]["handler"]>[1];
-type SkillCreateParams = Parameters<typeof handleSkillCreate>[1];
-type PersonaEvolveParams = Parameters<typeof handlePersonaEvolve>[1];
 
 export default function (pi: ExtensionAPI) {
 	const bloomDir = getBloomDir();
@@ -41,88 +26,6 @@ export default function (pi: ExtensionAPI) {
 			parameters: Type.Object({}),
 			async execute() {
 				return handleGardenStatus(bloomDir);
-			},
-		}),
-		defineTool({
-			name: "skill_create",
-			label: "Create Skill",
-			description: "Create a new skill markdown file in the Bloom directory",
-			parameters: Type.Object({
-				name: Type.String({ description: "Skill name (kebab-case, e.g. meal-planning)" }),
-				description: Type.String({ description: "One-line skill description" }),
-				content: Type.String({ description: "Skill body in markdown (instructions, guidelines, examples)" }),
-			}),
-			async execute(_toolCallId, params) {
-				return handleSkillCreate(bloomDir, params as SkillCreateParams);
-			},
-		}),
-		defineTool({
-			name: "skill_list",
-			label: "List Skills",
-			description: "List all skills in the Bloom directory",
-			parameters: Type.Object({}),
-			async execute() {
-				return handleSkillList(bloomDir);
-			},
-		}),
-		defineTool({
-			name: "agent_create",
-			label: "Create Matrix Agent",
-			description: "Provision a new Bloom Matrix agent account and create its AGENTS.md overlay in the Bloom directory",
-			promptGuidelines: ["Changes require explicit user approval before applying."],
-			parameters: Type.Object({
-				id: Type.String({ description: "Agent id in kebab-case (e.g. planner)" }),
-				name: Type.String({ description: "Human-readable agent name (e.g. Planner)" }),
-				username: Type.Optional(Type.String({ description: "Matrix username (defaults to id)" })),
-				description: Type.String({ description: "One-line description of the agent's role" }),
-				role_prompt: Type.String({ description: "Starter role instructions to write into AGENTS.md" }),
-				model: Type.Optional(Type.String({ description: "Optional default model hint" })),
-				thinking: Type.Optional(
-					Type.String({ description: "Optional thinking level: off|minimal|low|medium|high|xhigh" }),
-				),
-				respond_mode: Type.Optional(Type.String({ description: "Optional response mode: host|mentioned|silent" })),
-			}),
-			async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
-				const createParams = params as AgentCreateParams;
-				const denied = await requireConfirmation(ctx, `Create Matrix agent ${createParams.id}`);
-				if (denied) return { content: [{ type: "text" as const, text: denied }], details: {}, isError: true };
-				return handleAgentCreate(bloomDir, createParams);
-			},
-		}),
-		defineTool({
-			name: "persona_evolve",
-			label: "Propose Persona Change",
-			description: "Propose a change to a persona layer, tracked as an evolution object",
-			promptGuidelines: ["Changes require explicit user approval before applying."],
-			parameters: Type.Object({
-				layer: Type.String({ description: "Persona layer to change: SOUL, BODY, FACULTY, or SKILL" }),
-				slug: Type.String({ description: "Evolution slug (e.g. add-health-awareness)" }),
-				title: Type.String({ description: "Short description of the proposed change" }),
-				proposal: Type.String({ description: "Detailed description of what to change and why" }),
-			}),
-			async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
-				const typedParams = params as PersonaEvolveParams;
-				const slug = typedParams.slug || "persona change";
-				const denied = await requireConfirmation(ctx, `Apply persona evolution ${slug}`);
-				if (denied) return { content: [{ type: "text" as const, text: denied }], details: {}, isError: true };
-				return handlePersonaEvolve(bloomDir, typedParams);
-			},
-		}),
-		defineTool({
-			name: "mention_agent",
-			label: "Mention Agent",
-			description: "Format a message that mentions another Bloom agent to trigger them in a Matrix room. Returns the formatted message with the agent's Matrix User ID.",
-			promptGuidelines: [
-				"Use this to ask another agent for help or delegate tasks.",
-				"The returned message should be sent in a Matrix room where both agents are present.",
-				"Target agent must have allow_agent_mentions: true (default) in their AGENTS.md.",
-			],
-			parameters: Type.Object({
-				agent_id: Type.String({ description: "ID of the agent to mention (e.g., 'cookie', 'planner')" }),
-				message: Type.String({ description: "The message or request to send to the agent" }),
-			}),
-			async execute(_toolCallId, params) {
-				return handleMentionAgent(bloomDir, params as { agent_id: string; message: string });
 			},
 		}),
 	];
@@ -153,25 +56,6 @@ export default function (pi: ExtensionAPI) {
 		const paths = discoverSkillPaths(bloomDir);
 		if (paths) return { skillPaths: paths };
 	});
-
-	pi.on("input", async (event, ctx) => {
-		if (event.source === "extension") {
-			return { action: "continue" as const };
-		}
-
-		const resolution = resolveInteractionReply(ctx, event.text);
-		if (!resolution) {
-			return { action: "continue" as const };
-		}
-
-		const message = formatResumeMessage(resolution.record, resolution.value);
-		pi.sendUserMessage(
-			resolution.ambiguous
-				? `${message} This reply was applied to the most recent pending interaction because no token was provided.`
-				: message,
-		);
-		return { action: "handled" as const };
-	});
 }
 
 async function handleBloomCommand(
@@ -181,8 +65,11 @@ async function handleBloomCommand(
 	args: string,
 	ctx: BloomCommandContext,
 ): Promise<void> {
-	const subcommand = await resolveBloomSubcommand(pi, args, ctx);
-	if (!subcommand) return;
+	const subcommand = args.trim().split(/\s+/)[0] ?? "";
+	if (!subcommand) {
+		ctx.ui.notify("Usage: /bloom init | status | update-blueprints", "info");
+		return;
+	}
 
 	switch (subcommand) {
 		case "init":
@@ -201,35 +88,4 @@ async function handleBloomCommand(
 		default:
 			ctx.ui.notify("Usage: /bloom init | status | update-blueprints", "info");
 	}
-}
-
-async function resolveBloomSubcommand(
-	pi: ExtensionAPI,
-	args: string,
-	ctx: BloomCommandContext,
-): Promise<string | null> {
-	const subcommand = args.trim().split(/\s+/)[0] ?? "";
-	if (subcommand) return subcommand;
-
-	const selection = await requestSelection(
-		ctx,
-		"bloom-command",
-		"Choose a Bloom command action",
-		["init", "status", "update-blueprints"],
-		{
-			resumeMessage: 'The user selected the Bloom command action "{{value}}". Carry out that action now.',
-		},
-	);
-	if (selection.value) return selection.value;
-	if (selection.prompt) {
-		pi.sendMessage(
-			{
-				customType: "bloom-interaction",
-				content: selection.prompt,
-				display: true,
-			},
-			{ triggerTurn: false },
-		);
-	}
-	return null;
 }

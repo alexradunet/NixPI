@@ -49,7 +49,7 @@ If NetBird is not running or not configured:
 4. Any device on the same network can:
    - Access the Matrix homeserver
    - Interact with Pi in Matrix rooms
-   - Potentially trigger OS tools (`nixos_update`, `systemd_control`, `container`)
+   - Potentially trigger OS tools (`nixos_update`, `systemd_control`)
      via prompt injection
 
 **This is a complete loss of the security perimeter.**

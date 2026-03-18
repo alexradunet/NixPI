@@ -25,3 +25,8 @@ export function getQuadletDir(): string {
 export function getUpdateStatusPath(): string {
 	return path.join(os.homedir(), ".bloom", "update-status.json");
 }
+
+/** Path to the local Bloom repo clone used for local-only proposal workflows. */
+export function getBloomRepoDir(): string {
+	return process.env.BLOOM_REPO_DIR ?? path.join(os.homedir(), ".bloom", "pi-bloom");
+}

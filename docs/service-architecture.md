@@ -6,7 +6,7 @@ Audience: maintainers and operators deciding how Bloom capabilities should be pa
 
 ## 🌱 Why This Capability Model Exists
 
-Bloom uses multiple extension mechanisms because not every problem should become a container or a TypeScript tool.
+Bloom uses multiple mechanisms because not every problem should become a runtime tool.
 
 The rule is simple: use the lightest mechanism that solves the problem.
 
@@ -14,8 +14,8 @@ The rule is simple: use the lightest mechanism that solves the problem.
 
 | Layer | When to use it | Current examples |
 |------|-----------------|------------------|
-| 📜 Skill | Pi needs instructions, reference material, or a repeatable procedure | `first-boot`, `recovery`, `service-management` |
-| 🧩 Extension | Pi needs tools, hooks, commands, or direct session integration | `bloom-os`, `bloom-services`, `bloom-garden` |
+| 📜 Skill | Pi needs instructions, reference material, or a repeatable procedure | `first-boot`, `recovery`, `self-evolution` |
+| 🧩 Extension | Pi needs tools, hooks, commands, or direct session integration | `bloom-os`, `bloom-garden`, `bloom-objects` |
 | 📦 Service | a standalone workload should run outside the Pi process | `dufs`, `code-server`, Matrix bridges |
 
 OS-level infrastructure sits beside this model rather than inside it:
@@ -30,11 +30,11 @@ OS-level infrastructure sits beside this model rather than inside it:
 Bundled skill directories in `core/pi-skills/` are seeded into `~/Bloom/Skills/` by `bloom-garden`:
 
 - `first-boot`
+- `local-llm`
 - `object-store`
 - `os-operations`
 - `recovery`
 - `self-evolution`
-- `service-management`
 
 ### Extensions
 
@@ -50,18 +50,16 @@ Current extension families:
 | Extension | Main responsibility |
 |-----------|---------------------|
 | `bloom-persona` | persona injection, guardrails, compacted context |
-| `bloom-os` | NixOS updates, container, systemd, and health workflows |
-| `bloom-repo` | repo bootstrap, sync, and PR creation |
-| `bloom-services` | service and bridge lifecycle |
+| `bloom-localai` | local provider registration |
+| `bloom-os` | NixOS updates, local proposal validation, systemd, and health workflows |
 | `bloom-episodes` | episodic memory |
 | `bloom-objects` | durable object store |
-| `bloom-garden` | Bloom directory, skills, agents, blueprint seeding |
-| `bloom-dev` | on-device dev workflows |
+| `bloom-garden` | Bloom directory bootstrap, status, and blueprint seeding |
 | `bloom-setup` | persona-step progress after the first-boot wizard |
 
 ### Service Packages
 
-Service packages are the optional container workloads shipped in `services/`.
+Service packages are optional workload assets shipped in `services/`.
 
 Typical package:
 
@@ -73,12 +71,7 @@ services/{name}/
   Containerfile          optional, required for locally built images
 ```
 
-`service_install` copies package assets into runtime locations:
-
-- Quadlet units to `~/.config/containers/systemd/`
-- socket units, when present, to `~/.config/systemd/user/`
-- `SKILL.md` to `~/Bloom/Skills/{name}/`
-- config files to `~/.config/bloom/`
+These packages remain in-tree as reference assets, examples, and image inputs. Bloom no longer ships a default TypeScript runtime extension for installing, reconciling, or bridging them on-node.
 
 ## 📦 Reference
 
@@ -95,13 +88,6 @@ Machine-readable catalog:
 
 - `services/catalog.yaml` contains packaged service and bridge metadata
 
-Current manifest workflow:
-
-- desired service state lives in `~/Bloom/manifest.yaml`
-- `manifest_show`, `manifest_sync`, `manifest_set_service`, and `manifest_apply` operate on that state
-- `manifest_apply(dry_run=true)` reports planned installs and unit actions without mutating the host
-- reconciliation occurs through user systemd / Quadlet units
-
 Current bridge names from `services/catalog.yaml`:
 
 - `whatsapp`
@@ -112,7 +98,7 @@ Keep this distinction clear:
 
 - daemon: core platform runtime
 - Bloom Home: image-baked access page generated from installed web services
-- service packages: optional user workloads
+- service packages: optional packaged workloads kept in-tree, outside the default runtime control plane
 
 ## 🔗 Related
 

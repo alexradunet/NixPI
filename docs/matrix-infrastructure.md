@@ -30,7 +30,7 @@ The Matrix server starts automatically on boot. User accounts are created during
 
 ## Bridges
 
-External messaging platforms (WhatsApp, Telegram, Signal) connect via mautrix bridge containers. Use Pi's `bridge_create` tool to set up bridges.
+External messaging platforms (WhatsApp, Telegram, Signal) connect via mautrix bridge containers. Bridge packaging still exists in the repo catalog, but bridge lifecycle helpers are no longer part of the default Bloom runtime and should be treated as maintainer-only setup.
 
 ## Troubleshooting
 

@@ -20,106 +20,63 @@ When extending capabilities, prefer the lightest option: **Skill → Extension �
 ## Evolution Workflow
 
 1. **Detect**: Recognize a capability gap or improvement opportunity
-2. **Propose**: Create an evolution object using `persona_evolve` or `memory_create`
+2. **Propose**: Create an evolution object using `memory_create`
 3. **Plan**: Design the implementation approach
-4. **Implement**: Make the changes (create skills with `skill_create`, update persona with `persona_evolve`)
+4. **Implement**: Make the changes locally in the repo or Bloom directory
 5. **Verify**: Test and validate
-6. **Apply**: Deploy with user approval
+6. **Review**: Have the human inspect the resulting diff before any external publish
 
 ## Available Tools
-
-### Skill Self-Creation
-- `skill_create` — Create a new skill in `~/Bloom/Skills/` with proper frontmatter
-- `skill_list` — List all skills in `~/Bloom/Skills/`
-
-### Persona Evolution
-- `persona_evolve` — Propose a change to a persona layer (SOUL, BODY, FACULTY, SKILL), tracked as an evolution object requiring user approval
-
-### Service Lifecycle
-- `service_scaffold` — Generate a new service package skeleton (Quadlet + SKILL.md) and update the service catalog
-- `service_install` — Install a service from bundled local package into Quadlet + skill paths
-- `service_test` — Smoke-test installed service units before release
 
 ### Object Store (for tracking)
 - `memory_create` — Create evolution tracking objects
 - `memory_read` — Read evolution details
 - `memory_search` — Find existing evolutions
 
-## Creating a Skill
-
-```
-skill_create(
-  name: "meal-planning",
-  description: "Help plan weekly meals based on preferences and schedule",
-  content: "# Meal Planning\n\nUse this skill when..."
-)
-```
-
-Skills are automatically discovered from `~/Bloom/Skills/` at session start.
-
-## Proposing a Persona Change
-
-```
-persona_evolve(
-  layer: "SKILL",
-  slug: "add-health-tracking",
-  title: "Add health tracking capability",
-  proposal: "Add health tracking to the SKILL layer..."
-)
-```
-
-Evolution objects are stored at `~/Bloom/Evolutions/{slug}.pi.md`.
-
 ## Evolution Object Fields
 
 - `status`: proposed | planning | implementing | reviewing | approved | applied | rejected
 - `risk`: low | medium | high
-- `area`: objects | persona | skills | containers | system
+- `area`: objects | persona | skills | services | system
 
 ## Safety Rules
 
 - All system changes require user approval before applying
 - Always test changes before deploying
 - Document what each evolution changes and why
-- Keep a rollback plan for container changes
+- Keep a rollback plan for NixOS and service changes
 - Persona changes are tracked as evolution objects — never modify persona files directly
 
 ## Code Evolution Workflow
 
-When Bloom identifies a code-level fix or improvement to its own OS/extensions, use the built-in repo tools to propose changes upstream via pull request.
+When Bloom identifies a code-level fix or improvement to its own OS/extensions, it should prepare the change locally for human review.
 
 **Local repo path**: `~/.bloom/pi-bloom`
 
-### Process (Tool-First)
+### Process
 
 1. **Detect + Plan**
    - Describe the issue and proposed fix in plain language.
-2. **Ensure repo is configured**
-   - Run `bloom_repo(action: "configure")` once per device (upstream + origin fork remotes, git identity).
-3. **Check readiness**
-   - Run `bloom_repo(action: "status")` and confirm:
-     - repo exists
-     - `upstream` and `origin` remotes are set
-     - GitHub auth is valid
-4. **Sync before changes**
-   - Run `bloom_repo(action: "sync", branch: "main")`.
-5. **Implement + test**
-   - Make the fix, then run `npm run build && npm run check` in the repo.
-6. **Submit PR in one step**
-   - Run `bloom_repo_submit_pr` with title/body (branch + commit + push + PR are automated).
-7. **Notify user**
-   - Share PR URL and summary; wait for human review/merge.
+2. **Implement locally**
+   - Edit the local repo or Bloom files.
+3. **Validate**
+   - Run local checks such as `npm run build`, `npm run test:unit`, `npm run test:integration`, and `npm run test:e2e` when relevant.
+4. **Prepare review**
+   - Summarize the diff and the validation results.
+5. **Human review**
+   - The user reviews the local diff in VS Code or another editor.
+6. **External publish**
+   - Commit, push, PR creation, merge, and rollout happen outside Bloom.
 
 ### Safety
 
-- **Never** push directly to `main` — PR only
-- **Never** force-push
-- **Always** test before PR submission
-- PR merge is always human-controlled; Bloom proposes, user decides
+- Bloom prepares local proposals only
+- remote publish is always human- or controller-driven
+- rollout is always external to the node
 
 ## Adding a Service Package
 
-When Bloom identifies a need for a new containerized service, follow this workflow to create and install it.
+When Bloom identifies a need for a new packaged workload, treat it as maintainer-side package work rather than default runtime behavior.
 
 If the new service exposes a browser or HTTP UI, treat it as a Bloom Home entry as well: scaffold it with `web_service=true` and include the Home metadata (`title`, `icon_text`, `path_hint`, `access_path`) so the built-in landing page advertises it after install.
 
@@ -170,11 +127,6 @@ systemctl --user start bloom-{name}
 Reference package:
 - `services/dufs/quadlet/` (production HTTP service reference)
 
-### Tool-Driven Lifecycle (Recommended)
+### Maintainer Workflow
 
-Use this tool flow for repeatable service delivery:
-
-1. `service_scaffold` — generate package skeleton and, for web services, register Bloom Home metadata
-2. `service_test` — smoke test unit startup and logs
-3. `service_install` — install from local package
-4. `manifest_show` / `manifest_sync` — verify tracked state and drift
+Use direct repo edits and local testing for service work, then hand the resulting diff to the human for review and external publish.

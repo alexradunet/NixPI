@@ -1,25 +1,25 @@
 /**
  * Handler / business logic for bloom-os.
  */
-import { existsSync } from "node:fs";
 import { readFile, writeFile } from "node:fs/promises";
-import os from "node:os";
-import { join } from "node:path";
+import { existsSync } from "node:fs";
 import type { ExtensionContext } from "@mariozechner/pi-coding-agent";
 import { run } from "../../lib/exec.js";
-import { getUpdateStatusPath } from "../../lib/filesystem.js";
+import { getBloomRepoDir, getUpdateStatusPath } from "../../lib/filesystem.js";
 import { errorResult, guardBloom, requireConfirmation, truncate } from "../../lib/shared.js";
-import type { ContainerInfo, UpdateStatus } from "./types.js";
+import type { UpdateStatus } from "./types.js";
 
 // --- NixOS update handler ---
 
 export async function handleNixosUpdate(
 	action: "status" | "apply" | "rollback",
+	source: "remote" | "local",
 	signal: AbortSignal | undefined,
 	ctx: ExtensionContext,
 ) {
 	if (action === "apply" || action === "rollback") {
-		const denied = await requireConfirmation(ctx, `OS ${action}`);
+		const target = action === "apply" ? `OS ${action} (${source})` : `OS ${action}`;
+		const denied = await requireConfirmation(ctx, target);
 		if (denied) return errorResult(denied);
 	}
 
@@ -40,105 +40,20 @@ export async function handleNixosUpdate(
 	}
 
 	// apply
-	const flake = "github:alexradunet/piBloom#bloom-x86_64";
+	const flake = source === "local"
+		? `${getBloomRepoDir()}#bloom-x86_64`
+		: "github:alexradunet/piBloom#bloom-x86_64";
+	if (source === "local" && !existsSync(getBloomRepoDir())) {
+		return errorResult(`Local Bloom repo not found at ${getBloomRepoDir()}. Cannot switch the local flake.`);
+	}
 	const result = await run("sudo", ["nixos-rebuild", "switch", "--flake", flake], signal);
 	const text = result.exitCode === 0
-		? "Update applied successfully. New generation is active."
+		? `Update applied successfully from ${source} source. New generation is active.`
 		: `Update failed: ${result.stderr}`;
-	return { content: [{ type: "text" as const, text: truncate(text) }], details: { exitCode: result.exitCode }, isError: result.exitCode !== 0 };
-}
-
-// --- Container routing handler ---
-
-/** Route a container tool call to the appropriate sub-handler with guard checks. */
-export async function handleContainer(
-	params: { action: "status" | "logs" | "deploy"; service?: string; lines?: number },
-	signal: AbortSignal | undefined,
-	ctx: ExtensionContext,
-) {
-	const { action, service } = params;
-
-	if (action === "status") {
-		return handleContainerStatus(signal);
-	}
-
-	if (!service) {
-		return errorResult(`The "${action}" action requires a service name.`);
-	}
-	const guard = guardBloom(service);
-	if (guard) return errorResult(guard);
-
-	if (action === "logs") {
-		return handleContainerLogs(service, params.lines ?? 50, signal);
-	}
-
-	return handleContainerDeploy(service, signal, ctx);
-}
-
-// --- Container handler ---
-
-export async function handleContainerStatus(signal: AbortSignal | undefined) {
-	const result = await run("podman", ["ps", "--format", "json", "--filter", "name=bloom-"], signal);
-	if (result.exitCode !== 0) {
-		return errorResult(`Error listing containers:\n${result.stderr}`);
-	}
-	let text: string;
-	try {
-		const containers = JSON.parse(result.stdout || "[]") as ContainerInfo[];
-		if (containers.length === 0) {
-			text = "No bloom-* containers are currently running.";
-		} else {
-			text = containers
-				.map((c) => {
-					const name = (c.Names ?? []).join(", ") || "unknown";
-					const status = c.Status ?? c.State ?? "unknown";
-					const image = c.Image ?? "unknown";
-					return `${name}\n  status: ${status}\n  image:  ${image}`;
-				})
-				.join("\n\n");
-		}
-	} catch {
-		text = result.stdout;
-	}
-	return { content: [{ type: "text" as const, text: truncate(text) }], details: {} };
-}
-
-export async function handleContainerLogs(service: string, lines: number, signal: AbortSignal | undefined) {
-	const n = String(Math.max(1, Math.min(500, Math.round(lines))));
-	const unit = `${service}.service`;
-	const result = await run("journalctl", ["--user", "-u", unit, "--no-pager", "-n", n], signal);
-	const text = truncate(
-		result.exitCode === 0 ? result.stdout || "(no log output)" : `Error fetching logs:\n${result.stderr}`,
-	);
 	return {
-		content: [{ type: "text" as const, text }],
-		details: { exitCode: result.exitCode },
+		content: [{ type: "text" as const, text: truncate(text) }],
+		details: { exitCode: result.exitCode, source, flake },
 		isError: result.exitCode !== 0,
-	};
-}
-
-function resolveUserStartTarget(service: string): string {
-	const userSystemdDir = join(os.homedir(), ".config", "systemd", "user");
-	const socketUnitPath = join(userSystemdDir, `${service}.socket`);
-	return existsSync(socketUnitPath) ? `${service}.socket` : `${service}.service`;
-}
-
-export async function handleContainerDeploy(service: string, signal: AbortSignal | undefined, ctx: ExtensionContext) {
-	const target = resolveUserStartTarget(service);
-	const denied = await requireConfirmation(ctx, `Deploy container ${target}`);
-	if (denied) return errorResult(denied);
-	const reload = await run("systemctl", ["--user", "daemon-reload"], signal);
-	if (reload.exitCode !== 0) {
-		return errorResult(`systemctl --user daemon-reload failed:\n${reload.stderr}`);
-	}
-	const start = await run("systemctl", ["--user", "start", target], signal);
-	const text = truncate(
-		start.exitCode === 0 ? `Started ${target} successfully.` : `Failed to start ${target}:\n${start.stderr}`,
-	);
-	return {
-		content: [{ type: "text" as const, text }],
-		details: { exitCode: start.exitCode },
-		isError: start.exitCode !== 0,
 	};
 }
 

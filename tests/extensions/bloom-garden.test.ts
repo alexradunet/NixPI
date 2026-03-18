@@ -43,190 +43,32 @@ describe("ensureBloom", () => {
 });
 
 describe("bloom-garden extension", () => {
-	it("requires confirmation for agent_create without UI and resumes after Matrix approval", async () => {
-		const handleAgentCreateMock = vi.fn().mockResolvedValue({
-			content: [{ type: "text" as const, text: "created agent: finance" }],
-			details: {},
-		});
-
-		vi.doMock("../../core/pi-extensions/bloom-garden/actions.js", async () => {
-			const actual = await vi.importActual<typeof import("../../core/pi-extensions/bloom-garden/actions.js")>(
-				"../../core/pi-extensions/bloom-garden/actions.js",
-			);
-			return {
-				...actual,
-				handleAgentCreate: handleAgentCreateMock,
-			};
-		});
-
+	it("does not register authoring tools in the default runtime surface", async () => {
 		vi.resetModules();
 		const api = createMockExtensionAPI();
 		const mod = await import("../../core/pi-extensions/bloom-garden/index.js");
 		mod.default(api as never);
 
-		const tool = api._registeredTools.find((entry) => entry.name === "agent_create") as {
-			execute: (
-				toolCallId: string,
-				params: {
-					id: string;
-					name: string;
-					description: string;
-					role_prompt: string;
-				},
-				signal: AbortSignal | undefined,
-				onUpdate: undefined,
-				ctx: ReturnType<typeof createMockExtensionContext>,
-			) => Promise<{ content: Array<{ text: string }> }>;
-		};
-		const ctx = createMockExtensionContext({ hasUI: false });
-		const sessionFile = path.join(bloomDir, "session.jsonl");
-		ctx.sessionManager.getSessionFile.mockReturnValue(sessionFile);
-		ctx.sessionManager.getSessionDir.mockReturnValue(bloomDir);
-		ctx.sessionManager.getSessionId.mockReturnValue("session");
-
-		const first = await tool.execute(
-			"tool-call",
-			{
-				id: "finance",
-				name: "Finance",
-				description: "Expert in personal finance",
-				role_prompt: "Help with budgeting, saving, and planning.",
-			},
-			undefined,
-			undefined,
-			ctx,
-		);
-
-		expect(first.content[0]?.text).toContain('Confirmation required for "Create Matrix agent finance"');
-		expect(handleAgentCreateMock).not.toHaveBeenCalled();
-
-		const pendingReply = await api.fireEvent("input", { source: "user", text: "confirm" }, ctx);
-
-		expect(pendingReply).toEqual({ action: "handled" });
-		expect(api._sentMessages).toContainEqual({
-			message: expect.stringContaining("approved"),
-			options: undefined,
-		});
-
-		const second = await tool.execute(
-			"tool-call",
-			{
-				id: "finance",
-				name: "Finance",
-				description: "Expert in personal finance",
-				role_prompt: "Help with budgeting, saving, and planning.",
-			},
-			undefined,
-			undefined,
-			ctx,
-		);
-
-		expect(second.content[0]?.text).toContain("created agent: finance");
-		expect(handleAgentCreateMock).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({ id: "finance" }));
+		const names = api._registeredTools.map((tool) => tool.name);
+		expect(names).toEqual(["garden_status"]);
+		expect(api._eventHandlers.has("input")).toBe(false);
 	});
 
-	it("applies tokenless deny to the most recent pending confirmation", async () => {
+	it("shows usage for /bloom without arguments instead of opening an interaction prompt", async () => {
 		vi.resetModules();
 		const api = createMockExtensionAPI();
 		const mod = await import("../../core/pi-extensions/bloom-garden/index.js");
 		mod.default(api as never);
 
-		const ctx = createMockExtensionContext({ hasUI: false });
-		const sessionFile = path.join(bloomDir, "session.jsonl");
-		ctx.sessionManager.getSessionFile.mockReturnValue(sessionFile);
-		ctx.sessionManager.getSessionDir.mockReturnValue(bloomDir);
-		ctx.sessionManager.getSessionId.mockReturnValue("session");
-
-		const tool = api._registeredTools.find((entry) => entry.name === "agent_create") as {
-			execute: (
-				toolCallId: string,
-				params: { id: string; name: string; description: string; role_prompt: string },
-				signal: AbortSignal | undefined,
-				onUpdate: undefined,
-				ctx: ReturnType<typeof createMockExtensionContext>,
-			) => Promise<{ content: Array<{ text: string }> }>;
-		};
-
-		await tool.execute(
-			"tool-call-1",
-			{
-				id: "finance",
-				name: "Finance",
-				description: "Expert in personal finance",
-				role_prompt: "Help with budgeting.",
-			},
-			undefined,
-			undefined,
-			ctx,
-		);
-		await tool.execute(
-			"tool-call-2",
-			{
-				id: "ops",
-				name: "Ops",
-				description: "Expert in operations",
-				role_prompt: "Help with ops.",
-			},
-			undefined,
-			undefined,
-			ctx,
-		);
-
-		const pendingReply = await api.fireEvent("input", { source: "user", text: "deny" }, ctx);
-
-		expect(pendingReply).toEqual({ action: "handled" });
-		expect(api._sentMessages.at(-1)).toEqual({
-			message: expect.stringContaining("most recent pending interaction"),
-			options: undefined,
-		});
-
-		const deniedRetry = await tool.execute(
-			"tool-call-2-retry",
-			{
-				id: "ops",
-				name: "Ops",
-				description: "Expert in operations",
-				role_prompt: "Help with ops.",
-			},
-			undefined,
-			undefined,
-			ctx,
-		);
-
-		expect(deniedRetry.content[0]?.text).toBe("User declined: Create Matrix agent ops");
-	});
-
-	it("uses a chat selection prompt for /bloom without arguments", async () => {
-		vi.resetModules();
-		const api = createMockExtensionAPI();
-		const mod = await import("../../core/pi-extensions/bloom-garden/index.js");
-		mod.default(api as never);
-
-		const ctx = createMockExtensionContext({ hasUI: false });
-		const sessionFile = path.join(bloomDir, "session.jsonl");
-		ctx.sessionManager.getSessionFile.mockReturnValue(sessionFile);
-		ctx.sessionManager.getSessionDir.mockReturnValue(bloomDir);
-		ctx.sessionManager.getSessionId.mockReturnValue("session");
-
+		const ctx = createMockExtensionContext({ hasUI: true });
 		const command = api._registeredCommands.find((entry) => entry.name === "bloom") as unknown as {
 			handler: (args: string, ctx: ReturnType<typeof createMockExtensionContext>) => Promise<void>;
 		};
 
 		await command.handler("", ctx);
 
-		expect(api._sentCustomMessages).toContainEqual({
-			message: {
-				customType: "bloom-interaction",
-				content: expect.stringContaining("1. init"),
-				display: true,
-			},
-			options: { triggerTurn: false },
-		});
-
-		const reply = await api.fireEvent("input", { source: "user", text: "2" }, ctx);
-
-		expect(reply).toEqual({ action: "handled" });
-		expect(api._sentMessages.at(-1)?.message).toContain('The user selected the Bloom command action "status"');
+		expect(api._sentCustomMessages).toEqual([]);
+		expect(ctx.ui.notify).toHaveBeenCalledWith("Usage: /bloom init | status | update-blueprints", "info");
 	});
 });
 

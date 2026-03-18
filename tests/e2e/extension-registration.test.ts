@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { type MockExtensionAPI, createMockExtensionAPI } from "../helpers/mock-extension-api.js";
 import { type TempGarden, createTempGarden } from "../helpers/temp-garden.js";
@@ -24,6 +25,28 @@ function eventNames(api: MockExtensionAPI): string[] {
 	return [...api._eventHandlers.keys()];
 }
 
+describe("runtime package extension list", () => {
+	it("ships a curated default extension set", () => {
+		const packageJson = JSON.parse(readFileSync("package.json", "utf-8")) as {
+			pi?: { extensions?: string[] };
+		};
+		const extensionList = packageJson.pi?.extensions ?? [];
+
+		expect(extensionList).toEqual([
+			"./core/pi-extensions/bloom-persona",
+			"./core/pi-extensions/bloom-localai",
+			"./core/pi-extensions/bloom-os",
+			"./core/pi-extensions/bloom-episodes",
+			"./core/pi-extensions/bloom-objects",
+			"./core/pi-extensions/bloom-garden",
+			"./core/pi-extensions/bloom-setup",
+		]);
+		expect(extensionList).not.toContain("./core/pi-extensions/bloom-dev");
+		expect(extensionList).not.toContain("./core/pi-extensions/bloom-repo");
+		expect(extensionList).not.toContain("./core/pi-extensions/bloom-services");
+	});
+});
+
 // ---------------------------------------------------------------------------
 // bloom-garden
 // ---------------------------------------------------------------------------
@@ -33,11 +56,10 @@ describe("bloom-garden registration", () => {
 		const api = createMockExtensionAPI();
 		mod.default(api as never);
 
-		expect(toolNames(api)).toEqual(
-			expect.arrayContaining(["garden_status", "skill_create", "skill_list", "agent_create", "persona_evolve"]),
-		);
+		expect(toolNames(api)).toEqual(["garden_status"]);
 		expect(commandNames(api)).toEqual(["bloom"]);
-		expect(eventNames(api)).toEqual(expect.arrayContaining(["session_start", "resources_discover", "input"]));
+		expect(eventNames(api)).toEqual(expect.arrayContaining(["session_start", "resources_discover"]));
+		expect(eventNames(api)).not.toContain("input");
 	});
 });
 
@@ -93,21 +115,9 @@ describe("bloom-os registration", () => {
 		const api = createMockExtensionAPI();
 		mod.default(api as never);
 
-		expect(toolNames(api)).toEqual(expect.arrayContaining(["nixos_update", "container", "systemd_control"]));
+		expect(toolNames(api)).toEqual(expect.arrayContaining(["nixos_update", "nix_config_proposal", "systemd_control"]));
+		expect(toolNames(api)).not.toContain("container");
 		expect(eventNames(api)).toEqual(expect.arrayContaining(["before_agent_start"]));
-	});
-});
-
-// ---------------------------------------------------------------------------
-// bloom-repo
-// ---------------------------------------------------------------------------
-describe("bloom-repo registration", () => {
-	it("registers expected tools", async () => {
-		const mod = await import("../../core/pi-extensions/bloom-repo/index.js");
-		const api = createMockExtensionAPI();
-		mod.default(api as never);
-
-		expect(toolNames(api)).toEqual(expect.arrayContaining(["bloom_repo", "bloom_repo_submit_pr"]));
 	});
 });
 
@@ -125,29 +135,5 @@ describe("bloom-persona registration", () => {
 		expect(eventNames(api)).toEqual(
 			expect.arrayContaining(["session_start", "before_agent_start", "tool_call", "session_before_compact"]),
 		);
-	});
-});
-
-// ---------------------------------------------------------------------------
-// bloom-services
-// ---------------------------------------------------------------------------
-describe("bloom-services registration", () => {
-	it("registers expected tools and events", async () => {
-		const mod = await import("../../core/pi-extensions/bloom-services/index.js");
-		const api = createMockExtensionAPI();
-		mod.default(api as never);
-
-		expect(toolNames(api)).toEqual(
-			expect.arrayContaining([
-				"service_scaffold",
-				"service_install",
-				"service_test",
-				"manifest_show",
-				"manifest_sync",
-				"manifest_set_service",
-				"manifest_apply",
-			]),
-		);
-		expect(eventNames(api)).toEqual(expect.arrayContaining(["session_start"]));
 	});
 });

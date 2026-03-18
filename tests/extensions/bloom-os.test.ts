@@ -7,7 +7,7 @@ let api: MockExtensionAPI;
 
 const EXPECTED_TOOL_NAMES = [
 	"nixos_update",
-	"container",
+	"nix_config_proposal",
 	"systemd_control",
 	"update_status",
 	"schedule_reboot",
@@ -80,12 +80,7 @@ describe("bloom-os tool structure", () => {
 		const names = toolNames();
 		expect(new Set(names).size).toBe(names.length);
 	});
-});
-
-describe("bloom-os descriptions", () => {
-	it("documents socket-aware container deploy behavior", () => {
-		const containerTool = api._registeredTools.find((tool) => tool.name === "container");
-		expect(containerTool).toBeDefined();
-		expect(containerTool?.description).toContain("deploy");
+	it("does not register the legacy container tool", () => {
+		expect(toolNames()).not.toContain("container");
 	});
 });

@@ -8,7 +8,7 @@ Audience: operators validating a fresh Bloom image on real hardware or a realist
 
 This is the acceptance checklist for first real Bloom runs.
 
-Use it to verify that setup, messaging, services, and recovery paths still match the shipped documentation.
+Use it to verify that setup, messaging, and recovery paths still match the shipped documentation.
 
 ## 🚀 How To Run The Check
 
@@ -36,19 +36,10 @@ Pi resumes cleanly after reboot and does not require manual cleanup of partial w
 3. Verify the `#general:bloom` room exists and Pi replies to a message.
 4. If agent overlays exist, confirm malformed overlays are skipped without killing the daemon.
 
-### Service Lifecycle
-
-1. Run `manifest_show` and confirm the manifest is readable.
-2. Install one packaged service with `service_install`.
-3. For `dufs`, confirm it serves only `~/Public/Bloom`, not the full home directory.
-4. Run `manifest_apply` twice in a row and confirm the second run is boring.
-5. Disable a service in the manifest and confirm it stops cleanly.
-
 ### Recovery Cases
 
 1. Interrupt the wizard during Matrix setup, log back in, and confirm setup resumes instead of re-registering from scratch.
-2. Force one service dependency failure and confirm the requested primary service is not partially installed.
-3. Corrupt `~/Bloom/manifest.yaml` and confirm Bloom quarantines it and recreates an empty manifest.
+2. Corrupt `~/Bloom/guardrails.yaml` and confirm Bloom falls back to the packaged defaults instead of crashing the session startup path.
 
 ## 📚 Reference
 
@@ -57,8 +48,7 @@ Ship gate:
 - first-boot completes on a clean machine
 - one reboot cycle preserves expected state
 - Matrix messaging works end to end
-- service install/apply/disable works without manual cleanup
-- known risks for any optional service defaults are documented
+- known risks for any optional packaged workloads are documented
 
 ## 🔗 Related
 

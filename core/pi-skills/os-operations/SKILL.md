@@ -1,6 +1,6 @@
 ---
 name: os-operations
-description: Inspect, manage, and remediate the Bloom OS system — NixOS updates, services, containers, and timers
+description: Inspect, manage, and remediate the Bloom OS system — NixOS updates, local proposal validation, services, and timers
 ---
 
 # OS Operations Skill
@@ -15,47 +15,41 @@ Bloom runs on **NixOS** (declarative, flake-based):
 - `/etc` — generated host configuration
 - `/var` — persistent runtime/user state
 
-Bloom services are **systemd units** managed by `systemd` (system) and `systemd --user` (Pi agent):
+Bloom services are **systemd units** managed by `systemd` (system) and `systemd --user` (Pi agent).
 
-- System units: `/etc/systemd/system/`
-- Typical control path: `systemctl ...` / `systemctl --user ...`
-
-## Use Tools First (preferred)
+## Use Tools First
 
 Prefer Bloom extension tools over raw shell commands:
 
 - `system_health` — broad health snapshot
-- `nixos_update(action)` — status, apply, rollback for NixOS generation
-- `container(action)` — status, logs, deploy for bloom-* containers
+- `nixos_update(action, source)` — status, apply from `remote` or `local`, rollback for NixOS generation
+- `nix_config_proposal(action)` — inspect the local proposal repo, validate Nix config, or refresh `flake.lock`
 - `systemd_control` — start/stop/restart/status for Bloom user services
-- `manifest_show` / `manifest_sync` / `manifest_set_service` / `manifest_apply` — declarative service state management
 
 ## Standard Triage Flow
 
 1. Run `system_health`
 2. If OS issue suspected: run `nixos_update(action="status")`
-3. If service issue suspected:
-   - `container(action="status")`
-   - `systemd_control action=status`
-   - `container(action="logs")`
-4. Apply minimal remediation (restart, redeploy, staged update) only with user approval
-5. Re-run `system_health` to confirm recovery
+3. If a local Nix change is being prepared: run `nix_config_proposal(action="status")` and `nix_config_proposal(action="validate")`
+4. If service issue suspected: run `systemd_control action=status`
+5. Apply minimal remediation only with user approval
+6. Re-run `system_health` to confirm recovery
 
 ## Health Signals
 
 ### Healthy
+
 - `bloom-*` services active/running
-- Containers running and not unhealthy
 - `nixos_update(action="status")` shows current generation is booted
 
 ### Unhealthy
+
 - service failed / inactive unexpectedly
-- container exited / unhealthy / restart loop
 - update staged but reboot not yet applied
 
 ## Safety Rules
 
-- Mutation operations require explicit user confirmation
-- Only manage `bloom-*` services/containers
-- Prefer user-scope service management (`systemctl --user`)
-- Re-check health after every mutation
+- mutation operations require explicit user confirmation
+- only manage `bloom-*` services
+- prefer user-scope service management (`systemctl --user`)
+- re-check health after every mutation

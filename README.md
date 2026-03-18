@@ -6,24 +6,19 @@ Very opinionated NixOS build personally for me and my workflows and how I imagin
 
 It is very experimental and I am still currently developing it based on my needs and my own code engineering preferences.
 
-The project aims to fully leverage the European Union infrastructure, ai and privacy laws. Right now the only good AI Alternative in European Union is Mistral, but I don't feel it's strong enough yet and also I haven't checked if we can use their oAuth. For now I am using Claude Code for development, Codex and Pi.
-
-I am gonna be honest, I have leveraged quite a big of AI Agents, so you can consider it AI Slop. Me, I consider it my baby and I am really glad for the AI Agents because without them, I wouldn't have had the time to learn all of this in detail and then try to build it. This is not my first project like this, I have dabbled with experiments regarding this area in the last years, and this is the culmination of my preffered arhcitectural and coding patterns and with the technologies that I consider worthwhile.
-
-I plan to keep this project as minimal as possible in order to leave the end user to evolve it's own OS using Pi agent.
-
-The end goal for this project would be for you guys to fork this repo ( we will set it as a template repo ) and then start to build your own OS on this base and share it with your friends.
+I plan to keep this project as minimal as possible so the end user can evolve the OS through Pi without carrying a large default runtime surface.
 
 ## 🌱 Why Bloom Exists
 
-BloomOS packages Pi, host integration, memory, and optional services into one self-hosted system.
+BloomOS packages Pi, host integration, memory, and a small set of packaged workload assets into one self-hosted system.
 
 Bloom exists to give Pi:
 
 - a durable home directory under `~/Bloom/`
-- first-class host tools for OS, services, and repo workflows
+- first-class host tools for NixOS workflows
+- a local repo proposal workflow for human-reviewed system changes
 - a private Matrix-based messaging surface
-- a minimal but inspectable operating model based on files, systemd, and containers
+- a minimal but inspectable operating model based on files, NixOS, and systemd
 
 ## 🚀 What Ships Today
 
@@ -31,10 +26,8 @@ Current platform capabilities:
 
 - Bloom directory management and blueprint seeding for `~/Bloom/`
 - persona injection, shell guardrails, durable-memory digest injection, and compaction context persistence
-- audit logging for tool calls and tool results
-- host OS management tools for NixOS updates, containers, systemd, health, and reboot scheduling
-- repo bootstrap, sync, and PR submission helpers
-- service scaffolding, installation, smoke testing, manifest management, and bridge lifecycle tools
+- local-only Nix proposal support for checking the seeded repo clone, refreshing `flake.lock`, and validating config before review
+- host OS management tools for NixOS updates, systemd, health, and reboot scheduling
 - markdown-native durable memory in `~/Bloom/Objects/`
 - append-only episodic memory in `~/Bloom/Episodes/`
 - a unified Matrix room daemon with synthesized host-agent fallback and optional multi-agent overlays
@@ -47,7 +40,7 @@ Choose the entry point that matches your job:
 
 - Maintainers: [ARCHITECTURE.md](ARCHITECTURE.md), [AGENTS.md](AGENTS.md), and [docs/README.md](docs/README.md)
 - Operators: [docs/pibloom-setup.md](docs/pibloom-setup.md), [docs/quick_deploy.md](docs/quick_deploy.md), and [docs/live-testing-checklist.md](docs/live-testing-checklist.md)
-- Service/package work: [docs/service-architecture.md](docs/service-architecture.md) and [services/README.md](services/README.md)
+- Packaged workload work: [docs/service-architecture.md](docs/service-architecture.md) and [services/README.md](services/README.md)
 
 ## 💻 Default Install
 
@@ -60,25 +53,22 @@ Installed by default:
 - `bloom-matrix.service`
 - `pi-daemon.service` after setup once AI auth and defaults are ready
 
-Optional packaged services:
+Packaged workload assets kept in-repo:
 
 - `fluffychat`
 - `dufs`
 - `code-server`
+- bridge metadata for `whatsapp`, `telegram`, and `signal`
 
-Optional bridge workloads:
-
-- `whatsapp`
-- `telegram`
-- `signal`
+These remain in-tree as reference workloads and image inputs. Bloom no longer ships a default runtime extension for installing or reconciling them on-node.
 
 ## 🌿 Repository Layout
 
 | Path | Purpose |
 |------|---------|
 | `core/` | Bloom core: OS image, daemon, persona, skills, built-in extensions, and shared runtime code |
-| `core/pi-extensions/` | Pi-facing Bloom extensions, including dev and repo tooling |
-| `services/` | bundled service packages and service metadata |
+| `core/pi-extensions/` | Pi-facing Bloom extensions shipped in the default runtime |
+| `services/` | bundled workload packages and static metadata |
 | `tests/` | unit, integration, daemon, and extension tests |
 | `docs/` | live project documentation |
 
@@ -90,7 +80,7 @@ Bloom extends Pi through three layers:
 |------|-------------|-------------|
 | 📜 Skill | markdown instructions in `SKILL.md` | procedures, guidance, checklists |
 | 🧩 Extension | in-process TypeScript | Pi-facing tools, hooks, commands |
-| 📦 Service | packaged container workload | isolated long-running software |
+| 📦 Service | packaged workload asset | optional long-running software outside the default Pi runtime |
 
 OS-level infrastructure sits beside those layers:
 
@@ -109,7 +99,7 @@ The documentation system is organized as `Why / How / Reference`.
 | Docs hub | [docs/README.md](docs/README.md) | [docs/README.md](docs/README.md) | [docs/README.md](docs/README.md) |
 | Architecture | [ARCHITECTURE.md](ARCHITECTURE.md) | [ARCHITECTURE.md](ARCHITECTURE.md) | [AGENTS.md](AGENTS.md) |
 | Daemon | [docs/daemon-architecture.md](docs/daemon-architecture.md) | [docs/daemon-architecture.md](docs/daemon-architecture.md) | [AGENTS.md](AGENTS.md) |
-| Services | [docs/service-architecture.md](docs/service-architecture.md) | [services/README.md](services/README.md) | [docs/service-architecture.md](docs/service-architecture.md) |
+| Packaged workloads | [docs/service-architecture.md](docs/service-architecture.md) | [services/README.md](services/README.md) | [docs/service-architecture.md](docs/service-architecture.md) |
 | Setup / deploy | [docs/pibloom-setup.md](docs/pibloom-setup.md) | [docs/quick_deploy.md](docs/quick_deploy.md) | [docs/live-testing-checklist.md](docs/live-testing-checklist.md) |
 | Memory | [docs/memory-model.md](docs/memory-model.md) | [docs/memory-model.md](docs/memory-model.md) | [AGENTS.md](AGENTS.md) |
 | Trust / supply chain | [docs/supply-chain.md](docs/supply-chain.md) | [docs/supply-chain.md](docs/supply-chain.md) | [docs/supply-chain.md](docs/supply-chain.md) |

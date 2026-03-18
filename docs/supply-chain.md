@@ -2,7 +2,7 @@
 
 > 📖 [Emoji Legend](LEGEND.md)
 
-Audience: maintainers changing packaged images, install flows, or image trust policy.
+Audience: maintainers changing packaged images or image trust policy.
 
 ## 🌱 Why This Policy Exists
 
@@ -22,30 +22,22 @@ Disallowed by policy for normal remote images:
 - implicit `latest`
 - `latest*`
 
-This rule is enforced by `validatePinnedImage()` for `service_scaffold`.
+This remains the repo policy even though Bloom no longer ships a default runtime scaffolding/install extension.
 
 ### Current Exception
 
-`services/catalog.yaml` intentionally includes one mutable local-build image:
+`services/catalog.yaml` intentionally includes local-build images such as:
 
 - `code-server` -> `localhost/bloom-code-server:latest`
 
 Reason:
 
-- the service is built locally from repository source before installation
-- Bloom rebuilds the local image during install instead of trusting an already-present mutable tag
+- the workload is built locally from repository source
 - the mutable tag refers to a local artifact, not to a remote registry trust decision
 
-### What `service_install` Does Today
+### Current Scope
 
-Depending on the package, installation may:
-
-- copy Quadlet and skill assets from the bundled package
-- rebuild a local image for `localhost/*` refs
-- download declared model artifacts into Podman volumes
-- update `~/Bloom/manifest.yaml`
-
-Installation is not fully hermetic today. It is reproducible at the package-layout level, but some flows still depend on the local host and network.
+These packages are treated as in-repo workload assets and reference material. Publishing or activating them is a maintainer workflow outside the default Bloom runtime.
 
 ## 📚 Reference
 
@@ -53,13 +45,13 @@ Current repo sources of truth:
 
 - `services/catalog.yaml` for packaged service and bridge image refs
 - `services/*/quadlet/` for runtime unit behavior
-- `core/os/Containerfile` and `justfile` for the Bloom OS image
+- `flake.nix` and `justfile` for the Bloom OS image
 
 Review checklist:
 
 - are remote runtime images pinned
 - are local-image exceptions documented
-- do docs describe actual installation behavior, including local builds and downloads
+- do docs describe the current maintainer workflow instead of the removed runtime workflow
 - does `services/catalog.yaml` still match the packaged services in the repo
 
 ## 🔗 Related

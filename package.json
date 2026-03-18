@@ -9,7 +9,15 @@
 	},
 	"keywords": ["pi-package"],
 	"pi": {
-		"extensions": ["./core/pi-extensions"],
+		"extensions": [
+			"./core/pi-extensions/bloom-persona",
+			"./core/pi-extensions/bloom-localai",
+			"./core/pi-extensions/bloom-os",
+			"./core/pi-extensions/bloom-episodes",
+			"./core/pi-extensions/bloom-objects",
+			"./core/pi-extensions/bloom-garden",
+			"./core/pi-extensions/bloom-setup"
+		],
 		"skills": ["./core/pi-skills"]
 	},
 	"peerDependencies": {

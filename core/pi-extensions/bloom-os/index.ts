@@ -1,7 +1,7 @@
 /**
- * bloom-os — OS management: NixOS lifecycle, containers, systemd, health, updates.
+ * bloom-os — OS management: NixOS lifecycle, systemd, health, and updates.
  *
- * @tools nixos_update, container, systemd_control, system_health, update_status, schedule_reboot
+ * @tools nixos_update, nix_config_proposal, systemd_control, system_health, update_status, schedule_reboot
  * @hooks before_agent_start
  * @see {@link ../../AGENTS.md#bloom-os} Extension reference
  */
@@ -13,48 +13,49 @@ import { handleSystemHealth } from "./actions-health.js";
 import {
 	checkPendingUpdates,
 	handleNixosUpdate,
-	handleContainer,
 	handleScheduleReboot,
 	handleSystemdControl,
 	handleUpdateStatus,
 } from "./actions.js";
+import { handleNixConfigProposal } from "./actions-proposal.js";
 
 export default function (pi: ExtensionAPI) {
 	const tools: RegisteredExtensionTool[] = [
 		defineTool({
 			name: "nixos_update",
 			label: "NixOS Update Management",
-			description: "Manage NixOS OS updates: view generation history, apply a pending update, or rollback to the previous generation.",
+			description:
+				"Manage NixOS OS updates: view generation history, apply from the remote or reviewed local flake, or rollback to the previous generation.",
 			parameters: Type.Object({
 				action: StringEnum(["status", "apply", "rollback"] as const, {
-					description: "status: list NixOS generations. apply: run nixos-rebuild switch. rollback: revert to previous generation.",
+					description:
+						"status: list NixOS generations. apply: run nixos-rebuild switch from the selected source. rollback: revert to previous generation.",
+				}),
+				source: StringEnum(["remote", "local"] as const, {
+					description:
+						"Which flake source to use for apply. remote uses the GitHub flake. local uses ~/.bloom/pi-bloom. Ignored for status and rollback.",
+					default: "remote",
 				}),
 			}),
 			async execute(_toolCallId, params, signal, _onUpdate, ctx) {
-				const typedParams = params as { action: "status" | "apply" | "rollback" };
-				return handleNixosUpdate(typedParams.action, signal, ctx);
+				const typedParams = params as { action: "status" | "apply" | "rollback"; source?: "remote" | "local" };
+				return handleNixosUpdate(typedParams.action, typedParams.source ?? "remote", signal, ctx);
 			},
 		}),
 		defineTool({
-			name: "container",
-			label: "Container Management",
-			description: "Manage Bloom containers: list status, view logs, or deploy a Quadlet unit.",
+			name: "nix_config_proposal",
+			label: "Local Nix Config Proposal",
+			description:
+				"Inspect, validate, and refresh flake inputs in the local Bloom repo clone used for human-reviewed NixOS proposals. Does not apply system changes or publish remotely.",
 			parameters: Type.Object({
-				action: StringEnum(["status", "logs", "deploy"] as const, {
+				action: StringEnum(["status", "validate", "update_flake_lock"] as const, {
 					description:
-						"status: list running bloom-* containers. logs: view service logs. deploy: start a Quadlet unit.",
+						"status: inspect the local proposal repo and Nix-related diff. validate: run local flake and config checks. update_flake_lock: refresh flake.lock in the local repo.",
 				}),
-				service: Type.Optional(
-					Type.String({ description: "Service name, required for logs/deploy (e.g. bloom-dufs)" }),
-				),
-				lines: Type.Optional(Type.Number({ description: "Log lines to return (default 50)", default: 50 })),
 			}),
 			async execute(_toolCallId, params, signal, _onUpdate, ctx) {
-				return handleContainer(
-					params as { action: "status" | "logs" | "deploy"; service?: string; lines?: number },
-					signal,
-					ctx,
-				);
+				const typedParams = params as { action: "status" | "validate" | "update_flake_lock" };
+				return handleNixConfigProposal(typedParams.action, signal, ctx);
 			},
 		}),
 		defineTool({

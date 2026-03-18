@@ -1,14 +1,14 @@
 # Bloom Service Packages
 
-This document is the operator-facing package reference for bundled services.
+This document is the reference inventory for bundled workload assets kept in-tree.
 
 ## 🌱 Why This Page Exists
 
-Use this page when you need the current packaged service inventory and the practical install/runtime shape of those packages.
+Use this page when you need the current packaged workload inventory and the practical layout of those packages.
 
 For capability-model decisions, use [../docs/service-architecture.md](../docs/service-architecture.md).
 
-## 📦 How Bundled Packages Work
+## 📦 How Bundled Packages Are Stored
 
 Bundled service packages live in `services/`.
 
@@ -22,14 +22,11 @@ services/{name}/
   Containerfile     optional, for locally built images
 ```
 
-Current install behavior:
+Bloom no longer ships a default runtime extension that installs these packages on-node. They remain in-tree as:
 
-1. find the package in the repo, system share, or current working tree
-2. copy Quadlet files into user runtime locations
-3. copy `SKILL.md` into `~/Bloom/Skills/{name}/`
-4. create default env/config files in `~/.config/bloom/`
-5. build local images for `localhost/*` refs when needed
-6. reload and optionally start the user unit
+1. reference workloads
+2. image/build inputs
+3. examples for future maintainer-side packaging work
 
 ## 📚 Reference
 
@@ -56,7 +53,7 @@ Reference-only infrastructure docs:
 | `docs/matrix-infrastructure.md` | Matrix infrastructure notes |
 | `docs/netbird-infrastructure.md` | NetBird infrastructure notes |
 
-Bridge tools use the `bridges:` section in `services/catalog.yaml` and do not require a per-bridge package directory under `services/`.
+Bridge metadata still lives in the `bridges:` section in `services/catalog.yaml`, but bridge lifecycle is no longer part of the default Bloom runtime.
 
 ## 🔗 Related
 
