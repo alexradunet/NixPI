@@ -1,22 +1,22 @@
 # tests/nixos/lib.nix
-# Shared helpers for Garden OS NixOS integration tests
+# Shared helpers for Workspace OS NixOS integration tests
 
 { pkgs, lib }:
 
 {
-  # Common test configuration for Garden OS nodes
-  mkGardenNode = { gardenModules, piAgent, appPackage, extraConfig ? {} }: {
-    imports = gardenModules ++ [ extraConfig ];
+  # Common test configuration for Workspace OS nodes
+  mkWorkspaceNode = { workspaceModules, piAgent, appPackage, extraConfig ? {} }: {
+    imports = workspaceModules ++ [ extraConfig ];
     _module.args = { inherit piAgent appPackage; };
     
     # Common VM settings for tests
     virtualisation.diskSize = 20480;  # 20 GB
     virtualisation.memorySize = 4096;
     
-    # Standard Garden configuration
+    # Standard Workspace configuration
     boot.loader.systemd-boot.enable = true;
     boot.loader.efi.canTouchEfiVariables = true;
-    networking.hostName = lib.mkDefault "garden";
+    networking.hostName = lib.mkDefault "workspace";
     time.timeZone = "UTC";
     i18n.defaultLocale = "en_US.UTF-8";
     networking.networkmanager.enable = true;
@@ -29,8 +29,8 @@
     fileSystems."/boot" = { device = "/dev/vda1"; fsType = "vfat"; };
   };
 
-  # Standard Garden modules list
-  gardenModules = [
+  # Standard Workspace modules list
+  workspaceModules = [
     ../../core/os/modules/app.nix
     ../../core/os/modules/llm.nix
     ../../core/os/modules/matrix.nix
@@ -39,8 +39,8 @@
     ../../core/os/modules/update.nix
   ];
 
-  # Garden modules without garden-shell (for tests that define their own user)
-  gardenModulesNoShell = [
+  # Workspace modules without workspace-shell (for tests that define their own user)
+  workspaceModulesNoShell = [
     ../../core/os/modules/options.nix
     ../../core/os/modules/app.nix
     ../../core/os/modules/llm.nix
@@ -50,7 +50,7 @@
   ];
 
   # Test utilities package
-  testUtils = pkgs.writeShellScriptBin "garden-test-utils" ''
+  testUtils = pkgs.writeShellScriptBin "workspace-test-utils" ''
     # Wait for a systemd unit to be active on the user bus
     wait_for_user_unit() {
       local user="$1"

@@ -4,7 +4,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { getGardenDir, safePath } from "../../../lib/filesystem.js";
+import { getWorkspaceDir, safePath } from "../../../lib/filesystem.js";
 import { parseFrontmatter, stringifyFrontmatter } from "../../../lib/frontmatter.js";
 import { errorResult, nowIso, truncate } from "../../../lib/shared.js";
 import { defaultObjectBody, mergeObjectState, readMemoryRecord, writeMemoryRecord } from "./memory.js";
@@ -30,10 +30,10 @@ export function createObject(params: {
 	path?: string;
 	body?: string;
 }) {
-	const gardenDir = getGardenDir();
+	const workspaceDir = getWorkspaceDir();
 	let filepath: string;
 	try {
-		filepath = params.path ? safePath(os.homedir(), params.path) : safePath(gardenDir, "Objects", `${params.slug}.md`);
+		filepath = params.path ? safePath(os.homedir(), params.path) : safePath(workspaceDir, "Objects", `${params.slug}.md`);
 	} catch {
 		return errorResult("Path traversal blocked: invalid path");
 	}
@@ -79,9 +79,9 @@ export function updateObject(params: {
 			return errorResult("Path traversal blocked: invalid path");
 		}
 	} else {
-		const gardenDir = getGardenDir();
+		const workspaceDir = getWorkspaceDir();
 		try {
-			filepath = safePath(path.join(gardenDir, "Objects"), `${params.slug}.md`);
+			filepath = safePath(path.join(workspaceDir, "Objects"), `${params.slug}.md`);
 		} catch {
 			return errorResult("Path traversal blocked: invalid slug");
 		}
@@ -112,12 +112,12 @@ export function upsertObject(params: {
 	path?: string;
 	body?: string;
 }) {
-	const gardenDir = getGardenDir();
+	const workspaceDir = getWorkspaceDir();
 	let filepath: string;
 	try {
 		filepath = params.path
 			? safePath(os.homedir(), params.path)
-			: safePath(path.join(gardenDir, "Objects"), `${params.slug}.md`);
+			: safePath(path.join(workspaceDir, "Objects"), `${params.slug}.md`);
 	} catch {
 		return errorResult("Path traversal blocked: invalid path");
 	}
@@ -152,9 +152,9 @@ export function readObject(params: { type: string; slug: string; path?: string }
 			return errorResult("Path traversal blocked: invalid path");
 		}
 	} else {
-		const gardenDir = getGardenDir();
+		const workspaceDir = getWorkspaceDir();
 		try {
-			filepath = safePath(path.join(gardenDir, "Objects"), `${params.slug}.md`);
+			filepath = safePath(path.join(workspaceDir, "Objects"), `${params.slug}.md`);
 		} catch {
 			return errorResult("Path traversal blocked: invalid slug");
 		}
@@ -182,14 +182,14 @@ export function readObject(params: { type: string; slug: string; path?: string }
 
 /** Add bidirectional links between two objects. */
 export function linkObjects(params: { ref_a: string; ref_b: string }) {
-	const gardenDir = getGardenDir();
+	const workspaceDir = getWorkspaceDir();
 	const a = parseRef(params.ref_a);
 	const b = parseRef(params.ref_b);
 	let pathA: string;
 	let pathB: string;
 	try {
-		pathA = safePath(path.join(gardenDir, "Objects"), `${a.slug}.md`);
-		pathB = safePath(path.join(gardenDir, "Objects"), `${b.slug}.md`);
+		pathA = safePath(path.join(workspaceDir, "Objects"), `${a.slug}.md`);
+		pathB = safePath(path.join(workspaceDir, "Objects"), `${b.slug}.md`);
 	} catch {
 		return errorResult("Path traversal blocked: invalid slug");
 	}

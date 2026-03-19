@@ -2,25 +2,25 @@
 { config, pkgs, ... }:
 
 let
-  u = config.garden.username;
+  u = config.workspace.username;
 in
 {
   imports = [ ./options.nix ];
 
-  systemd.services.garden-firstboot = {
-    description = "Garden First-Boot Setup";
+  systemd.services.workspace-firstboot = {
+    description = "Workspace First-Boot Setup";
     wantedBy = [ "multi-user.target" ];
     # getty.target blocks all console logins until this completes.
     before = [ "getty.target" ];
     after = [
       "network-online.target"
-      "garden-matrix.service"
+      "workspace-matrix.service"
       "netbird.service"
       "user@1000.service"
     ];
     wants = [
       "network-online.target"
-      "garden-matrix.service"
+      "workspace-matrix.service"
       "netbird.service"
       "user@1000.service"
     ];
@@ -37,7 +37,7 @@ in
       # Exit 1 = non-fatal partial failure; user can recover via setup-wizard.sh.
       SuccessExitStatus = "0 1";
     };
-    unitConfig.ConditionPathExists = "!/home/${u}/.garden/.setup-complete";
+    unitConfig.ConditionPathExists = "!/home/${u}/.workspace/.setup-complete";
   };
 
   # Narrow sudo rules for commands firstboot.sh needs in a non-TTY context.
@@ -48,7 +48,7 @@ in
       users = [ u ];
       commands = [
         { command = "/run/current-system/sw/bin/cat /var/lib/continuwuity/registration_token"; options = [ "NOPASSWD" ]; }
-        { command = "/run/current-system/sw/bin/journalctl -u garden-matrix --no-pager"; options = [ "NOPASSWD" ]; }
+        { command = "/run/current-system/sw/bin/journalctl -u workspace-matrix --no-pager"; options = [ "NOPASSWD" ]; }
         { command = "/run/current-system/sw/bin/netbird up --setup-key *"; options = [ "NOPASSWD" ]; }
         { command = "/run/current-system/sw/bin/systemctl start netbird.service"; options = [ "NOPASSWD" ]; }
       ];

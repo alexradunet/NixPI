@@ -3,73 +3,73 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
-	ensureGarden,
+	ensureWorkspace,
 	getPackageDir,
 	handleAgentCreate,
-	handleGardenStatus,
+	handleWorkspaceStatus,
 	handleMentionAgent,
 	handleSkillCreate,
 	handleSkillList,
 	loadAgentInfos,
-} from "../../core/pi/extensions/garden/actions.js";
+} from "../../core/pi/extensions/workspace/actions.js";
 import { createMockExtensionAPI } from "../helpers/mock-extension-api.js";
 import { createMockExtensionContext } from "../helpers/mock-extension-context.js";
-import { createTempGarden, type TempGarden } from "../helpers/temp-garden.js";
+import { createTempGarden, type TempGarden } from "../helpers/temp-workspace.js";
 
-let gardenDir: string;
+let workspaceDir: string;
 
 beforeEach(() => {
-	gardenDir = fs.mkdtempSync(path.join(os.tmpdir(), "garden-test-"));
+	workspaceDir = fs.mkdtempSync(path.join(os.tmpdir(), "workspace-test-"));
 });
 
 afterEach(() => {
-	fs.rmSync(gardenDir, { recursive: true, force: true });
+	fs.rmSync(workspaceDir, { recursive: true, force: true });
 });
 
 // ---------------------------------------------------------------------------
-// ensureGarden
+// ensureWorkspace
 // ---------------------------------------------------------------------------
-describe("ensureGarden", () => {
+describe("ensureWorkspace", () => {
 	it("creates all required subdirectories", () => {
-		ensureGarden(gardenDir);
+		ensureWorkspace(workspaceDir);
 		for (const dir of ["Persona", "Skills", "Evolutions", "audit"]) {
-			expect(fs.existsSync(path.join(gardenDir, dir))).toBe(true);
+			expect(fs.existsSync(path.join(workspaceDir, dir))).toBe(true);
 		}
 	});
 
 	it("is idempotent — calling twice does not throw", () => {
-		ensureGarden(gardenDir);
-		expect(() => ensureGarden(gardenDir)).not.toThrow();
+		ensureWorkspace(workspaceDir);
+		expect(() => ensureWorkspace(workspaceDir)).not.toThrow();
 	});
 });
 
-describe("garden extension", () => {
+describe("workspace extension", () => {
 	it("does not register authoring tools in the default runtime surface", async () => {
 		vi.resetModules();
 		const api = createMockExtensionAPI();
-		const mod = await import("../../core/pi/extensions/garden/index.js");
+		const mod = await import("../../core/pi/extensions/workspace/index.js");
 		mod.default(api as never);
 
 		const names = api._registeredTools.map((tool) => tool.name);
-		expect(names).toEqual(["garden_status"]);
+		expect(names).toEqual(["workspace_status"]);
 		expect(api._eventHandlers.has("input")).toBe(false);
 	});
 
-	it("shows usage for /garden without arguments instead of opening an interaction prompt", async () => {
+	it("shows usage for /workspace without arguments instead of opening an interaction prompt", async () => {
 		vi.resetModules();
 		const api = createMockExtensionAPI();
-		const mod = await import("../../core/pi/extensions/garden/index.js");
+		const mod = await import("../../core/pi/extensions/workspace/index.js");
 		mod.default(api as never);
 
 		const ctx = createMockExtensionContext({ hasUI: true });
-		const command = api._registeredCommands.find((entry) => entry.name === "garden") as unknown as {
+		const command = api._registeredCommands.find((entry) => entry.name === "workspace") as unknown as {
 			handler: (args: string, ctx: ReturnType<typeof createMockExtensionContext>) => Promise<void>;
 		};
 
 		await command.handler("", ctx);
 
 		expect(api._sentCustomMessages).toEqual([]);
-		expect(ctx.ui.notify).toHaveBeenCalledWith("Usage: /garden init | status | update-blueprints", "info");
+		expect(ctx.ui.notify).toHaveBeenCalledWith("Usage: /workspace init | status | update-blueprints", "info");
 	});
 });
 
@@ -90,26 +90,26 @@ describe("getPackageDir", () => {
 });
 
 // ---------------------------------------------------------------------------
-// handleGardenStatus
+// handleWorkspaceStatus
 // ---------------------------------------------------------------------------
-describe("handleGardenStatus", () => {
-	it("returns content containing the garden dir path", () => {
-		ensureGarden(gardenDir);
-		const result = handleGardenStatus(gardenDir);
+describe("handleWorkspaceStatus", () => {
+	it("returns content containing the workspace dir path", () => {
+		ensureWorkspace(workspaceDir);
+		const result = handleWorkspaceStatus(workspaceDir);
 		expect(result.content).toHaveLength(1);
 		expect(result.content[0].type).toBe("text");
-		expect(result.content[0].text).toContain(gardenDir);
+		expect(result.content[0].text).toContain(workspaceDir);
 	});
 
 	it("returns a details object", () => {
-		ensureGarden(gardenDir);
-		const result = handleGardenStatus(gardenDir);
+		ensureWorkspace(workspaceDir);
+		const result = handleWorkspaceStatus(workspaceDir);
 		expect(result.details).toBeDefined();
 	});
 
 	it("shows package version line", () => {
-		ensureGarden(gardenDir);
-		const result = handleGardenStatus(gardenDir);
+		ensureWorkspace(workspaceDir);
+		const result = handleWorkspaceStatus(workspaceDir);
 		expect(result.content[0].text).toContain("Package version:");
 	});
 });
@@ -119,40 +119,40 @@ describe("handleGardenStatus", () => {
 // ---------------------------------------------------------------------------
 describe("handleSkillCreate", () => {
 	beforeEach(() => {
-		ensureGarden(gardenDir);
+		ensureWorkspace(workspaceDir);
 	});
 
 	it("creates a SKILL.md file at the expected path", () => {
-		const result = handleSkillCreate(gardenDir, {
+		const result = handleSkillCreate(workspaceDir, {
 			name: "my-skill",
 			description: "A test skill",
 			content: "# My Skill\n\nDo things.",
 		});
 		expect(result.content[0].text).toContain("created skill: my-skill");
-		const skillFile = path.join(gardenDir, "Skills", "my-skill", "SKILL.md");
+		const skillFile = path.join(workspaceDir, "Skills", "my-skill", "SKILL.md");
 		expect(fs.existsSync(skillFile)).toBe(true);
 	});
 
 	it("writes name and description into the frontmatter", () => {
-		handleSkillCreate(gardenDir, {
+		handleSkillCreate(workspaceDir, {
 			name: "scoped-skill",
 			description: "Scoped description",
 			content: "Body text",
 		});
-		const raw = fs.readFileSync(path.join(gardenDir, "Skills", "scoped-skill", "SKILL.md"), "utf-8");
+		const raw = fs.readFileSync(path.join(workspaceDir, "Skills", "scoped-skill", "SKILL.md"), "utf-8");
 		expect(raw).toContain("name: scoped-skill");
 		expect(raw).toContain("description: Scoped description");
 		expect(raw).toContain("Body text");
 	});
 
 	it("returns an error result when the skill already exists", () => {
-		handleSkillCreate(gardenDir, { name: "dup-skill", description: "first", content: "" });
-		const result = handleSkillCreate(gardenDir, { name: "dup-skill", description: "second", content: "" });
+		handleSkillCreate(workspaceDir, { name: "dup-skill", description: "first", content: "" });
+		const result = handleSkillCreate(workspaceDir, { name: "dup-skill", description: "second", content: "" });
 		expect(result.content[0].text).toContain("already exists");
 	});
 
-	it("blocks path traversal in skill name that escapes garden dir", () => {
-		const result = handleSkillCreate(gardenDir, { name: "../../escape", description: "bad", content: "" });
+	it("blocks path traversal in skill name that escapes workspace dir", () => {
+		const result = handleSkillCreate(workspaceDir, { name: "../../escape", description: "bad", content: "" });
 		expect(result.content[0].text).toContain("Path traversal blocked");
 	});
 });
@@ -162,13 +162,13 @@ describe("handleSkillCreate", () => {
 // ---------------------------------------------------------------------------
 describe("handleAgentCreate", () => {
 	beforeEach(() => {
-		ensureGarden(gardenDir);
+		ensureWorkspace(workspaceDir);
 	});
 
 	it("creates agent credentials and a starter AGENTS.md", async () => {
 		const restartDaemon = vi.fn().mockResolvedValue({ ok: true });
 		const result = await handleAgentCreate(
-			gardenDir,
+			workspaceDir,
 			{
 				id: "planner",
 				name: "Planner",
@@ -179,7 +179,7 @@ describe("handleAgentCreate", () => {
 				respond_mode: "mentioned",
 			},
 			{
-				homeDir: gardenDir,
+				homeDir: workspaceDir,
 				loadPrimaryMatrixConfig: () => ({
 					homeserver: "http://localhost:6167",
 					registrationToken: "reg-token",
@@ -189,7 +189,7 @@ describe("handleAgentCreate", () => {
 					ok: true,
 					credentials: {
 						homeserver: "http://localhost:6167",
-						userId: "@planner:garden",
+						userId: "@planner:workspace",
 						accessToken: "planner-token",
 						password: "secret-pass",
 						username: "planner",
@@ -199,9 +199,9 @@ describe("handleAgentCreate", () => {
 		);
 
 		expect(result.content[0].text).toContain("created agent: planner");
-		expect(fs.existsSync(path.join(gardenDir, ".pi", "matrix-agents", "planner.json"))).toBe(true);
-		expect(fs.existsSync(path.join(gardenDir, "Agents", "planner", "AGENTS.md"))).toBe(true);
-		const raw = fs.readFileSync(path.join(gardenDir, "Agents", "planner", "AGENTS.md"), "utf-8");
+		expect(fs.existsSync(path.join(workspaceDir, ".pi", "matrix-agents", "planner.json"))).toBe(true);
+		expect(fs.existsSync(path.join(workspaceDir, "Agents", "planner", "AGENTS.md"))).toBe(true);
+		const raw = fs.readFileSync(path.join(workspaceDir, "Agents", "planner", "AGENTS.md"), "utf-8");
 		expect(raw).toContain("id: planner");
 		expect(raw).toContain("name: Planner");
 		expect(raw).toContain("username: planner");
@@ -217,7 +217,7 @@ describe("handleAgentCreate", () => {
 			ok: true,
 			credentials: {
 				homeserver: "http://localhost:6167",
-				userId: "@critic:garden",
+				userId: "@critic:workspace",
 				accessToken: "critic-token",
 				password: "secret-pass",
 				username: "critic",
@@ -225,7 +225,7 @@ describe("handleAgentCreate", () => {
 		});
 
 		await handleAgentCreate(
-			gardenDir,
+			workspaceDir,
 			{
 				id: "critic",
 				name: "Critic",
@@ -233,7 +233,7 @@ describe("handleAgentCreate", () => {
 				role_prompt: "Look for flaws and missing assumptions.",
 			},
 			{
-				homeDir: gardenDir,
+				homeDir: workspaceDir,
 				loadPrimaryMatrixConfig: () => ({
 					homeserver: "http://localhost:6167",
 					registrationToken: "reg-token",
@@ -249,7 +249,7 @@ describe("handleAgentCreate", () => {
 
 	it("returns success with a warning when pi-daemon restart fails", async () => {
 		const result = await handleAgentCreate(
-			gardenDir,
+			workspaceDir,
 			{
 				id: "cashus",
 				name: "Cashus",
@@ -257,7 +257,7 @@ describe("handleAgentCreate", () => {
 				role_prompt: "Provide financial guidance.",
 			},
 			{
-				homeDir: gardenDir,
+				homeDir: workspaceDir,
 				loadPrimaryMatrixConfig: () => ({
 					homeserver: "http://localhost:6167",
 					registrationToken: "reg-token",
@@ -267,7 +267,7 @@ describe("handleAgentCreate", () => {
 					ok: true,
 					credentials: {
 						homeserver: "http://localhost:6167",
-						userId: "@cashus:garden",
+						userId: "@cashus:workspace",
 						accessToken: "cashus-token",
 						password: "secret-pass",
 						username: "cashus",
@@ -285,7 +285,7 @@ describe("handleAgentCreate", () => {
 
 	it("returns an error if the agent already exists", async () => {
 		await handleAgentCreate(
-			gardenDir,
+			workspaceDir,
 			{
 				id: "planner",
 				name: "Planner",
@@ -293,7 +293,7 @@ describe("handleAgentCreate", () => {
 				role_prompt: "Focus on decomposition and sequencing.",
 			},
 			{
-				homeDir: gardenDir,
+				homeDir: workspaceDir,
 				loadPrimaryMatrixConfig: () => ({
 					homeserver: "http://localhost:6167",
 					registrationToken: "reg-token",
@@ -302,7 +302,7 @@ describe("handleAgentCreate", () => {
 					ok: true,
 					credentials: {
 						homeserver: "http://localhost:6167",
-						userId: "@planner:garden",
+						userId: "@planner:workspace",
 						accessToken: "planner-token",
 						password: "secret-pass",
 						username: "planner",
@@ -312,7 +312,7 @@ describe("handleAgentCreate", () => {
 		);
 
 		const result = await handleAgentCreate(
-			gardenDir,
+			workspaceDir,
 			{
 				id: "planner",
 				name: "Planner",
@@ -320,7 +320,7 @@ describe("handleAgentCreate", () => {
 				role_prompt: "Focus on decomposition and sequencing.",
 			},
 			{
-				homeDir: gardenDir,
+				homeDir: workspaceDir,
 				loadPrimaryMatrixConfig: () => ({
 					homeserver: "http://localhost:6167",
 					registrationToken: "reg-token",
@@ -329,7 +329,7 @@ describe("handleAgentCreate", () => {
 					ok: true,
 					credentials: {
 						homeserver: "http://localhost:6167",
-						userId: "@planner:garden",
+						userId: "@planner:workspace",
 						accessToken: "planner-token",
 						password: "secret-pass",
 						username: "planner",
@@ -343,7 +343,7 @@ describe("handleAgentCreate", () => {
 
 	it("rejects invalid agent ids", async () => {
 		const result = await handleAgentCreate(
-			gardenDir,
+			workspaceDir,
 			{
 				id: "../../evil",
 				name: "Evil",
@@ -351,7 +351,7 @@ describe("handleAgentCreate", () => {
 				role_prompt: "Nope.",
 			},
 			{
-				homeDir: gardenDir,
+				homeDir: workspaceDir,
 				loadPrimaryMatrixConfig: () => ({
 					homeserver: "http://localhost:6167",
 					registrationToken: "reg-token",
@@ -369,23 +369,23 @@ describe("handleAgentCreate", () => {
 // ---------------------------------------------------------------------------
 describe("handleSkillList", () => {
 	it("returns message when Skills directory does not exist", () => {
-		// gardenDir exists but Skills subdir has not been created
-		const result = handleSkillList(gardenDir);
+		// workspaceDir exists but Skills subdir has not been created
+		const result = handleSkillList(workspaceDir);
 		expect(result.content[0].text).toContain("No skills directory found");
 	});
 
 	it("returns message when Skills directory is empty", () => {
-		fs.mkdirSync(path.join(gardenDir, "Skills"), { recursive: true });
-		const result = handleSkillList(gardenDir);
+		fs.mkdirSync(path.join(workspaceDir, "Skills"), { recursive: true });
+		const result = handleSkillList(workspaceDir);
 		expect(result.content[0].text).toContain("No skills found");
 	});
 
 	it("lists skills with their descriptions", () => {
-		ensureGarden(gardenDir);
-		handleSkillCreate(gardenDir, { name: "alpha", description: "Alpha skill", content: "" });
-		handleSkillCreate(gardenDir, { name: "beta", description: "Beta skill", content: "" });
+		ensureWorkspace(workspaceDir);
+		handleSkillCreate(workspaceDir, { name: "alpha", description: "Alpha skill", content: "" });
+		handleSkillCreate(workspaceDir, { name: "beta", description: "Beta skill", content: "" });
 
-		const result = handleSkillList(gardenDir);
+		const result = handleSkillList(workspaceDir);
 		expect(result.content[0].text).toContain("alpha");
 		expect(result.content[0].text).toContain("Alpha skill");
 		expect(result.content[0].text).toContain("beta");
@@ -393,10 +393,10 @@ describe("handleSkillList", () => {
 	});
 
 	it("ignores entries without a SKILL.md file", () => {
-		ensureGarden(gardenDir);
+		ensureWorkspace(workspaceDir);
 		// Create a directory without a SKILL.md
-		fs.mkdirSync(path.join(gardenDir, "Skills", "orphan"), { recursive: true });
-		const result = handleSkillList(gardenDir);
+		fs.mkdirSync(path.join(workspaceDir, "Skills", "orphan"), { recursive: true });
+		const result = handleSkillList(workspaceDir);
 		expect(result.content[0].text).toContain("No skills found");
 	});
 });
@@ -406,13 +406,13 @@ describe("handleSkillList", () => {
 // ---------------------------------------------------------------------------
 describe("loadAgentInfos", () => {
 	it("returns empty array when Agents directory does not exist", () => {
-		const agents = loadAgentInfos(gardenDir);
+		const agents = loadAgentInfos(workspaceDir);
 		expect(agents).toEqual([]);
 	});
 
 	it("parses agent definitions from AGENTS.md files", () => {
-		ensureGarden(gardenDir);
-		const agentDir = path.join(gardenDir, "Agents", "cookie");
+		ensureWorkspace(workspaceDir);
+		const agentDir = path.join(workspaceDir, "Agents", "cookie");
 		fs.mkdirSync(agentDir, { recursive: true });
 		fs.writeFileSync(
 			path.join(agentDir, "AGENTS.md"),
@@ -430,7 +430,7 @@ I manage memories.
 `,
 		);
 
-		const agents = loadAgentInfos(gardenDir);
+		const agents = loadAgentInfos(workspaceDir);
 		expect(agents).toHaveLength(1);
 		expect(agents[0]).toMatchObject({
 			id: "cookie",
@@ -441,12 +441,12 @@ I manage memories.
 	});
 
 	it("skips malformed agent files", () => {
-		ensureGarden(gardenDir);
-		const agentDir = path.join(gardenDir, "Agents", "bad");
+		ensureWorkspace(workspaceDir);
+		const agentDir = path.join(workspaceDir, "Agents", "bad");
 		fs.mkdirSync(agentDir, { recursive: true });
 		fs.writeFileSync(path.join(agentDir, "AGENTS.md"), "not valid frontmatter");
 
-		const agents = loadAgentInfos(gardenDir);
+		const agents = loadAgentInfos(workspaceDir);
 		expect(agents).toEqual([]);
 	});
 });
@@ -456,12 +456,12 @@ I manage memories.
 // ---------------------------------------------------------------------------
 describe("handleMentionAgent", () => {
 	beforeEach(() => {
-		ensureGarden(gardenDir);
+		ensureWorkspace(workspaceDir);
 	});
 
 	it("formats a message with the agent's Matrix User ID", () => {
 		// Setup: create an agent
-		const agentDir = path.join(gardenDir, "Agents", "cookie");
+		const agentDir = path.join(workspaceDir, "Agents", "cookie");
 		fs.mkdirSync(agentDir, { recursive: true });
 		fs.writeFileSync(
 			path.join(agentDir, "AGENTS.md"),
@@ -475,22 +475,22 @@ description: Memory manager
 `,
 		);
 
-		const result = handleMentionAgent(gardenDir, {
+		const result = handleMentionAgent(workspaceDir, {
 			agent_id: "cookie",
 			message: "Please remember that I prefer dark mode",
 		});
 
-		expect(result.content[0].text).toBe("@cookie:garden Please remember that I prefer dark mode");
+		expect(result.content[0].text).toBe("@cookie:workspace Please remember that I prefer dark mode");
 		expect(result.details).toMatchObject({
 			agentId: "cookie",
 			agentName: "Cookie",
-			userId: "@cookie:garden",
+			userId: "@cookie:workspace",
 		});
 	});
 
 	it("returns error for unknown agent with available agents list", () => {
 		// Setup: create one agent
-		const agentDir = path.join(gardenDir, "Agents", "planner");
+		const agentDir = path.join(workspaceDir, "Agents", "planner");
 		fs.mkdirSync(agentDir, { recursive: true });
 		fs.writeFileSync(
 			path.join(agentDir, "AGENTS.md"),
@@ -504,7 +504,7 @@ description: Planning assistant
 `,
 		);
 
-		const result = handleMentionAgent(gardenDir, {
+		const result = handleMentionAgent(workspaceDir, {
 			agent_id: "unknown",
 			message: "Hello",
 		});
@@ -515,7 +515,7 @@ description: Planning assistant
 	});
 
 	it("returns error when no agents exist", () => {
-		const result = handleMentionAgent(gardenDir, {
+		const result = handleMentionAgent(workspaceDir, {
 			agent_id: "anyone",
 			message: "Hello",
 		});
@@ -526,13 +526,13 @@ description: Planning assistant
 });
 
 // ---------------------------------------------------------------------------
-// garden_status tool execute (via registered extension)
+// workspace_status tool execute (via registered extension)
 // ---------------------------------------------------------------------------
 
 type GardenStatusResult = { content: Array<{ type: string; text: string }>; details: unknown };
 type GardenStatusExecute = () => Promise<GardenStatusResult>;
 
-describe("garden_status tool execute", () => {
+describe("workspace_status tool execute", () => {
 	let temp: TempGarden;
 	let api: ReturnType<typeof createMockExtensionAPI>;
 
@@ -540,7 +540,7 @@ describe("garden_status tool execute", () => {
 		temp = createTempGarden();
 		vi.resetModules();
 		api = createMockExtensionAPI();
-		const mod = await import("../../core/pi/extensions/garden/index.js");
+		const mod = await import("../../core/pi/extensions/workspace/index.js");
 		mod.default(api as never);
 	});
 
@@ -549,22 +549,22 @@ describe("garden_status tool execute", () => {
 	});
 
 	function getGardenStatusExecute(): GardenStatusExecute {
-		const tool = api._registeredTools.find((t) => t.name === "garden_status");
-		if (!tool) throw new Error("garden_status tool not found");
+		const tool = api._registeredTools.find((t) => t.name === "workspace_status");
+		if (!tool) throw new Error("workspace_status tool not found");
 		return tool.execute as GardenStatusExecute;
 	}
 
 	it("returns a result with content array containing a text item", async () => {
-		expect(api._registeredTools.find((t) => t.name === "garden_status")).toBeDefined();
+		expect(api._registeredTools.find((t) => t.name === "workspace_status")).toBeDefined();
 		const result = await getGardenStatusExecute()();
 		expect(result).toHaveProperty("content");
 		expect(Array.isArray(result.content)).toBe(true);
 		expect(result.content[0]).toHaveProperty("type", "text");
 	});
 
-	it("includes the garden dir path in the status text", async () => {
+	it("includes the workspace dir path in the status text", async () => {
 		const result = await getGardenStatusExecute()();
-		expect(result.content[0].text).toContain(temp.gardenDir);
+		expect(result.content[0].text).toContain(temp.workspaceDir);
 	});
 
 	it("includes package version line in the status text", async () => {
@@ -579,9 +579,9 @@ describe("garden_status tool execute", () => {
 });
 
 // ---------------------------------------------------------------------------
-// /garden command handler subcommands
+// /workspace command handler subcommands
 // ---------------------------------------------------------------------------
-describe("/garden command handler", () => {
+describe("/workspace command handler", () => {
 	let temp: TempGarden;
 	let api: ReturnType<typeof createMockExtensionAPI>;
 
@@ -589,7 +589,7 @@ describe("/garden command handler", () => {
 		temp = createTempGarden();
 		vi.resetModules();
 		api = createMockExtensionAPI();
-		const mod = await import("../../core/pi/extensions/garden/index.js");
+		const mod = await import("../../core/pi/extensions/workspace/index.js");
 		mod.default(api as never);
 	});
 
@@ -598,13 +598,13 @@ describe("/garden command handler", () => {
 	});
 
 	function getCommandHandler() {
-		const entry = api._registeredCommands.find((c) => c.name === "garden");
-		if (!entry) throw new Error("garden command not registered");
+		const entry = api._registeredCommands.find((c) => c.name === "workspace");
+		if (!entry) throw new Error("workspace command not registered");
 		return entry.handler as (args: string, ctx: ReturnType<typeof createMockExtensionContext>) => Promise<void>;
 	}
 
-	it("registers the /garden command", () => {
-		const entry = api._registeredCommands.find((c) => c.name === "garden");
+	it("registers the /workspace command", () => {
+		const entry = api._registeredCommands.find((c) => c.name === "workspace");
 		expect(entry).toBeDefined();
 	});
 
@@ -613,22 +613,22 @@ describe("/garden command handler", () => {
 		const ctx = createMockExtensionContext({ hasUI: true });
 		await handler("status", ctx);
 		expect(api._sentMessages).toHaveLength(1);
-		expect(api._sentMessages[0].message).toContain("garden_status");
+		expect(api._sentMessages[0].message).toContain("workspace_status");
 	});
 
-	it("init subcommand notifies with Garden initialized", async () => {
+	it("init subcommand notifies with Workspace initialized", async () => {
 		const handler = getCommandHandler();
 		const ctx = createMockExtensionContext({ hasUI: true });
 		await handler("init", ctx);
-		expect(ctx.ui.notify).toHaveBeenCalledWith("Garden initialized", "info");
+		expect(ctx.ui.notify).toHaveBeenCalledWith("Workspace initialized", "info");
 	});
 
-	it("init subcommand creates garden subdirectories", async () => {
+	it("init subcommand creates workspace subdirectories", async () => {
 		const handler = getCommandHandler();
 		const ctx = createMockExtensionContext({ hasUI: true });
 		await handler("init", ctx);
 		for (const dir of ["Persona", "Skills", "Evolutions", "Objects", "Episodes", "Agents", "audit"]) {
-			expect(fs.existsSync(path.join(temp.gardenDir, dir))).toBe(true);
+			expect(fs.existsSync(path.join(temp.workspaceDir, dir))).toBe(true);
 		}
 	});
 
@@ -646,6 +646,6 @@ describe("/garden command handler", () => {
 		const handler = getCommandHandler();
 		const ctx = createMockExtensionContext({ hasUI: true });
 		await handler("unknown-cmd", ctx);
-		expect(ctx.ui.notify).toHaveBeenCalledWith("Usage: /garden init | status | update-blueprints", "info");
+		expect(ctx.ui.notify).toHaveBeenCalledWith("Usage: /workspace init | status | update-blueprints", "info");
 	});
 });

@@ -1,9 +1,9 @@
 import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { getGardenDir, safePath } from "../../core/lib/filesystem.js";
+import { getWorkspaceDir, safePath } from "../../core/lib/filesystem.js";
 
-const ROOT = path.join(os.tmpdir(), "garden-fs-test-root");
+const ROOT = path.join(os.tmpdir(), "workspace-fs-test-root");
 
 // ---------------------------------------------------------------------------
 // safePath
@@ -34,39 +34,39 @@ describe("safePath", () => {
 });
 
 // ---------------------------------------------------------------------------
-// getGardenDir
+// getWorkspaceDir
 // ---------------------------------------------------------------------------
-describe("getGardenDir", () => {
+describe("getWorkspaceDir", () => {
 	let origBloomDir: string | undefined;
 
 	beforeEach(() => {
-		origBloomDir = process.env.GARDEN_DIR;
+		origBloomDir = process.env.WORKSPACE_DIR;
 	});
 
 	afterEach(() => {
 		if (origBloomDir !== undefined) {
-			process.env.GARDEN_DIR = origBloomDir;
+			process.env.WORKSPACE_DIR = origBloomDir;
 		} else {
-			delete process.env.GARDEN_DIR;
+			delete process.env.WORKSPACE_DIR;
 		}
 	});
 
-	it("returns GARDEN_DIR when env var is set", () => {
-		process.env.GARDEN_DIR = "/custom/garden";
-		expect(getGardenDir()).toBe("/custom/garden");
+	it("returns WORKSPACE_DIR when env var is set", () => {
+		process.env.WORKSPACE_DIR = "/custom/workspace";
+		expect(getWorkspaceDir()).toBe("/custom/workspace");
 	});
 
-	it("falls back to ~/Garden when env var is not set", () => {
-		delete process.env.GARDEN_DIR;
-		const expected = path.join(os.homedir(), "Garden");
-		expect(getGardenDir()).toBe(expected);
+	it("falls back to ~/Workspace when env var is not set", () => {
+		delete process.env.WORKSPACE_DIR;
+		const expected = path.join(os.homedir(), "Workspace");
+		expect(getWorkspaceDir()).toBe(expected);
 	});
 
-	it("reflects changes to GARDEN_DIR dynamically", () => {
-		process.env.GARDEN_DIR = "/first/path";
-		expect(getGardenDir()).toBe("/first/path");
+	it("reflects changes to WORKSPACE_DIR dynamically", () => {
+		process.env.WORKSPACE_DIR = "/first/path";
+		expect(getWorkspaceDir()).toBe("/first/path");
 
-		process.env.GARDEN_DIR = "/second/path";
-		expect(getGardenDir()).toBe("/second/path");
+		process.env.WORKSPACE_DIR = "/second/path";
+		expect(getWorkspaceDir()).toBe("/second/path");
 	});
 });

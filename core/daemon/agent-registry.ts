@@ -2,7 +2,7 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { type Static, Type } from "@sinclair/typebox";
 import { Value } from "@sinclair/typebox/value";
-import { getGardenDir } from "../lib/filesystem.js";
+import { getWorkspaceDir } from "../lib/filesystem.js";
 import { parseFrontmatter } from "../lib/frontmatter.js";
 import { isSupportedCronExpression } from "./scheduler.js";
 
@@ -46,7 +46,7 @@ export interface ProactiveJobDefinition {
 }
 
 export interface LoadAgentDefinitionsOptions {
-	gardenDir?: string;
+	workspaceDir?: string;
 	serverName?: string;
 }
 
@@ -55,7 +55,7 @@ export interface LoadAgentDefinitionsResult {
 	errors: string[];
 }
 
-const DEFAULT_SERVER_NAME = "garden";
+const DEFAULT_SERVER_NAME = "workspace";
 const DEFAULT_RESPOND_MODE = "mentioned";
 const DEFAULT_ALLOW_AGENT_MENTIONS = true;
 const DEFAULT_MAX_PUBLIC_TURNS_PER_ROOT = 2;
@@ -113,9 +113,9 @@ export function loadAgentDefinitions(options: LoadAgentDefinitionsOptions = {}):
 }
 
 export function loadAgentDefinitionsResult(options: LoadAgentDefinitionsOptions = {}): LoadAgentDefinitionsResult {
-	const gardenDir = options.gardenDir ?? getGardenDir();
+	const workspaceDir = options.workspaceDir ?? getWorkspaceDir();
 	const serverName = options.serverName ?? DEFAULT_SERVER_NAME;
-	const agentsDir = join(gardenDir, "Agents");
+	const agentsDir = join(workspaceDir, "Agents");
 	if (!existsSync(agentsDir)) return { agents: [], errors: [] };
 
 	const agentIds = readdirSync(agentsDir, { withFileTypes: true })

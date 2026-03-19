@@ -2,7 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { getGardenDir, safePath } from "../../core/lib/filesystem.js";
+import { getWorkspaceDir, safePath } from "../../core/lib/filesystem.js";
 import { parseFrontmatter, stringifyFrontmatter } from "../../core/lib/frontmatter.js";
 import {
 	createLogger,
@@ -19,31 +19,31 @@ import {
 // ---------------------------------------------------------------------------
 describe("safePath", () => {
 	it("resolves normal paths within root", () => {
-		expect(safePath("/garden", "Inbox", "note.md")).toBe("/garden/Inbox/note.md");
+		expect(safePath("/workspace", "Inbox", "note.md")).toBe("/workspace/Inbox/note.md");
 	});
 
 	it("resolves nested paths", () => {
-		expect(safePath("/garden", "Projects", "myproj", "task.md")).toBe("/garden/Projects/myproj/task.md");
+		expect(safePath("/workspace", "Projects", "myproj", "task.md")).toBe("/workspace/Projects/myproj/task.md");
 	});
 
 	it("returns root when no segments given", () => {
-		expect(safePath("/garden")).toBe("/garden");
+		expect(safePath("/workspace")).toBe("/workspace");
 	});
 
 	it("throws on ../ traversal", () => {
-		expect(() => safePath("/garden", "../../etc/passwd")).toThrow("Path traversal blocked");
+		expect(() => safePath("/workspace", "../../etc/passwd")).toThrow("Path traversal blocked");
 	});
 
 	it("throws on absolute path segment", () => {
-		expect(() => safePath("/garden", "/etc/passwd")).toThrow("Path traversal blocked");
+		expect(() => safePath("/workspace", "/etc/passwd")).toThrow("Path traversal blocked");
 	});
 
 	it("throws on traversal hidden in nested segments", () => {
-		expect(() => safePath("/garden", "Projects", "..", "..", "etc", "shadow")).toThrow("Path traversal blocked");
+		expect(() => safePath("/workspace", "Projects", "..", "..", "etc", "shadow")).toThrow("Path traversal blocked");
 	});
 
 	it("allows segments that contain dots but don't escape", () => {
-		expect(safePath("/garden", "my.project", "note.md")).toBe("/garden/my.project/note.md");
+		expect(safePath("/workspace", "my.project", "note.md")).toBe("/workspace/my.project/note.md");
 	});
 });
 
@@ -204,24 +204,24 @@ describe("nowIso", () => {
 });
 
 // ---------------------------------------------------------------------------
-// getGardenDir
+// getWorkspaceDir
 // ---------------------------------------------------------------------------
-describe("getGardenDir", () => {
+describe("getWorkspaceDir", () => {
 	const origEnv = { ...process.env };
 
 	afterEach(() => {
 		process.env = { ...origEnv };
 	});
 
-	it("returns GARDEN_DIR when set", () => {
-		process.env.GARDEN_DIR = "/custom";
-		expect(getGardenDir()).toBe("/custom");
+	it("returns WORKSPACE_DIR when set", () => {
+		process.env.WORKSPACE_DIR = "/custom";
+		expect(getWorkspaceDir()).toBe("/custom");
 	});
 
-	it("defaults to ~/Garden when GARDEN_DIR is not set", () => {
-		delete process.env.GARDEN_DIR;
-		const result = getGardenDir();
-		expect(result).toMatch(/\/Garden$/);
+	it("defaults to ~/Workspace when WORKSPACE_DIR is not set", () => {
+		delete process.env.WORKSPACE_DIR;
+		const result = getWorkspaceDir();
+		expect(result).toMatch(/\/Workspace$/);
 	});
 });
 
@@ -334,7 +334,7 @@ describe("requireConfirmation", () => {
 		const second = await requireConfirmation(ctx, "delete file");
 
 		expect(first).toBe(second);
-		const saved = JSON.parse(fs.readFileSync(`${sessionFile}.garden-interactions.json`, "utf-8")) as {
+		const saved = JSON.parse(fs.readFileSync(`${sessionFile}.workspace-interactions.json`, "utf-8")) as {
 			records: Array<{ token: string; status: string; kind: string }>;
 		};
 		expect(saved.records).toHaveLength(1);
@@ -360,7 +360,7 @@ describe("requireConfirmation", () => {
 		const sessionFile = path.join(dir, "session.jsonl");
 		const token = "abc123";
 		fs.writeFileSync(
-			`${sessionFile}.garden-interactions.json`,
+			`${sessionFile}.workspace-interactions.json`,
 			JSON.stringify({
 				records: [
 					{
@@ -388,7 +388,7 @@ describe("requireConfirmation", () => {
 		const result = await requireConfirmation(ctx, "delete file");
 
 		expect(result).toBeNull();
-		const saved = JSON.parse(fs.readFileSync(`${sessionFile}.garden-interactions.json`, "utf-8")) as {
+		const saved = JSON.parse(fs.readFileSync(`${sessionFile}.workspace-interactions.json`, "utf-8")) as {
 			records: Array<{ token: string; status: string }>;
 		};
 		expect(saved.records[0]?.token).toBe(token);
@@ -400,7 +400,7 @@ describe("requireConfirmation", () => {
 		const dir = fs.mkdtempSync(path.join(os.tmpdir(), "shared-confirm-"));
 		const sessionFile = path.join(dir, "session.jsonl");
 		fs.writeFileSync(
-			`${sessionFile}.garden-interactions.json`,
+			`${sessionFile}.workspace-interactions.json`,
 			JSON.stringify({
 				records: [
 					{
@@ -428,7 +428,7 @@ describe("requireConfirmation", () => {
 		const result = await requireConfirmation(ctx, "delete file");
 
 		expect(result).toBe("User declined: delete file");
-		const saved = JSON.parse(fs.readFileSync(`${sessionFile}.garden-interactions.json`, "utf-8")) as {
+		const saved = JSON.parse(fs.readFileSync(`${sessionFile}.workspace-interactions.json`, "utf-8")) as {
 			records: Array<{ status: string }>;
 		};
 		expect(saved.records[0]?.status).toBe("consumed");
@@ -455,7 +455,7 @@ describe("requestSelection", () => {
 		expect(first.prompt).toContain("2. status");
 
 		fs.writeFileSync(
-			`${sessionFile}.garden-interactions.json`,
+			`${sessionFile}.workspace-interactions.json`,
 			JSON.stringify({
 				records: [
 					{
@@ -497,7 +497,7 @@ describe("requestTextInput", () => {
 		expect(first.prompt).toContain("Enter a short note");
 
 		fs.writeFileSync(
-			`${sessionFile}.garden-interactions.json`,
+			`${sessionFile}.workspace-interactions.json`,
 			JSON.stringify({
 				records: [
 					{
@@ -524,18 +524,18 @@ describe("requestTextInput", () => {
 // guardServiceName
 // ---------------------------------------------------------------------------
 describe("guardServiceName", () => {
-	it("returns null for garden- prefixed names", () => {
-		expect(guardServiceName("garden-os")).toBeNull();
-		expect(guardServiceName("garden-test")).toBeNull();
+	it("returns null for workspace- prefixed names", () => {
+		expect(guardServiceName("workspace-os")).toBeNull();
+		expect(guardServiceName("workspace-test")).toBeNull();
 	});
 
-	it("returns null for garden names with numbers", () => {
-		expect(guardServiceName("garden-svc1")).toBeNull();
-		expect(guardServiceName("garden-v2-api")).toBeNull();
+	it("returns null for workspace names with numbers", () => {
+		expect(guardServiceName("workspace-svc1")).toBeNull();
+		expect(guardServiceName("workspace-v2-api")).toBeNull();
 	});
 
-	it("returns error for non-garden names", () => {
-		const result = guardServiceName("not-garden");
+	it("returns error for non-workspace names", () => {
+		const result = guardServiceName("not-workspace");
 		expect(result).toContain("Security error");
 	});
 
@@ -544,30 +544,30 @@ describe("guardServiceName", () => {
 	});
 
 	it("rejects shell metacharacters", () => {
-		expect(guardServiceName("garden-;rm -rf /")).not.toBeNull();
-		expect(guardServiceName("garden-$(whoami)")).not.toBeNull();
-		expect(guardServiceName("garden-`id`")).not.toBeNull();
+		expect(guardServiceName("workspace-;rm -rf /")).not.toBeNull();
+		expect(guardServiceName("workspace-$(whoami)")).not.toBeNull();
+		expect(guardServiceName("workspace-`id`")).not.toBeNull();
 	});
 
 	it("rejects path separators", () => {
-		expect(guardServiceName("garden-../../etc")).not.toBeNull();
-		expect(guardServiceName("garden-foo/bar")).not.toBeNull();
+		expect(guardServiceName("workspace-../../etc")).not.toBeNull();
+		expect(guardServiceName("workspace-foo/bar")).not.toBeNull();
 	});
 
 	it("rejects spaces", () => {
-		expect(guardServiceName("garden- evil")).not.toBeNull();
+		expect(guardServiceName("workspace- evil")).not.toBeNull();
 	});
 
 	it("rejects uppercase letters", () => {
-		expect(guardServiceName("garden-Foo")).not.toBeNull();
+		expect(guardServiceName("workspace-Foo")).not.toBeNull();
 	});
 
-	it("rejects garden- with nothing after it", () => {
-		expect(guardServiceName("garden-")).not.toBeNull();
+	it("rejects workspace- with nothing after it", () => {
+		expect(guardServiceName("workspace-")).not.toBeNull();
 	});
 
-	it("rejects garden- starting with hyphen", () => {
-		expect(guardServiceName("garden--double")).not.toBeNull();
+	it("rejects workspace- starting with hyphen", () => {
+		expect(guardServiceName("workspace--double")).not.toBeNull();
 	});
 
 	it("accepts alternate prefixes when requested", () => {

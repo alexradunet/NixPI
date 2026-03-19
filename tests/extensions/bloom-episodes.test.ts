@@ -3,7 +3,7 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createMockExtensionAPI, type MockExtensionAPI } from "../helpers/mock-extension-api.js";
 import { createMockExtensionContext } from "../helpers/mock-extension-context.js";
-import { createTempGarden, type TempGarden } from "../helpers/temp-garden.js";
+import { createTempGarden, type TempGarden } from "../helpers/temp-workspace.js";
 
 let temp: TempGarden;
 let api: MockExtensionAPI;
@@ -51,7 +51,7 @@ describe("episodes", () => {
 
 		expect(result.content[0].text).toContain("created episode/");
 
-		const episodesDir = path.join(temp.gardenDir, "Episodes");
+		const episodesDir = path.join(temp.workspaceDir, "Episodes");
 		const files = fs.globSync("**/*.md", { cwd: episodesDir });
 		expect(files).toHaveLength(1);
 
@@ -83,14 +83,14 @@ describe("episodes", () => {
 
 		expect(promoteResult.content[0].text).toContain("promoted episode/");
 
-		const objectPath = path.join(temp.gardenDir, "Objects", "ts-style.md");
+		const objectPath = path.join(temp.workspaceDir, "Objects", "ts-style.md");
 		expect(fs.existsSync(objectPath)).toBe(true);
 		const objectRaw = fs.readFileSync(objectPath, "utf-8");
 		expect(objectRaw).toContain("type: preference");
 		expect(objectRaw).toContain("episode/");
 
-		const episodeFiles = fs.globSync("**/*.md", { cwd: path.join(temp.gardenDir, "Episodes") });
-		const episodeRaw = fs.readFileSync(path.join(temp.gardenDir, "Episodes", episodeFiles[0]), "utf-8");
+		const episodeFiles = fs.globSync("**/*.md", { cwd: path.join(temp.workspaceDir, "Episodes") });
+		const episodeRaw = fs.readFileSync(path.join(temp.workspaceDir, "Episodes", episodeFiles[0]), "utf-8");
 		expect(episodeRaw).toContain("preference/ts-style");
 	});
 
@@ -100,7 +100,7 @@ describe("episodes", () => {
 			"call-1",
 			{
 				title: "Recovery Procedure",
-				body: "Restart garden-matrix.service, then verify the bridge recovers.",
+				body: "Restart workspace-matrix.service, then verify the bridge recovers.",
 				kind: "resolution",
 				importance: "high",
 				tags: ["recovery", "procedure"],
@@ -113,17 +113,17 @@ describe("episodes", () => {
 			},
 			undefined,
 			undefined,
-			createMockExtensionContext({ cwd: "/tmp/pi-garden" }),
+			createMockExtensionContext({ cwd: "/tmp/pi-workspace" }),
 		);
 
 		expect(result.content[0].text).toContain("created episode/");
 		expect(result.content[0].text).toContain("promoted episode/");
 
-		const objectPath = path.join(temp.gardenDir, "Objects", "matrix-recovery.md");
+		const objectPath = path.join(temp.workspaceDir, "Objects", "matrix-recovery.md");
 		expect(fs.existsSync(objectPath)).toBe(true);
 		const objectRaw = fs.readFileSync(objectPath, "utf-8");
 		expect(objectRaw).toContain("scope: project");
-		expect(objectRaw).toContain("scope_value: pi-garden");
+		expect(objectRaw).toContain("scope_value: pi-workspace");
 	});
 
 	it("proposes and applies conservative episode consolidation", async () => {
@@ -153,7 +153,7 @@ describe("episodes", () => {
 		const applied = await consolidate("call-4", { mode: "apply", limit: 10 });
 		expect(applied.content[0].text).toContain("preference/cli-style-preference");
 
-		const objectPath = path.join(temp.gardenDir, "Objects", "cli-style-preference.md");
+		const objectPath = path.join(temp.workspaceDir, "Objects", "cli-style-preference.md");
 		expect(fs.existsSync(objectPath)).toBe(true);
 	});
 
@@ -183,10 +183,10 @@ describe("episodes", () => {
 			},
 			undefined,
 			undefined,
-			createMockExtensionContext({ cwd: "/tmp/pi-garden" }),
+			createMockExtensionContext({ cwd: "/tmp/pi-workspace" }),
 		);
 
-		const objectPath = path.join(temp.gardenDir, "Objects", "ops-room-preference.md");
+		const objectPath = path.join(temp.workspaceDir, "Objects", "ops-room-preference.md");
 		const objectRaw = fs.readFileSync(objectPath, "utf-8");
 		expect(objectRaw).toContain("scope: room");
 		expect(objectRaw).toContain("scope_value: ops-room");

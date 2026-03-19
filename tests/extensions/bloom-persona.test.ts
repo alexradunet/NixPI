@@ -5,7 +5,7 @@ import { stringifyFrontmatter } from "../../core/lib/frontmatter.js";
 import { normalizeCommand } from "../../core/pi/extensions/persona/actions.js";
 import { createMockExtensionAPI, type MockExtensionAPI } from "../helpers/mock-extension-api.js";
 import { createMockExtensionContext } from "../helpers/mock-extension-context.js";
-import { createTempGarden, type TempGarden } from "../helpers/temp-garden.js";
+import { createTempGarden, type TempGarden } from "../helpers/temp-workspace.js";
 
 let temp: TempGarden;
 let api: MockExtensionAPI;
@@ -47,13 +47,13 @@ describe("persona registration", () => {
 // session_start sets session name
 // ---------------------------------------------------------------------------
 describe("persona session_start", () => {
-	it("sets session name to 'Garden'", async () => {
+	it("sets session name to 'Workspace'", async () => {
 		await api.fireEvent("session_start");
-		expect(api._sessionName).toBe("Garden");
+		expect(api._sessionName).toBe("Workspace");
 	});
 
 	it("injects a durable memory digest into the system prompt", async () => {
-		const objectsDir = path.join(temp.gardenDir, "Objects");
+		const objectsDir = path.join(temp.workspaceDir, "Objects");
 		fs.mkdirSync(objectsDir, { recursive: true });
 		fs.writeFileSync(
 			path.join(objectsDir, "ts-style.md"),
@@ -76,7 +76,7 @@ describe("persona session_start", () => {
 					type: "procedure",
 					slug: "matrix-recovery",
 					title: "Matrix Recovery",
-					summary: "Restart garden-matrix.service, then verify recovery.",
+					summary: "Restart workspace-matrix.service, then verify recovery.",
 					status: "active",
 					salience: 0.8,
 				},
@@ -93,7 +93,7 @@ describe("persona session_start", () => {
 					summary: "Project-specific recovery path.",
 					status: "active",
 					scope: "project",
-					scope_value: "pi-garden",
+					scope_value: "pi-workspace",
 					salience: 0.4,
 				},
 				"# Project Recovery\n",
@@ -105,10 +105,10 @@ describe("persona session_start", () => {
 			{
 				systemPrompt: "BASE",
 			},
-			createMockExtensionContext({ cwd: "/tmp/pi-garden" }),
+			createMockExtensionContext({ cwd: "/tmp/pi-workspace" }),
 		)) as { systemPrompt: string };
 
-		expect(result.systemPrompt).toContain("[GARDEN MEMORY DIGEST]");
+		expect(result.systemPrompt).toContain("[WORKSPACE MEMORY DIGEST]");
 		expect(result.systemPrompt).toContain("preference/ts-style");
 		const procedureIndex = result.systemPrompt.indexOf("procedure/project-recovery");
 		const globalProcedureIndex = result.systemPrompt.indexOf("procedure/matrix-recovery");
@@ -222,7 +222,7 @@ describe("persona session_before_compact", () => {
 		})) as { compaction: { summary: string; firstKeptEntryId: number; tokensBefore: number } };
 
 		expect(result.compaction.summary).toContain("COMPACTION GUIDANCE");
-		expect(result.compaction.summary).toContain("Garden persona identity");
+		expect(result.compaction.summary).toContain("Workspace persona identity");
 		expect(result.compaction.summary).toContain("Tokens before compaction: 15000");
 		expect(result.compaction.firstKeptEntryId).toBe(42);
 		expect(result.compaction.tokensBefore).toBe(15000);

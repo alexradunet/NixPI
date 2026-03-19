@@ -19,7 +19,7 @@ export interface GuardrailsConfig {
 }
 
 /** Persisted context state for cross-compaction continuity. */
-export interface GardenContext {
+export interface WorkspaceContext {
 	savedAt: string;
 	updateAvailable: boolean;
 }

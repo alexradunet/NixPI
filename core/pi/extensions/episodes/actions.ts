@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import { getGardenDir, safePath } from "../../../lib/filesystem.js";
+import { getWorkspaceDir, safePath } from "../../../lib/filesystem.js";
 import { parseFrontmatter, stringifyFrontmatter } from "../../../lib/frontmatter.js";
 import { errorResult, nowIso } from "../../../lib/shared.js";
 import { defaultObjectBody, mergeObjectState, readMemoryRecord, writeMemoryRecord } from "../objects/memory.js";
@@ -26,7 +26,7 @@ export interface EpisodeRecord {
 }
 
 export function ensureEpisodesDir(): string {
-	const dir = path.join(getGardenDir(), "Episodes");
+	const dir = path.join(getWorkspaceDir(), "Episodes");
 	fs.mkdirSync(dir, { recursive: true });
 	return dir;
 }
@@ -311,7 +311,7 @@ export function promoteEpisode(params: {
 	const sourceRef = episodeRef(params.episode_id);
 	const target = conservativeDefaults(params.target, parsed.attributes);
 
-	const objectsDir = path.join(getGardenDir(), "Objects");
+	const objectsDir = path.join(getWorkspaceDir(), "Objects");
 	let objectPath: string;
 	try {
 		objectPath = safePath(objectsDir, `${target.slug}.md`);

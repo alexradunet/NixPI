@@ -14,7 +14,7 @@ function makeAgent(id: string): AgentDefinition {
 		instructionsBody: `# ${id}`,
 		matrix: {
 			username: id,
-			userId: `@${id}:garden`,
+			userId: `@${id}:workspace`,
 			autojoin: true,
 		},
 		respond: {
@@ -42,7 +42,7 @@ describe("proactive daemon helpers", () => {
 				{
 					id: "daily-heartbeat",
 					kind: "heartbeat",
-					room: "!ops:garden",
+					room: "!ops:workspace",
 					intervalMinutes: 1440,
 					prompt: "Heartbeat",
 					quietIfNoop: true,
@@ -56,7 +56,7 @@ describe("proactive daemon helpers", () => {
 				{
 					id: "morning-check",
 					kind: "cron",
-					room: "!planning:garden",
+					room: "!planning:workspace",
 					cron: "0 9 * * *",
 					prompt: "Morning check",
 				},
@@ -67,7 +67,7 @@ describe("proactive daemon helpers", () => {
 			{
 				id: "daily-heartbeat",
 				agentId: "host",
-				roomId: "!ops:garden",
+				roomId: "!ops:workspace",
 				kind: "heartbeat",
 				intervalMinutes: 1440,
 				prompt: "Heartbeat",
@@ -77,7 +77,7 @@ describe("proactive daemon helpers", () => {
 			{
 				id: "morning-check",
 				agentId: "planner",
-				roomId: "!planning:garden",
+				roomId: "!planning:workspace",
 				kind: "cron",
 				cron: "0 9 * * *",
 				prompt: "Morning check",
@@ -86,7 +86,7 @@ describe("proactive daemon helpers", () => {
 	});
 
 	it("loads empty scheduler state when the file is missing or malformed", () => {
-		const dir = mkdtempSync(join(tmpdir(), "garden-proactive-"));
+		const dir = mkdtempSync(join(tmpdir(), "workspace-proactive-"));
 		tempDirs.push(dir);
 		const missingPath = join(dir, "scheduler-state.json");
 		expect(loadSchedulerState(missingPath)).toEqual({});
@@ -95,23 +95,23 @@ describe("proactive daemon helpers", () => {
 		expect(loadSchedulerState(missingPath)).toEqual({});
 
 		saveSchedulerState(missingPath, {
-			"host::!ops:garden::daily-heartbeat": { lastRunAt: 123 },
+			"host::!ops:workspace::daily-heartbeat": { lastRunAt: 123 },
 		});
 		expect(loadSchedulerState(missingPath)).toEqual({
-			"host::!ops:garden::daily-heartbeat": { lastRunAt: 123 },
+			"host::!ops:workspace::daily-heartbeat": { lastRunAt: 123 },
 		});
 	});
 
 	it("writes scheduler state as formatted json", () => {
-		const dir = mkdtempSync(join(tmpdir(), "garden-proactive-"));
+		const dir = mkdtempSync(join(tmpdir(), "workspace-proactive-"));
 		tempDirs.push(dir);
 		const statePath = join(dir, "nested", "scheduler-state.json");
 
 		saveSchedulerState(statePath, {
-			"host::!ops:garden::daily-heartbeat": { lastRunAt: 456 },
+			"host::!ops:workspace::daily-heartbeat": { lastRunAt: 456 },
 		});
 
-		expect(readFileSync(statePath, "utf-8")).toContain('"host::!ops:garden::daily-heartbeat"');
+		expect(readFileSync(statePath, "utf-8")).toContain('"host::!ops:workspace::daily-heartbeat"');
 		expect(readFileSync(statePath, "utf-8")).toContain('"lastRunAt": 456');
 	});
 });

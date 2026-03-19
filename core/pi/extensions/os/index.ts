@@ -27,7 +27,7 @@ const NixosUpdateParams = Type.Object({
 	source: Type.Optional(
 		StringEnum(["remote", "local"] as const, {
 			description:
-				"Which flake source to use for apply. remote uses the GitHub flake. local uses ~/.garden/pi-garden. Ignored for status and rollback.",
+				"Which flake source to use for apply. remote uses the GitHub flake. local uses ~/.workspace/pi-workspace. Ignored for status and rollback.",
 			default: "remote",
 		}),
 	),
@@ -41,7 +41,7 @@ const NixConfigProposalParams = Type.Object({
 });
 
 const SystemdControlParams = Type.Object({
-	service: Type.String({ description: "Service name (e.g. garden-dufs)" }),
+	service: Type.String({ description: "Service name (e.g. workspace-dufs)" }),
 	action: StringEnum(["start", "stop", "restart", "status"] as const),
 });
 
@@ -70,7 +70,7 @@ export default function (pi: ExtensionAPI) {
 			name: "nix_config_proposal",
 			label: "Local Nix Config Proposal",
 			description:
-				"Inspect, validate, and refresh flake inputs in the local Garden repo clone used for human-reviewed NixOS proposals. Does not apply system changes or publish remotely.",
+				"Inspect, validate, and refresh flake inputs in the local Workspace repo clone used for human-reviewed NixOS proposals. Does not apply system changes or publish remotely.",
 			parameters: NixConfigProposalParams,
 			async execute(_toolCallId, params, signal, _onUpdate, ctx) {
 				const p = params as Static<typeof NixConfigProposalParams>;
@@ -80,7 +80,7 @@ export default function (pi: ExtensionAPI) {
 		defineTool({
 			name: "systemd_control",
 			label: "Systemd Service Control",
-			description: "Manage a Garden user-systemd service (start, stop, restart, status). Only garden-* services allowed.",
+			description: "Manage a Workspace user-systemd service (start, stop, restart, status). Only workspace-* services allowed.",
 			parameters: SystemdControlParams,
 			async execute(_toolCallId, params, signal, _onUpdate, ctx) {
 				const p = params as Static<typeof SystemdControlParams>;
@@ -90,7 +90,7 @@ export default function (pi: ExtensionAPI) {
 		defineTool({
 			name: "update_status",
 			label: "Update Status",
-			description: "Reads the Garden OS update status from the last scheduled check.",
+			description: "Reads the Workspace OS update status from the last scheduled check.",
 			parameters: UpdateStatusParams,
 			async execute() {
 				return handleUpdateStatus();

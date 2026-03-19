@@ -6,12 +6,12 @@
 #           built-in service runtime generation, and step_matrix.
 #
 # Required env vars (callers must set before sourcing):
-#   WIZARD_STATE        — path to checkpoint directory (e.g. ~/.garden/wizard-state)
+#   WIZARD_STATE        — path to checkpoint directory (e.g. ~/.workspace/wizard-state)
 #   MATRIX_STATE_DIR    — path to matrix state directory
 #   MATRIX_HOMESERVER   — Matrix homeserver URL (e.g. http://localhost:6167)
 #   PI_DIR              — path to Pi config dir (e.g. ~/.pi)
-#   BLOOM_CONFIG        — path to Garden config dir (e.g. ~/.config/garden)
-#   GARDEN_DIR           — path to Garden home dir
+#   BLOOM_CONFIG        — path to Workspace config dir (e.g. ~/.config/workspace)
+#   WORKSPACE_DIR           — path to Workspace home dir
 #   SYSTEMD_USER_DIR    — path to systemd user dir
 
 # --- Checkpoint helpers ---
@@ -182,7 +182,7 @@ write_service_home_runtime() {
 	<head>
 	  <meta charset="utf-8" />
 	  <meta name="viewport" content="width=device-width, initial-scale=1" />
-	  <title>Garden Home</title>
+	  <title>Workspace Home</title>
 	  <style>
 	    :root {
 	      color-scheme: light;
@@ -350,8 +350,8 @@ write_service_home_runtime() {
 	<body>
 	  <main>
 	    <section class="hero">
-	      <p class="eyebrow">Garden Home</p>
-	      <h1>Service access for this Garden node</h1>
+	      <p class="eyebrow">Workspace Home</p>
+	      <h1>Service access for this Workspace node</h1>
 	      <p>Use this page to remember which NetBird URL to open, which hostname or IP to share with other peers, and which local path each service exposes.</p>
 	      <div class="share-grid">
 	        <div class="share-card">
@@ -373,7 +373,7 @@ write_service_home_runtime() {
 	      <div class="service-head">
 	        <div class="service-icon">HM</div>
 	        <div>
-	          <h2>Garden Home</h2>
+	          <h2>Workspace Home</h2>
 	          <p class="service-description">NetBird landing page showing installed services and shareable access URLs</p>
 	        </div>
 	        <span class="service-status status-live">Running</span>
@@ -387,8 +387,8 @@ write_service_home_runtime() {
 	      <div class="service-head">
 	        <div class="service-icon">MX</div>
 	        <div>
-	          <h2>Garden Web Chat</h2>
-	          <p class="service-description">Browser Matrix client preconfigured for this Garden node</p>
+	          <h2>Workspace Web Chat</h2>
+	          <p class="service-description">Browser Matrix client preconfigured for this Workspace node</p>
 	        </div>
 	        <span class="service-status status-live">Running</span>
 	      </div>
@@ -401,13 +401,13 @@ write_service_home_runtime() {
 	      <div class="service-head">
 	        <div class="service-icon">FS</div>
 	        <div>
-	          <h2>Garden Files</h2>
-	          <p class="service-description">WebDAV share for the intentional cross-device Garden folder</p>
+	          <h2>Workspace Files</h2>
+	          <p class="service-description">WebDAV share for the intentional cross-device Workspace folder</p>
 	        </div>
 	        <span class="service-status status-live">Running</span>
 	      </div>
 	      <p class="service-meta"><span class="service-label">URL</span><a class="service-link" href="http://${mesh_host}:5000">http://${mesh_host}:5000</a></p>
-	      <p class="service-meta"><span class="service-label">Path</span>~/Public/Garden</p>
+	      <p class="service-meta"><span class="service-label">Path</span>~/Public/Workspace</p>
 	    </article>
 	HTML
 
@@ -416,8 +416,8 @@ write_service_home_runtime() {
 	      <div class="service-head">
 	        <div class="service-icon">CS</div>
 	        <div>
-	          <h2>Garden Code</h2>
-	          <p class="service-description">Browser IDE for editing the local machine and reviewing Garden changes</p>
+	          <h2>Workspace Code</h2>
+	          <p class="service-description">Browser IDE for editing the local machine and reviewing Workspace changes</p>
 	        </div>
 	        <span class="service-status status-live">Running</span>
 	      </div>
@@ -449,7 +449,7 @@ install_home_infrastructure() {
 
 	cat > "$BLOOM_CONFIG/home/nginx.conf" <<-NGINX
 	daemon off;
-	pid /run/user/${UID}/garden-home-nginx.pid;
+	pid /run/user/${UID}/workspace-home-nginx.pid;
 	error_log stderr;
 	events { worker_connections 64; }
 	http {
@@ -466,7 +466,7 @@ install_home_infrastructure() {
 	NGINX
 
 	systemctl --user daemon-reload
-	systemctl --user restart garden-home.service
+	systemctl --user restart workspace-home.service
 }
 
 write_fluffychat_runtime_config() {
@@ -483,7 +483,7 @@ write_fluffychat_runtime_config() {
 	mkdir -p "$BLOOM_CONFIG/fluffychat"
 	cat > "$BLOOM_CONFIG/fluffychat/config.json" <<-CONFIG
 	{
-	  "applicationName": "Garden Web Chat",
+	  "applicationName": "Workspace Web Chat",
 	  "defaultHomeserver": "${primary_matrix_url}"
 	}
 	CONFIG
@@ -498,11 +498,11 @@ step_matrix() {
 	# Wait for Matrix homeserver
 	echo "Waiting for Matrix homeserver..."
 	local attempts=0
-	while ! systemctl is-active --quiet garden-matrix.service; do
+	while ! systemctl is-active --quiet workspace-matrix.service; do
 		attempts=$((attempts + 1))
 		if [[ $attempts -ge 30 ]]; then
-			echo "ERROR: garden-matrix.service did not start within 30 seconds." >&2
-			echo "Run 'systemctl status garden-matrix' to debug." >&2
+			echo "ERROR: workspace-matrix.service did not start within 30 seconds." >&2
+			echo "Run 'systemctl status workspace-matrix' to debug." >&2
 			return 1
 		fi
 		sleep 1
@@ -543,7 +543,7 @@ step_matrix() {
 			done
 		fi
 	else
-		echo "Resuming Matrix setup for @${username}:garden"
+		echo "Resuming Matrix setup for @${username}:workspace"
 	fi
 
 	# Register bot account
@@ -563,7 +563,7 @@ step_matrix() {
 			# blocks the configured registration_token until the first account is created.
 			# Extract that token from the journal and use it for the first registration.
 			local first_boot_token
-			first_boot_token=$(sudo journalctl -u garden-matrix --no-pager 2>/dev/null | \
+			first_boot_token=$(sudo journalctl -u workspace-matrix --no-pager 2>/dev/null | \
 				sed -n 's/.*registration token \([A-Za-z0-9]*\) .*/\1/p' | head -1 || true)
 			if [[ -n "$first_boot_token" ]]; then
 				bot_result=$(matrix_register "pi" "$bot_password" "$first_boot_token" 2>/dev/null || true)
@@ -571,7 +571,7 @@ step_matrix() {
 		fi
 		if [[ -z "$bot_result" ]]; then
 			bot_result=$(matrix_register "pi" "$bot_password" "$reg_token") || {
-				echo "ERROR: Failed to register or recover @pi:garden bot account." >&2
+				echo "ERROR: Failed to register or recover @pi:workspace bot account." >&2
 				return 1
 			}
 		fi
@@ -595,11 +595,11 @@ step_matrix() {
 		matrix_state_set user_password "$user_password"
 	fi
 	if [[ -z "$user_token" || -z "$user_user_id" ]]; then
-		echo "Creating or resuming your account (@${username}:garden)..."
+		echo "Creating or resuming your account (@${username}:workspace)..."
 		user_result=$(matrix_login "$username" "$user_password" 2>/dev/null || true)
 		if [[ -z "$user_result" ]]; then
 			user_result=$(matrix_register "$username" "$user_password" "$reg_token") || {
-				echo "ERROR: Failed to register or recover @${username}:garden account." >&2
+				echo "ERROR: Failed to register or recover @${username}:workspace account." >&2
 				return 1
 			}
 		fi
@@ -624,8 +624,8 @@ step_matrix() {
 	CREDS
 	chmod 600 "$PI_DIR/matrix-credentials.json"
 
-	# Create #general:garden room (bot creates, invites user)
-	echo "Creating #general:garden room..."
+	# Create #general:workspace room (bot creates, invites user)
+	echo "Creating #general:workspace room..."
 	curl -sf -X POST "${MATRIX_HOMESERVER}/_matrix/client/v3/createRoom" \
 		-H "Authorization: Bearer ${bot_token}" \
 		-H "Content-Type: application/json" \

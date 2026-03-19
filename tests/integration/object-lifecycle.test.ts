@@ -4,14 +4,14 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { parseFrontmatter } from "../../core/lib/frontmatter.js";
 import { createMockExtensionAPI } from "../helpers/mock-extension-api.js";
 import { createMockExtensionContext } from "../helpers/mock-extension-context.js";
-import { createTempGarden, type TempGarden } from "../helpers/temp-garden.js";
+import { createTempGarden, type TempGarden } from "../helpers/temp-workspace.js";
 
 let temp: TempGarden;
 
 beforeEach(() => {
 	temp = createTempGarden();
 	// Create Objects directory
-	mkdirSync(join(temp.gardenDir, "Objects"), { recursive: true });
+	mkdirSync(join(temp.workspaceDir, "Objects"), { recursive: true });
 });
 
 afterEach(() => {
@@ -60,7 +60,7 @@ describe("object lifecycle", () => {
 		expect(result.isError).toBeUndefined();
 		expect(result.content[0].text).toContain("created decision/fix-bike");
 
-		const filepath = join(temp.gardenDir, "Objects", "fix-bike.md");
+		const filepath = join(temp.workspaceDir, "Objects", "fix-bike.md");
 		expect(existsSync(filepath)).toBe(true);
 
 		const raw = readFileSync(filepath, "utf-8");

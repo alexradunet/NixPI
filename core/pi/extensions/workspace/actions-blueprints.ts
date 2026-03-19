@@ -1,5 +1,5 @@
 /**
- * Blueprint versioning and seeding logic for garden.
+ * Blueprint versioning and seeding logic for workspace.
  */
 import { createHash } from "node:crypto";
 import fs from "node:fs";
@@ -11,8 +11,8 @@ const PERSONA_FILES = ["SOUL.md", "BODY.md", "FACULTY.md", "SKILL.md"];
 
 // --- Blueprint versioning ---
 
-export function readBlueprintVersions(gardenDir: string): BlueprintVersions {
-	const fp = path.join(gardenDir, "blueprint-versions.json");
+export function readBlueprintVersions(workspaceDir: string): BlueprintVersions {
+	const fp = path.join(workspaceDir, "blueprint-versions.json");
 	try {
 		const parsed = JSON.parse(fs.readFileSync(fp, "utf-8")) as Partial<BlueprintVersions>;
 		return {
@@ -26,8 +26,8 @@ export function readBlueprintVersions(gardenDir: string): BlueprintVersions {
 	}
 }
 
-export function writeBlueprintVersions(gardenDir: string, versions: BlueprintVersions): void {
-	fs.writeFileSync(path.join(gardenDir, "blueprint-versions.json"), `${JSON.stringify(versions, null, 2)}\n`);
+export function writeBlueprintVersions(workspaceDir: string, versions: BlueprintVersions): void {
+	fs.writeFileSync(path.join(workspaceDir, "blueprint-versions.json"), `${JSON.stringify(versions, null, 2)}\n`);
 }
 
 // --- Hashing ---
@@ -38,17 +38,17 @@ function hashContent(content: string): string {
 
 // --- Blueprint seeding ---
 
-function blueprintDestPath(gardenDir: string, key: string): string {
+function blueprintDestPath(workspaceDir: string, key: string): string {
 	if (key.startsWith("persona/")) {
-		return path.join(gardenDir, "Persona", key.replace(/^persona\//, ""));
+		return path.join(workspaceDir, "Persona", key.replace(/^persona\//, ""));
 	}
 	if (key.startsWith("skills/")) {
-		return path.join(gardenDir, "Skills", key.replace(/^skills\//, ""));
+		return path.join(workspaceDir, "Skills", key.replace(/^skills\//, ""));
 	}
 	if (key === "guardrails.yaml") {
-		return path.join(gardenDir, "guardrails.yaml");
+		return path.join(workspaceDir, "guardrails.yaml");
 	}
-	return path.join(gardenDir, key);
+	return path.join(workspaceDir, key);
 }
 
 function seedFile(src: string, dest: string, key: string, version: string, versions: BlueprintVersions): void {
@@ -90,47 +90,47 @@ function seedFile(src: string, dest: string, key: string, version: string, versi
 	versions.updatesAvailable[key] = version;
 }
 
-export function seedBlueprints(gardenDir: string, packageDir: string): void {
+export function seedBlueprints(workspaceDir: string, packageDir: string): void {
 	const version = getPackageVersion(packageDir);
-	const versions = readBlueprintVersions(gardenDir);
+	const versions = readBlueprintVersions(workspaceDir);
 	const personaDir = fs.existsSync(path.join(packageDir, "core", "pi", "persona"))
 		? path.join(packageDir, "core", "pi", "persona")
 		: path.join(packageDir, "persona");
 	for (const file of PERSONA_FILES) {
 		const key = `persona/${file}`;
 		const src = path.join(personaDir, file);
-		const dest = path.join(gardenDir, "Persona", file);
+		const dest = path.join(workspaceDir, "Persona", file);
 		seedFile(src, dest, key, version, versions);
 	}
 
-	// Skills are intentionally NOT seeded to ~/Garden/Skills/.
+	// Skills are intentionally NOT seeded to ~/Workspace/Skills/.
 	// The package path already exposes them to the agent via the `packages`
 	// setting in settings.json.  Seeding them here creates duplicate sources
 	// that cause "collision" warnings at startup (package = user priority,
-	// ~/Garden/Skills/ = temp priority, same name → conflict).
-	// ~/Garden/Skills/ is reserved for user-created custom skills only.
+	// ~/Workspace/Skills/ = temp priority, same name → conflict).
+	// ~/Workspace/Skills/ is reserved for user-created custom skills only.
 
 	// Seed guardrails policy
 	seedFile(
 		path.join(packageDir, "guardrails.yaml"),
-		path.join(gardenDir, "guardrails.yaml"),
+		path.join(workspaceDir, "guardrails.yaml"),
 		"guardrails.yaml",
 		version,
 		versions,
 	);
 
 	versions.packageVersion = version;
-	writeBlueprintVersions(gardenDir, versions);
+	writeBlueprintVersions(workspaceDir, versions);
 }
 
-export function handleUpdateBlueprints(gardenDir: string, packageDir: string): number {
-	const versions = readBlueprintVersions(gardenDir);
+export function handleUpdateBlueprints(workspaceDir: string, packageDir: string): number {
+	const versions = readBlueprintVersions(workspaceDir);
 	const updates = Object.entries(versions.updatesAvailable);
 	if (updates.length === 0) return 0;
 
 	for (const [key, version] of updates) {
 		const src = path.join(packageDir, key);
-		const dest = blueprintDestPath(gardenDir, key);
+		const dest = blueprintDestPath(workspaceDir, key);
 		if (!fs.existsSync(src)) continue;
 		const srcContent = fs.readFileSync(src, "utf-8");
 		fs.mkdirSync(path.dirname(dest), { recursive: true });
@@ -139,6 +139,6 @@ export function handleUpdateBlueprints(gardenDir: string, packageDir: string): n
 		versions.seededHashes[key] = hashContent(srcContent);
 		delete versions.updatesAvailable[key];
 	}
-	writeBlueprintVersions(gardenDir, versions);
+	writeBlueprintVersions(workspaceDir, versions);
 	return updates.length;
 }

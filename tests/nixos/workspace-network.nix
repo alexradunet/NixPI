@@ -1,10 +1,10 @@
-# tests/nixos/garden-network.nix
+# tests/nixos/workspace-network.nix
 # Test network connectivity, SSH, and NetBird mesh setup between nodes
 
 { pkgs, lib, bloomModules, bloomModulesNoShell, piAgent, appPackage, mkBloomNode, mkTestFilesystems }:
 
 pkgs.testers.runNixOSTest {
-  name = "garden-network";
+  name = "workspace-network";
 
   nodes = {
     bloom1 = { ... }: {
@@ -118,6 +118,6 @@ pkgs.testers.runNixOSTest {
     response = bloom1.succeed("curl -sf http://bloom2:8080/test.html")
     assert "TEST_RESPONSE" in response, "Unexpected HTTP response: " + response
     
-    print("All garden-network tests passed!")
+    print("All workspace-network tests passed!")
   '';
 }

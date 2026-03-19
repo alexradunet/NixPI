@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createMockExtensionAPI, type MockExtensionAPI } from "../helpers/mock-extension-api.js";
-import { createTempGarden, type TempGarden } from "../helpers/temp-garden.js";
+import { createTempGarden, type TempGarden } from "../helpers/temp-workspace.js";
 
 let temp: TempGarden;
 
@@ -38,26 +38,26 @@ describe("runtime package extension list", () => {
 			"./core/pi/extensions/os",
 			"./core/pi/extensions/episodes",
 			"./core/pi/extensions/objects",
-			"./core/pi/extensions/garden",
+			"./core/pi/extensions/workspace",
 			"./core/pi/extensions/setup",
 		]);
-		expect(extensionList).not.toContain("./core/pi/extensions/garden-dev");
-		expect(extensionList).not.toContain("./core/pi/extensions/garden-repo");
-		expect(extensionList).not.toContain("./core/pi/extensions/garden-services");
+		expect(extensionList).not.toContain("./core/pi/extensions/workspace-dev");
+		expect(extensionList).not.toContain("./core/pi/extensions/workspace-repo");
+		expect(extensionList).not.toContain("./core/pi/extensions/workspace-services");
 	});
 });
 
 // ---------------------------------------------------------------------------
-// garden
+// workspace
 // ---------------------------------------------------------------------------
-describe("garden registration", () => {
+describe("workspace registration", () => {
 	it("registers expected tools, commands, and events", async () => {
-		const mod = await import("../../core/pi/extensions/garden/index.js");
+		const mod = await import("../../core/pi/extensions/workspace/index.js");
 		const api = createMockExtensionAPI();
 		mod.default(api as never);
 
-		expect(toolNames(api)).toEqual(["garden_status"]);
-		expect(commandNames(api)).toEqual(["garden"]);
+		expect(toolNames(api)).toEqual(["workspace_status"]);
+		expect(commandNames(api)).toEqual(["workspace"]);
 		expect(eventNames(api)).toEqual(expect.arrayContaining(["session_start", "resources_discover"]));
 		expect(eventNames(api)).not.toContain("input");
 	});

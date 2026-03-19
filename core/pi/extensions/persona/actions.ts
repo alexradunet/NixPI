@@ -6,9 +6,9 @@ import os from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import jsYaml from "js-yaml";
-import { getGardenDir, getUpdateStatusPath } from "../../../lib/filesystem.js";
+import { getWorkspaceDir, getUpdateStatusPath } from "../../../lib/filesystem.js";
 import { createLogger } from "../../../lib/shared.js";
-import type { GardenContext, GuardrailsConfig } from "./types.js";
+import type { WorkspaceContext, GuardrailsConfig } from "./types.js";
 
 const log = createLogger("persona");
 
@@ -28,11 +28,11 @@ export function normalizeCommand(cmd: string): string {
 
 /** Load and compile guardrail patterns from YAML config. */
 export function loadGuardrails(): Array<{ tool: string; pattern: RegExp; label: string }> {
-	const gardenDir = getGardenDir();
+	const workspaceDir = getWorkspaceDir();
 	const packageDir = resolvePackageDir();
 
 	// User customization takes priority over defaults
-	const gardenPath = join(gardenDir, "guardrails.yaml");
+	const gardenPath = join(workspaceDir, "guardrails.yaml");
 	const defaultPath = join(packageDir, "guardrails.yaml");
 	const filePath = existsSync(gardenPath) ? gardenPath : defaultPath;
 
@@ -63,13 +63,13 @@ export function loadGuardrails(): Array<{ tool: string; pattern: RegExp; label: 
 	}
 }
 
-/** Get the path to the garden context persistence file. */
+/** Get the path to the workspace context persistence file. */
 export function getContextFile(): string {
-	return join(os.homedir(), ".pi", "garden-context.json");
+	return join(os.homedir(), ".pi", "workspace-context.json");
 }
 
 /** Save context state for cross-compaction continuity. */
-export function saveContext(ctx: GardenContext): void {
+export function saveContext(ctx: WorkspaceContext): void {
 	try {
 		mkdirSync(join(os.homedir(), ".pi"), { recursive: true });
 		writeFileSync(getContextFile(), JSON.stringify(ctx, null, 2));
@@ -79,11 +79,11 @@ export function saveContext(ctx: GardenContext): void {
 }
 
 /** Load previously saved context state. */
-export function loadContext(): GardenContext | null {
+export function loadContext(): WorkspaceContext | null {
 	try {
 		const contextFile = getContextFile();
 		if (!existsSync(contextFile)) return null;
-		return JSON.parse(readFileSync(contextFile, "utf-8")) as GardenContext;
+		return JSON.parse(readFileSync(contextFile, "utf-8")) as WorkspaceContext;
 	} catch {
 		return null;
 	}
@@ -102,17 +102,17 @@ export function checkUpdateAvailable(): boolean {
 }
 
 /** Build the restored-context system prompt block from persisted compaction state. */
-export function buildRestoredContextBlock(ctx: GardenContext): string {
+export function buildRestoredContextBlock(ctx: WorkspaceContext): string {
 	const lines = ["\n\n[RESTORED CONTEXT]"];
 	if (ctx.updateAvailable) lines.push("OS update available — inform user if not already done.");
 	lines.push(`Context saved at: ${ctx.savedAt}`);
 	return lines.join("\n");
 }
 
-/** Load the 4-layer persona from Garden dir or default package persona. */
+/** Load the 4-layer persona from Workspace dir or default package persona. */
 export function loadPersona(): string {
-	const gardenDir = getGardenDir();
-	const vaultDir = join(gardenDir, "Persona");
+	const workspaceDir = getWorkspaceDir();
+	const vaultDir = join(workspaceDir, "Persona");
 	const packageDir = resolvePackageDir();
 	const defaultPersonaDir = existsSync(join(packageDir, "core", "pi", "persona"))
 		? join(packageDir, "core", "pi", "persona")
@@ -130,5 +130,5 @@ export function loadPersona(): string {
 			return `### ${title}\n\n${content}`;
 		})
 		.join("\n\n");
-	return `## Garden Persona\n\n${sections}`;
+	return `## Workspace Persona\n\n${sections}`;
 }

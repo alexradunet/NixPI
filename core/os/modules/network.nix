@@ -2,70 +2,70 @@
 { pkgs, lib, config, ... }:
 
 let
-  u = config.garden.username;
-  bloomHomeBootstrap = pkgs.writeShellScript "garden-home-bootstrap" ''
+  u = config.workspace.username;
+  bloomHomeBootstrap = pkgs.writeShellScript "workspace-home-bootstrap" ''
     set -eu
-    mkdir -p "$HOME/.config/garden/home" "$HOME/.config/garden/home/tmp"
-    if [ ! -f "$HOME/.config/garden/home/index.html" ]; then
-      cat > "$HOME/.config/garden/home/index.html" <<'HTML'
+    mkdir -p "$HOME/.config/workspace/home" "$HOME/.config/workspace/home/tmp"
+    if [ ! -f "$HOME/.config/workspace/home/index.html" ]; then
+      cat > "$HOME/.config/workspace/home/index.html" <<'HTML'
 <!doctype html>
 <html lang="en">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Garden Home</title></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Workspace Home</title></head>
 <body>
-  <h1>Garden Home</h1>
+  <h1>Workspace Home</h1>
   <ul>
-    <li><a href="http://localhost:8081">Garden Web Chat</a></li>
-    <li><a href="http://localhost:5000">Garden Files</a></li>
+    <li><a href="http://localhost:8081">Workspace Web Chat</a></li>
+    <li><a href="http://localhost:5000">Workspace Files</a></li>
     <li><a href="http://localhost:8443">code-server</a></li>
   </ul>
 </body>
 </html>
 HTML
     fi
-    cat > "$HOME/.config/garden/home/nginx.conf" <<'NGINX'
+    cat > "$HOME/.config/workspace/home/nginx.conf" <<'NGINX'
 daemon off;
-pid /run/user/1000/garden-home-nginx.pid;
+pid /run/user/1000/workspace-home-nginx.pid;
 error_log stderr;
 events { worker_connections 64; }
 http {
     include ${pkgs.nginx}/conf/mime.types;
     default_type application/octet-stream;
     access_log off;
-    client_body_temp_path /home/${u}/.config/garden/home/tmp;
+    client_body_temp_path /home/${u}/.config/workspace/home/tmp;
     server {
         listen 8080;
-        root /home/${u}/.config/garden/home;
+        root /home/${u}/.config/workspace/home;
         try_files $uri $uri/ =404;
     }
 }
 NGINX
   '';
-  fluffychatBootstrap = pkgs.writeShellScript "garden-fluffychat-bootstrap" ''
+  fluffychatBootstrap = pkgs.writeShellScript "workspace-fluffychat-bootstrap" ''
     set -eu
-    mkdir -p "$HOME/.config/garden/fluffychat" "$HOME/.config/garden/fluffychat/tmp"
-    cat > "$HOME/.config/garden/fluffychat/config.json" <<'CONFIG'
+    mkdir -p "$HOME/.config/workspace/fluffychat" "$HOME/.config/workspace/fluffychat/tmp"
+    cat > "$HOME/.config/workspace/fluffychat/config.json" <<'CONFIG'
 {
-  "applicationName": "Garden Web Chat",
+  "applicationName": "Workspace Web Chat",
   "defaultHomeserver": "http://localhost:6167"
 }
 CONFIG
-    cat > "$HOME/.config/garden/fluffychat/nginx.conf" <<'NGINX'
+    cat > "$HOME/.config/workspace/fluffychat/nginx.conf" <<'NGINX'
 daemon off;
-pid /run/user/1000/garden-fluffychat-nginx.pid;
+pid /run/user/1000/workspace-fluffychat-nginx.pid;
 error_log stderr;
 events { worker_connections 64; }
 http {
     include ${pkgs.nginx}/conf/mime.types;
     default_type application/octet-stream;
     access_log off;
-    client_body_temp_path /home/${u}/.config/garden/fluffychat/tmp;
+    client_body_temp_path /home/${u}/.config/workspace/fluffychat/tmp;
     server {
         listen 8081;
         location /config.json {
-            alias /home/${u}/.config/garden/fluffychat/config.json;
+            alias /home/${u}/.config/workspace/fluffychat/config.json;
         }
         location / {
-            root /etc/garden/fluffychat-web;
+            root /etc/workspace/fluffychat-web;
             try_files $uri $uri/ /index.html;
         }
     }
@@ -94,7 +94,7 @@ in
     networking.firewall.trustedInterfaces = [ "wt0" ];
     networking.networkmanager.enable = true;
 
-    environment.etc."garden/fluffychat-web".source = pkgs.fluffychat-web;
+    environment.etc."workspace/fluffychat-web".source = pkgs.fluffychat-web;
 
     environment.systemPackages = with pkgs; [
       git git-lfs gh
@@ -106,47 +106,47 @@ in
       dufs nginx code-server
     ];
 
-    systemd.user.services.garden-home = {
-      description = "Garden Home landing page";
+    systemd.user.services.workspace-home = {
+      description = "Workspace Home landing page";
       wantedBy = [ "default.target" ];
       after = [ "network-online.target" ];
       wants = [ "network-online.target" ];
       serviceConfig = {
         ExecStartPre = "${bloomHomeBootstrap}";
-        ExecStart = "${pkgs.nginx}/bin/nginx -c %h/.config/garden/home/nginx.conf";
+        ExecStart = "${pkgs.nginx}/bin/nginx -c %h/.config/workspace/home/nginx.conf";
         Restart = "on-failure";
         RestartSec = 10;
       };
     };
 
-    systemd.user.services.garden-fluffychat = {
-      description = "Garden FluffyChat web client";
+    systemd.user.services.workspace-fluffychat = {
+      description = "Workspace FluffyChat web client";
       wantedBy = [ "default.target" ];
       after = [ "network-online.target" ];
       wants = [ "network-online.target" ];
       serviceConfig = {
         ExecStartPre = "${fluffychatBootstrap}";
-        ExecStart = "${pkgs.nginx}/bin/nginx -c %h/.config/garden/fluffychat/nginx.conf";
+        ExecStart = "${pkgs.nginx}/bin/nginx -c %h/.config/workspace/fluffychat/nginx.conf";
         Restart = "on-failure";
         RestartSec = 10;
       };
     };
 
-    systemd.user.services.garden-dufs = {
-      description = "Garden Files WebDAV";
+    systemd.user.services.workspace-dufs = {
+      description = "Workspace Files WebDAV";
       wantedBy = [ "default.target" ];
       after = [ "network-online.target" ];
       wants = [ "network-online.target" ];
       serviceConfig = {
-        ExecStartPre = "${pkgs.coreutils}/bin/mkdir -p %h/Public/Garden";
-        ExecStart = "${pkgs.dufs}/bin/dufs %h/Public/Garden -A -b 0.0.0.0 -p 5000";
+        ExecStartPre = "${pkgs.coreutils}/bin/mkdir -p %h/Public/Workspace";
+        ExecStart = "${pkgs.dufs}/bin/dufs %h/Public/Workspace -A -b 0.0.0.0 -p 5000";
         Restart = "on-failure";
         RestartSec = 10;
       };
     };
 
-    systemd.user.services.garden-code-server = {
-      description = "Garden code-server";
+    systemd.user.services.workspace-code-server = {
+      description = "Workspace code-server";
       wantedBy = [ "default.target" ];
       after = [ "network-online.target" ];
       wants = [ "network-online.target" ];
@@ -158,85 +158,85 @@ in
     };
 
     systemd.tmpfiles.rules = [
-      "d /home/${u}/.config/garden 0755 ${u} ${u} -"
-      "d /home/${u}/.config/garden/home 0755 ${u} ${u} -"
-      "d /home/${u}/.config/garden/fluffychat 0755 ${u} ${u} -"
+      "d /home/${u}/.config/workspace 0755 ${u} ${u} -"
+      "d /home/${u}/.config/workspace/home 0755 ${u} ${u} -"
+      "d /home/${u}/.config/workspace/fluffychat 0755 ${u} ${u} -"
       "d /home/${u}/.config/code-server 0755 ${u} ${u} -"
-      "d /home/${u}/Public/Garden 0755 ${u} ${u} -"
+      "d /home/${u}/Public/Workspace 0755 ${u} ${u} -"
     ];
 
-    system.activationScripts.garden-builtins = lib.stringAfter [ "users" ] ''
-      install -d -m 0755 -o ${u} -g ${u} /home/${u}/.config/garden/home
-      install -d -m 0755 -o ${u} -g ${u} /home/${u}/.config/garden/home/tmp
-      install -d -m 0755 -o ${u} -g ${u} /home/${u}/.config/garden/fluffychat
-      install -d -m 0755 -o ${u} -g ${u} /home/${u}/.config/garden/fluffychat/tmp
+    system.activationScripts.workspace-builtins = lib.stringAfter [ "users" ] ''
+      install -d -m 0755 -o ${u} -g ${u} /home/${u}/.config/workspace/home
+      install -d -m 0755 -o ${u} -g ${u} /home/${u}/.config/workspace/home/tmp
+      install -d -m 0755 -o ${u} -g ${u} /home/${u}/.config/workspace/fluffychat
+      install -d -m 0755 -o ${u} -g ${u} /home/${u}/.config/workspace/fluffychat/tmp
       install -d -m 0755 -o ${u} -g ${u} /home/${u}/.config/code-server
-      install -d -m 0755 -o ${u} -g ${u} /home/${u}/Public/Garden
+      install -d -m 0755 -o ${u} -g ${u} /home/${u}/Public/Workspace
 
-      cat > /home/${u}/.config/garden/home/index.html <<'HTML'
+      cat > /home/${u}/.config/workspace/home/index.html <<'HTML'
 <!doctype html>
 <html lang="en">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Garden Home</title></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Workspace Home</title></head>
 <body>
-  <h1>Garden Home</h1>
+  <h1>Workspace Home</h1>
   <ul>
-    <li><a href="http://localhost:8081">Garden Web Chat</a></li>
-    <li><a href="http://localhost:5000">Garden Files</a></li>
-    <li><a href="http://localhost:8443">Garden Code</a></li>
+    <li><a href="http://localhost:8081">Workspace Web Chat</a></li>
+    <li><a href="http://localhost:5000">Workspace Files</a></li>
+    <li><a href="http://localhost:8443">Workspace Code</a></li>
   </ul>
 </body>
 </html>
 HTML
 
-      cat > /home/${u}/.config/garden/home/nginx.conf <<'NGINX'
+      cat > /home/${u}/.config/workspace/home/nginx.conf <<'NGINX'
 daemon off;
-pid /run/user/1000/garden-home-nginx.pid;
+pid /run/user/1000/workspace-home-nginx.pid;
 error_log stderr;
 events { worker_connections 64; }
 http {
     include ${pkgs.nginx}/conf/mime.types;
     default_type application/octet-stream;
     access_log off;
-    client_body_temp_path /home/${u}/.config/garden/home/tmp;
+    client_body_temp_path /home/${u}/.config/workspace/home/tmp;
     server {
         listen 8080;
-        root /home/${u}/.config/garden/home;
+        root /home/${u}/.config/workspace/home;
         try_files $uri $uri/ =404;
     }
 }
 NGINX
 
-      cat > /home/${u}/.config/garden/fluffychat/config.json <<'CONFIG'
+      cat > /home/${u}/.config/workspace/fluffychat/config.json <<'CONFIG'
 {
-  "applicationName": "Garden Web Chat",
+  "applicationName": "Workspace Web Chat",
   "defaultHomeserver": "http://localhost:6167"
 }
 CONFIG
 
-      cat > /home/${u}/.config/garden/fluffychat/nginx.conf <<'NGINX'
+      cat > /home/${u}/.config/workspace/fluffychat/nginx.conf <<'NGINX'
 daemon off;
-pid /run/user/1000/garden-fluffychat-nginx.pid;
+pid /run/user/1000/workspace-fluffychat-nginx.pid;
 error_log stderr;
 events { worker_connections 64; }
 http {
     include ${pkgs.nginx}/conf/mime.types;
     default_type application/octet-stream;
     access_log off;
-    client_body_temp_path /home/${u}/.config/garden/fluffychat/tmp;
+    client_body_temp_path /home/${u}/.config/workspace/fluffychat/tmp;
     server {
         listen 8081;
         location /config.json {
-            alias /home/${u}/.config/garden/fluffychat/config.json;
+            alias /home/${u}/.config/workspace/fluffychat/config.json;
         }
         location / {
-            root /etc/garden/fluffychat-web;
+            root /etc/workspace/fluffychat-web;
             try_files $uri $uri/ /index.html;
         }
     }
 }
 NGINX
 
-      chown -R ${u}:${u} /home/${u}/.config/garden /home/${u}/.config/code-server /home/${u}/Public/Garden
+      chown -R ${u}:${u} /home/${u}/.config/workspace /home/${u}/.config/code-server /home/${u}/Public/Workspace
     '';
   };
 }

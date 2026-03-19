@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createMockExtensionAPI, type MockExtensionAPI } from "../helpers/mock-extension-api.js";
-import { createTempGarden, type TempGarden } from "../helpers/temp-garden.js";
+import { createTempGarden, type TempGarden } from "../helpers/temp-workspace.js";
 
 const runMock = vi.fn();
 
@@ -21,7 +21,7 @@ beforeEach(async () => {
 	temp = createTempGarden();
 	api = createMockExtensionAPI();
 	originalHome = process.env.HOME;
-	process.env.HOME = temp.gardenDir;
+	process.env.HOME = temp.workspaceDir;
 	runMock.mockReset();
 	runMock.mockResolvedValue({ stdout: "", stderr: "", exitCode: 0 });
 	vi.resetModules();
@@ -102,8 +102,8 @@ describe("setup tool structure", () => {
 // ---------------------------------------------------------------------------
 describe("setup startup gating", () => {
 	it("injects a setup-first prompt after the wizard completes and persona is still pending", async () => {
-		mkdirSync(path.join(os.homedir(), ".garden"), { recursive: true });
-		writeFileSync(path.join(os.homedir(), ".garden", ".setup-complete"), "done", "utf-8");
+		mkdirSync(path.join(os.homedir(), ".workspace"), { recursive: true });
+		writeFileSync(path.join(os.homedir(), ".workspace", ".setup-complete"), "done", "utf-8");
 
 		await loadExtension();
 		const result = await api.fireEvent("before_agent_start", { systemPrompt: "BASE_PROMPT" });
@@ -120,9 +120,9 @@ describe("setup startup gating", () => {
 	});
 
 	it("does not inject setup guidance after persona setup is already complete", async () => {
-		mkdirSync(path.join(os.homedir(), ".garden", "wizard-state"), { recursive: true });
-		writeFileSync(path.join(os.homedir(), ".garden", ".setup-complete"), "done", "utf-8");
-		writeFileSync(path.join(os.homedir(), ".garden", "wizard-state", "persona-done"), "done", "utf-8");
+		mkdirSync(path.join(os.homedir(), ".workspace", "wizard-state"), { recursive: true });
+		writeFileSync(path.join(os.homedir(), ".workspace", ".setup-complete"), "done", "utf-8");
+		writeFileSync(path.join(os.homedir(), ".workspace", "wizard-state", "persona-done"), "done", "utf-8");
 
 		await loadExtension();
 		const result = await api.fireEvent("before_agent_start", { systemPrompt: "BASE_PROMPT" });
@@ -133,8 +133,8 @@ describe("setup startup gating", () => {
 
 describe("setup_advance daemon reconciliation", () => {
 	it("enables pi-daemon when setup completes", async () => {
-		mkdirSync(path.join(os.homedir(), ".garden"), { recursive: true });
-		writeFileSync(path.join(os.homedir(), ".garden", ".setup-complete"), "done", "utf-8");
+		mkdirSync(path.join(os.homedir(), ".workspace"), { recursive: true });
+		writeFileSync(path.join(os.homedir(), ".workspace", ".setup-complete"), "done", "utf-8");
 
 		await loadExtension();
 		const tool = api._registeredTools.find((entry) => entry.name === "setup_advance") as {
@@ -169,8 +169,8 @@ describe("handleSetupStatus", () => {
 	});
 
 	it("returns text content and progress when wizard is complete", async () => {
-		mkdirSync(path.join(os.homedir(), ".garden"), { recursive: true });
-		writeFileSync(path.join(os.homedir(), ".garden", ".setup-complete"), "done", "utf-8");
+		mkdirSync(path.join(os.homedir(), ".workspace"), { recursive: true });
+		writeFileSync(path.join(os.homedir(), ".workspace", ".setup-complete"), "done", "utf-8");
 
 		const { handleSetupStatus: status } = await import("../../core/pi/extensions/setup/actions.js");
 		const result = status();
@@ -180,8 +180,8 @@ describe("handleSetupStatus", () => {
 	});
 
 	it("reports setup in progress when steps remain", async () => {
-		mkdirSync(path.join(os.homedir(), ".garden"), { recursive: true });
-		writeFileSync(path.join(os.homedir(), ".garden", ".setup-complete"), "done", "utf-8");
+		mkdirSync(path.join(os.homedir(), ".workspace"), { recursive: true });
+		writeFileSync(path.join(os.homedir(), ".workspace", ".setup-complete"), "done", "utf-8");
 
 		const { handleSetupStatus: status } = await import("../../core/pi/extensions/setup/actions.js");
 		const result = status();
@@ -191,8 +191,8 @@ describe("handleSetupStatus", () => {
 	});
 
 	it("reports complete when all steps are done", async () => {
-		mkdirSync(path.join(os.homedir(), ".garden"), { recursive: true });
-		writeFileSync(path.join(os.homedir(), ".garden", ".setup-complete"), "done", "utf-8");
+		mkdirSync(path.join(os.homedir(), ".workspace"), { recursive: true });
+		writeFileSync(path.join(os.homedir(), ".workspace", ".setup-complete"), "done", "utf-8");
 
 		// Write a completed state
 		const { createInitialState, advanceStep } = await import("../../core/lib/setup.js");
@@ -212,8 +212,8 @@ describe("handleSetupStatus", () => {
 // ---------------------------------------------------------------------------
 describe("handleSetupAdvance", () => {
 	it("marks a step as completed and returns text content", async () => {
-		mkdirSync(path.join(os.homedir(), ".garden"), { recursive: true });
-		writeFileSync(path.join(os.homedir(), ".garden", ".setup-complete"), "done", "utf-8");
+		mkdirSync(path.join(os.homedir(), ".workspace"), { recursive: true });
+		writeFileSync(path.join(os.homedir(), ".workspace", ".setup-complete"), "done", "utf-8");
 
 		const { handleSetupAdvance: advance } = await import("../../core/pi/extensions/setup/actions.js");
 		const result = await advance({ step: "persona", result: "completed" });
@@ -223,8 +223,8 @@ describe("handleSetupAdvance", () => {
 	});
 
 	it("marks a step as skipped with a reason", async () => {
-		mkdirSync(path.join(os.homedir(), ".garden"), { recursive: true });
-		writeFileSync(path.join(os.homedir(), ".garden", ".setup-complete"), "done", "utf-8");
+		mkdirSync(path.join(os.homedir(), ".workspace"), { recursive: true });
+		writeFileSync(path.join(os.homedir(), ".workspace", ".setup-complete"), "done", "utf-8");
 
 		const { handleSetupAdvance: advance } = await import("../../core/pi/extensions/setup/actions.js");
 		const result = await advance({ step: "persona", result: "skipped", reason: "user skipped" });
@@ -233,8 +233,8 @@ describe("handleSetupAdvance", () => {
 	});
 
 	it("persists state to disk after advancing", async () => {
-		mkdirSync(path.join(os.homedir(), ".garden"), { recursive: true });
-		writeFileSync(path.join(os.homedir(), ".garden", ".setup-complete"), "done", "utf-8");
+		mkdirSync(path.join(os.homedir(), ".workspace"), { recursive: true });
+		writeFileSync(path.join(os.homedir(), ".workspace", ".setup-complete"), "done", "utf-8");
 
 		const { handleSetupAdvance: advance, loadState } = await import("../../core/pi/extensions/setup/actions.js");
 		await advance({ step: "persona", result: "completed" });
@@ -244,8 +244,8 @@ describe("handleSetupAdvance", () => {
 	});
 
 	it("reports daemon warning when systemctl fails", async () => {
-		mkdirSync(path.join(os.homedir(), ".garden"), { recursive: true });
-		writeFileSync(path.join(os.homedir(), ".garden", ".setup-complete"), "done", "utf-8");
+		mkdirSync(path.join(os.homedir(), ".workspace"), { recursive: true });
+		writeFileSync(path.join(os.homedir(), ".workspace", ".setup-complete"), "done", "utf-8");
 		runMock.mockResolvedValue({ stdout: "", stderr: "Access denied", exitCode: 1 });
 
 		const { handleSetupAdvance: advance } = await import("../../core/pi/extensions/setup/actions.js");
@@ -260,8 +260,8 @@ describe("handleSetupAdvance", () => {
 // ---------------------------------------------------------------------------
 describe("handleSetupReset", () => {
 	it("resets a single step to pending", async () => {
-		mkdirSync(path.join(os.homedir(), ".garden"), { recursive: true });
-		writeFileSync(path.join(os.homedir(), ".garden", ".setup-complete"), "done", "utf-8");
+		mkdirSync(path.join(os.homedir(), ".workspace"), { recursive: true });
+		writeFileSync(path.join(os.homedir(), ".workspace", ".setup-complete"), "done", "utf-8");
 
 		const {
 			handleSetupAdvance: advance,
@@ -281,8 +281,8 @@ describe("handleSetupReset", () => {
 	});
 
 	it("performs a full reset when no step is specified", async () => {
-		mkdirSync(path.join(os.homedir(), ".garden"), { recursive: true });
-		writeFileSync(path.join(os.homedir(), ".garden", ".setup-complete"), "done", "utf-8");
+		mkdirSync(path.join(os.homedir(), ".workspace"), { recursive: true });
+		writeFileSync(path.join(os.homedir(), ".workspace", ".setup-complete"), "done", "utf-8");
 
 		const {
 			handleSetupAdvance: advance,
@@ -301,8 +301,8 @@ describe("handleSetupReset", () => {
 	});
 
 	it("returns text content for single step reset", async () => {
-		mkdirSync(path.join(os.homedir(), ".garden"), { recursive: true });
-		writeFileSync(path.join(os.homedir(), ".garden", ".setup-complete"), "done", "utf-8");
+		mkdirSync(path.join(os.homedir(), ".workspace"), { recursive: true });
+		writeFileSync(path.join(os.homedir(), ".workspace", ".setup-complete"), "done", "utf-8");
 
 		const { handleSetupReset: reset } = await import("../../core/pi/extensions/setup/actions.js");
 		const result = reset({ step: "persona" });

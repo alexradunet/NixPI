@@ -1,15 +1,15 @@
-# Garden First-Boot Setup
+# Workspace First-Boot Setup
 
 > 📖 [Emoji Legend](LEGEND.md)
 
-Audience: operators bringing up a fresh Garden host.
+Audience: operators bringing up a fresh Workspace host.
 
 ## Prerequisites
 
-Before first-boot setup, you need a NixOS system with Garden applied:
+Before first-boot setup, you need a NixOS system with Workspace applied:
 
 1. Install NixOS using the [official ISO](https://nixos.org/download.html)
-2. After first boot, apply the Garden configuration:
+2. After first boot, apply the Workspace configuration:
    ```bash
    sudo nixos-rebuild switch --flake github:alexradunet/piBloom#desktop
    ```
@@ -17,10 +17,10 @@ Before first-boot setup, you need a NixOS system with Garden applied:
 
 > 🛡️ **Security Note: NetBird is Mandatory**
 >
-> NetBird is the network security boundary for all Garden services. The firewall
+> NetBird is the network security boundary for all Workspace services. The firewall
 > configuration (`trustedInterfaces = ["wt0"]`) only protects services when the
 > NetBird interface (`wt0`) is active. Without NetBird:
-> - Matrix, Garden Home (port 8080), dufs (port 5000), and code-server (port 8443)
+> - Matrix, Workspace Home (port 8080), dufs (port 5000), and code-server (port 8443)
 >   are exposed to the local network
 > - A compromised local device could access OS tools via prompt injection
 >
@@ -29,7 +29,7 @@ Before first-boot setup, you need a NixOS system with Garden applied:
 
 ## 🌱 Why Setup Is Split In Two
 
-Garden separates deterministic machine setup from Pi-guided personalization.
+Workspace separates deterministic machine setup from Pi-guided personalization.
 
 That split keeps:
 
@@ -39,7 +39,7 @@ That split keeps:
 
 ## 💻 How First Boot Works
 
-Garden's first-boot experience has two phases.
+Workspace's first-boot experience has two phases.
 
 ### Phase 1: Bash Wizard
 
@@ -56,8 +56,8 @@ Current responsibilities:
 
 Built-in services provisioned by the wizard:
 
-- Garden Home landing page on port `8080`
-- Garden Web Chat (`fluffychat`) on port `8081`
+- Workspace Home landing page on port `8080`
+- Workspace Web Chat (`fluffychat`) on port `8081`
 - `dufs` WebDAV file server on port `5000`
 - `code-server` on port `8443`
 
@@ -71,10 +71,10 @@ Pi injects setup guidance until that step is marked complete.
 
 During that Pi-side first conversation, Pi should also orient the user to the platform:
 
-- Garden keeps durable state in `~/Garden/` using inspectable files
-- Garden can propose persona or workflow changes through tracked evolutions instead of silently changing itself
+- Workspace keeps durable state in `~/Workspace/` using inspectable files
+- Workspace can propose persona or workflow changes through tracked evolutions instead of silently changing itself
 - Matrix is the native messaging surface, with `pi-daemon.service` keeping Pi active in rooms outside the local terminal session
-- multi-agent rooms are optional and activate when valid overlays exist in `~/Garden/Agents/*/AGENTS.md`
+- multi-agent rooms are optional and activate when valid overlays exist in `~/Workspace/Agents/*/AGENTS.md`
 
 ### Recovery
 
@@ -97,9 +97,9 @@ Relevant files:
 
 | Path | Purpose |
 |------|---------|
-| `~/.garden/.setup-complete` | wizard complete sentinel |
-| `~/.garden/setup-state.json` | Pi-side setup state |
-| `~/.garden/wizard-state/persona-done` | persona step complete marker |
+| `~/.workspace/.setup-complete` | wizard complete sentinel |
+| `~/.workspace/setup-state.json` | Pi-side setup state |
+| `~/.workspace/wizard-state/persona-done` | persona step complete marker |
 | `~/.pi/matrix-credentials.json` | primary Matrix credentials |
 
 Current tool surface:

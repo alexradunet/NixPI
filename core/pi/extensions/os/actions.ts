@@ -6,7 +6,7 @@ import { existsSync } from "node:fs";
 import { readFile, writeFile } from "node:fs/promises";
 import type { ExtensionContext } from "@mariozechner/pi-coding-agent";
 import { run } from "../../../lib/exec.js";
-import { getGardenRepoDir, getUpdateStatusPath } from "../../../lib/filesystem.js";
+import { getWorkspaceRepoDir, getUpdateStatusPath } from "../../../lib/filesystem.js";
 import { errorResult, guardServiceName, requireConfirmation, truncate } from "../../../lib/shared.js";
 import type { UpdateStatus } from "./types.js";
 
@@ -44,9 +44,9 @@ export async function handleNixosUpdate(
 	}
 
 	// apply
-	const flake = source === "local" ? `${getGardenRepoDir()}#garden-x86_64` : "github:alexradunet/piBloom#garden-x86_64";
-	if (source === "local" && !existsSync(getGardenRepoDir())) {
-		return errorResult(`Local Garden repo not found at ${getGardenRepoDir()}. Cannot switch the local flake.`);
+	const flake = source === "local" ? `${getWorkspaceRepoDir()}#workspace-x86_64` : "github:alexradunet/piBloom#workspace-x86_64";
+	if (source === "local" && !existsSync(getWorkspaceRepoDir())) {
+		return errorResult(`Local Workspace repo not found at ${getWorkspaceRepoDir()}. Cannot switch the local flake.`);
 	}
 	const result = await run("sudo", ["nixos-rebuild", "switch", "--flake", flake], signal);
 	const text =
@@ -131,7 +131,7 @@ export async function checkPendingUpdates(systemPrompt: string): Promise<{ syste
 			status.notified = true;
 			await writeFile(statusFile, JSON.stringify(status), "utf-8");
 			const note =
-				"\n\n[SYSTEM] A Garden OS update is available. " +
+				"\n\n[SYSTEM] A Workspace OS update is available. " +
 				"Inform the user and ask if they'd like to review and apply it.";
 			return { systemPrompt: systemPrompt + note };
 		}

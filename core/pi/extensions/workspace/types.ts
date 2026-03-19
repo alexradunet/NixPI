@@ -1,4 +1,4 @@
-// Extension-specific types for garden
+// Extension-specific types for workspace
 
 /** Tracks which blueprints have been seeded and their content hashes. */
 export interface BlueprintVersions {

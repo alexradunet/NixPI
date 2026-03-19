@@ -3,7 +3,7 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { parseRef } from "../../core/pi/extensions/objects/actions.js";
 import { createMockExtensionAPI, type MockExtensionAPI } from "../helpers/mock-extension-api.js";
-import { createTempGarden, type TempGarden } from "../helpers/temp-garden.js";
+import { createTempGarden, type TempGarden } from "../helpers/temp-workspace.js";
 
 let temp: TempGarden;
 let api: MockExtensionAPI;
@@ -11,7 +11,7 @@ let api: MockExtensionAPI;
 beforeEach(async () => {
 	temp = createTempGarden();
 	// Create Objects directory
-	fs.mkdirSync(path.join(temp.gardenDir, "Objects"), { recursive: true });
+	fs.mkdirSync(path.join(temp.workspaceDir, "Objects"), { recursive: true });
 	api = createMockExtensionAPI();
 	const mod = await import("../../core/pi/extensions/objects/index.js");
 	mod.default(api as never);
@@ -104,7 +104,7 @@ describe("memory_create and memory_read execution", () => {
 		expect(createResult.content[0].text).toContain("created note/test-note");
 
 		// Verify file was actually written to Objects/
-		const filepath = path.join(temp.gardenDir, "Objects", "test-note.md");
+		const filepath = path.join(temp.workspaceDir, "Objects", "test-note.md");
 		expect(fs.existsSync(filepath)).toBe(true);
 
 		const readResult = await read("call-2", { type: "note", slug: "test-note" });
@@ -209,7 +209,7 @@ describe("memory_create and memory_read execution", () => {
 				title: "Recovery Procedure Project",
 				summary: "Project-specific recovery procedure",
 				scope: "project",
-				scope_value: "pi-garden",
+				scope_value: "pi-workspace",
 				salience: 0.5,
 			},
 		});
@@ -217,7 +217,7 @@ describe("memory_create and memory_read execution", () => {
 		const queryResult = await query("call-3", {
 			type: "procedure",
 			text: "recovery",
-			preferred_scopes: [{ scope: "project", value: "pi-garden" }, { scope: "global" }],
+			preferred_scopes: [{ scope: "project", value: "pi-workspace" }, { scope: "global" }],
 		});
 
 		const lines = queryResult.content[0].text.split("\n");

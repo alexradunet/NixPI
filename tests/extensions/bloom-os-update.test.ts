@@ -12,20 +12,20 @@ vi.mock("../../core/lib/exec.js", () => ({
 
 describe("os nixos_update handler", () => {
 	let repoDir: string;
-	const originalRepoDir = process.env.GARDEN_REPO_DIR;
+	const originalRepoDir = process.env.WORKSPACE_REPO_DIR;
 
 	beforeEach(() => {
 		vi.resetModules();
 		runMock.mockReset();
-		repoDir = fs.mkdtempSync(path.join(os.tmpdir(), "garden-switch-"));
-		process.env.GARDEN_REPO_DIR = repoDir;
+		repoDir = fs.mkdtempSync(path.join(os.tmpdir(), "workspace-switch-"));
+		process.env.WORKSPACE_REPO_DIR = repoDir;
 	});
 
 	afterEach(() => {
 		if (originalRepoDir === undefined) {
-			delete process.env.GARDEN_REPO_DIR;
+			delete process.env.WORKSPACE_REPO_DIR;
 		} else {
-			process.env.GARDEN_REPO_DIR = originalRepoDir;
+			process.env.WORKSPACE_REPO_DIR = originalRepoDir;
 		}
 		fs.rmSync(repoDir, { recursive: true, force: true });
 	});
@@ -40,7 +40,7 @@ describe("os nixos_update handler", () => {
 		expect(ctx.ui.confirm).toHaveBeenCalled();
 		expect(runMock).toHaveBeenCalledWith(
 			"sudo",
-			["nixos-rebuild", "switch", "--flake", "github:alexradunet/piBloom#garden-x86_64"],
+			["nixos-rebuild", "switch", "--flake", "github:alexradunet/piBloom#workspace-x86_64"],
 			undefined,
 		);
 		expect(result.isError).toBe(false);
@@ -56,7 +56,7 @@ describe("os nixos_update handler", () => {
 
 		expect(runMock).toHaveBeenCalledWith(
 			"sudo",
-			["nixos-rebuild", "switch", "--flake", `${repoDir}#garden-x86_64`],
+			["nixos-rebuild", "switch", "--flake", `${repoDir}#workspace-x86_64`],
 			undefined,
 		);
 		expect(result.isError).toBe(false);
@@ -72,7 +72,7 @@ describe("os nixos_update handler", () => {
 
 		expect(runMock).not.toHaveBeenCalled();
 		expect(result.isError).toBe(true);
-		expect(result.content[0].text).toContain("Local Garden repo not found");
+		expect(result.content[0].text).toContain("Local Workspace repo not found");
 	});
 
 	it("returns error result when remote apply exits non-zero", async () => {

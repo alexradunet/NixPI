@@ -3,14 +3,14 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createMockExtensionAPI } from "../helpers/mock-extension-api.js";
 import { createMockExtensionContext } from "../helpers/mock-extension-context.js";
-import { createTempGarden, type TempGarden } from "../helpers/temp-garden.js";
+import { createTempGarden, type TempGarden } from "../helpers/temp-workspace.js";
 
 let temp: TempGarden;
 
 beforeEach(() => {
 	temp = createTempGarden();
 	// Seed persona files so loadPersona doesn't fail
-	const personaDir = join(temp.gardenDir, "Persona");
+	const personaDir = join(temp.workspaceDir, "Persona");
 	mkdirSync(personaDir, { recursive: true });
 	for (const file of ["SOUL.md", "BODY.md", "FACULTY.md", "SKILL.md"]) {
 		writeFileSync(join(personaDir, file), `# ${file}\ntest content`);
@@ -23,8 +23,8 @@ afterEach(() => {
 
 async function setupPersonaExtension(guardrailsYaml?: string) {
 	if (guardrailsYaml) {
-		mkdirSync(temp.gardenDir, { recursive: true });
-		writeFileSync(join(temp.gardenDir, "guardrails.yaml"), guardrailsYaml);
+		mkdirSync(temp.workspaceDir, { recursive: true });
+		writeFileSync(join(temp.workspaceDir, "guardrails.yaml"), guardrailsYaml);
 	}
 
 	// Each mod.default(api) call creates fresh closures (guardrails starts undefined)
@@ -118,8 +118,8 @@ describe("persona guardrail blocking via tool_call handler", () => {
 		expect(result).toEqual({ block: true, reason: "Blocked dangerous command: rm -rf /" });
 	});
 
-	it("falls back to package guardrails.yaml when garden copy missing", async () => {
-		// Don't seed guardrails in garden — extension should fall back to package root
+	it("falls back to package guardrails.yaml when workspace copy missing", async () => {
+		// Don't seed guardrails in workspace — extension should fall back to package root
 		const { api } = await setupPersonaExtension();
 		const result = await api.fireEvent("tool_call", {
 			toolName: "bash",

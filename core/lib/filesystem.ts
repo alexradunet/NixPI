@@ -11,9 +11,9 @@ export function safePath(root: string, ...segments: string[]): string {
 	return safePathWithin(root, ...segments);
 }
 
-/** Resolve the configured app data directory. Checks `GARDEN_DIR`, then falls back to `~/Garden`. */
-export function getGardenDir(): string {
-	return process.env.GARDEN_DIR ?? path.join(os.homedir(), "Garden");
+/** Resolve the configured app data directory. Checks `WORKSPACE_DIR`, then falls back to `~/Workspace`. */
+export function getWorkspaceDir(): string {
+	return process.env.WORKSPACE_DIR ?? path.join(os.homedir(), "Workspace");
 }
 
 /** Path to the user's Quadlet unit directory for rootless containers. */
@@ -23,10 +23,10 @@ export function getQuadletDir(): string {
 
 /** Path to the OS update status file written by the update-check timer. */
 export function getUpdateStatusPath(): string {
-	return path.join(os.homedir(), ".garden", "update-status.json");
+	return path.join(os.homedir(), ".workspace", "update-status.json");
 }
 
 /** Path to the local repo clone used for local-only proposal workflows. */
-export function getGardenRepoDir(): string {
-	return process.env.GARDEN_REPO_DIR ?? path.join(os.homedir(), ".garden", "pi-garden");
+export function getWorkspaceRepoDir(): string {
+	return process.env.WORKSPACE_REPO_DIR ?? path.join(os.homedir(), ".workspace", "pi-workspace");
 }

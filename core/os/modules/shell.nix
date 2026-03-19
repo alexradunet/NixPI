@@ -2,25 +2,25 @@
 { pkgs, lib, config, ... }:
 
 let
-  u = config.garden.username;
+  u = config.workspace.username;
 
-  bashrc = pkgs.writeText "garden-bashrc" ''
-    export GARDEN_DIR="$HOME/Garden"
+  bashrc = pkgs.writeText "workspace-bashrc" ''
+    export WORKSPACE_DIR="$HOME/Workspace"
     export BROWSER="chromium"
-    export PATH="/usr/local/share/garden/node_modules/.bin:$PATH"
+    export PATH="/usr/local/share/workspace/node_modules/.bin:$PATH"
   '';
 
-  bashProfile = pkgs.writeText "garden-bash_profile" ''
-    # Source .bashrc for env vars (GARDEN_DIR, PATH, etc.)
+  bashProfile = pkgs.writeText "workspace-bash_profile" ''
+    # Source .bashrc for env vars (WORKSPACE_DIR, PATH, etc.)
     [ -f ~/.bashrc ] && . ~/.bashrc
 
     # First-boot wizard — loop until complete, Ctrl+C restarts it
-    while [ -t 0 ] && [ ! -f "$HOME/.garden/.setup-complete" ]; do
+    while [ -t 0 ] && [ ! -f "$HOME/.workspace/.setup-complete" ]; do
       setup-wizard.sh || true
     done
 
     # On TTY1 with setup complete, start Sway window manager
-    if [ "$(tty)" = "/dev/tty1" ] && [ -f "$HOME/.garden/.setup-complete" ]; then
+    if [ "$(tty)" = "/dev/tty1" ] && [ -f "$HOME/.workspace/.setup-complete" ]; then
       export XDG_SESSION_TYPE=wayland
       export XDG_CURRENT_DESKTOP=sway
       export MOZ_ENABLE_WAYLAND=1
@@ -32,8 +32,8 @@ let
     fi
 
     # Start Pi on interactive login (only after setup, only one instance — atomic mkdir lock)
-    if [ -t 0 ] && [ -f "$HOME/.garden/.setup-complete" ] && [ -z "$PI_SESSION" ] && mkdir /tmp/.garden-pi-session 2>/dev/null; then
-      trap 'rmdir /tmp/.garden-pi-session 2>/dev/null' EXIT
+    if [ -t 0 ] && [ -f "$HOME/.workspace/.setup-complete" ] && [ -z "$PI_SESSION" ] && mkdir /tmp/.workspace-pi-session 2>/dev/null; then
+      trap 'rmdir /tmp/.workspace-pi-session 2>/dev/null' EXIT
       export PI_SESSION=1
       login-greeting.sh
       exec pi
@@ -73,9 +73,9 @@ in
   environment.etc = {
     "skel/.bashrc".source       = bashrc;
     "skel/.bash_profile".source = bashProfile;
-    "issue".text = "Garden OS\n";
+    "issue".text = "Workspace OS\n";
     "xdg/sway/config".text = ''
-      # Garden OS Sway Configuration
+      # Workspace OS Sway Configuration
       set $mod Mod4
       set $term foot
       set $menu wmenu-run
@@ -185,5 +185,5 @@ in
 
   boot.kernel.sysctl."kernel.printk" = "4 4 1 7";
 
-  networking.hostName = lib.mkDefault "garden";
+  networking.hostName = lib.mkDefault "workspace";
 }

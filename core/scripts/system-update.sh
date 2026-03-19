@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 # system-update.sh — NixOS OTA update + status-file writer.
-# Runs as root via garden-update.service. Writes status to the primary Garden user's
-# ~/.garden/update-status.json path.
+# Runs as root via workspace-update.service. Writes status to the primary Workspace user's
+# ~/.workspace/update-status.json path.
 set -euo pipefail
 
 FLAKE_REF="github:alexradunet/piBloom"
-HOST="garden-x86_64"
+HOST="workspace-x86_64"
 FLAKE="${FLAKE_REF}#${HOST}"
 BLOOM_USERNAME="${BLOOM_USERNAME:-pi}"
-STATUS_DIR="/home/${BLOOM_USERNAME}/.garden"
+STATUS_DIR="/home/${BLOOM_USERNAME}/.workspace"
 STATUS_FILE="$STATUS_DIR/update-status.json"
 CHECKED=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 

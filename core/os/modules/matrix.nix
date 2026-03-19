@@ -3,7 +3,7 @@
 
 let
   # Generate a registration shared secret on first run
-  synapseBootstrap = pkgs.writeShellScript "garden-synapse-bootstrap" ''
+  synapseBootstrap = pkgs.writeShellScript "workspace-synapse-bootstrap" ''
     set -eu
     TOKEN_FILE=/var/lib/matrix-synapse/registration_shared_secret
     if [ ! -f "$TOKEN_FILE" ]; then
@@ -20,7 +20,7 @@ in
     enable = true;
     
     settings = {
-      server_name = "garden";
+      server_name = "workspace";
       public_baseurl = "http://localhost:6167";
       
       listeners = [
@@ -96,8 +96,8 @@ in
   };
 
   # Create an alias service for backward compatibility
-  systemd.services.garden-matrix = {
-    description = "Garden Matrix Homeserver (Synapse) - alias for matrix-synapse";
+  systemd.services.workspace-matrix = {
+    description = "Workspace Matrix Homeserver (Synapse) - alias for matrix-synapse";
     after = [ "matrix-synapse.service" ];
     bindsTo = [ "matrix-synapse.service" ];
     wantedBy = [ "multi-user.target" ];

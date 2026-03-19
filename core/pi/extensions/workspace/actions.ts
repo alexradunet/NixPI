@@ -1,5 +1,5 @@
 /**
- * Handler / business logic for garden.
+ * Handler / business logic for workspace.
  * Package helpers, directory setup, and tool handlers.
  */
 import fs from "node:fs";
@@ -19,7 +19,7 @@ import {
 import { errorResult, nowIso, truncate } from "../../../lib/shared.js";
 import { readBlueprintVersions } from "./actions-blueprints.js";
 
-const GARDEN_DIRS = ["Persona", "Skills", "Evolutions", "Objects", "Episodes", "Agents", "audit"];
+const WORKSPACE_DIRS = ["Persona", "Skills", "Evolutions", "Objects", "Episodes", "Agents", "audit"];
 
 // --- Package helpers ---
 
@@ -43,18 +43,18 @@ export function getPackageVersion(packageDir: string): string {
 
 // --- Directory setup ---
 
-export function ensureGarden(gardenDir: string): void {
-	for (const dir of GARDEN_DIRS) {
-		fs.mkdirSync(path.join(gardenDir, dir), { recursive: true });
+export function ensureWorkspace(workspaceDir: string): void {
+	for (const dir of WORKSPACE_DIRS) {
+		fs.mkdirSync(path.join(workspaceDir, dir), { recursive: true });
 	}
 }
 
 // --- Tool handlers ---
 
-export function handleGardenStatus(gardenDir: string) {
-	const lines: string[] = [`Garden: ${gardenDir}`, ""];
+export function handleWorkspaceStatus(workspaceDir: string) {
+	const lines: string[] = [`Workspace: ${workspaceDir}`, ""];
 
-	const versions = readBlueprintVersions(gardenDir);
+	const versions = readBlueprintVersions(workspaceDir);
 	lines.push(`Package version: ${versions.packageVersion}`);
 	lines.push(`Seeded blueprints: ${Object.keys(versions.seeded).length}`);
 
@@ -69,10 +69,10 @@ export function handleGardenStatus(gardenDir: string) {
 	};
 }
 
-export function handleSkillCreate(gardenDir: string, params: { name: string; description: string; content: string }) {
+export function handleSkillCreate(workspaceDir: string, params: { name: string; description: string; content: string }) {
 	let skillDir: string;
 	try {
-		skillDir = safePath(gardenDir, "Skills", params.name);
+		skillDir = safePath(workspaceDir, "Skills", params.name);
 	} catch {
 		return errorResult("Path traversal blocked: invalid skill name");
 	}
@@ -92,8 +92,8 @@ export function handleSkillCreate(gardenDir: string, params: { name: string; des
 	};
 }
 
-export function handleSkillList(gardenDir: string) {
-	const skillsDir = path.join(gardenDir, "Skills");
+export function handleSkillList(workspaceDir: string) {
+	const skillsDir = path.join(workspaceDir, "Skills");
 	if (!fs.existsSync(skillsDir)) {
 		return { content: [{ type: "text" as const, text: "No skills directory found." }], details: {} };
 	}
@@ -111,7 +111,7 @@ export function handleSkillList(gardenDir: string) {
 		skills.push(`${entry.name} — ${desc}`);
 	}
 
-	const text = skills.length > 0 ? skills.join("\n") : "No skills found in Garden.";
+	const text = skills.length > 0 ? skills.join("\n") : "No skills found in Workspace.";
 	return { content: [{ type: "text" as const, text }], details: {} };
 }
 
@@ -147,8 +147,8 @@ function loadPrimaryMatrixConfigFromDisk(homeDir = os.homedir()): { homeserver: 
 	}
 }
 
-export async function handleAgentCreate(gardenDir: string, params: AgentCreateParams, deps: AgentCreateDeps = {}) {
-	const target = validateAgentCreateTarget(gardenDir, params);
+export async function handleAgentCreate(workspaceDir: string, params: AgentCreateParams, deps: AgentCreateDeps = {}) {
+	const target = validateAgentCreateTarget(workspaceDir, params);
 	if ("error" in target) {
 		return errorResult(target.error);
 	}
@@ -219,7 +219,7 @@ export async function handleAgentCreate(gardenDir: string, params: AgentCreatePa
 }
 
 function validateAgentCreateTarget(
-	gardenDir: string,
+	workspaceDir: string,
 	params: AgentCreateParams,
 ): { username: string; agentDir: string } | { error: string } {
 	if (!/^[a-z0-9][a-z0-9-]*$/.test(params.id)) {
@@ -234,7 +234,7 @@ function validateAgentCreateTarget(
 	try {
 		return {
 			username,
-			agentDir: safePath(gardenDir, "Agents", params.id),
+			agentDir: safePath(workspaceDir, "Agents", params.id),
 		};
 	} catch {
 		return { error: "Path traversal blocked: invalid agent id" };
@@ -247,7 +247,7 @@ async function restartPiDaemon(): Promise<{ ok: true } | { ok: false; error: str
 }
 
 export function handlePersonaEvolve(
-	gardenDir: string,
+	workspaceDir: string,
 	params: { layer: string; slug: string; title: string; proposal: string },
 ) {
 	const validLayers = ["SOUL", "BODY", "FACULTY", "SKILL"];
@@ -255,7 +255,7 @@ export function handlePersonaEvolve(
 		return errorResult(`invalid layer: ${params.layer} (expected: ${validLayers.join(", ")})`);
 	}
 
-	const evoDir = path.join(gardenDir, "Evolutions");
+	const evoDir = path.join(workspaceDir, "Evolutions");
 	fs.mkdirSync(evoDir, { recursive: true });
 
 	const filepath = path.join(evoDir, `${params.slug}.pi.md`);
@@ -288,8 +288,8 @@ export function handlePersonaEvolve(
 }
 
 /** Discover skill paths for dynamic loading. */
-export function discoverSkillPaths(gardenDir: string): string[] | undefined {
-	const skillsDir = path.join(gardenDir, "Skills");
+export function discoverSkillPaths(workspaceDir: string): string[] | undefined {
+	const skillsDir = path.join(workspaceDir, "Skills");
 	if (!fs.existsSync(skillsDir)) return undefined;
 	return [skillsDir];
 }
@@ -302,8 +302,8 @@ interface AgentInfo {
 }
 
 /** Load agent definitions from AGENTS.md files. */
-export function loadAgentInfos(gardenDir: string): AgentInfo[] {
-	const agentsDir = path.join(gardenDir, "Agents");
+export function loadAgentInfos(workspaceDir: string): AgentInfo[] {
+	const agentsDir = path.join(workspaceDir, "Agents");
 	if (!fs.existsSync(agentsDir)) return [];
 
 	const agents: AgentInfo[] = [];
@@ -325,8 +325,8 @@ export function loadAgentInfos(gardenDir: string): AgentInfo[] {
 			if (idMatch && nameMatch && usernameMatch) {
 				const id = idMatch[1].trim();
 				const username = usernameMatch[1].trim();
-				// Determine server name from gardenDir context or default
-				const serverName = process.env.BLOOM_SERVER_NAME ?? "garden";
+				// Determine server name from workspaceDir context or default
+				const serverName = process.env.BLOOM_SERVER_NAME ?? "workspace";
 				agents.push({
 					id,
 					name: nameMatch[1].trim(),
@@ -344,10 +344,10 @@ export function loadAgentInfos(gardenDir: string): AgentInfo[] {
 
 /** Format a message that mentions another agent. */
 export function handleMentionAgent(
-	gardenDir: string,
+	workspaceDir: string,
 	params: { agent_id: string; message: string },
 ): { content: Array<{ type: "text"; text: string }>; details: Record<string, unknown>; isError?: boolean } {
-	const agents = loadAgentInfos(gardenDir);
+	const agents = loadAgentInfos(workspaceDir);
 	const target = agents.find((a) => a.id === params.agent_id);
 
 	if (!target) {

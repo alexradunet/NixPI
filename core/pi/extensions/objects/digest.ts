@@ -1,5 +1,5 @@
 import path from "node:path";
-import { getGardenDir } from "../../../lib/filesystem.js";
+import { getWorkspaceDir } from "../../../lib/filesystem.js";
 import { walkMdFiles } from "./actions.js";
 import { readMemoryRecord } from "./memory.js";
 
@@ -66,7 +66,7 @@ function buildDigestItem(filepath: string, preferences: ScopePreference[]): Dige
 }
 
 function topItems(type: string, limit: number, preferences: ScopePreference[]): DigestItem[] {
-	const dir = path.join(getGardenDir(), "Objects");
+	const dir = path.join(getWorkspaceDir(), "Objects");
 	const items = walkMdFiles(dir)
 		.map((filepath) => buildDigestItem(filepath, preferences))
 		.filter((item): item is DigestItem => item !== null && item.type === type)
@@ -104,5 +104,5 @@ export function buildMemoryDigest(cwd?: string): string {
 		...renderSection("High-Signal Facts", topItems("fact", 5, preferences)),
 	];
 	if (sections.length === 0) return "";
-	return `\n\n[GARDEN MEMORY DIGEST]\n${sections.join("\n").trimEnd()}`;
+	return `\n\n[WORKSPACE MEMORY DIGEST]\n${sections.join("\n").trimEnd()}`;
 }

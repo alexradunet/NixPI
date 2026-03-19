@@ -23,7 +23,7 @@ in
   # localai.service requires this unit, so inference only starts once the
   # model is present.  The model is NOT part of the NixOS closure.
   systemd.services.localai-download = {
-    description = "Download Garden AI Model";
+    description = "Download Workspace AI Model";
     after  = [ "network-online.target" ];
     wants  = [ "network-online.target" ];
     serviceConfig = {
@@ -51,7 +51,7 @@ in
   # means localai.service is "activating" while the download runs, but this
   # does not block multi-user.target or getty.
   systemd.services.localai = {
-    description = "Garden Local AI Inference (llama-server)";
+    description = "Workspace Local AI Inference (llama-server)";
     after    = [ "network.target" "localai-download.service" ];
     wants    = [ "network.target" ];
     requires = [ "localai-download.service" ];

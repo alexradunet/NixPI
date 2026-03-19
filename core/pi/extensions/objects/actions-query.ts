@@ -4,14 +4,14 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { getGardenDir, safePath } from "../../../lib/filesystem.js";
+import { getWorkspaceDir, safePath } from "../../../lib/filesystem.js";
 import { parseFrontmatter } from "../../../lib/frontmatter.js";
 import { errorResult, truncate } from "../../../lib/shared.js";
 import { walkMdFiles } from "./actions.js";
 import { readMemoryRecord, type ScopePreference, scoreRecord } from "./memory.js";
 
 function resolveObjectsDir(directory?: string) {
-	if (!directory) return { dir: path.join(getGardenDir(), "Objects") };
+	if (!directory) return { dir: path.join(getWorkspaceDir(), "Objects") };
 	try {
 		return { dir: safePath(os.homedir(), directory) };
 	} catch {
@@ -70,16 +70,16 @@ export function listObjects(
 	};
 }
 
-/** Search markdown files in ~/Garden/ for a pattern. */
+/** Search markdown files in ~/Workspace/ for a pattern. */
 export function searchObjects(params: { pattern: string }, signal?: AbortSignal) {
-	const gardenDir = getGardenDir();
+	const workspaceDir = getWorkspaceDir();
 	const matches: string[] = [];
 
-	const files = fs.globSync("**/*.md", { cwd: gardenDir });
+	const files = fs.globSync("**/*.md", { cwd: workspaceDir });
 	for (const file of files) {
 		if (signal?.aborted) break;
 		try {
-			const filepath = path.join(gardenDir, file);
+			const filepath = path.join(workspaceDir, file);
 			const raw = fs.readFileSync(filepath, "utf-8");
 			if (!raw.includes(params.pattern)) continue;
 			const { attributes } = parseFrontmatter<Record<string, unknown>>(raw);
@@ -100,7 +100,7 @@ export function searchObjects(params: { pattern: string }, signal?: AbortSignal)
 	};
 }
 
-/** Query ranked object matches from ~/Garden/Objects/. */
+/** Query ranked object matches from ~/Workspace/Objects/. */
 export function queryObjects(
 	params: {
 		text?: string;
@@ -115,8 +115,8 @@ export function queryObjects(
 	},
 	signal?: AbortSignal,
 ) {
-	const gardenDir = getGardenDir();
-	const dir = path.join(gardenDir, "Objects");
+	const workspaceDir = getWorkspaceDir();
+	const dir = path.join(workspaceDir, "Objects");
 	const limit = Math.max(1, Math.min(100, Number(params.limit ?? 10)));
 	const results = [];
 

@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createMockExtensionAPI, type MockExtensionAPI } from "../helpers/mock-extension-api.js";
 import { createMockExtensionContext } from "../helpers/mock-extension-context.js";
-import { createTempGarden, type TempGarden } from "../helpers/temp-garden.js";
+import { createTempGarden, type TempGarden } from "../helpers/temp-workspace.js";
 
 vi.mock("../../core/lib/exec.js", () => ({
 	run: vi.fn(),
@@ -130,30 +130,30 @@ describe("handleNixosUpdate — rollback", () => {
 describe("handleNixosUpdate — apply local (missing repo)", () => {
 	it("returns error when local repo is absent", async () => {
 		const ctx = createMockExtensionContext();
-		const prev = process.env.GARDEN_REPO_DIR;
-		process.env.GARDEN_REPO_DIR = "/tmp/garden-repo-does-not-exist-12345";
+		const prev = process.env.WORKSPACE_REPO_DIR;
+		process.env.WORKSPACE_REPO_DIR = "/tmp/workspace-repo-does-not-exist-12345";
 		const result = await handleNixosUpdate("apply", "local", undefined, ctx as never);
 		if (prev === undefined) {
-			delete process.env.GARDEN_REPO_DIR;
+			delete process.env.WORKSPACE_REPO_DIR;
 		} else {
-			process.env.GARDEN_REPO_DIR = prev;
+			process.env.WORKSPACE_REPO_DIR = prev;
 		}
 		expect(result.isError).toBe(true);
-		expect(result.content[0].text).toContain("Local Garden repo not found");
+		expect(result.content[0].text).toContain("Local Workspace repo not found");
 	});
 });
 
 describe("handleSystemdControl", () => {
-	it("rejects non-garden services", async () => {
+	it("rejects non-workspace services", async () => {
 		const ctx = createMockExtensionContext();
 		const result = await handleSystemdControl("sshd", "status", undefined, ctx as never);
 		expect(result.isError).toBe(true);
 	});
 
-	it("runs systemctl for garden-dufs status", async () => {
+	it("runs systemctl for workspace-dufs status", async () => {
 		mockRun.mockResolvedValueOnce({ stdout: "active", stderr: "", exitCode: 0 });
 		const ctx = createMockExtensionContext();
-		const result = await handleSystemdControl("garden-dufs", "status", undefined, ctx as never);
+		const result = await handleSystemdControl("workspace-dufs", "status", undefined, ctx as never);
 		expect(result.content[0].text).toContain("active");
 	});
 });
@@ -190,7 +190,7 @@ describe("handleSystemHealth", () => {
 		mockRun
 			.mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 1 }) // nixos-rebuild fails
 			.mockResolvedValueOnce({
-				stdout: JSON.stringify([{ Names: ["garden-dufs"], Status: "Up 1 hour" }]),
+				stdout: JSON.stringify([{ Names: ["workspace-dufs"], Status: "Up 1 hour" }]),
 				stderr: "",
 				exitCode: 0,
 			}) // podman ps
@@ -199,7 +199,7 @@ describe("handleSystemHealth", () => {
 			.mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 1 }) // free
 			.mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 1 }); // uptime
 		const result = await handleSystemHealth(undefined);
-		expect(result.content[0].text).toContain("garden-dufs");
+		expect(result.content[0].text).toContain("workspace-dufs");
 		expect(result.content[0].text).toContain("Up 1 hour");
 	});
 
