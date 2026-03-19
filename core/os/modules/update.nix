@@ -1,25 +1,36 @@
 # core/os/modules/update.nix
 { pkgs, lib, config, ... }:
 
+let
+  mkService = import ../lib/mk-service.nix { inherit lib; };
+in
+
 {
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
 
-  systemd.services.nixpi-update = {
-    description = "nixPI NixOS update";
-    after    = [ "network-online.target" ];
-    wants    = [ "network-online.target" ];
+  assertions = [
+    {
+      assertion = config.nixpi.update.onBootSec != "";
+      message = "nixpi.update.onBootSec must not be empty.";
+    }
+    {
+      assertion = config.nixpi.update.interval != "";
+      message = "nixpi.update.interval must not be empty.";
+    }
+  ];
 
-    serviceConfig = {
-      Type            = "oneshot";
-      # nixos-rebuild lives at /run/current-system/sw/bin/nixos-rebuild (not in nixpkgs).
-      # serviceConfig.path only accepts derivations, so set PATH via Environment instead.
-      Environment = [
+  systemd.services.nixpi-update = mkService {
+    description = "nixPI NixOS update";
+    serviceType = "oneshot";
+    after = [ "network-online.target" ];
+    wants = [ "network-online.target" ];
+    execStart = pkgs.writeShellScript "nixpi-update" (builtins.readFile ../../../core/scripts/system-update.sh);
+    environment = [
         "PATH=/run/current-system/sw/bin:${lib.makeBinPath (with pkgs; [ nix git jq ])}"
         "NIXPI_USERNAME=${config.nixpi.username}"
       ];
-      ExecStart       = pkgs.writeShellScript "nixpi-update" (builtins.readFile ../../../core/scripts/system-update.sh);
-      RemainAfterExit = false;
-    };
+    hardening = false;
+    serviceConfig.RemainAfterExit = false;
   };
 
   systemd.timers.nixpi-update = {
@@ -27,8 +38,8 @@
     wantedBy    = [ "timers.target" ];
 
     timerConfig = {
-      OnBootSec        = "5min";
-      OnUnitActiveSec  = "6h";
+      OnBootSec        = config.nixpi.update.onBootSec;
+      OnUnitActiveSec  = config.nixpi.update.interval;
       Persistent       = true;
     };
   };

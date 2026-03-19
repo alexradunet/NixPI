@@ -46,4 +46,7 @@ in
 
   # nixPI Home landing page and user service test
   nixpi-home = mkTest ./nixpi-home.nix;
+
+  # Firewall and service exposure policy test
+  nixpi-security = mkTest ./nixpi-security.nix;
 }

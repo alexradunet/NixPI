@@ -3,6 +3,16 @@
 
 let
   u = config.nixpi.username;
+  cfg = config.nixpi.services;
+  securityCfg = config.nixpi.security;
+  mkService = import ../lib/mk-service.nix { inherit lib; };
+  exposedPorts =
+    lib.optionals cfg.home.enable [ cfg.home.port ]
+    ++ lib.optionals cfg.chat.enable [ cfg.chat.port ]
+    ++ lib.optionals cfg.files.enable [ cfg.files.port ]
+    ++ lib.optionals cfg.code.enable [ cfg.code.port ]
+    ++ [ config.nixpi.matrix.port ];
+
   nixpiHomeBootstrap = pkgs.writeShellScript "nixpi-home-bootstrap" ''
     set -eu
     mkdir -p "$HOME/.config/nixpi/home" "$HOME/.config/nixpi/home/tmp"
@@ -14,9 +24,9 @@ let
 <body>
   <h1>nixPI Home</h1>
   <ul>
-    <li><a href="http://localhost:8081">nixPI Chat</a></li>
-    <li><a href="http://localhost:5000">nixPI Files</a></li>
-    <li><a href="http://localhost:8443">code-server</a></li>
+    <li><a href="http://localhost:${toString cfg.chat.port}">nixPI Chat</a></li>
+    <li><a href="http://localhost:${toString cfg.files.port}">nixPI Files</a></li>
+    <li><a href="http://localhost:${toString cfg.code.port}">code-server</a></li>
   </ul>
 </body>
 </html>
@@ -33,20 +43,21 @@ http {
     access_log off;
     client_body_temp_path /home/${u}/.config/nixpi/home/tmp;
     server {
-        listen 8080;
+        listen ${toString cfg.home.port};
         root /home/${u}/.config/nixpi/home;
         try_files $uri $uri/ =404;
     }
 }
 NGINX
   '';
+
   fluffychatBootstrap = pkgs.writeShellScript "nixpi-chat-bootstrap" ''
     set -eu
     mkdir -p "$HOME/.config/nixpi/chat" "$HOME/.config/nixpi/chat/tmp"
     cat > "$HOME/.config/nixpi/chat/config.json" <<'CONFIG'
 {
   "applicationName": "nixPI Chat",
-  "defaultHomeserver": "http://localhost:6167"
+  "defaultHomeserver": "http://localhost:${toString config.nixpi.matrix.port}"
 }
 CONFIG
     cat > "$HOME/.config/nixpi/chat/nginx.conf" <<'NGINX'
@@ -60,7 +71,7 @@ http {
     access_log off;
     client_body_temp_path /home/${u}/.config/nixpi/chat/tmp;
     server {
-        listen 8081;
+        listen ${toString cfg.chat.port};
         location /config.json {
             alias /home/${u}/.config/nixpi/chat/config.json;
         }
@@ -75,10 +86,24 @@ NGINX
 in
 
 {
+  imports = [ ./options.nix ];
+
   config = {
-    # Enable all firmware for maximum hardware compatibility.
-    # This ensures WiFi, Bluetooth, and other hardware works out of the box
-    # on the widest range of devices (Intel, Broadcom, Realtek, Atheros, etc.)
+    assertions = [
+      {
+        assertion = securityCfg.trustedInterface != "";
+        message = "nixpi.security.trustedInterface must not be empty.";
+      }
+      {
+        assertion = cfg.bindAddress != "";
+        message = "nixpi.services.bindAddress must not be empty.";
+      }
+      {
+        assertion = lib.length (lib.unique exposedPorts) == lib.length exposedPorts;
+        message = "nixPI service ports must be unique across built-in services and Matrix.";
+      }
+    ];
+
     hardware.enableAllFirmware = true;
     services.netbird.enable = true;
 
@@ -91,9 +116,10 @@ in
       };
     };
 
-    networking.firewall = {
-      trustedInterfaces = [ "wt0" ];
-      allowedTCPPorts = [ 22 6167 8080 8081 5000 8443 ];
+    networking.firewall.enable = true;
+    networking.firewall.allowedTCPPorts = [ 22 ];
+    networking.firewall.interfaces = lib.mkIf securityCfg.enforceServiceFirewall {
+      "${securityCfg.trustedInterface}".allowedTCPPorts = exposedPorts;
     };
     networking.networkmanager.enable = true;
 
@@ -109,56 +135,59 @@ in
       dufs nginx code-server
     ];
 
-    systemd.user.services.nixpi-home = {
-      description = "nixPI Home landing page";
-      wantedBy = [ "default.target" ];
-      after = [ "network-online.target" ];
-      wants = [ "network-online.target" ];
-      serviceConfig = {
-        ExecStartPre = "${nixpiHomeBootstrap}";
-        ExecStart = "${pkgs.nginx}/bin/nginx -c %h/.config/nixpi/home/nginx.conf";
-        Restart = "on-failure";
-        RestartSec = 10;
-      };
-    };
-
-    systemd.user.services.nixpi-chat = {
-      description = "nixPI web chat client";
-      wantedBy = [ "default.target" ];
-      after = [ "network-online.target" ];
-      wants = [ "network-online.target" ];
-      serviceConfig = {
-        ExecStartPre = "${fluffychatBootstrap}";
-        ExecStart = "${pkgs.nginx}/bin/nginx -c %h/.config/nixpi/chat/nginx.conf";
-        Restart = "on-failure";
-        RestartSec = 10;
-      };
-    };
-
-    systemd.user.services.nixpi-files = {
-      description = "nixPI Files WebDAV";
-      wantedBy = [ "default.target" ];
-      after = [ "network-online.target" ];
-      wants = [ "network-online.target" ];
-      serviceConfig = {
-        ExecStartPre = "${pkgs.coreutils}/bin/mkdir -p %h/Public/nixPI";
-        ExecStart = "${pkgs.dufs}/bin/dufs %h/Public/nixPI -A -b 0.0.0.0 -p 5000";
-        Restart = "on-failure";
-        RestartSec = 10;
-      };
-    };
-
-    systemd.user.services.nixpi-code = {
-      description = "nixPI code-server";
-      wantedBy = [ "default.target" ];
-      after = [ "network-online.target" ];
-      wants = [ "network-online.target" ];
-      serviceConfig = {
-        ExecStart = "${pkgs.code-server}/bin/code-server --bind-addr 0.0.0.0:8443 --auth none --disable-telemetry";
-        Restart = "on-failure";
-        RestartSec = 10;
-      };
-    };
+    systemd.user.services = lib.mkMerge [
+      (lib.mkIf cfg.home.enable {
+        nixpi-home = mkService {
+          description = "nixPI Home landing page";
+          wantedBy = [ "default.target" ];
+          after = [ "network-online.target" ];
+          wants = [ "network-online.target" ];
+          execStartPre = "${nixpiHomeBootstrap}";
+          execStart = "${pkgs.nginx}/bin/nginx -c %h/.config/nixpi/home/nginx.conf";
+          restart = "on-failure";
+          restartSec = 10;
+          readWritePaths = [ "%h/.config/nixpi/home" ];
+        };
+      })
+      (lib.mkIf cfg.chat.enable {
+        nixpi-chat = mkService {
+          description = "nixPI web chat client";
+          wantedBy = [ "default.target" ];
+          after = [ "network-online.target" ];
+          wants = [ "network-online.target" ];
+          execStartPre = "${fluffychatBootstrap}";
+          execStart = "${pkgs.nginx}/bin/nginx -c %h/.config/nixpi/chat/nginx.conf";
+          restart = "on-failure";
+          restartSec = 10;
+          readWritePaths = [ "%h/.config/nixpi/chat" ];
+        };
+      })
+      (lib.mkIf cfg.files.enable {
+        nixpi-files = mkService {
+          description = "nixPI Files WebDAV";
+          wantedBy = [ "default.target" ];
+          after = [ "network-online.target" ];
+          wants = [ "network-online.target" ];
+          execStartPre = "${pkgs.coreutils}/bin/mkdir -p %h/Public/nixPI";
+          execStart = "${pkgs.dufs}/bin/dufs %h/Public/nixPI -A -b ${cfg.bindAddress} -p ${toString cfg.files.port}";
+          restart = "on-failure";
+          restartSec = 10;
+          readWritePaths = [ "%h/Public/nixPI" ];
+        };
+      })
+      (lib.mkIf cfg.code.enable {
+        nixpi-code = mkService {
+          description = "nixPI code-server";
+          wantedBy = [ "default.target" ];
+          after = [ "network-online.target" ];
+          wants = [ "network-online.target" ];
+          execStart = "${pkgs.code-server}/bin/code-server --bind-addr ${cfg.bindAddress}:${toString cfg.code.port} --auth none --disable-telemetry";
+          restart = "on-failure";
+          restartSec = 10;
+          hardening = false;
+        };
+      })
+    ];
 
     systemd.tmpfiles.rules = [
       "d /home/${u}/.config 0755 ${u} ${u} -"
@@ -189,9 +218,9 @@ in
 <body>
   <h1>nixPI Home</h1>
   <ul>
-    <li><a href="http://localhost:8081">nixPI Chat</a></li>
-    <li><a href="http://localhost:5000">nixPI Files</a></li>
-    <li><a href="http://localhost:8443">nixPI Code</a></li>
+    <li><a href="http://localhost:${toString cfg.chat.port}">nixPI Chat</a></li>
+    <li><a href="http://localhost:${toString cfg.files.port}">nixPI Files</a></li>
+    <li><a href="http://localhost:${toString cfg.code.port}">nixPI Code</a></li>
   </ul>
 </body>
 </html>
@@ -208,7 +237,7 @@ http {
     access_log off;
     client_body_temp_path /home/${u}/.config/nixpi/home/tmp;
     server {
-        listen 8080;
+        listen ${toString cfg.home.port};
         root /home/${u}/.config/nixpi/home;
         try_files $uri $uri/ =404;
     }
@@ -218,7 +247,7 @@ NGINX
       cat > /home/${u}/.config/nixpi/chat/config.json <<'CONFIG'
 {
   "applicationName": "nixPI Chat",
-  "defaultHomeserver": "http://localhost:6167"
+  "defaultHomeserver": "http://localhost:${toString config.nixpi.matrix.port}"
 }
 CONFIG
 
@@ -233,7 +262,7 @@ http {
     access_log off;
     client_body_temp_path /home/${u}/.config/nixpi/chat/tmp;
     server {
-        listen 8081;
+        listen ${toString cfg.chat.port};
         location /config.json {
             alias /home/${u}/.config/nixpi/chat/config.json;
         }
@@ -246,6 +275,12 @@ http {
 NGINX
 
       chown -R ${u}:${u} /home/${u}/.config /home/${u}/Public/nixPI
+    '';
+
+    warnings = lib.optional securityCfg.enforceServiceFirewall ''
+      nixPI opens Home, Chat, Files, Code, and Matrix only on
+      `${securityCfg.trustedInterface}`. Without that interface, only local
+      access remains available.
     '';
   };
 }

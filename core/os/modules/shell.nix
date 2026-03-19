@@ -53,9 +53,9 @@ in
   };
   users.groups.${u} = {};
 
-  security.sudo.extraRules = [
+  security.sudo.extraRules = lib.mkIf config.nixpi.security.passwordlessSudo.enable [
     {
-      users    = [ u ];
+      users = [ u ];
       commands = [ { command = "ALL"; options = [ "NOPASSWD" ]; } ];
     }
   ];
@@ -186,4 +186,9 @@ in
   boot.kernel.sysctl."kernel.printk" = "4 4 1 7";
 
   networking.hostName = lib.mkDefault "nixos";
+
+  warnings = lib.optional config.nixpi.security.passwordlessSudo.enable ''
+    nixPI grants `${u}` passwordless sudo for bootstrap convenience. Keep this
+    explicit until first-boot and OS-operation paths are further narrowed.
+  '';
 }

@@ -1,7 +1,16 @@
 # core/os/modules/matrix.nix
-{ pkgs, config, ... }:
+{ pkgs, config, lib, ... }:
 
 {
+  imports = [ ./options.nix ];
+
+  assertions = [
+    {
+      assertion = config.nixpi.matrix.bindAddress != "";
+      message = "nixpi.matrix.bindAddress must not be empty.";
+    }
+  ];
+
   systemd.tmpfiles.rules = [
     "d /var/lib/matrix-synapse 0750 matrix-synapse matrix-synapse -"
     "d /var/lib/matrix-synapse/media_store 0750 matrix-synapse matrix-synapse -"
@@ -12,12 +21,12 @@
     
     settings = {
       server_name = config.networking.hostName;
-      public_baseurl = "http://localhost:6167";
+      public_baseurl = "http://localhost:${toString config.nixpi.matrix.port}";
       
       listeners = [
         {
-          port = 6167;
-          bind_addresses = [ "0.0.0.0" ];
+          port = config.nixpi.matrix.port;
+          bind_addresses = [ config.nixpi.matrix.bindAddress ];
           type = "http";
           tls = false;
           x_forwarded = false;
@@ -37,7 +46,7 @@
       };
       
       # Registration settings
-      enable_registration = true;
+      enable_registration = config.nixpi.matrix.enableRegistration;
       enable_registration_without_verification = true;
       suppress_key_server_warning = true;
       
@@ -48,7 +57,7 @@
       federation_domain_whitelist = [];
       
       # Limit request size for file uploads
-      max_upload_size = "20M";
+      max_upload_size = config.nixpi.matrix.maxUploadSize;
       
       # Disable presence (reduces resource usage)
       use_presence = false;
@@ -58,7 +67,7 @@
     };
     
     # Extra configuration lines for registration shared secret
-    extraConfigFiles = [];
+    extraConfigFiles = [ "/var/lib/matrix-synapse/extra.yaml" ];
   };
 
   # Override the systemd service to add bootstrap script and ensure proper ordering
@@ -97,4 +106,10 @@ EOF
 
   # Ensure openssl is available for bootstrap
   environment.systemPackages = [ pkgs.openssl ];
+
+  warnings = lib.optional config.nixpi.matrix.enableRegistration ''
+    nixPI keeps Matrix registration enabled to support unattended setup. The
+    firewall policy should stay enabled so Matrix is exposed only on
+    `${config.nixpi.security.trustedInterface}`.
+  '';
 }
