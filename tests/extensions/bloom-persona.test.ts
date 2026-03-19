@@ -213,6 +213,23 @@ describe("bloom-persona guardrails", () => {
 });
 
 // ---------------------------------------------------------------------------
+// session_before_compact
+// ---------------------------------------------------------------------------
+describe("bloom-persona session_before_compact", () => {
+	it("returns compaction guidance with update available status", async () => {
+		const result = (await api.fireEvent("session_before_compact", {
+			preparation: { firstKeptEntryId: 42, tokensBefore: 15000 },
+		})) as { compaction: { summary: string; firstKeptEntryId: number; tokensBefore: number } };
+
+		expect(result.compaction.summary).toContain("COMPACTION GUIDANCE");
+		expect(result.compaction.summary).toContain("Bloom persona identity");
+		expect(result.compaction.summary).toContain("Tokens before compaction: 15000");
+		expect(result.compaction.firstKeptEntryId).toBe(42);
+		expect(result.compaction.tokensBefore).toBe(15000);
+	});
+});
+
+// ---------------------------------------------------------------------------
 // normalizeCommand (inlined from lib/persona-utils.ts)
 // ---------------------------------------------------------------------------
 describe("normalizeCommand", () => {
