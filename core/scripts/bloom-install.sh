@@ -188,9 +188,9 @@ run_install() {
     echo "Preparing disk configuration..."
     
     # Generate a disk config with the correct device
-    # Note: disko CLI expects { disko.devices = ... } format
+    # Note: disko CLI expects plain attrset, not a function
     cat > "$WORKDIR/disk-config.nix" <<EOF
-{ lib, ... }: {
+{
   disko.devices = {
     disk = {
       main = {
