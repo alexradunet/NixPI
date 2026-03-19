@@ -12,8 +12,8 @@ import {
 	handleNixosUpdate,
 	handleSystemdControl,
 	handleUpdateStatus,
-} from "../../core/pi-extensions/bloom-os/actions.js";
-import { handleSystemHealth } from "../../core/pi-extensions/bloom-os/actions-health.js";
+} from "../../core/pi/extensions/bloom-os/actions.js";
+import { handleSystemHealth } from "../../core/pi/extensions/bloom-os/actions-health.js";
 
 let temp: TempGarden;
 let api: MockExtensionAPI;
@@ -30,7 +30,7 @@ const EXPECTED_TOOL_NAMES = [
 beforeEach(async () => {
 	temp = createTempGarden();
 	api = createMockExtensionAPI();
-	const mod = await import("../../core/pi-extensions/bloom-os/index.js");
+	const mod = await import("../../core/pi/extensions/bloom-os/index.js");
 	mod.default(api as never);
 });
 

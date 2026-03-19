@@ -33,8 +33,8 @@ buildNpmPackage {
 
     mkdir -p $out/share/bloom/core
     cp -r dist package.json node_modules $out/share/bloom/
-    cp -r core/pi-persona $out/share/bloom/core/pi-persona
-    cp -r core/pi-skills  $out/share/bloom/core/pi-skills
+    cp -r core/pi/persona $out/share/bloom/core/pi/persona
+    cp -r core/pi/skills  $out/share/bloom/core/pi/skills
 
     mkdir -p $out/bin
     install -m 755 ${../../../scripts/bloom-lib.sh} $out/bin/bloom-lib.sh
@@ -58,12 +58,12 @@ buildNpmPackage {
     mkdir -p $out/share/bloom/.pi/agent
     echo '{"packages": ["/usr/local/share/bloom"]}' > $out/share/bloom/.pi/agent/settings.json
 
-    # extensions symlink — package.json references ./core/pi-extensions but compiled JS lands in dist/
-    ln -sf $out/share/bloom/dist/core/pi-extensions $out/share/bloom/core/pi-extensions
+    # extensions symlink — package.json references ./core/pi/extensions but compiled JS lands in dist/
+    ln -sf $out/share/bloom/dist/core/pi/extensions $out/share/bloom/core/pi/extensions
 
     # persona and skills symlinks — use absolute paths so they resolve correctly at runtime
-    ln -sf $out/share/bloom/core/pi-persona $out/share/bloom/persona
-    ln -sf $out/share/bloom/core/pi-skills  $out/share/bloom/skills
+    ln -sf $out/share/bloom/core/pi/persona $out/share/bloom/persona
+    ln -sf $out/share/bloom/core/pi/skills  $out/share/bloom/skills
 
     runHook postInstall
   '';

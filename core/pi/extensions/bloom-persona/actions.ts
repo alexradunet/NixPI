@@ -114,8 +114,8 @@ export function loadPersona(): string {
 	const bloomDir = getBloomDir();
 	const vaultDir = join(bloomDir, "Persona");
 	const packageDir = resolvePackageDir();
-	const defaultPersonaDir = existsSync(join(packageDir, "core", "pi-persona"))
-		? join(packageDir, "core", "pi-persona")
+	const defaultPersonaDir = existsSync(join(packageDir, "core", "pi", "persona"))
+		? join(packageDir, "core", "pi", "persona")
 		: join(packageDir, "persona");
 	const dir = existsSync(join(vaultDir, "SOUL.md")) ? vaultDir : defaultPersonaDir;
 	const layers: Array<[string, string]> = [

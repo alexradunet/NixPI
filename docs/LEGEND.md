@@ -34,7 +34,7 @@ This document defines the emoji notation used across Bloom documentation for vis
 Excluded from this convention:
 
 - `SKILL.md` files, because they are runtime-consumed instructions
-- `core/pi-persona/` files, because they are loaded into Pi context
+- `core/pi/persona/` files, because they are loaded into Pi context
 
 ## 🔗 Related
 

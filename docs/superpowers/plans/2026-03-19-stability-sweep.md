@@ -32,13 +32,13 @@
 | `flake.nix` | Audit | Verify outputs list is clean |
 | `core/lib/*.ts` | Audit/modify | Remove `as unknown as`, unsafe casts at fs boundaries |
 | `core/daemon/*.ts` | Audit/modify | Remove silent error swallowing only |
-| `core/pi-extensions/bloom-setup/` | Modify | Extract param schemas; add tests |
-| `core/pi-extensions/bloom-localai/` | Audit | Confirm coverage at threshold |
-| `core/pi-extensions/bloom-os/` | Modify | Extract param schemas; add action tests |
-| `core/pi-extensions/bloom-garden/` | Modify | Extract param schemas; add command tests |
-| `core/pi-extensions/bloom-episodes/` | Modify | Extract param schemas; add action tests |
-| `core/pi-extensions/bloom-objects/` | Modify | Extract param schemas; add action tests |
-| `core/pi-extensions/bloom-persona/` | Audit/modify | Check for defensive casts |
+| `core/pi/extensions/bloom-setup/` | Modify | Extract param schemas; add tests |
+| `core/pi/extensions/bloom-localai/` | Audit | Confirm coverage at threshold |
+| `core/pi/extensions/bloom-os/` | Modify | Extract param schemas; add action tests |
+| `core/pi/extensions/bloom-garden/` | Modify | Extract param schemas; add command tests |
+| `core/pi/extensions/bloom-episodes/` | Modify | Extract param schemas; add action tests |
+| `core/pi/extensions/bloom-objects/` | Modify | Extract param schemas; add action tests |
+| `core/pi/extensions/bloom-persona/` | Audit/modify | Check for defensive casts |
 | `tests/extensions/bloom-setup.test.ts` | Modify | Add action-level tests |
 | `tests/extensions/bloom-localai.test.ts` | Audit | Confirm at threshold |
 | `tests/extensions/bloom-os.test.ts` | Modify | Add action tests (mock `run`) |
@@ -173,11 +173,11 @@ export default defineConfig({
 			provider: "v8",
 			reporter: ["text", "json-summary", "lcov"],
 			reportsDirectory: "coverage",
-			include: ["core/daemon/**/*.ts", "core/lib/**/*.ts", "core/pi-extensions/**/*.ts"],
+			include: ["core/daemon/**/*.ts", "core/lib/**/*.ts", "core/pi/extensions/**/*.ts"],
 			thresholds: {
 				"core/daemon/**/*.ts": { lines: 85, functions: 80, branches: 75, statements: 85 },
 				"core/lib/**/*.ts": { lines: 85, functions: 85, branches: 70, statements: 85 },
-				"core/pi-extensions/**/*.ts": { lines: 60, functions: 60, branches: 50, statements: 60 },
+				"core/pi/extensions/**/*.ts": { lines: 60, functions: 60, branches: 50, statements: 60 },
 			},
 		},
 	},
@@ -435,12 +435,12 @@ The daemon is at ~83% actual coverage. Raise threshold enforcement to 85%; remov
 ## Task 7: bloom-setup — add action tests
 
 **Files:**
-- Audit/modify: `core/pi-extensions/bloom-setup/index.ts`, `core/pi-extensions/bloom-setup/actions.ts`
+- Audit/modify: `core/pi/extensions/bloom-setup/index.ts`, `core/pi/extensions/bloom-setup/actions.ts`
 - Modify: `tests/extensions/bloom-setup.test.ts`
 
 ### Step 7.1 — Audit for Value.Check patterns and unsafe casts
 
-- [ ] Read `core/pi-extensions/bloom-setup/actions.ts` and `index.ts`. Check for:
+- [ ] Read `core/pi/extensions/bloom-setup/actions.ts` and `index.ts`. Check for:
   - `Value.Check(T, x)` + manual guard → replace with `Value.Parse(T, x)` at tool input boundaries
   - `params as { ... }` unsafe casts → replace with `params as Static<typeof ParamsSchema>` where `ParamsSchema` is extracted as a named const before `defineTool`
 
@@ -488,14 +488,14 @@ describe("setup actions", () => {
   })
 
   it("setup_status returns current state when no steps are done", async () => {
-    const { handleSetupStatus } = await import("../../core/pi-extensions/bloom-setup/actions.js")
+    const { handleSetupStatus } = await import("../../core/pi/extensions/bloom-setup/actions.js")
     const result = await handleSetupStatus()
     expect(result).toHaveProperty("content")
     expect(result.content[0]).toHaveProperty("type", "text")
   })
 
   it("setup_advance marks a step done", async () => {
-    const { handleSetupAdvance } = await import("../../core/pi-extensions/bloom-setup/actions.js")
+    const { handleSetupAdvance } = await import("../../core/pi/extensions/bloom-setup/actions.js")
     // Read the actual handleSetupAdvance signature before calling — it requires
     // both a valid StepName and a result field (e.g. { step: "persona", result: "completed" }).
     // Adjust the call below to match the real signature.
@@ -504,7 +504,7 @@ describe("setup actions", () => {
   })
 
   it("setup_reset clears state", async () => {
-    const { handleSetupReset } = await import("../../core/pi-extensions/bloom-setup/actions.js")
+    const { handleSetupReset } = await import("../../core/pi/extensions/bloom-setup/actions.js")
     // handleSetupReset takes an optional params object — pass {} even if all fields are optional.
     const result = await handleSetupReset({})
     expect(result).toHaveProperty("content")
@@ -541,7 +541,7 @@ Adjust function names to match the actual exports from `actions.ts` after readin
 
 - [ ] Run:
   ```bash
-  git add core/pi-extensions/bloom-setup/ tests/extensions/bloom-setup.test.ts
+  git add core/pi/extensions/bloom-setup/ tests/extensions/bloom-setup.test.ts
   git commit -m "test(bloom-setup): add action tests; extract typed param schemas"
   ```
 
@@ -550,7 +550,7 @@ Adjust function names to match the actual exports from `actions.ts` after readin
 ## Task 8: bloom-localai — confirm coverage
 
 **Files:**
-- Audit: `core/pi-extensions/bloom-localai/index.ts`
+- Audit: `core/pi/extensions/bloom-localai/index.ts`
 - Audit: `tests/extensions/bloom-localai.test.ts`
 
 ### Step 8.1 — Check current coverage
@@ -562,7 +562,7 @@ Adjust function names to match the actual exports from `actions.ts` after readin
 
 ### Step 8.2 — If coverage ≥ 60%, audit for unsafe casts only
 
-- [ ] Read `core/pi-extensions/bloom-localai/index.ts`. If there are `params as { ... }` casts, replace with `as Static<typeof ParamsSchema>`. If the file is tiny and has no such patterns, note "no changes required."
+- [ ] Read `core/pi/extensions/bloom-localai/index.ts`. If there are `params as { ... }` casts, replace with `as Static<typeof ParamsSchema>`. If the file is tiny and has no such patterns, note "no changes required."
 
 ### Step 8.3 — If coverage < 60%, add a registration + behaviour test
 
@@ -572,7 +572,7 @@ bloom-localai registers a LocalAI provider. Add a test that calls the registrati
 
 - [ ] Run:
   ```bash
-  git add core/pi-extensions/bloom-localai/ tests/extensions/bloom-localai.test.ts
+  git add core/pi/extensions/bloom-localai/ tests/extensions/bloom-localai.test.ts
   git commit -m "test(bloom-localai): confirm coverage at threshold"
   ```
 
@@ -581,8 +581,8 @@ bloom-localai registers a LocalAI provider. Add a test that calls the registrati
 ## Task 9: bloom-os — add action tests and extract typed param schemas
 
 **Files:**
-- Modify: `core/pi-extensions/bloom-os/index.ts`
-- Modify: `core/pi-extensions/bloom-os/actions.ts`
+- Modify: `core/pi/extensions/bloom-os/index.ts`
+- Modify: `core/pi/extensions/bloom-os/actions.ts`
 - Modify: `tests/extensions/bloom-os.test.ts`
 - Modify: `tests/extensions/bloom-os-update.test.ts`
 - Audit/modify: `tests/extensions/bloom-os-proposal.test.ts`
@@ -617,7 +617,7 @@ Do the same for `SystemdControlParams`, `NixConfigProposalParams`, etc.
 
 ### Step 9.2 — Check for Value.Check patterns in actions.ts
 
-- [ ] Read `core/pi-extensions/bloom-os/actions.ts`. If any `Value.Check(T, x)` + manual guard exists, replace with `Value.Parse(T, x)` (bare throw — tool inputs are a trust boundary where throws are correct).
+- [ ] Read `core/pi/extensions/bloom-os/actions.ts`. If any `Value.Check(T, x)` + manual guard exists, replace with `Value.Parse(T, x)` (bare throw — tool inputs are a trust boundary where throws are correct).
 
 ### Step 9.3 — Add action tests to bloom-os.test.ts
 
@@ -634,7 +634,7 @@ vi.mock("../../core/lib/exec.js", () => ({
 }))
 
 import * as execModule from "../../core/lib/exec.js"
-import { handleNixosUpdate, handleSystemdControl, handleUpdateStatus } from "../../core/pi-extensions/bloom-os/actions.js"
+import { handleNixosUpdate, handleSystemdControl, handleUpdateStatus } from "../../core/pi/extensions/bloom-os/actions.js"
 
 const mockRun = vi.mocked(execModule.run)
 
@@ -739,7 +739,7 @@ describe("handleUpdateStatus", () => {
 
 - [ ] Run:
   ```bash
-  git add core/pi-extensions/bloom-os/ tests/extensions/bloom-os.test.ts tests/extensions/bloom-os-update.test.ts tests/extensions/bloom-os-proposal.test.ts
+  git add core/pi/extensions/bloom-os/ tests/extensions/bloom-os.test.ts tests/extensions/bloom-os-update.test.ts tests/extensions/bloom-os-proposal.test.ts
   git commit -m "test(bloom-os): add action tests; extract typed param schemas"
   ```
 
@@ -748,12 +748,12 @@ describe("handleUpdateStatus", () => {
 ## Task 10: bloom-garden — add command handler tests
 
 **Files:**
-- Audit/modify: `core/pi-extensions/bloom-garden/index.ts`, `core/pi-extensions/bloom-garden/actions.ts`
+- Audit/modify: `core/pi/extensions/bloom-garden/index.ts`, `core/pi/extensions/bloom-garden/actions.ts`
 - Modify: `tests/extensions/bloom-garden.test.ts`
 
 ### Step 10.1 — Audit for Value.Check patterns and unsafe casts
 
-- [ ] Read `core/pi-extensions/bloom-garden/index.ts` and `actions.ts`. Replace any `Value.Check(T, x)` + manual guard with `Value.Parse(T, x)` at tool input boundaries. Extract param schemas to named consts and replace `params as { ... }` casts.
+- [ ] Read `core/pi/extensions/bloom-garden/index.ts` and `actions.ts`. Replace any `Value.Check(T, x)` + manual guard with `Value.Parse(T, x)` at tool input boundaries. Extract param schemas to named consts and replace `params as { ... }` casts.
 
 ### Step 10.2 — Read current test file
 
@@ -821,7 +821,7 @@ Adjust based on the actual command handler signature read in Step 10.2.
 
 - [ ] Run:
   ```bash
-  git add core/pi-extensions/bloom-garden/ tests/extensions/bloom-garden.test.ts
+  git add core/pi/extensions/bloom-garden/ tests/extensions/bloom-garden.test.ts
   git commit -m "test(bloom-garden): add tool execute and command handler tests"
   ```
 
@@ -830,12 +830,12 @@ Adjust based on the actual command handler signature read in Step 10.2.
 ## Task 11: bloom-episodes — add action tests
 
 **Files:**
-- Audit/modify: `core/pi-extensions/bloom-episodes/index.ts`, `core/pi-extensions/bloom-episodes/actions.ts`
+- Audit/modify: `core/pi/extensions/bloom-episodes/index.ts`, `core/pi/extensions/bloom-episodes/actions.ts`
 - Modify: `tests/extensions/bloom-episodes.test.ts`
 
 ### Step 11.1 — Audit for Value.Check patterns and unsafe casts
 
-- [ ] Read `core/pi-extensions/bloom-episodes/index.ts` and `actions.ts`. Apply the same audit: `Value.Check → Value.Parse`, `params as { ... } → params as Static<typeof XxxParams>`.
+- [ ] Read `core/pi/extensions/bloom-episodes/index.ts` and `actions.ts`. Apply the same audit: `Value.Check → Value.Parse`, `params as { ... } → params as Static<typeof XxxParams>`.
 
 ### Step 11.2 — Read current test file
 
@@ -853,14 +853,14 @@ describe("episode actions", () => {
   afterEach(() => { temp.cleanup() })
 
   it("episode_create creates an episode and returns success", async () => {
-    const { handleEpisodeCreate } = await import("../../core/pi-extensions/bloom-episodes/actions.js")
+    const { handleEpisodeCreate } = await import("../../core/pi/extensions/bloom-episodes/actions.js")
     const result = await handleEpisodeCreate({ title: "Test Episode", content: "body text", tags: [] })
     expect(result.isError).toBeFalsy()
     expect(result.content[0].text).toBeDefined()
   })
 
   it("episode_list returns a list (empty garden)", async () => {
-    const { handleEpisodeList } = await import("../../core/pi-extensions/bloom-episodes/actions.js")
+    const { handleEpisodeList } = await import("../../core/pi/extensions/bloom-episodes/actions.js")
     const result = await handleEpisodeList({})
     expect(result).toHaveProperty("content")
   })
@@ -889,7 +889,7 @@ Adjust function names and argument shapes to match actual exports from `actions.
 
 - [ ] Run:
   ```bash
-  git add core/pi-extensions/bloom-episodes/ tests/extensions/bloom-episodes.test.ts
+  git add core/pi/extensions/bloom-episodes/ tests/extensions/bloom-episodes.test.ts
   git commit -m "test(bloom-episodes): add episode action tests; extract typed param schemas"
   ```
 
@@ -898,7 +898,7 @@ Adjust function names and argument shapes to match actual exports from `actions.
 ## Task 12: bloom-objects — add action tests
 
 **Files:**
-- Audit/modify: `core/pi-extensions/bloom-objects/index.ts`, `core/pi-extensions/bloom-objects/actions.ts`
+- Audit/modify: `core/pi/extensions/bloom-objects/index.ts`, `core/pi/extensions/bloom-objects/actions.ts`
 - Modify: `tests/extensions/bloom-objects.test.ts`
 
 ### Step 12.1 — Audit for Value.Check patterns and unsafe casts
@@ -919,20 +919,20 @@ describe("object store CRUD", () => {
   afterEach(() => { temp.cleanup() })
 
   it("memory_create writes an object and returns success", async () => {
-    const { handleMemoryCreate } = await import("../../core/pi-extensions/bloom-objects/actions.js")
+    const { handleMemoryCreate } = await import("../../core/pi/extensions/bloom-objects/actions.js")
     const result = await handleMemoryCreate({ title: "Test Note", content: "some content", type: "note" })
     expect(result.isError).toBeFalsy()
   })
 
   it("memory_read returns content after create", async () => {
-    const { handleMemoryCreate, handleMemoryRead } = await import("../../core/pi-extensions/bloom-objects/actions.js")
+    const { handleMemoryCreate, handleMemoryRead } = await import("../../core/pi/extensions/bloom-objects/actions.js")
     await handleMemoryCreate({ title: "Read Test", content: "hello", type: "note" })
     const result = await handleMemoryRead({ title: "Read Test" })
     expect(result.content[0].text).toContain("hello")
   })
 
   it("memory_list returns objects", async () => {
-    const { handleMemoryList } = await import("../../core/pi-extensions/bloom-objects/actions.js")
+    const { handleMemoryList } = await import("../../core/pi/extensions/bloom-objects/actions.js")
     const result = await handleMemoryList({})
     expect(result).toHaveProperty("content")
   })
@@ -961,7 +961,7 @@ Adjust function names and argument shapes to match actual exports.
 
 - [ ] Run:
   ```bash
-  git add core/pi-extensions/bloom-objects/ tests/extensions/bloom-objects.test.ts
+  git add core/pi/extensions/bloom-objects/ tests/extensions/bloom-objects.test.ts
   git commit -m "test(bloom-objects): add memory CRUD action tests; extract typed param schemas"
   ```
 
@@ -970,7 +970,7 @@ Adjust function names and argument shapes to match actual exports.
 ## Task 13: bloom-persona — audit guardrail hooks
 
 **Files:**
-- Audit/modify: `core/pi-extensions/bloom-persona/index.ts`, `core/pi-extensions/bloom-persona/actions.ts`
+- Audit/modify: `core/pi/extensions/bloom-persona/index.ts`, `core/pi/extensions/bloom-persona/actions.ts`
 - Audit: `tests/extensions/bloom-persona.test.ts`
 
 ### Step 13.1 — Check current coverage
@@ -983,7 +983,7 @@ Adjust function names and argument shapes to match actual exports.
 
 ### Step 13.2 — Audit for defensive casts
 
-- [ ] Read `core/pi-extensions/bloom-persona/index.ts` and `actions.ts`. Apply the same audit: replace `params as { ... }` with `as Static<typeof XxxParams>`, replace `Value.Check` guards with `Value.Parse` at event/tool boundaries.
+- [ ] Read `core/pi/extensions/bloom-persona/index.ts` and `actions.ts`. Apply the same audit: replace `params as { ... }` with `as Static<typeof XxxParams>`, replace `Value.Check` guards with `Value.Parse` at event/tool boundaries.
 
 ### Step 13.3 — If coverage < 60%, add missing event handler tests
 
@@ -1000,7 +1000,7 @@ If needed, add tests that trigger the registered event handlers (`session_start`
 
 - [ ] Run:
   ```bash
-  git add core/pi-extensions/bloom-persona/
+  git add core/pi/extensions/bloom-persona/
   git commit -m "refactor(bloom-persona): extract typed param schemas, audit event handlers"
   ```
 
@@ -1036,7 +1036,7 @@ describe("operator journey: setup_status tool call", () => {
     temp = createTempGarden()
     // BLOOM_DIR is set automatically by createTempGarden()
     api = createMockExtensionAPI()
-    const mod = await import("../../core/pi-extensions/bloom-setup/index.js")
+    const mod = await import("../../core/pi/extensions/bloom-setup/index.js")
     mod.default(api as never)
   })
 
@@ -1066,7 +1066,7 @@ describe("operator journey: memory_create tool call", () => {
   beforeEach(async () => {
     temp = createTempGarden()
     api = createMockExtensionAPI()
-    const mod = await import("../../core/pi-extensions/bloom-objects/index.js")
+    const mod = await import("../../core/pi/extensions/bloom-objects/index.js")
     mod.default(api as never)
   })
 

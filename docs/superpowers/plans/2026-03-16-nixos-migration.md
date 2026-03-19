@@ -34,12 +34,12 @@
 | File | Change |
 |------|--------|
 | `justfile` | Replace all podman/BIB/bootc recipes with nix equivalents |
-| `core/pi-extensions/bloom-os/types.ts` | `UpdateStatus`: add `generation?`, note `version` is now unused |
-| `core/pi-extensions/bloom-os/actions.ts` | Replace `handleBootc` with `handleNixosUpdate`; fix `handleUpdateStatus` |
-| `core/pi-extensions/bloom-os/index.ts` | Replace `bootc` tool with `nixos_update` tool |
-| `core/pi-extensions/bloom-os/actions-health.ts` | Replace `bootcSection` with NixOS generation section |
+| `core/pi/extensions/bloom-os/types.ts` | `UpdateStatus`: add `generation?`, note `version` is now unused |
+| `core/pi/extensions/bloom-os/actions.ts` | Replace `handleBootc` with `handleNixosUpdate`; fix `handleUpdateStatus` |
+| `core/pi/extensions/bloom-os/index.ts` | Replace `bootc` tool with `nixos_update` tool |
+| `core/pi/extensions/bloom-os/actions-health.ts` | Replace `bootcSection` with NixOS generation section |
 | `core/lib/repo.ts` | Remove `bootc status` inference; rely on git remote only |
-| `core/pi-extensions/bloom-services/actions-manifest.ts` | Remove `bootc status` image inference |
+| `core/pi/extensions/bloom-services/actions-manifest.ts` | Remove `bootc status` image inference |
 
 ### Deleted
 | Path | Reason |
@@ -342,8 +342,8 @@ buildNpmPackage {
 
     # Back-compat symlinks — use relative paths to avoid baking store path into link target
     cd $out/share/bloom
-    ln -sf core/pi-persona persona
-    ln -sf core/pi-skills  skills
+    ln -sf core/pi/persona persona
+    ln -sf core/pi/skills  skills
 
     runHook postInstall
   '';
@@ -1270,14 +1270,14 @@ The current `bloom-os` extension calls `bootc` CLI commands. These are replaced 
 | `bootc rollback` | `sudo nixos-rebuild switch --rollback` |
 
 **Files:**
-- Modify: `core/pi-extensions/bloom-os/types.ts`
-- Modify: `core/pi-extensions/bloom-os/actions.ts`
-- Modify: `core/pi-extensions/bloom-os/index.ts`
-- Modify: `core/pi-extensions/bloom-os/actions-health.ts`
+- Modify: `core/pi/extensions/bloom-os/types.ts`
+- Modify: `core/pi/extensions/bloom-os/actions.ts`
+- Modify: `core/pi/extensions/bloom-os/index.ts`
+- Modify: `core/pi/extensions/bloom-os/actions-health.ts`
 
 - [ ] **Step 1: Update UpdateStatus type**
 
-Edit `core/pi-extensions/bloom-os/types.ts`. Replace `UpdateStatus`:
+Edit `core/pi/extensions/bloom-os/types.ts`. Replace `UpdateStatus`:
 
 ```typescript
 /** Update status persisted to /home/pi/.bloom/update-status.json by the bloom-update.service. */
@@ -1293,7 +1293,7 @@ export interface UpdateStatus {
 
 - [ ] **Step 2: Update actions.ts — replace handleBootc, fix handleUpdateStatus**
 
-In `core/pi-extensions/bloom-os/actions.ts`:
+In `core/pi/extensions/bloom-os/actions.ts`:
 
 **Delete** the entire `handleBootc` function body (find `export async function handleBootc` and remove it and all its lines up to and including the closing `}`).
 
@@ -1355,7 +1355,7 @@ export async function handleUpdateStatus() {
 
 - [ ] **Step 3: Update index.ts — replace bootc tool with nixos_update**
 
-In `core/pi-extensions/bloom-os/index.ts`:
+In `core/pi/extensions/bloom-os/index.ts`:
 
 Replace the `bootc` tool definition:
 
@@ -1390,7 +1390,7 @@ Update the JSDoc comment:
 
 - [ ] **Step 4: Update actions-health.ts — replace bootcSection with NixOS generation info**
 
-In `core/pi-extensions/bloom-os/actions-health.ts`:
+In `core/pi/extensions/bloom-os/actions-health.ts`:
 
 Replace `parseBootcSection`, `bootcSection`, and the `run("bootc", ...)` call:
 
@@ -1423,7 +1423,7 @@ Expected: exits 0, no TypeScript errors.
 - [ ] **Step 6: Commit TypeScript changes**
 
 ```bash
-git add core/pi-extensions/bloom-os/
+git add core/pi/extensions/bloom-os/
 git commit -m "feat: replace bootc extension with NixOS nixos_update tool"
 ```
 
@@ -1433,7 +1433,7 @@ git commit -m "feat: replace bootc extension with NixOS nixos_update tool"
 
 **Files:**
 - Modify: `core/lib/repo.ts`
-- Modify: `core/pi-extensions/bloom-services/actions-manifest.ts`
+- Modify: `core/pi/extensions/bloom-services/actions-manifest.ts`
 
 - [ ] **Step 1: Update repo.ts — remove bootc fallback**
 
@@ -1477,7 +1477,7 @@ Expected: exits 0.
 - [ ] **Step 4: Commit**
 
 ```bash
-git add core/lib/repo.ts core/pi-extensions/bloom-services/actions-manifest.ts
+git add core/lib/repo.ts core/pi/extensions/bloom-services/actions-manifest.ts
 git commit -m "fix: remove bootc CLI references from repo.ts and services manifest"
 ```
 

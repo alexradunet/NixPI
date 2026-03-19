@@ -82,9 +82,9 @@ Key decisions:
 
 Add `../modules/bloom-llm.nix` to imports.
 
-### 3. Pi Extension: `core/pi-extensions/bloom-localai/`
+### 3. Pi Extension: `core/pi/extensions/bloom-localai/`
 
-Pi auto-loads all subdirectories listed under `"extensions": ["./core/pi-extensions"]` in `package.json`. Adding `bloom-localai/` to that directory is sufficient — no registry or loader change needed. The compiled output lands in `dist/core/pi-extensions/bloom-localai/` and is included via the `cp -r dist` step in `bloom-app/default.nix`.
+Pi auto-loads all subdirectories listed under `"extensions": ["./core/pi/extensions"]` in `package.json`. Adding `bloom-localai/` to that directory is sufficient — no registry or loader change needed. The compiled output lands in `dist/core/pi/extensions/bloom-localai/` and is included via the `cp -r dist` step in `bloom-app/default.nix`.
 
 Extension has two files:
 
@@ -128,9 +128,9 @@ write_pi_settings_defaults "localai" "omnicoder-9b-q4_k_m"
 
 This replaces any existing cloud provider default call. On a fresh install, Pi will start using the local model immediately after the wizard runs.
 
-### 5. Pi Skill: `core/pi-skills/local-llm/SKILL.md`
+### 5. Pi Skill: `core/pi/skills/local-llm/SKILL.md`
 
-Bundled via bloom-garden blueprints sync — `bloom-app/default.nix` already copies `core/pi-skills/` wholesale, so no derivation change is needed.
+Bundled via bloom-garden blueprints sync — `bloom-app/default.nix` already copies `core/pi/skills/` wholesale, so no derivation change is needed.
 
 Skill content:
 
@@ -168,9 +168,9 @@ Add `bloom-localai` to the extensions table and `local-llm` to the bundled skill
 |------|--------|
 | `core/os/modules/bloom-llm.nix` | New file — always-on LocalAI systemd service |
 | `core/os/hosts/x86_64.nix` | Add `bloom-llm.nix` to imports |
-| `core/pi-extensions/bloom-localai/index.ts` | New file — provider registration |
+| `core/pi/extensions/bloom-localai/index.ts` | New file — provider registration |
 | `core/scripts/bloom-wizard.sh` | Call `write_pi_settings_defaults "localai" "omnicoder-9b-q4_k_m"` |
-| `core/pi-skills/local-llm/SKILL.md` | New file |
+| `core/pi/skills/local-llm/SKILL.md` | New file |
 | `AGENTS.md` | Add `bloom-localai` extension + `local-llm` skill |
 
 ## Testing

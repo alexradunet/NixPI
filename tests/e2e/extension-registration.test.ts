@@ -33,17 +33,17 @@ describe("runtime package extension list", () => {
 		const extensionList = packageJson.pi?.extensions ?? [];
 
 		expect(extensionList).toEqual([
-			"./core/pi-extensions/bloom-persona",
-			"./core/pi-extensions/bloom-localai",
-			"./core/pi-extensions/bloom-os",
-			"./core/pi-extensions/bloom-episodes",
-			"./core/pi-extensions/bloom-objects",
-			"./core/pi-extensions/bloom-garden",
-			"./core/pi-extensions/bloom-setup",
+			"./core/pi/extensions/bloom-persona",
+			"./core/pi/extensions/bloom-localai",
+			"./core/pi/extensions/bloom-os",
+			"./core/pi/extensions/bloom-episodes",
+			"./core/pi/extensions/bloom-objects",
+			"./core/pi/extensions/bloom-garden",
+			"./core/pi/extensions/bloom-setup",
 		]);
-		expect(extensionList).not.toContain("./core/pi-extensions/bloom-dev");
-		expect(extensionList).not.toContain("./core/pi-extensions/bloom-repo");
-		expect(extensionList).not.toContain("./core/pi-extensions/bloom-services");
+		expect(extensionList).not.toContain("./core/pi/extensions/bloom-dev");
+		expect(extensionList).not.toContain("./core/pi/extensions/bloom-repo");
+		expect(extensionList).not.toContain("./core/pi/extensions/bloom-services");
 	});
 });
 
@@ -52,7 +52,7 @@ describe("runtime package extension list", () => {
 // ---------------------------------------------------------------------------
 describe("bloom-garden registration", () => {
 	it("registers expected tools, commands, and events", async () => {
-		const mod = await import("../../core/pi-extensions/bloom-garden/index.js");
+		const mod = await import("../../core/pi/extensions/bloom-garden/index.js");
 		const api = createMockExtensionAPI();
 		mod.default(api as never);
 
@@ -68,7 +68,7 @@ describe("bloom-garden registration", () => {
 // ---------------------------------------------------------------------------
 describe("bloom-episodes registration", () => {
 	it("registers episodic tools without events", async () => {
-		const mod = await import("../../core/pi-extensions/bloom-episodes/index.js");
+		const mod = await import("../../core/pi/extensions/bloom-episodes/index.js");
 		const api = createMockExtensionAPI();
 		mod.default(api as never);
 
@@ -84,7 +84,7 @@ describe("bloom-episodes registration", () => {
 // ---------------------------------------------------------------------------
 describe("bloom-objects registration", () => {
 	it("registers expected tools (no events)", async () => {
-		const mod = await import("../../core/pi-extensions/bloom-objects/index.js");
+		const mod = await import("../../core/pi/extensions/bloom-objects/index.js");
 		const api = createMockExtensionAPI();
 		mod.default(api as never);
 
@@ -111,7 +111,7 @@ describe("bloom-objects registration", () => {
 // ---------------------------------------------------------------------------
 describe("bloom-os registration", () => {
 	it("registers tools and events", async () => {
-		const mod = await import("../../core/pi-extensions/bloom-os/index.js");
+		const mod = await import("../../core/pi/extensions/bloom-os/index.js");
 		const api = createMockExtensionAPI();
 		mod.default(api as never);
 
@@ -126,7 +126,7 @@ describe("bloom-os registration", () => {
 // ---------------------------------------------------------------------------
 describe("bloom-persona registration", () => {
 	it("registers events only (no tools/commands)", async () => {
-		const mod = await import("../../core/pi-extensions/bloom-persona/index.js");
+		const mod = await import("../../core/pi/extensions/bloom-persona/index.js");
 		const api = createMockExtensionAPI();
 		mod.default(api as never);
 

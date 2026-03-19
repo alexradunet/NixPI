@@ -198,7 +198,7 @@ coverage: {
       lines: 85,
       branches: 75
     },
-    'core/pi-extensions/**/*.ts': {
+    'core/pi/extensions/**/*.ts': {
       statements: 60,
       functions: 60,
       lines: 60,
@@ -274,6 +274,6 @@ npm run test:ci                                              # full suite + cove
 | `flake.nix` | Verify deduplication complete; remove any remaining dead outputs |
 | `core/lib/*.ts` | Remove defensive null-checks; convert `Value.Check` guards to `Value.Parse` |
 | `core/daemon/*.ts` | Remove silent error swallowing; no restructuring |
-| `core/pi-extensions/**/*.ts` | Convert tool input validation to `Value.Parse`; raise coverage |
+| `core/pi/extensions/**/*.ts` | Convert tool input validation to `Value.Parse`; raise coverage |
 | `tests/e2e/` | Add real operator journey test |
 | `.github/workflows/nixos-tests.yml` | Promote `bloom-boot` and `bloom-daemon` to non-skippable required gates |

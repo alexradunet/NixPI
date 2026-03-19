@@ -78,7 +78,7 @@ Installed by default:
 | `core/` | Bloom core: NixOS modules, daemon, persona, skills, built-in extensions, and shared runtime code |
 | `core/os/` | NixOS modules and host configurations |
 | `core/daemon/` | Matrix room daemon and multi-agent runtime |
-| `core/pi-extensions/` | Pi-facing Bloom extensions shipped in the default runtime |
+| `core/pi/extensions/` | Pi-facing Bloom extensions shipped in the default runtime |
 | `tests/` | unit, integration, daemon, and extension tests |
 | `docs/` | live project documentation |
 

@@ -35,10 +35,10 @@ Coverage snapshot:
 - all files: 63.12% statements, 49.9% branches, 72.83% functions, 65.59% lines
 - `core/daemon/**`: 83.91% statements, 79.94% branches, 76.72% functions, 85.68% lines
 - `core/lib/**`: 81.91% statements, 68.55% branches, 90.55% functions, 85.46% lines
-- `core/pi-extensions/bloom-os/**`: 10.25% statements, 5% branches, 11.11% functions, 10.71% lines
-- `core/pi-extensions/bloom-repo/**`: 1.74% statements, 0% branches, 3.22% functions, 2.03% lines
-- `core/pi-extensions/bloom-services/**`: 44.71% statements, 30.97% branches, 52.63% functions, 47.49% lines
-- `core/pi-extensions/bloom-dev/**`: 39.6% statements, 24.13% branches, 60.52% functions, 40.25% lines
+- `core/pi/extensions/bloom-os/**`: 10.25% statements, 5% branches, 11.11% functions, 10.71% lines
+- `core/pi/extensions/bloom-repo/**`: 1.74% statements, 0% branches, 3.22% functions, 2.03% lines
+- `core/pi/extensions/bloom-services/**`: 44.71% statements, 30.97% branches, 52.63% functions, 47.49% lines
+- `core/pi/extensions/bloom-dev/**`: 39.6% statements, 24.13% branches, 60.52% functions, 40.25% lines
 
 System-test posture:
 

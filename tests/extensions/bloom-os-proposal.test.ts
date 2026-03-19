@@ -36,7 +36,7 @@ describe("bloom-os local Nix proposal handler", () => {
 			.mockResolvedValueOnce({ stdout: " M flake.nix\n", stderr: "", exitCode: 0 })
 			.mockResolvedValueOnce({ stdout: " flake.nix | 2 +-\n", stderr: "", exitCode: 0 });
 
-		const { handleNixConfigProposal } = await import("../../core/pi-extensions/bloom-os/actions-proposal.js");
+		const { handleNixConfigProposal } = await import("../../core/pi/extensions/bloom-os/actions-proposal.js");
 		const result = await handleNixConfigProposal("status", undefined, createMockExtensionContext() as never);
 
 		expect(result.isError).toBeUndefined();
@@ -50,7 +50,7 @@ describe("bloom-os local Nix proposal handler", () => {
 			.mockResolvedValueOnce({ stdout: "flake ok\n", stderr: "", exitCode: 0 })
 			.mockResolvedValueOnce({ stdout: "config ok\n", stderr: "", exitCode: 0 });
 
-		const { handleNixConfigProposal } = await import("../../core/pi-extensions/bloom-os/actions-proposal.js");
+		const { handleNixConfigProposal } = await import("../../core/pi/extensions/bloom-os/actions-proposal.js");
 		const result = await handleNixConfigProposal("validate", undefined, createMockExtensionContext() as never);
 
 		expect(result.isError).toBe(false);
@@ -72,7 +72,7 @@ describe("bloom-os local Nix proposal handler", () => {
 			.mockResolvedValueOnce({ stdout: " M flake.lock\n", stderr: "", exitCode: 0 });
 
 		const ctx = createMockExtensionContext({ hasUI: true });
-		const { handleNixConfigProposal } = await import("../../core/pi-extensions/bloom-os/actions-proposal.js");
+		const { handleNixConfigProposal } = await import("../../core/pi/extensions/bloom-os/actions-proposal.js");
 		const result = await handleNixConfigProposal("update_flake_lock", undefined, ctx as never);
 
 		expect(ctx.ui.confirm).toHaveBeenCalled();
@@ -84,7 +84,7 @@ describe("bloom-os local Nix proposal handler", () => {
 	it("returns an error when the local proposal repo is missing", async () => {
 		fs.rmSync(repoDir, { recursive: true, force: true });
 
-		const { handleNixConfigProposal } = await import("../../core/pi-extensions/bloom-os/actions-proposal.js");
+		const { handleNixConfigProposal } = await import("../../core/pi/extensions/bloom-os/actions-proposal.js");
 		const result = await handleNixConfigProposal("status", undefined, createMockExtensionContext() as never);
 
 		expect(result.isError).toBe(true);
@@ -96,7 +96,7 @@ describe("bloom-os local Nix proposal handler", () => {
 			.mockResolvedValueOnce({ stdout: "", stderr: "flake error", exitCode: 1 })
 			.mockResolvedValueOnce({ stdout: "", stderr: "build error", exitCode: 1 });
 
-		const { handleNixConfigProposal } = await import("../../core/pi-extensions/bloom-os/actions-proposal.js");
+		const { handleNixConfigProposal } = await import("../../core/pi/extensions/bloom-os/actions-proposal.js");
 		const result = await handleNixConfigProposal("validate", undefined, createMockExtensionContext() as never);
 
 		expect(result.isError).toBe(true);
@@ -107,7 +107,7 @@ describe("bloom-os local Nix proposal handler", () => {
 		runMock.mockResolvedValueOnce({ stdout: "", stderr: "network error", exitCode: 1 });
 
 		const ctx = createMockExtensionContext({ hasUI: true });
-		const { handleNixConfigProposal } = await import("../../core/pi-extensions/bloom-os/actions-proposal.js");
+		const { handleNixConfigProposal } = await import("../../core/pi/extensions/bloom-os/actions-proposal.js");
 		const result = await handleNixConfigProposal("update_flake_lock", undefined, ctx as never);
 
 		expect(result.isError).toBe(true);

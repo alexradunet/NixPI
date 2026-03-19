@@ -11,7 +11,7 @@ let api: MockExtensionAPI;
 beforeEach(async () => {
 	temp = createTempGarden();
 	api = createMockExtensionAPI();
-	const mod = await import("../../core/pi-extensions/bloom-episodes/index.js");
+	const mod = await import("../../core/pi/extensions/bloom-episodes/index.js");
 	mod.default(api as never);
 });
 

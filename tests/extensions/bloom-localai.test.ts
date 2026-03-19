@@ -6,7 +6,7 @@ let api: MockExtensionAPI;
 beforeEach(async () => {
 	vi.resetModules();
 	api = createMockExtensionAPI();
-	const mod = await import("../../core/pi-extensions/bloom-localai/index.js");
+	const mod = await import("../../core/pi/extensions/bloom-localai/index.js");
 	mod.default(api as never);
 });
 

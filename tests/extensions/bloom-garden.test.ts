@@ -11,7 +11,7 @@ import {
 	handleSkillCreate,
 	handleSkillList,
 	loadAgentInfos,
-} from "../../core/pi-extensions/bloom-garden/actions.js";
+} from "../../core/pi/extensions/bloom-garden/actions.js";
 import { createMockExtensionAPI } from "../helpers/mock-extension-api.js";
 import { createMockExtensionContext } from "../helpers/mock-extension-context.js";
 import { createTempGarden, type TempGarden } from "../helpers/temp-garden.js";
@@ -47,7 +47,7 @@ describe("bloom-garden extension", () => {
 	it("does not register authoring tools in the default runtime surface", async () => {
 		vi.resetModules();
 		const api = createMockExtensionAPI();
-		const mod = await import("../../core/pi-extensions/bloom-garden/index.js");
+		const mod = await import("../../core/pi/extensions/bloom-garden/index.js");
 		mod.default(api as never);
 
 		const names = api._registeredTools.map((tool) => tool.name);
@@ -58,7 +58,7 @@ describe("bloom-garden extension", () => {
 	it("shows usage for /bloom without arguments instead of opening an interaction prompt", async () => {
 		vi.resetModules();
 		const api = createMockExtensionAPI();
-		const mod = await import("../../core/pi-extensions/bloom-garden/index.js");
+		const mod = await import("../../core/pi/extensions/bloom-garden/index.js");
 		mod.default(api as never);
 
 		const ctx = createMockExtensionContext({ hasUI: true });
@@ -540,7 +540,7 @@ describe("garden_status tool execute", () => {
 		temp = createTempGarden();
 		vi.resetModules();
 		api = createMockExtensionAPI();
-		const mod = await import("../../core/pi-extensions/bloom-garden/index.js");
+		const mod = await import("../../core/pi/extensions/bloom-garden/index.js");
 		mod.default(api as never);
 	});
 
@@ -589,7 +589,7 @@ describe("/bloom command handler", () => {
 		temp = createTempGarden();
 		vi.resetModules();
 		api = createMockExtensionAPI();
-		const mod = await import("../../core/pi-extensions/bloom-garden/index.js");
+		const mod = await import("../../core/pi/extensions/bloom-garden/index.js");
 		mod.default(api as never);
 	});
 
