@@ -4,11 +4,6 @@
 {
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
 
-  # Cachix substituter (pre-built closures; avoids on-device compilation during updates)
-  # TODO: replace <cachix-url> and <cachix-pubkey> with real Cachix cache values
-  # nix.settings.substituters = [ "https://cache.nixos.org" "<cachix-url>" ];
-  # nix.settings.trusted-public-keys = [ "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=" "<cachix-pubkey>" ];
-
   systemd.services.bloom-update = {
     description = "Bloom OS NixOS update";
     after    = [ "network-online.target" ];
