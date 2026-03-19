@@ -51,7 +51,7 @@ step_done() { [[ -f "$WIZARD_STATE/$1" ]]; }
 
 write_pi_settings_defaults() {
 	local provider="$1" model="$2"
-	local settings_path="$PI_DIR/agent/settings.json"
+	local settings_path="$PI_DIR/settings.json"
 	mkdir -p "$(dirname "$settings_path")"
 
 	if command -v jq >/dev/null 2>&1 && [[ -f "$settings_path" ]]; then
@@ -82,10 +82,10 @@ write_pi_settings_defaults() {
 }
 
 pi_ai_ready() {
-	[[ -f "$PI_DIR/agent/auth.json" ]] || return 1
-	[[ -f "$PI_DIR/agent/settings.json" ]] || return 1
-	grep -q '"defaultProvider"[[:space:]]*:' "$PI_DIR/agent/settings.json" || return 1
-	grep -q '"defaultModel"[[:space:]]*:' "$PI_DIR/agent/settings.json" || return 1
+	[[ -f "$PI_DIR/auth.json" ]] || return 1
+	[[ -f "$PI_DIR/settings.json" ]] || return 1
+	grep -q '"defaultProvider"[[:space:]]*:' "$PI_DIR/settings.json" || return 1
+	grep -q '"defaultModel"[[:space:]]*:' "$PI_DIR/settings.json" || return 1
 }
 
 print_service_access_summary() {

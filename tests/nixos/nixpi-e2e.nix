@@ -38,7 +38,7 @@ pkgs.testers.runNixOSTest {
       users.users.${username} = {
         isNormalUser = true;
         group = username;
-        extraGroups = [ "wheel" "networkmanager" ];
+        extraGroups = [ "wheel" "networkmanager" "agent" ];
         home = homeDir;
         shell = pkgs.bash;
       };
@@ -101,13 +101,13 @@ pkgs.testers.runNixOSTest {
     # E2E Test 1: nixPI server is accessible from client
     client.succeed("ping -c 3 pi")
     
-    # E2E Test 2: Matrix homeserver is accessible externally
+    # E2E Test 2: Matrix homeserver is available locally on the nixPI node
     nixpi.wait_for_unit("matrix-synapse.service", timeout=60)
-    client.succeed("curl -sf http://pi:6167/_matrix/client/versions")
-    
-    # E2E Test 3: Can register a user via external client
-    register_resp = client.succeed("""
-      curl -s -X POST http://pi:6167/_matrix/client/v3/register \
+    nixpi.succeed("curl -sf http://127.0.0.1:6167/_matrix/client/versions")
+
+    # E2E Test 3: Can register a user locally
+    register_resp = nixpi.succeed("""
+      curl -s -X POST http://127.0.0.1:6167/_matrix/client/v3/register \
         -H "Content-Type: application/json" \
         -d '{"username":"e2euser","password":"e2epass123","inhibit_login":false}'
     """)
@@ -121,8 +121,8 @@ pkgs.testers.runNixOSTest {
             "inhibit_login": False,
             "auth": {"type": "m.login.dummy", "session": session},
         })
-        register_resp = client.succeed(
-            "curl -sf -X POST http://pi:6167/_matrix/client/v3/register "
+        register_resp = nixpi.succeed(
+            "curl -sf -X POST http://127.0.0.1:6167/_matrix/client/v3/register "
             + "-H \"Content-Type: application/json\" "
             + "-d '"
             + register_payload
@@ -131,9 +131,9 @@ pkgs.testers.runNixOSTest {
         register_data = json.loads(register_resp)
     assert "access_token" in register_data, "Registration response missing access_token"
     
-    # E2E Test 4: Can login from external client
-    login_resp = client.succeed("""
-      curl -sf -X POST http://pi:6167/_matrix/client/v3/login \
+    # E2E Test 4: Can login locally
+    login_resp = nixpi.succeed("""
+      curl -sf -X POST http://127.0.0.1:6167/_matrix/client/v3/login \
         -H "Content-Type: application/json" \
         -d '{"type":"m.login.password","user":"e2euser","password":"e2epass123"}'
     """)
@@ -181,17 +181,14 @@ pkgs.testers.runNixOSTest {
     assert "networkmanager" in groups, "User not in networkmanager group: " + groups
     assert "agent" in groups, "User not in agent group: " + groups
     
-    # E2E Test 11: NetBird mesh interface exists or can be created
-    # wt0 is the NetBird wireguard interface
-    interfaces = nixpi.succeed("ip link show").strip()
-    # Interface may not exist without valid setup key, but service should be running
+    # E2E Test 11: NetBird service is installed and active even without a setup key
     nixpi.succeed("systemctl is-active netbird.service")
-    
-    # E2E Test 12: Firewall configuration allows expected traffic
-    # Check that we can reach Matrix from client
-    client.succeed("nc -z pi 6167")
+
+    # E2E Test 12: Firewall keeps app ports closed to an untrusted peer
     client.succeed("nc -z pi 22")
-    
+    for port in [6167, 8080, 8081, 5000, 8443]:
+        client.succeed(f"! nc -z -w 2 pi {port}")
+
     # E2E Test 13: Required system packages are available
     packages = ["git", "curl", "jq", "htop", "netbird", "chromium"]
     for pkg in packages:
@@ -205,9 +202,10 @@ pkgs.testers.runNixOSTest {
     print("All E2E tests passed!")
     print("=" * 60)
     print("Verified:")
-    print("  - Matrix homeserver accessible and functional")
+    print("  - Matrix homeserver is functional locally on the nixPI node")
     print("  - User registration and login work")
-    print("  - SSH service reachable from external client")
+    print("  - SSH service stays reachable from an untrusted peer")
+    print("  - App ports stay closed without wt0")
     print("  - Firstboot automation completes")
     print("  - All core services start correctly")
     print("  - Network connectivity between nodes")

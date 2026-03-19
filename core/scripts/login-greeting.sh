@@ -5,7 +5,7 @@ set -euo pipefail
 
 NIXPI_PKG="/usr/local/share/nixpi"
 PI_DIR="${NIXPI_PI_DIR:-$HOME/.pi}"
-PI_SETTINGS="${PI_DIR}/agent/settings.json"
+PI_SETTINGS="${PI_DIR}/settings.json"
 
 # Ensure Pi settings include the nixPI package (idempotent)
 if [[ -d "$NIXPI_PKG" ]]; then
@@ -18,6 +18,6 @@ if [[ -d "$NIXPI_PKG" ]]; then
             fi
         fi
     else
-        cp "$NIXPI_PKG/.pi/agent/settings.json" "$PI_SETTINGS"
+        cp "$NIXPI_PKG/.pi/settings.json" "$PI_SETTINGS"
     fi
 fi

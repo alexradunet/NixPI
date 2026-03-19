@@ -40,7 +40,7 @@ HTML
     fi
     cat > ${stateDir}/services/home/nginx.conf <<'NGINX'
 daemon off;
-pid /run/nixpi-home-nginx.pid;
+pid ${stateDir}/services/home/nginx.pid;
 error_log stderr;
 events { worker_connections 64; }
 http {
@@ -68,7 +68,7 @@ NGINX
 CONFIG
     cat > ${stateDir}/services/chat/nginx.conf <<'NGINX'
 daemon off;
-pid /run/nixpi-chat-nginx.pid;
+pid ${stateDir}/services/chat/nginx.pid;
 error_log stderr;
 events { worker_connections 64; }
 http {

@@ -35,7 +35,7 @@ pkgs.testers.runNixOSTest {
       users.users.${username} = {
         isNormalUser = true;
         group = username;
-        extraGroups = [ "wheel" "networkmanager" ];
+        extraGroups = [ "wheel" "networkmanager" "agent" ];
         home = homeDir;
         shell = pkgs.bash;
       };
@@ -82,20 +82,21 @@ EOF
     nixpi.wait_until_succeeds("test -f /home/pi/.nixpi/.setup-complete", timeout=120)
 
     client.start()
-    client.wait_for_unit("network-online.target", timeout=60)
+    client.wait_for_unit("multi-user.target", timeout=120)
+    client.wait_until_succeeds("ip -4 addr show dev eth1 | grep -q 'inet '", timeout=60)
 
     # Local access remains available.
     nixpi.wait_until_succeeds("curl -sf http://127.0.0.1:6167/_matrix/client/versions", timeout=60)
     nixpi.wait_until_succeeds("curl -sf http://127.0.0.1:8080 | grep -q 'nixPI Home'", timeout=60)
 
     # SSH is still reachable from an untrusted peer for bootstrap.
-    client.succeed("nc -z nixpi 22")
+    client.succeed("nc -z nixpi-security-test 22")
 
     # Application ports are blocked from the untrusted peer because the trusted
     # mesh interface is absent in the test environment.
     blocked_ports = [6167, 8080, 8081, 5000, 8443]
     for port in blocked_ports:
-        client.succeed(f"! nc -z -w 2 nixpi {port}")
+        client.succeed(f"! nc -z -w 2 nixpi-security-test {port}")
 
     print("nixPI security exposure policy tests passed!")
   '';

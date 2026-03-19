@@ -37,7 +37,7 @@ pkgs.testers.runNixOSTest {
     users.users.${username} = {
       isNormalUser = true;
       group = username;
-      extraGroups = [ "wheel" "networkmanager" ];
+      extraGroups = [ "wheel" "networkmanager" "agent" ];
       home = homeDir;
       shell = pkgs.bash;
     };
@@ -112,8 +112,8 @@ pkgs.testers.runNixOSTest {
     assert len(checkpoints) > 0, f"No checkpoints found in wizard-state. Found: {checkpoints}"
     
     # Test 8: Service-owned Pi directory structure was created and linked into the user home
-    nixpi.succeed("test -d " + home + "/.pi/agent")
-    nixpi.succeed("test -f " + home + "/.pi/agent/settings.json")
+    nixpi.succeed("test -d " + home + "/.pi")
+    nixpi.succeed("test -f " + home + "/.pi/settings.json")
     nixpi.succeed("test -d /var/lib/nixpi/agent")
     nixpi.succeed("test -f /var/lib/nixpi/agent/settings.json")
     nixpi.succeed("test \"$(readlink -f " + home + "/.pi)\" = /var/lib/nixpi/agent")

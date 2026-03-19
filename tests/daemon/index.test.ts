@@ -104,7 +104,7 @@ describe("daemon bootstrap", () => {
 						respond: expect.objectContaining({ mode: "host" }),
 					}),
 				],
-				sessionBaseDir: `${homeDir}/.pi/agent/sessions/nixpi-rooms`,
+				sessionBaseDir: `${homeDir}/.pi/sessions/nixpi-rooms`,
 			}),
 		);
 		expect(startWithRetryMock).toHaveBeenCalledTimes(1);
@@ -129,7 +129,7 @@ describe("daemon bootstrap", () => {
 		expect(createMultiAgentRuntimeMock).toHaveBeenCalledWith(
 			expect.objectContaining({
 				agents: [{ id: "ops" }, { id: "support" }],
-				sessionBaseDir: `${homeDir}/.pi/agent/sessions/nixpi-rooms`,
+				sessionBaseDir: `${homeDir}/.pi/sessions/nixpi-rooms`,
 			}),
 		);
 		expect(startWithRetryMock).toHaveBeenCalledTimes(1);

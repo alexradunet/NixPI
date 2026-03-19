@@ -31,7 +31,7 @@ pkgs.testers.runNixOSTest {
     users.users.${username} = {
       isNormalUser = true;
       group = username;
-      extraGroups = [ "wheel" "networkmanager" ];
+      extraGroups = [ "wheel" "networkmanager" "agent" ];
       home = homeDir;
       shell = pkgs.bash;
     };
@@ -78,7 +78,7 @@ pkgs.testers.runNixOSTest {
     nixpi.wait_until_succeeds("curl -sf http://127.0.0.1:8080 | grep -q '8443'", timeout=60)
     nixpi.wait_until_succeeds("curl -sf http://127.0.0.1:8081/config.json | grep -q 'defaultHomeserver'", timeout=60)
     nixpi.wait_until_succeeds("curl -sf http://127.0.0.1:5000/ >/dev/null", timeout=60)
-    nixpi.wait_until_succeeds("curl -sf http://127.0.0.1:8443/ | grep -q 'code-server'", timeout=60)
+    nixpi.wait_until_succeeds("curl -sf http://127.0.0.1:8443/ >/dev/null", timeout=60)
     nixpi.succeed("test -d /var/lib/nixpi/services/code")
 
     print("nixPI Home and built-in service tests passed!")

@@ -136,16 +136,15 @@ firstboot_localai() {
             return 1
             ;;
         *)
-            echo "nixpi-firstboot: starting AI model download in background..."
-            run_root_command systemctl start --no-block localai-download.service || true
-            echo "nixpi-firstboot: track with: journalctl -fu localai-download"
+            echo "nixpi-firstboot: AI model download is not active yet"
+            echo "nixpi-firstboot: check with: systemctl status localai-download"
             ;;
     esac
     mark_done_with localai "download-started"
 }
 
 firstboot_ai_defaults() {
-    local settings_path="$PI_DIR/agent/settings.json"
+    local settings_path="$PI_DIR/settings.json"
     mkdir -p "$(dirname "$settings_path")"
     cat > "$settings_path" <<'EOF'
 {

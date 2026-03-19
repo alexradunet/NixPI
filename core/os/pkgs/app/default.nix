@@ -55,8 +55,8 @@ buildNpmPackage {
     ln -sf ${piAgent}/lib/node_modules/@mariozechner/pi-coding-agent/node_modules/@mariozechner/pi-ai \
       $out/share/nixpi/node_modules/@mariozechner/pi-ai || true
 
-    mkdir -p $out/share/nixpi/.pi/agent
-    echo '{"packages": ["/usr/local/share/nixpi"]}' > $out/share/nixpi/.pi/agent/settings.json
+    mkdir -p $out/share/nixpi/.pi
+    echo '{"packages": ["/usr/local/share/nixpi"]}' > $out/share/nixpi/.pi/settings.json
 
     # extensions symlink — package.json references ./core/pi/extensions but compiled JS lands in dist/
     ln -sf $out/share/nixpi/dist/core/pi/extensions $out/share/nixpi/core/pi/extensions

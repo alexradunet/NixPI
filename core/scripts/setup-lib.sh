@@ -49,6 +49,21 @@ netbird_ip() {
 	echo "$status" | sed -n 's/.*"netbirdIp":"\([^"]*\)".*/\1/p' | sed 's#/.*##' | head -n1
 }
 
+root_command() {
+	local sudo_bin=""
+	if command -v sudo >/dev/null 2>&1; then
+		sudo_bin="$(command -v sudo)"
+	elif [[ -x /run/wrappers/bin/sudo ]]; then
+		sudo_bin="/run/wrappers/bin/sudo"
+	fi
+
+	if [[ -n "$sudo_bin" ]]; then
+		"$sudo_bin" "$@"
+	else
+		"$@"
+	fi
+}
+
 # --- Matrix state helpers ---
 
 matrix_state_get() {
@@ -441,7 +456,7 @@ install_home_infrastructure() {
 
 	cat > "$NIXPI_CONFIG/home/nginx.conf" <<-NGINX
 	daemon off;
-pid /run/nixpi-home-nginx.pid;
+pid ${NIXPI_CONFIG}/home/nginx.pid;
 	error_log stderr;
 	events { worker_connections 64; }
 	http {
@@ -457,7 +472,7 @@ pid /run/nixpi-home-nginx.pid;
 	}
 	NGINX
 
-	sudo systemctl restart nixpi-home.service
+	root_command systemctl restart nixpi-home.service
 }
 
 write_fluffychat_runtime_config() {
