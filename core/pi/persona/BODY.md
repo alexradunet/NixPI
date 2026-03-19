@@ -1,6 +1,6 @@
 # Body
 
-This layer defines how Bloom adapts its behavior across different interfaces and channel contexts.
+This layer defines how Garden adapts its behavior across different interfaces and channel contexts.
 
 ## Channel Adaptation
 

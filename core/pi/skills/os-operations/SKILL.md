@@ -1,30 +1,30 @@
 ---
 name: os-operations
-description: Inspect, manage, and remediate the Bloom OS system — NixOS updates, local proposal validation, services, and timers
+description: Inspect, manage, and remediate the Garden OS system — NixOS updates, local proposal validation, services, and timers
 ---
 
 # OS Operations Skill
 
-Use this skill when the user asks about Bloom OS health/state, or when an error suggests infrastructure inspection.
+Use this skill when the user asks about Garden OS health/state, or when an error suggests infrastructure inspection.
 
-## Bloom OS Architecture
+## Garden OS Architecture
 
-Bloom runs on **NixOS** (declarative, flake-based):
+Garden runs on **NixOS** (declarative, flake-based):
 
 - `/run/current-system` — immutable OS content, updated via `nixos-rebuild switch`
 - `/etc` — generated host configuration
 - `/var` — persistent runtime/user state
 
-Bloom services are **systemd units** managed by `systemd` (system) and `systemd --user` (Pi agent).
+Garden services are **systemd units** managed by `systemd` (system) and `systemd --user` (Pi agent).
 
 ## Use Tools First
 
-Prefer Bloom extension tools over raw shell commands:
+Prefer Garden extension tools over raw shell commands:
 
 - `system_health` — broad health snapshot
 - `nixos_update(action, source)` — status, apply from `remote` or `local`, rollback for NixOS generation
 - `nix_config_proposal(action)` — inspect the local proposal repo, validate Nix config, or refresh `flake.lock`
-- `systemd_control` — start/stop/restart/status for Bloom user services
+- `systemd_control` — start/stop/restart/status for Garden user services
 
 ## Standard Triage Flow
 
@@ -39,7 +39,7 @@ Prefer Bloom extension tools over raw shell commands:
 
 ### Healthy
 
-- `bloom-*` services active/running
+- `garden-*` services active/running
 - `nixos_update(action="status")` shows current generation is booted
 
 ### Unhealthy
@@ -50,6 +50,6 @@ Prefer Bloom extension tools over raw shell commands:
 ## Safety Rules
 
 - mutation operations require explicit user confirmation
-- only manage `bloom-*` services
+- only manage `garden-*` services
 - prefer user-scope service management (`systemctl --user`)
 - re-check health after every mutation

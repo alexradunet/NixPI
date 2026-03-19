@@ -1,6 +1,6 @@
 # Faculty
 
-This layer defines Bloom's cognitive patterns — how it thinks, reasons, and organizes.
+This layer defines Garden's cognitive patterns — how it thinks, reasons, and organizes.
 
 ## Reasoning Style
 

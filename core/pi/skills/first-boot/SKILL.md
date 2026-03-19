@@ -1,19 +1,19 @@
 ---
 name: first-boot
-description: Post-wizard persona customization — Pi helps the user personalize their Bloom experience
+description: Post-wizard persona customization — Pi helps the user personalize their Garden experience
 ---
 
 # First-Boot: Persona Customization
 
 ## Prerequisite
 
-The bash wizard (`bloom-wizard.sh`) has already completed OS-level setup: password, network, NetBird, Matrix, git identity, and services. The sentinel file `~/.bloom/.setup-complete` exists.
+The bash wizard (`setup-wizard.sh`) has already completed OS-level setup: password, network, NetBird, Matrix, git identity, and services. The sentinel file `~/.garden/.setup-complete` exists.
 
-If `~/.bloom/wizard-state/persona-done` exists, persona customization is also done. Skip this skill entirely. You can still help the user reconfigure their persona if they ask.
+If `~/.garden/wizard-state/persona-done` exists, persona customization is also done. Skip this skill entirely. You can still help the user reconfigure their persona if they ask.
 
 ## How This Works
 
-You are paired with the `bloom-setup` extension which tracks state in `~/.bloom/setup-state.json`. Your role is conversational guidance; the extension handles state.
+You are paired with the `setup` extension which tracks state in `~/.garden/setup-state.json`. Your role is conversational guidance; the extension handles state.
 
 1. On session start, call `setup_status()` before any normal conversation
 2. If a step is still pending, start setup immediately and do not switch to unrelated topics yet
@@ -35,15 +35,15 @@ You are paired with the `bloom-setup` extension which tracks state in `~/.bloom/
 
 ### persona
 Before asking persona questions, give a short orientation that covers:
-- Bloom keeps durable state in `~/Bloom/` and favors inspectable files over hidden databases
-- Bloom can propose changes to its own persona/workflows through tracked evolutions; it does not silently rewrite itself
+- Garden keeps durable state in `~/Garden/` and favors inspectable files over hidden databases
+- Garden can propose changes to its own persona/workflows through tracked evolutions; it does not silently rewrite itself
 - Matrix is the native messaging backbone, and `pi-daemon` keeps Pi available in Matrix rooms even after logout
-- If valid overlays exist in `~/Bloom/Agents/*/AGENTS.md`, Bloom can run multi-agent rooms with one Pi session per `(room, agent)`
+- If valid overlays exist in `~/Garden/Agents/*/AGENTS.md`, Garden can run multi-agent rooms with one Pi session per `(room, agent)`
 
 Ask one question, wait for answer, update the file, ask next question. Files to update:
-- `~/Bloom/Persona/SOUL.md` — name, formality, values
-- `~/Bloom/Persona/BODY.md` — channel preferences
-- `~/Bloom/Persona/FACULTY.md` — reasoning style
+- `~/Garden/Persona/SOUL.md` — name, formality, values
+- `~/Garden/Persona/BODY.md` — channel preferences
+- `~/Garden/Persona/FACULTY.md` — reasoning style
 
 ### complete
-Congratulate the user. Mention they can chat on terminal or via Matrix. Let them know Pi is always running — even after logout, Pi stays connected to Matrix rooms and responds to messages. When they log back in, they get a separate interactive terminal session while the daemon keeps running in parallel. Both share the same persona and filesystem. Remind them that future Bloom changes can be proposed as evolutions, and that multi-agent rooms become available when agent overlays are added under `~/Bloom/Agents/`.
+Congratulate the user. Mention they can chat on terminal or via Matrix. Let them know Pi is always running — even after logout, Pi stays connected to Matrix rooms and responds to messages. When they log back in, they get a separate interactive terminal session while the daemon keeps running in parallel. Both share the same persona and filesystem. Remind them that future Garden changes can be proposed as evolutions, and that multi-agent rooms become available when agent overlays are added under `~/Garden/Agents/`.

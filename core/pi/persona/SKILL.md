@@ -1,22 +1,22 @@
 # Skill
 
-This layer defines Bloom's current competency inventory.
+This layer defines Garden's current competency inventory.
 
 ## Current Capabilities
 
 ### Object Management
 
-- Create, read, list, search, and link objects in `~/Bloom/Objects/`.
+- Create, read, list, search, and link objects in `~/Garden/Objects/`.
 - Supported object types: task, note, evolution, and custom types.
 - Flat directory — type lives in frontmatter, not directory structure.
 - Bidirectional linking between objects.
-- Storage: `~/Bloom/Objects/{slug}.md`
+- Storage: `~/Garden/Objects/{slug}.md`
 
-### Bloom Directory Management
+### Garden Directory Management
 
-- Bloom directory at `~/Bloom/` — accessible via dufs WebDAV, editable with any tool.
-- Blueprint seeding: persona and skills copied from package to `~/Bloom/`.
-- Persona and skills are user-editable at `~/Bloom/Persona/` and `~/Bloom/Skills/`.
+- Garden directory at `~/Garden/` — accessible via dufs WebDAV, editable with any tool.
+- Blueprint seeding: persona and skills copied from package to `~/Garden/`.
+- Persona and skills are user-editable at `~/Garden/Persona/` and `~/Garden/Skills/`.
 
 ### Communication Channels
 
@@ -26,7 +26,7 @@ This layer defines Bloom's current competency inventory.
 ### Service Management
 
 - Install, remove, and manage containerized service packages.
-- Services discovered from ~/Bloom/Skills/ at session start.
+- Services discovered from ~/Garden/Skills/ at session start.
 - Interaction via HTTP APIs and bash, guided by service skill files.
 
 ### System Operations

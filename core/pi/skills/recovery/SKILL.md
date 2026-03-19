@@ -1,6 +1,6 @@
 ---
 name: recovery
-description: Troubleshooting and recovery procedures for common Bloom system issues
+description: Troubleshooting and recovery procedures for common Garden system issues
 ---
 
 # Recovery Playbooks
@@ -12,10 +12,10 @@ Use these procedures when diagnosing and recovering from common system issues. A
 **Symptoms**: Messages not delivered, Pi not responding in Matrix rooms.
 
 1. Check system health: `system_health`
-2. Check Matrix service: `systemctl status bloom-matrix`
-3. Check logs: `journalctl -u bloom-matrix -n 100`
+2. Check Matrix service: `systemctl status garden-matrix`
+3. Check logs: `journalctl -u garden-matrix -n 100`
 4. Common causes:
-   - Server not running: `sudo systemctl restart bloom-matrix`
+   - Server not running: `sudo systemctl restart garden-matrix`
    - Database corruption: check `/var/lib/continuwuity/` for issues
    - Port conflict: verify nothing else is on port 6167
 5. If Pi is not responding to messages:
@@ -44,18 +44,18 @@ Use these procedures when diagnosing and recovering from common system issues. A
 3. Common causes:
    - Broken flake input: retry `nix_config_proposal(action="update_flake_lock")`
    - Invalid module import or option: inspect the changed files under `flake.nix` and `core/os/`
-   - Wrong repo path: confirm the local clone exists at `~/.bloom/pi-bloom`
+   - Wrong repo path: confirm the local clone exists at `~/.garden/pi-garden`
 4. Do not apply or publish until local validation passes and the diff is reviewed
 
 ## dufs WebDAV Issues
 
 **Symptoms**: Files not accessible via WebDAV, connection refused on port 5000.
 
-1. Check service state: `systemd_control service=bloom-dufs action=status`
-2. Check logs: `journalctl --user -u bloom-dufs -n 100`
+1. Check service state: `systemd_control service=garden-dufs action=status`
+2. Check logs: `journalctl --user -u garden-dufs -n 100`
 3. Verify port is listening: `curl -s http://localhost:5000/`
 4. Common causes:
-   - Service not running: restart with `systemd_control service=bloom-dufs action=restart`
+   - Service not running: restart with `systemd_control service=garden-dufs action=restart`
    - Port conflict: check for other services on port 5000
    - Quadlet/runtime issue: inspect the installed unit and generated logs
 
@@ -66,8 +66,8 @@ Use these procedures when diagnosing and recovering from common system issues. A
 1. Check Pi process: look for `pi` in running processes
 2. Check logs: `journalctl -u pi-coding-agent --no-pager -n 50`
 3. Common causes:
-   - Extension compilation error: `npm run build` in the Bloom package
-   - Missing dependency: `npm install` in the Bloom package
+   - Extension compilation error: `npm run build` in the Garden package
+   - Missing dependency: `npm install` in the Garden package
 4. Recovery: restart the Pi agent service
 
 ## Disk Space Issues

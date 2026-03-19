@@ -1,17 +1,17 @@
 ---
 name: object-store
-description: Create, update, query, read, search, and link durable memory objects in ~/Bloom/Objects/
+description: Create, update, query, read, search, and link durable memory objects in ~/Garden/Objects/
 ---
 
 # Object Store Skill
 
-Use this skill when the user wants to create, update, query, read, search, or link any type of durable object in Bloom's object store.
+Use this skill when the user wants to create, update, query, read, search, or link any type of durable object in Garden's object store.
 
 ## Storage Model
 
 Every durable object is a Markdown file with YAML frontmatter stored in a flat directory:
 ```
-~/Bloom/Objects/{slug}.md
+~/Garden/Objects/{slug}.md
 ```
 
 The type lives in frontmatter, not in the directory structure.
@@ -56,15 +56,15 @@ The type lives in frontmatter, not in the directory structure.
 - `memory_search` — Search objects by content pattern.
 - `memory_link` — Create bidirectional links between objects.
 
-### Bloom Directory Tools
+### Garden Directory Tools
 
-- `garden_status` — Show Bloom directory location, file counts, and blueprint state.
-- `/bloom init` — Initialize or re-initialize the Bloom directory.
-- `/bloom update-blueprints` — Apply pending blueprint updates from package.
+- `garden_status` — Show Garden directory location, file counts, and blueprint state.
+- `/garden init` — Initialize or re-initialize the Garden directory.
+- `/garden update-blueprints` — Apply pending blueprint updates from package.
 
 ### Episode Tools
 
-- `episode_create` — Capture a raw observation under `~/Bloom/Episodes/`.
+- `episode_create` — Capture a raw observation under `~/Garden/Episodes/`.
 - `episode_list` — List stored episodes.
 - `episode_promote` — Promote an episode into a durable object.
 - `episode_consolidate` — Propose or apply conservative promotions from recent episodes.
@@ -89,7 +89,7 @@ The type lives in frontmatter, not in the directory structure.
 - Use `memory_query` before broad `memory_search` when metadata can narrow the candidate set.
 - Use `episode_create` for raw observations first when confidence is uncertain.
 - Use `episode_consolidate` to review high-signal recent episodes before bulk promotion.
-- Promote only durable, reusable knowledge into `~/Bloom/Objects/`.
+- Promote only durable, reusable knowledge into `~/Garden/Objects/`.
 - After search, offer to read matched objects.
 - Use link proactively when connections are mentioned.
-- The Bloom directory is accessible via dufs WebDAV — files may be edited externally.
+- The Garden directory is accessible via dufs WebDAV — files may be edited externally.

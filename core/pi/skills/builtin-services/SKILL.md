@@ -1,17 +1,17 @@
 ---
 name: builtin-services
-description: Reference for Bloom's built-in user-facing services that are always available on every node
+description: Reference for Garden's built-in user-facing services that are always available on every node
 ---
 
 # Built-In Services
 
-Bloom ships these services as part of the base NixOS system. They are not optional packages and they do not need to be installed from the repo.
+Garden ships these services as part of the base NixOS system. They are not optional packages and they do not need to be installed from the repo.
 
 ## Always Available
 
-- `Bloom Home` on `:8080` — landing page with links to the built-in web services
-- `Bloom Web Chat` on `:8081` — FluffyChat web client for the local Bloom Matrix server
-- `Bloom Files` on `:5000` — dufs WebDAV/file browser for `~/Public/Bloom`
+- `Garden Home` on `:8080` — landing page with links to the built-in web services
+- `Garden Web Chat` on `:8081` — FluffyChat web client for the local Garden Matrix server
+- `Garden Files` on `:5000` — dufs WebDAV/file browser for `~/Public/Garden`
 - `code-server` on `:8443` — browser IDE for working on the local machine
 
 ## Operational Notes
@@ -22,10 +22,10 @@ Bloom ships these services as part of the base NixOS system. They are not option
 
 ## Expected Unit Names
 
-- `bloom-home`
-- `bloom-fluffychat`
-- `bloom-dufs`
-- `bloom-code-server`
+- `garden-home`
+- `garden-fluffychat`
+- `garden-dufs`
+- `garden-code-server`
 
 ## URLs
 
