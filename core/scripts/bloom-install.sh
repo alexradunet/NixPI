@@ -169,13 +169,40 @@ write_machine_config() {
 EOF
 }
 
-write_wrapper_flake() {
-    cat > "$TARGET_FLAKE" <<'EOF'
+confirm_install() {
+    echo ""
+    echo "Bloom OS will be installed with these settings:"
+    echo "  Disk:      $TARGET_DISK"
+    echo "  Hostname:  $HOSTNAME_VALUE"
+    echo "  Timezone:  $TIMEZONE_VALUE"
+    echo "  Locale:    $LOCALE_VALUE"
+    echo "  Keyboard:  $KEYBOARD_LAYOUT"
+    echo ""
+    echo "This will erase all data on $TARGET_DISK."
+    read -rp "Type 'ERASE' to continue: " confirmation
+    [[ "$confirmation" == "ERASE" ]] || die "Installation aborted."
+}
+
+run_install() {
+    echo ""
+    echo "Preparing offline sources (resolving symlinks)..."
+    
+    # Copy nixpkgs and disko to /tmp to resolve symlinks
+    # This avoids the "path is a symlink" error
+    local real_nixpkgs="/tmp/bloom-nixpkgs-real"
+    local real_disko="/tmp/bloom-disko-real"
+    
+    rm -rf "$real_nixpkgs" "$real_disko"
+    cp -rL "$OFFLINE_BASE/nixpkgs" "$real_nixpkgs"
+    cp -rL "$OFFLINE_BASE/disko" "$real_disko"
+    
+    # Rewrite flake.nix to use the real paths
+    cat > "$TARGET_FLAKE" <<EOF
 {
   inputs = {
-    nixpkgs.url = "path:/etc/bloom/offline/nixpkgs";
+    nixpkgs.url = "path:${real_nixpkgs}";
     disko = {
-      url = "path:/etc/bloom/offline/disko";
+      url = "path:${real_disko}";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
@@ -201,30 +228,13 @@ write_wrapper_flake() {
     };
 }
 EOF
-}
-
-confirm_install() {
-    echo ""
-    echo "Bloom OS will be installed with these settings:"
-    echo "  Disk:      $TARGET_DISK"
-    echo "  Hostname:  $HOSTNAME_VALUE"
-    echo "  Timezone:  $TIMEZONE_VALUE"
-    echo "  Locale:    $LOCALE_VALUE"
-    echo "  Keyboard:  $KEYBOARD_LAYOUT"
-    echo ""
-    echo "This will erase all data on $TARGET_DISK."
-    read -rp "Type 'ERASE' to continue: " confirmation
-    [[ "$confirmation" == "ERASE" ]] || die "Installation aborted."
-}
-
-run_install() {
+    
     echo ""
     echo "Partitioning disk with disko..."
     
     # Run disko to partition and mount the disk
     nix --extra-experimental-features "nix-command flakes" run \
-        --no-lock-file \
-        "$OFFLINE_BASE/disko#disko" -- \
+        "${real_disko}#disko" -- \
         --mode destroy,format,mount \
         --flake "$WORKDIR#bloom"
     
@@ -260,7 +270,6 @@ main() {
     validate_keymap "$KEYBOARD_LAYOUT"
 
     write_machine_config
-    write_wrapper_flake
     confirm_install
     run_install
 
