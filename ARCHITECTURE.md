@@ -2,22 +2,22 @@
 
 > 📖 [Emoji Legend](docs/LEGEND.md)
 
-This document is maintainer-facing architecture guidance for the current Bloom repository.
+This document is maintainer-facing architecture guidance for the current nixPI repository.
 
 ## 🌱 Why The System Looks Like This
 
-Bloom is intentionally built from simple host-native primitives:
+nixPI is intentionally built from simple host-native primitives:
 
 - markdown for durable human-readable state
 - TypeScript extensions for Pi integration
 - systemd and Quadlet for long-running workloads
 - a NixOS flake for host distribution
 
-The design goal is inspectability over abstraction. Bloom should be understandable from the repo and from the host filesystem without requiring hidden control planes or databases.
+The design goal is inspectability over abstraction. nixPI should be understandable from the repo and from the host filesystem without requiring hidden control planes or databases.
 
 ## 🧩 How The Product Is Shaped
 
-Bloom has three capability layers:
+nixPI has three capability layers:
 
 | Layer | What it is | Typical use |
 |------|-------------|-------------|
@@ -27,22 +27,22 @@ Bloom has three capability layers:
 
 OS-level infrastructure is separate from service packages and part of the image:
 
-- `bloom-matrix.service`
+- `matrix-synapse.service`
 - `netbird.service`
 - `pi-daemon.service`
 
 Repository structure:
 
 ```text
-core/                 Bloom core: NixOS modules, daemon, persona, skills, built-in extensions, runtime helpers
+core/                 nixPI core: NixOS modules, daemon, persona, skills, built-in extensions, runtime helpers
 core/os/              NixOS modules and host configurations
 core/daemon/          Matrix room daemon and multi-agent runtime
-core/pi/extensions/   Pi-facing Bloom extensions
+core/pi/extensions/   Pi-facing nixPI extensions
 tests/                unit, integration, daemon, and extension tests
 docs/                 live documentation
 ```
 
-## 💻 How To Extend Bloom
+## 💻 How To Extend nixPI
 
 Use the lightest mechanism that solves the problem.
 
@@ -78,7 +78,7 @@ Use [docs/daemon-architecture.md](docs/daemon-architecture.md) for the runtime w
 
 ## 📜 Documentation Policy
 
-Bloom documentation is part of the product surface.
+nixPI documentation is part of the product surface.
 
 Rules:
 

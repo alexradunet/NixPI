@@ -14,7 +14,7 @@ nixPI packages Pi, host integration, memory, and a small set of built-in user se
 
 nixPI exists to give Pi:
 
-- a durable home directory under `~/Workspace/`
+- a durable home directory under `~/nixPI/`
 - first-class host tools for NixOS workflows
 - a local repo proposal workflow for human-reviewed system changes
 - a private Matrix-based messaging surface
@@ -24,13 +24,13 @@ nixPI exists to give Pi:
 
 Current platform capabilities:
 
-- nixPI directory management and blueprint seeding for `~/Workspace/`
+- nixPI directory management and blueprint seeding for `~/nixPI/`
 - persona injection, shell guardrails, durable-memory digest injection, and compaction context persistence
 - local-only Nix proposal support for checking the seeded repo clone, refreshing `flake.lock`, and validating config before review
 - host OS management tools for NixOS updates, local/remote switch, systemd, health, and reboot scheduling
 - built-in user services for Home, Web Chat, Files, and code-server
-- markdown-native durable memory in `~/Workspace/Objects/`
-- append-only episodic memory in `~/Workspace/Episodes/`
+- markdown-native durable memory in `~/nixPI/Objects/`
+- append-only episodic memory in `~/nixPI/Episodes/`
 - a unified Matrix room daemon with synthesized host-agent fallback and optional multi-agent overlays
 - proactive daemon jobs for heartbeat and simple cron-style scheduled turns
 - a first-boot flow split between a bash wizard and a Pi-guided persona step
@@ -42,7 +42,7 @@ Install nixPI on a standard NixOS system:
 ```bash
 # 1. Install NixOS from the official ISO: https://nixos.org/download.html
 # 2. After first boot, switch to the nixPI flake:
-sudo nixos-rebuild switch --flake github:alexradunet/piBloom#desktop
+sudo nixos-rebuild switch --flake github:alexradunet/nixPI#desktop
 
 # 3. Complete the first-boot wizard (runs automatically on login)
 ```

@@ -1,6 +1,6 @@
-# Bloom Guardrails Policy
+# nixPI Guardrails Policy
 # This file defines safety rules for Pi tool execution.
-# Customize in ~/Bloom/guardrails.yaml (seeded from defaults).
+# Customize in ~/nixPI/guardrails.yaml (seeded from defaults).
 
 rules:
   # Block dangerous bash commands
