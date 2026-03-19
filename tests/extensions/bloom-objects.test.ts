@@ -226,6 +226,103 @@ describe("memory_create and memory_read execution", () => {
 });
 
 // ---------------------------------------------------------------------------
+// Tool execution: memory_list
+// ---------------------------------------------------------------------------
+describe("memory_list execution", () => {
+	it("returns no-objects message when Objects dir is empty", async () => {
+		const list = getExecute("memory_list");
+		const result = await list("call-1", {});
+		expect(result.isError).toBeFalsy();
+		expect(result.content[0].text).toBe("No objects found");
+	});
+
+	it("lists objects after creation", async () => {
+		const create = getExecute("memory_create");
+		const list = getExecute("memory_list");
+
+		await create("call-1", { type: "note", slug: "list-note-a", fields: { title: "Note A" } });
+		await create("call-2", { type: "task", slug: "list-task-b", fields: { title: "Task B" } });
+
+		const result = await list("call-3", {});
+		expect(result.content[0].text).toContain("note/list-note-a");
+		expect(result.content[0].text).toContain("task/list-task-b");
+	});
+
+	it("filters by type", async () => {
+		const create = getExecute("memory_create");
+		const list = getExecute("memory_list");
+
+		await create("call-1", { type: "note", slug: "filter-note", fields: { title: "A Note" } });
+		await create("call-2", { type: "fact", slug: "filter-fact", fields: { title: "A Fact" } });
+
+		const result = await list("call-3", { type: "note" });
+		expect(result.content[0].text).toContain("note/filter-note");
+		expect(result.content[0].text).not.toContain("fact/filter-fact");
+	});
+});
+
+// ---------------------------------------------------------------------------
+// Tool execution: memory_search
+// ---------------------------------------------------------------------------
+describe("memory_search execution", () => {
+	it("returns no-matches message when nothing matches", async () => {
+		const search = getExecute("memory_search");
+		const result = await search("call-1", { pattern: "zzznomatch999" });
+		expect(result.isError).toBeFalsy();
+		expect(result.content[0].text).toBe("No matches found");
+	});
+
+	it("finds content created by memory_create", async () => {
+		const create = getExecute("memory_create");
+		const search = getExecute("memory_search");
+
+		await create("call-1", {
+			type: "fact",
+			slug: "searchable-fact",
+			fields: { title: "Searchable Fact" },
+			body: "This object contains the unique phrase xylophone-cascade.",
+		});
+
+		const result = await search("call-2", { pattern: "xylophone-cascade" });
+		expect(result.content[0].text).toContain("fact/searchable-fact");
+	});
+});
+
+// ---------------------------------------------------------------------------
+// Tool execution: memory_link
+// ---------------------------------------------------------------------------
+describe("memory_link execution", () => {
+	it("adds bidirectional links between two objects", async () => {
+		const create = getExecute("memory_create");
+		const link = getExecute("memory_link");
+		const read = getExecute("memory_read");
+
+		await create("call-1", { type: "note", slug: "link-src", fields: { title: "Source" } });
+		await create("call-2", { type: "note", slug: "link-dst", fields: { title: "Dest" } });
+
+		const linkResult = await link("call-3", { ref_a: "note/link-src", ref_b: "note/link-dst" });
+		expect(linkResult.content[0].text).toContain("linked note/link-src <-> note/link-dst");
+
+		const srcRead = await read("call-4", { type: "note", slug: "link-src" });
+		expect(srcRead.content[0].text).toContain("note/link-dst");
+
+		const dstRead = await read("call-5", { type: "note", slug: "link-dst" });
+		expect(dstRead.content[0].text).toContain("note/link-src");
+	});
+
+	it("returns error when linking a nonexistent object", async () => {
+		const create = getExecute("memory_create");
+		const link = getExecute("memory_link");
+
+		await create("call-1", { type: "note", slug: "real-note", fields: { title: "Real" } });
+
+		const result = await link("call-2", { ref_a: "note/real-note", ref_b: "note/ghost-note" });
+		expect(result.isError).toBe(true);
+		expect(result.content[0].text).toContain("not found");
+	});
+});
+
+// ---------------------------------------------------------------------------
 // parseRef (inlined from lib/object-utils.ts)
 // ---------------------------------------------------------------------------
 describe("parseRef", () => {
