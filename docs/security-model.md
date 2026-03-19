@@ -91,6 +91,27 @@ chmod 600 ~/.ssh/authorized_keys
 # Then disable password auth (requires flake change) or rely on key-only
 ```
 
+## 🤖 Agent Privilege Boundary
+
+- `agent` is a non-login system user that owns `/var/lib/nixpi`
+- the human operator keeps full OS administration through their own account
+- nixPI agent actions no longer rely on blanket passwordless sudo
+- privileged actions are routed through the root-owned `nixpi-broker` service
+
+Default autonomy:
+
+- `observe` can read state only
+- `maintain` can operate approved nixPI systemd units
+- `admin` is available only through temporary elevation
+
+Temporary elevation is managed with:
+
+```bash
+sudo nixpi-brokerctl grant-admin 30m
+sudo nixpi-brokerctl status
+sudo nixpi-brokerctl revoke-admin
+```
+
 ---
 
 ## 📋 Pre-Deployment Checklist

@@ -338,10 +338,10 @@ step_services() {
 	else
 		echo "  nixPI Home setup failed."
 	fi
-    sudo systemctl restart nixpi-home.service || echo "  home restart failed."
-    sudo systemctl restart nixpi-chat.service || echo "  chat restart failed."
-    sudo systemctl restart nixpi-files.service || echo "  files restart failed."
-    sudo systemctl restart nixpi-code.service || echo "  code-server restart failed."
+    root_command nixpi-brokerctl systemd restart nixpi-home.service || echo "  home restart failed."
+    root_command nixpi-brokerctl systemd restart nixpi-chat.service || echo "  chat restart failed."
+    root_command nixpi-brokerctl systemd restart nixpi-files.service || echo "  files restart failed."
+    root_command nixpi-brokerctl systemd restart nixpi-code.service || echo "  code-server restart failed."
 	write_service_home_runtime "$mesh_ip" "$mesh_fqdn"
 	mark_done_with services "fluffychat dufs code-server"
 }
@@ -362,7 +362,7 @@ step_bootc_switch() {
 
 finalize() {
 	touch "$SETUP_COMPLETE"
-    if ! sudo systemctl enable --now pi-daemon.service; then
+    if ! root_command nixpi-brokerctl systemd enable-now pi-daemon.service; then
         echo "warning: failed to enable pi-daemon.service during wizard finalization" >&2
     fi
 

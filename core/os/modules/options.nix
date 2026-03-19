@@ -13,7 +13,7 @@ in
   options.nixpi = {
     primaryUser = lib.mkOption {
       type = lib.types.str;
-      default = "pi";
+      default = builtins.getEnv "NIXPI_PRIMARY_USER";
       description = ''
         Primary human/operator account for the nixPI machine.
       '';
@@ -30,11 +30,31 @@ in
 
     createPrimaryUser = lib.mkOption {
       type = lib.types.bool;
-      default = true;
+      default = false;
       description = ''
         Whether nixPI should create and manage the primary operator account.
         Disable this when layering nixPI onto an existing NixOS user.
       '';
+    };
+
+    install = {
+      mode = lib.mkOption {
+        type = lib.types.enum [ "existing-user" "managed-user" ];
+        default = "existing-user";
+        description = ''
+          Whether nixPI should attach to an existing operator account or create
+          and manage one directly.
+        '';
+      };
+
+      autoDetectPrimaryUser = lib.mkOption {
+        type = lib.types.bool;
+        default = true;
+        description = ''
+          Whether nixPI should auto-detect the primary operator account when
+          `nixpi.primaryUser` is empty.
+        '';
+      };
     };
 
     serviceUser = lib.mkOption {
@@ -74,10 +94,72 @@ in
 
       passwordlessSudo.enable = lib.mkOption {
         type = lib.types.bool;
+        default = false;
+        description = ''
+          Deprecated blanket passwordless sudo escape hatch. Keep disabled in
+          favor of narrow bootstrap rules and the broker service.
+        '';
+      };
+    };
+
+    bootstrap = {
+      passwordlessSudo.enable = lib.mkOption {
+        type = lib.types.bool;
         default = true;
         description = ''
-          Whether the primary nixPI user gets broad passwordless sudo during
-          the current bootstrap-oriented phase of the project.
+          Whether nixPI grants narrow passwordless sudo rules needed by the
+          first-boot bootstrap flow.
+        '';
+      };
+    };
+
+    agent = {
+      autonomy = lib.mkOption {
+        type = lib.types.enum [ "observe" "maintain" "admin" ];
+        default = "maintain";
+        description = ''
+          Default privileged autonomy level granted to the always-on agent.
+        '';
+      };
+
+      allowedUnits = lib.mkOption {
+        type = lib.types.listOf lib.types.str;
+        default = [
+          "pi-daemon.service"
+          "netbird.service"
+          "nixpi-home.service"
+          "nixpi-chat.service"
+          "nixpi-files.service"
+          "nixpi-code.service"
+          "matrix-synapse.service"
+          "nixpi-update.service"
+        ];
+        description = ''
+          Systemd units that the broker may operate on.
+        '';
+      };
+
+      broker.enable = lib.mkOption {
+        type = lib.types.bool;
+        default = true;
+        description = ''
+          Whether the root-owned nixPI operations broker is enabled.
+        '';
+      };
+
+      elevation.duration = lib.mkOption {
+        type = lib.types.str;
+        default = "30m";
+        description = ''
+          Default duration for a temporary admin elevation grant.
+        '';
+      };
+
+      osUpdate.enable = lib.mkOption {
+        type = lib.types.bool;
+        default = true;
+        description = ''
+          Whether the broker may apply or roll back NixOS generations.
         '';
       };
     };

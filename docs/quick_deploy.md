@@ -23,9 +23,9 @@ nixPI is installed on top of a standard NixOS system:
    - Set up your user, hostname, and basic system configuration
    - Complete the standard NixOS install process
 
-2. **Switch to the nixPI flake** after first boot:
+2. **Attach nixPI to your existing operator account** after first boot:
    ```bash
-   sudo nixos-rebuild switch --flake github:alexradunet/nixPI#desktop
+   /usr/local/share/nixpi/bin/nixpi-install.sh github:alexradunet/nixPI#desktop
    ```
 
 3. **Complete first-boot setup** — the `setup-wizard.sh` runs automatically on first login
@@ -74,7 +74,7 @@ Override if needed:
 NIXPI_VM_MEMORY_MB=8192 NIXPI_VM_CPUS=2 just vm-daemon
 ```
 
-Default user: `pi` (no initial password; TTY auto-login prompts for password creation on first boot).
+Default operator user: your existing NixOS account. The `agent` system user owns the always-on runtime.
 
 ## 🔄 OTA Updates
 
@@ -85,10 +85,10 @@ just update          # pull from remote flake and switch
 just rollback        # revert to previous generation
 ```
 
-Or directly:
+Or directly after exporting the operator account:
 
 ```bash
-sudo nixos-rebuild switch --flake github:alexradunet/nixPI#desktop
+sudo --preserve-env=NIXPI_PRIMARY_USER NIXPI_PRIMARY_USER="$USER" nixos-rebuild switch --impure --flake github:alexradunet/nixPI#desktop
 ```
 
 ## 📚 Reference

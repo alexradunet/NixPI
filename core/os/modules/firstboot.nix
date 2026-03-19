@@ -2,11 +2,9 @@
 { config, pkgs, lib, ... }:
 
 let
-  primaryUser = config.nixpi.primaryUser;
-  primaryHome =
-    if config.nixpi.primaryHome != ""
-    then config.nixpi.primaryHome
-    else "/home/${primaryUser}";
+  resolved = import ../lib/resolve-primary-user.nix { inherit lib config; };
+  primaryUser = resolved.resolvedPrimaryUser;
+  primaryHome = resolved.resolvedPrimaryHome;
   stateDir = config.nixpi.stateDir;
 in
 {
@@ -54,20 +52,17 @@ in
     unitConfig.ConditionPathExists = "!${primaryHome}/.nixpi/.setup-complete";
   };
 
-  security.sudo.extraRules = [
-    {
-      users = [ primaryUser ];
-      commands = [
-        { command = "/run/current-system/sw/bin/cat /var/lib/matrix-synapse/registration_shared_secret"; options = [ "NOPASSWD" ]; }
-        { command = "/run/current-system/sw/bin/journalctl -u matrix-synapse --no-pager"; options = [ "NOPASSWD" ]; }
-        { command = "/run/current-system/sw/bin/netbird up --setup-key *"; options = [ "NOPASSWD" ]; }
-        { command = "/run/current-system/sw/bin/systemctl * netbird.service"; options = [ "NOPASSWD" ]; }
-        { command = "/run/current-system/sw/bin/systemctl * pi-daemon.service"; options = [ "NOPASSWD" ]; }
-        { command = "/run/current-system/sw/bin/systemctl * nixpi-home.service"; options = [ "NOPASSWD" ]; }
-        { command = "/run/current-system/sw/bin/systemctl * nixpi-chat.service"; options = [ "NOPASSWD" ]; }
-        { command = "/run/current-system/sw/bin/systemctl * nixpi-files.service"; options = [ "NOPASSWD" ]; }
-        { command = "/run/current-system/sw/bin/systemctl * nixpi-code.service"; options = [ "NOPASSWD" ]; }
-      ];
-    }
-  ];
+  security.sudo.extraRules = lib.optional config.nixpi.bootstrap.passwordlessSudo.enable {
+    users = [ primaryUser ];
+    commands = [
+      { command = "/run/current-system/sw/bin/cat /var/lib/matrix-synapse/registration_shared_secret"; options = [ "NOPASSWD" ]; }
+      { command = "/run/current-system/sw/bin/journalctl -u matrix-synapse --no-pager"; options = [ "NOPASSWD" ]; }
+      { command = "/run/current-system/sw/bin/netbird up --setup-key *"; options = [ "NOPASSWD" ]; }
+      { command = "/run/current-system/sw/bin/systemctl * netbird.service"; options = [ "NOPASSWD" ]; }
+      { command = "/run/current-system/sw/bin/passwd ${primaryUser}"; options = [ "NOPASSWD" ]; }
+      { command = "/run/current-system/sw/bin/chpasswd"; options = [ "NOPASSWD" ]; }
+      { command = "/run/current-system/sw/bin/nixpi-brokerctl systemd *"; options = [ "NOPASSWD" ]; }
+      { command = "/run/current-system/sw/bin/nixpi-brokerctl status"; options = [ "NOPASSWD" ]; }
+    ];
+  };
 }

@@ -33,6 +33,7 @@
           imports = [
             ./core/os/modules/options.nix
             ./core/os/modules/app.nix
+            ./core/os/modules/broker.nix
             ./core/os/modules/llm.nix
             ./core/os/modules/matrix.nix
             ./core/os/modules/network.nix
@@ -52,7 +53,7 @@
 
       # NixOS configuration for the nixPI desktop/workstation install.
       # Use this after installing standard NixOS:
-      #   sudo nixos-rebuild switch --flake github:alexradunet/nixPI#desktop
+      #   NIXPI_PRIMARY_USER=<your-user> sudo --preserve-env=NIXPI_PRIMARY_USER nixos-rebuild switch --impure --flake github:alexradunet/nixPI#desktop
       nixosConfigurations.desktop = nixpkgs.lib.nixosSystem {
         inherit system specialArgs;
         modules = [
@@ -69,6 +70,9 @@
           self.nixosModules.nixpi
           self.nixosModules.firstboot
           {
+            nixpi.primaryUser = "alex";
+            nixpi.install.mode = "managed-user";
+            nixpi.createPrimaryUser = true;
             # Default machine settings used by desktop.
             nixpkgs.config.allowUnfree = true;
             boot.loader.systemd-boot.enable = true;
@@ -114,6 +118,10 @@
               ];
               _module.args = { inherit piAgent appPackage; };
 
+              nixpi.primaryUser = "alex";
+              nixpi.install.mode = "managed-user";
+              nixpi.createPrimaryUser = true;
+
               boot.loader.systemd-boot.enable = true;
               boot.loader.efi.canTouchEfiVariables = true;
               networking.hostName = "nixos";
@@ -134,7 +142,7 @@
               nixpi.wait_for_unit("multi-user.target", timeout=300)
 
               # Basic sanity: the default operator and service users exist
-              nixpi.succeed("id pi")
+              nixpi.succeed("id alex")
               nixpi.succeed("id agent")
 
               # nixpi-firstboot was attempted (exit 0 or 1 both accepted by unit)

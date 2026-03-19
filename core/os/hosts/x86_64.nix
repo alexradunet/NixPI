@@ -4,6 +4,7 @@
 {
   imports = [
     ../modules/app.nix
+    ../modules/broker.nix
     ../modules/firstboot.nix
     ../modules/llm.nix
     ../modules/matrix.nix

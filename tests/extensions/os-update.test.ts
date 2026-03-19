@@ -39,8 +39,8 @@ describe("os nixos_update handler", () => {
 
 		expect(ctx.ui.confirm).toHaveBeenCalled();
 		expect(runMock).toHaveBeenCalledWith(
-			"sudo",
-			["nixos-rebuild", "switch", "--flake", "github:alexradunet/nixPI#desktop"],
+			"nixpi-brokerctl",
+			["nixos-update", "apply"],
 			undefined,
 		);
 		expect(result.isError).toBe(false);
@@ -55,8 +55,8 @@ describe("os nixos_update handler", () => {
 		const result = await handleNixosUpdate("apply", "local", undefined, ctx as never);
 
 		expect(runMock).toHaveBeenCalledWith(
-			"sudo",
-			["nixos-rebuild", "switch", "--flake", `${repoDir}#desktop`],
+			"nixpi-brokerctl",
+			["nixos-update", "apply", `${repoDir}#desktop`],
 			undefined,
 		);
 		expect(result.isError).toBe(false);

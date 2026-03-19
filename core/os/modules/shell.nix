@@ -2,11 +2,9 @@
 { pkgs, lib, config, ... }:
 
 let
-  primaryUser = config.nixpi.primaryUser;
-  primaryHome =
-    if config.nixpi.primaryHome != ""
-    then config.nixpi.primaryHome
-    else "/home/${primaryUser}";
+  resolved = import ../lib/resolve-primary-user.nix { inherit lib config; };
+  primaryUser = resolved.resolvedPrimaryUser;
+  primaryHome = resolved.resolvedPrimaryHome;
   serviceUser = config.nixpi.serviceUser;
   stateDir = config.nixpi.stateDir;
 
@@ -40,7 +38,7 @@ in
   assertions = [
     {
       assertion = primaryUser != "";
-      message = "nixpi.primaryUser must not be empty.";
+      message = "nixpi.primaryUser must resolve to a real human user. Set `NIXPI_PRIMARY_USER`, set `nixpi.primaryUser`, or define exactly one normal `/home/*` user.";
     }
     {
       assertion = primaryHome != "";
@@ -55,13 +53,13 @@ in
       message = "nixpi.serviceUser must be distinct from nixpi.primaryUser.";
     }
     {
-      assertion = config.nixpi.createPrimaryUser || builtins.hasAttr primaryUser config.users.users;
-      message = "nixpi.createPrimaryUser is false, but the primary user is not defined elsewhere.";
+      assertion = config.nixpi.install.mode != "managed-user" || primaryUser != "";
+      message = "nixpi.install.mode = managed-user requires nixpi.primaryUser.";
     }
   ];
 
   users.users.${primaryUser} = lib.mkMerge [
-    (lib.mkIf config.nixpi.createPrimaryUser {
+    (lib.mkIf (config.nixpi.createPrimaryUser || config.nixpi.install.mode == "managed-user") {
       isNormalUser = true;
       group = primaryUser;
       extraGroups = [ "wheel" "networkmanager" serviceUser ];
@@ -69,12 +67,12 @@ in
       createHome = true;
       shell = pkgs.bash;
     })
-    (lib.mkIf (!config.nixpi.createPrimaryUser && builtins.hasAttr primaryUser config.users.users) {
+    (lib.mkIf (!(config.nixpi.createPrimaryUser || config.nixpi.install.mode == "managed-user") && builtins.hasAttr primaryUser config.users.users) {
       extraGroups = lib.mkAfter [ serviceUser ];
     })
   ];
 
-  users.groups.${primaryUser} = lib.mkIf config.nixpi.createPrimaryUser {};
+  users.groups.${primaryUser} = lib.mkIf (config.nixpi.createPrimaryUser || config.nixpi.install.mode == "managed-user") {};
 
   security.sudo.extraRules = lib.mkIf config.nixpi.security.passwordlessSudo.enable [
     {
@@ -105,9 +103,4 @@ in
   boot.kernel.sysctl."kernel.printk" = "4 4 1 7";
 
   networking.hostName = lib.mkDefault "nixos";
-
-  warnings = lib.optional config.nixpi.security.passwordlessSudo.enable ''
-      nixPI grants `${primaryUser}` passwordless sudo for bootstrap convenience. Keep this
-      explicit until first-boot and OS-operation paths are further narrowed.
-    '';
 }

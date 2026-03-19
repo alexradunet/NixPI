@@ -31,7 +31,7 @@ export async function handleNixosUpdate(
 	}
 
 	if (action === "rollback") {
-		const result = await run("sudo", ["nixos-rebuild", "switch", "--rollback"], signal);
+		const result = await run("nixpi-brokerctl", ["nixos-update", "rollback"], signal);
 		const text =
 			result.exitCode === 0
 				? "Rolled back to previous generation. Reboot to complete."
@@ -48,7 +48,9 @@ export async function handleNixosUpdate(
 	if (source === "local" && !existsSync(getNixpiRepoDir())) {
 		return errorResult(`Local nixPI repo not found at ${getNixpiRepoDir()}. Cannot switch the local flake.`);
 	}
-	const result = await run("sudo", ["nixos-rebuild", "switch", "--flake", flake], signal);
+	const args = ["nixos-update", "apply"];
+	if (source === "local") args.push(flake);
+	const result = await run("nixpi-brokerctl", args, signal);
 	const text =
 		result.exitCode === 0
 			? `Update applied successfully from ${source} source. New generation is active.`
@@ -76,8 +78,9 @@ export async function handleSystemdControl(
 		const denied = await requireConfirmation(ctx, `systemctl ${action} ${unit}`);
 		if (denied) return errorResult(denied);
 	}
-	const result = await run("sudo", ["systemctl", action, unit], signal);
-	const text = truncate(result.stdout || result.stderr || `sudo systemctl ${action} ${unit} completed.`);
+	const brokerAction = action;
+	const result = await run("nixpi-brokerctl", ["systemd", brokerAction, unit], signal);
+	const text = truncate(result.stdout || result.stderr || `systemctl ${action} ${unit} completed.`);
 	return {
 		content: [{ type: "text" as const, text }],
 		details: { exitCode: result.exitCode },
@@ -110,7 +113,7 @@ export async function handleScheduleReboot(
 	const delay = Math.max(1, Math.min(7 * 24 * 60, Math.round(delayMinutes)));
 	const denied = await requireConfirmation(ctx, `Schedule reboot in ${delay} minute(s)`);
 	if (denied) return errorResult(denied);
-	const result = await run("sudo", ["systemd-run", `--on-active=${delay}m`, "systemctl", "reboot"], signal);
+	const result = await run("nixpi-brokerctl", ["schedule-reboot", String(delay)], signal);
 	if (result.exitCode !== 0) {
 		return errorResult(`Failed to schedule reboot:\n${result.stderr}`);
 	}

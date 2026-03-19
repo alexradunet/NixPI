@@ -40,6 +40,7 @@ buildNpmPackage {
     install -m 755 ${../../../scripts/setup-lib.sh} $out/bin/setup-lib.sh
     install -m 755 ${../../../scripts/setup-wizard.sh} $out/bin/setup-wizard.sh
     install -m 755 ${../../../scripts/login-greeting.sh} $out/bin/login-greeting.sh
+    install -m 755 ${../../../scripts/nixpi-install.sh} $out/bin/nixpi-install.sh
 
     # Replace @mariozechner/pi-coding-agent with symlinks into piAgent store path.
     # Do NOT remove other @mariozechner packages (e.g. jiti) — only replace pi-coding-agent.

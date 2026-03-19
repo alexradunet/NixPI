@@ -2,11 +2,9 @@
 { pkgs, lib, config, ... }:
 
 let
-  primaryUser = config.nixpi.primaryUser;
-  primaryHome =
-    if config.nixpi.primaryHome != ""
-    then config.nixpi.primaryHome
-    else "/home/${primaryUser}";
+  resolved = import ../lib/resolve-primary-user.nix { inherit lib config; };
+  primaryUser = resolved.resolvedPrimaryUser;
+  primaryHome = resolved.resolvedPrimaryHome;
   serviceUser = config.nixpi.serviceUser;
   stateDir = config.nixpi.stateDir;
   cfg = config.nixpi.services;
