@@ -41,7 +41,7 @@ sudo dd if=./result/iso/*.iso of=/dev/<usb-device> bs=4M status=progress oflag=s
 3. Choose disk layout, timezone, hostname, and your primary user
 4. Reboot into the installed system
 
-The installed machine lands with a standard local system flake in `/etc/nixos`.
+The installed machine lands with a standard local system flake in `/etc/nixos` and a local NixPI working tree should be maintained in `~/nixpi`.
 
 ### 4. Complete Setup
 
@@ -88,12 +88,34 @@ just check-boot      # Thorough: boot test in VM
 
 ## 🔄 OTA Updates
 
-The installed system uses the local `/etc/nixos` flake. To apply updates manually:
+Use `~/nixpi` as the canonical editable source of truth for an installed system. Treat `/etc/nixos` as deployed compatibility state, not the repo you edit or sync.
+
+The recommended fork-first workflow is:
 
 ```bash
-sudo nix flake update /etc/nixos
-sudo nixos-rebuild switch --flake /etc/nixos
+git clone <your-fork-url> ~/nixpi
+cd ~/nixpi
+git remote add upstream https://github.com/alexradunet/nixpi.git
 ```
+
+To apply local changes manually:
+
+```bash
+cd ~/nixpi
+sudo nixos-rebuild switch --flake .
+```
+
+To sync with upstream and rebuild:
+
+```bash
+cd ~/nixpi
+git fetch upstream
+git rebase upstream/main
+git push origin main
+sudo nixos-rebuild switch --flake .
+```
+
+Automatic updates remain local-only and do not `git pull` for the user. Syncing a fork with upstream stays a manual step so local customizations remain under the operator's control.
 
 To roll back:
 

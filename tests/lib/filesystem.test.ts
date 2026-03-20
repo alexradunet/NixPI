@@ -1,7 +1,7 @@
 import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { getNixPiDir, safePath } from "../../core/lib/filesystem.js";
+import { getNixPiDir, getSystemFlakeDir, safePath } from "../../core/lib/filesystem.js";
 
 const ROOT = path.join(os.tmpdir(), "nixpi-fs-test-root");
 
@@ -38,9 +38,11 @@ describe("safePath", () => {
 // ---------------------------------------------------------------------------
 describe("getNixPiDir", () => {
 	let origNixPiDir: string | undefined;
+	let origSystemFlakeDir: string | undefined;
 
 	beforeEach(() => {
 		origNixPiDir = process.env.NIXPI_DIR;
+		origSystemFlakeDir = process.env.NIXPI_SYSTEM_FLAKE_DIR;
 	});
 
 	afterEach(() => {
@@ -48,6 +50,11 @@ describe("getNixPiDir", () => {
 			process.env.NIXPI_DIR = origNixPiDir;
 		} else {
 			delete process.env.NIXPI_DIR;
+		}
+		if (origSystemFlakeDir !== undefined) {
+			process.env.NIXPI_SYSTEM_FLAKE_DIR = origSystemFlakeDir;
+		} else {
+			delete process.env.NIXPI_SYSTEM_FLAKE_DIR;
 		}
 	});
 
@@ -68,5 +75,28 @@ describe("getNixPiDir", () => {
 
 		process.env.NIXPI_DIR = "/second/path";
 		expect(getNixPiDir()).toBe("/second/path");
+	});
+});
+
+// ---------------------------------------------------------------------------
+// getSystemFlakeDir
+// ---------------------------------------------------------------------------
+describe("getSystemFlakeDir", () => {
+	it("defaults to the canonical ~/nixpi checkout", () => {
+		delete process.env.NIXPI_SYSTEM_FLAKE_DIR;
+		delete process.env.NIXPI_DIR;
+		expect(getSystemFlakeDir()).toBe(path.join(os.homedir(), "nixpi"));
+	});
+
+	it("falls back to NIXPI_DIR when present", () => {
+		delete process.env.NIXPI_SYSTEM_FLAKE_DIR;
+		process.env.NIXPI_DIR = "/workspace/nixpi";
+		expect(getSystemFlakeDir()).toBe("/workspace/nixpi");
+	});
+
+	it("prefers explicit NIXPI_SYSTEM_FLAKE_DIR override", () => {
+		process.env.NIXPI_DIR = "/workspace/nixpi";
+		process.env.NIXPI_SYSTEM_FLAKE_DIR = "/system/flake";
+		expect(getSystemFlakeDir()).toBe("/system/flake");
 	});
 });

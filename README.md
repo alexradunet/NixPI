@@ -49,10 +49,20 @@ nix build .#installerIso
 setup-wizard.sh
 ```
 
-After install, NixPI is operated as a normal local flake-based NixOS system:
+After install, NixPI is operated from the local `~/nixpi` git checkout:
 
 ```bash
-sudo nixos-rebuild switch --flake /etc/nixos
+cd ~/nixpi
+sudo nixos-rebuild switch --flake .
+```
+
+To sync with upstream later:
+
+```bash
+cd ~/nixpi
+git fetch upstream
+git rebase upstream/main
+sudo nixos-rebuild switch --flake .
 ```
 
 See the [documentation site](https://alexradunet.github.io/NixPI) for detailed instructions.

@@ -115,6 +115,4 @@ in
   '';
 
   boot.kernel.sysctl."kernel.printk" = "4 4 1 7";
-
-  networking.hostName = lib.mkDefault "nixos";
 }

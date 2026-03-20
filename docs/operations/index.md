@@ -26,8 +26,10 @@ This section covers operational procedures for NixPI:
 ```bash
 # Deploy
 just iso             # Build installer ISO
-sudo nix flake update /etc/nixos
-sudo nixos-rebuild switch --flake /etc/nixos
+cd ~/nixpi
+git fetch upstream
+git rebase upstream/main
+sudo nixos-rebuild switch --flake .
 sudo nixos-rebuild switch --rollback
 
 # VMs

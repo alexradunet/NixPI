@@ -23,6 +23,10 @@ in
     path = mkOption {
       type = types.str;
     };
+
+    flakeDir = mkOption {
+      type = pathOrStr;
+    };
   };
 
   config = {
@@ -33,7 +37,7 @@ in
       after = [ "network-online.target" ];
       wants = [ "network-online.target" ];
       serviceConfig = {
-        ConditionPathExists = "/etc/nixos/flake.nix";
+        ConditionPathExists = "${config.nixpi-update.flakeDir}/flake.nix";
         Type = "oneshot";
         RemainAfterExit = false;
         Restart = "no";
@@ -41,6 +45,7 @@ in
           "PATH=${config.nixpi-update.path}"
           "NIXPI_PRIMARY_USER=${config.nixpi-update.primaryUser}"
           "NIXPI_PRIMARY_HOME=${config.nixpi-update.primaryHome}"
+          "NIXPI_SYSTEM_FLAKE_DIR=${config.nixpi-update.flakeDir}"
         ];
       };
     };

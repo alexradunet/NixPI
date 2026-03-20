@@ -387,7 +387,7 @@ step_bootc_switch() {
 	echo "NixPI uses NixOS with automatic OTA updates."
 	echo "The nixpi-update timer checks for updates every 6 hours."
 	echo ""
-	echo "To update manually at any time: sudo nixos-rebuild switch --flake /etc/nixos"
+	echo "To update manually at any time: cd ~/nixpi && sudo nixos-rebuild switch --flake ."
 	echo "To roll back:                   sudo nixos-rebuild switch --rollback"
 	echo ""
 	mark_done bootc_switch

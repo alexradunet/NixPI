@@ -26,6 +26,7 @@ in
     nixpi-update = {
       command = pkgs.writeShellScript "nixpi-update" (builtins.readFile ../../../core/scripts/system-update.sh);
       inherit primaryUser primaryHome;
+      flakeDir = "${primaryHome}/nixpi";
       path = "/run/current-system/sw/bin:${lib.makeBinPath (with pkgs; [ nix git jq ])}";
     };
   };

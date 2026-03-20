@@ -73,6 +73,11 @@ export function getUpdateStatusPath(): string {
 	return path.join(os.homedir(), ".nixpi", "update-status.json");
 }
 
+/** Path to the canonical system flake checkout used for rebuilds. */
+export function getSystemFlakeDir(): string {
+	return process.env.NIXPI_SYSTEM_FLAKE_DIR ?? getNixPiDir();
+}
+
 /** Resolve the dedicated daemon state directory. */
 export function getDaemonStateDir(): string {
 	return process.env.NIXPI_DAEMON_STATE_DIR ?? path.join(getPiDir(), "nixpi-daemon");

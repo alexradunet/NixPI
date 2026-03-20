@@ -13,7 +13,7 @@ Before first-boot setup, you need a system installed from the NixPI installer im
 1. Build or download the NixPI installer ISO
 2. Complete the graphical installer and choose your hostname and primary user
 3. Reboot into the installed system
-4. The installed machine now owns a standard local flake at `/etc/nixos`
+4. The installed machine now owns a standard local flake at `/etc/nixos`, but the recommended editable source of truth is the `~/nixpi` git checkout
 
 ## 🛡️ Security Note: NetBird is Mandatory
 
@@ -49,7 +49,7 @@ NixPI's first-boot experience has two phases.
 3. Primary Matrix account bootstrap
 4. AI provider defaults for Pi
 5. Built-in service provisioning
-6. Ongoing system updates from the installed `/etc/nixos` flake
+6. User-facing system update guidance for operating the local `~/nixpi` checkout
 
 **Built-in services provisioned**:
 
@@ -74,6 +74,7 @@ Pi injects setup guidance until that step is marked complete.
 During that Pi-side first conversation, Pi should also orient the user to the platform:
 
 - NixPI keeps durable state in `~/nixpi/` using inspectable files
+- `~/nixpi` is the canonical git working tree for syncing with a fork, pulling from upstream, and rebuilding the system
 - NixPI can propose persona or workflow changes through tracked evolutions instead of silently changing itself
 - Matrix is the native messaging surface, with `nixpi-daemon.service` keeping Pi active in rooms outside the local terminal session as a system service running under the `agent` account
 - Multi-agent rooms are optional and activate when valid overlays exist in `~/nixpi/Agents/*/AGENTS.md`

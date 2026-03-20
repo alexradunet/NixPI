@@ -16,7 +16,7 @@ let
     elevationDuration = config.nixpi.agent.elevation.duration;
     osUpdateEnable = config.nixpi.agent.osUpdate.enable;
     allowedUnits = config.nixpi.agent.allowedUnits;
-    defaultFlake = "/etc/nixos";
+    defaultFlake = "${resolved.resolvedPrimaryHome}/nixpi";
   });
 
   brokerProgram = pkgs.writeScriptBin "nixpi-broker" ''

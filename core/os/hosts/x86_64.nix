@@ -33,4 +33,12 @@
   services.xserver.xkb = { layout = "us"; variant = ""; };
   console.keyMap = "us";
   networking.hostName = lib.mkDefault "nixpi";
+  fileSystems."/" = lib.mkDefault {
+    device = "/dev/vda";
+    fsType = "ext4";
+  };
+  fileSystems."/boot" = lib.mkDefault {
+    device = "/dev/vda1";
+    fsType = "vfat";
+  };
 }

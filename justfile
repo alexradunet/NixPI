@@ -16,9 +16,9 @@ build:
 switch:
     sudo nixos-rebuild switch --flake {{ flake }}#{{ host }}
 
-# Apply the installed NixPI system flake
+# Apply the installed NixPI checkout
 update:
-    sudo nixos-rebuild switch --flake /etc/nixos
+    sudo nixos-rebuild switch --flake ~/nixpi
 
 # Roll back to the previous NixOS generation
 rollback:

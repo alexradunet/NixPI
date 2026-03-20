@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import fs from "node:fs";
 import { createMockExtensionAPI, type MockExtensionAPI } from "../helpers/mock-extension-api.js";
 import { createMockExtensionContext } from "../helpers/mock-extension-context.js";
 import { createTempNixPi, type TempNixPi } from "../helpers/temp-nixpi.js";
@@ -128,11 +129,12 @@ describe("handleNixosUpdate — rollback", () => {
 });
 
 describe("handleNixosUpdate — apply (missing system flake)", () => {
-	it("returns error when /etc/nixos/flake.nix is absent", async () => {
+	it("returns error when ~/nixpi/flake.nix is absent", async () => {
+		vi.spyOn(fs, "existsSync").mockReturnValue(false);
 		const ctx = createMockExtensionContext();
 		const result = await handleNixosUpdate("apply", undefined, ctx as never);
 		expect(result.isError).toBe(true);
-		expect(result.content[0].text).toContain("System flake not found at /etc/nixos");
+		expect(result.content[0].text).toContain(`System flake not found at ${temp.nixPiDir}`);
 	});
 });
 

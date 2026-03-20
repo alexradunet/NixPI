@@ -3,10 +3,11 @@
  */
 
 import fs from "node:fs";
+import path from "node:path";
 import { readFile, writeFile } from "node:fs/promises";
 import type { ExtensionContext } from "@mariozechner/pi-coding-agent";
 import { run } from "../../../lib/exec.js";
-import { getUpdateStatusPath } from "../../../lib/filesystem.js";
+import { getSystemFlakeDir, getUpdateStatusPath } from "../../../lib/filesystem.js";
 import { errorResult, guardServiceName, requireConfirmation, truncate } from "../../../lib/shared.js";
 import type { UpdateStatus } from "./types.js";
 
@@ -43,16 +44,16 @@ export async function handleNixosUpdate(
 	}
 
 	// apply
-	const flake = "/etc/nixos";
-	if (!fs.existsSync("/etc/nixos/flake.nix")) {
-		return errorResult("System flake not found at /etc/nixos. NixPI updates require the installed /etc/nixos flake.");
+	const flake = getSystemFlakeDir();
+	if (!fs.existsSync(path.join(flake, "flake.nix"))) {
+		return errorResult(`System flake not found at ${flake}. NixPI updates require a local flake checkout with flake.nix.`);
 	}
 	const args = ["nixos-update", "apply"];
 	args.push(flake);
 	const result = await run("nixpi-brokerctl", args, signal);
 	const text =
 		result.exitCode === 0
-			? "Update applied successfully from /etc/nixos. New generation is active."
+			? `Update applied successfully from ${flake}. New generation is active.`
 			: `Update failed: ${result.stderr}`;
 	return {
 		content: [{ type: "text" as const, text: truncate(text) }],
