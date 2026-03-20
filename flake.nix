@@ -127,6 +127,8 @@
 
       checks.${system} = 
         let
+          calamaresHelper = ./core/os/pkgs/calamares-nixos-extensions/nixpi_calamares.py;
+          calamaresHelperTests = ./core/os/pkgs/calamares-nixos-extensions/test_nixpi_calamares.py;
           # Import the NixOS integration test suite
           # Using pkgsUnfree so tests can use packages that require allowUnfree
           nixosTests = import ./tests/nixos {
@@ -192,8 +194,21 @@
             nativeBuildInputs = [ installerPkgs.python3 ];
           } ''
             module="${installerPkgs.calamares-nixos-extensions}/lib/calamares/modules/nixos/main.py"
-            grep -F 'NIXPI_INSTALL_MODULE = """{ ... }:' "$module" >/dev/null
+            grep -F 'def write_nixpi_install_artifacts(' "$module" >/dev/null
+            grep -F 'nix.settings.experimental-features = [ "nix-command" "flakes" ];' "$module" >/dev/null
+            if grep -F -- '--extra-experimental-features' "$module" >/dev/null; then
+              echo "unexpected nixos-install experimental-features flag in $module" >&2
+              exit 1
+            fi
             PYTHONPYCACHEPREFIX="$TMPDIR/pycache" python3 -m py_compile "$module"
+            touch "$out"
+          '';
+
+          installer-backend = installerPkgs.runCommandLocal "installer-backend-check" {
+            nativeBuildInputs = [ installerPkgs.python3 ];
+          } ''
+            export NIXPI_CALAMARES_HELPER="${calamaresHelper}"
+            python3 "${calamaresHelperTests}"
             touch "$out"
           '';
 

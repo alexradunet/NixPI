@@ -150,6 +150,11 @@ deps:
 check-config:
     nix {{ nix_opts }} build {{ flake }}#checks.{{ system }}.config --no-link
 
+# Fast installer backend check: validates the patched Calamares Python backend
+# and runs helper-level regression tests without booting the ISO.
+check-installer:
+    nix {{ nix_opts }} build {{ flake }}#checks.{{ system }}.installer-backend --no-link
+
 # Full VM boot test: boots the installed system in a NixOS test VM.
 # Slower than check-config but verifies runtime behaviour (services, users).
 # Requires KVM. Takes 20-40 min on first run.

@@ -1,0 +1,70 @@
+import importlib.util
+import os
+import tempfile
+import unittest
+from pathlib import Path
+
+
+def load_module():
+    module_path = os.environ.get(
+        "NIXPI_CALAMARES_HELPER",
+        str(Path(__file__).with_name("nixpi_calamares.py")),
+    )
+    spec = importlib.util.spec_from_file_location("nixpi_calamares", module_path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+class NixpiCalamaresTests(unittest.TestCase):
+    def setUp(self):
+        self.module = load_module()
+
+    def test_prepare_artifacts_enables_flakes_and_renders_values(self):
+        cfg = "{\n  imports =\n    [ # Include the results of the hardware scan.\n      ./hardware-configuration.nix\n      ./nixpi-install.nix\n    ];\n}\n"
+        artifacts = self.module.prepare_nixpi_install_artifacts(
+            "/mnt/target",
+            {"username": "alex", "hostname": "pi-box"},
+            cfg,
+        )
+
+        self.assertEqual(artifacts["nixpi_install_path"], "/mnt/target/etc/nixos/nixpi-install.nix")
+        self.assertEqual(artifacts["nixpi_host_path"], "/mnt/target/etc/nixos/nixpi-host.nix")
+        self.assertEqual(artifacts["flake_path"], "/mnt/target/etc/nixos/flake.nix")
+        self.assertIn('nix.settings.experimental-features = [ "nix-command" "flakes" ];', artifacts["nixpi_install_module"])
+        self.assertIn('nixosConfigurations."pi-box"', artifacts["nixpi_flake"])
+        self.assertNotIn("./nixpi-install.nix", artifacts["host_cfg"])
+
+    def test_write_artifacts_copies_tree_and_writes_expected_files(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            source_dir = Path(tmpdir) / "source"
+            source_dir.mkdir()
+            (source_dir / "README.md").write_text("nixpi", encoding="utf-8")
+
+            self.module.NIXPI_SOURCE = str(source_dir)
+            writes = []
+
+            def fake_host_env_process_output(argv, _stdin, content):
+                writes.append((argv, content))
+                Path(argv[-1]).parent.mkdir(parents=True, exist_ok=True)
+                Path(argv[-1]).write_text(content, encoding="utf-8")
+
+            cfg = "{\n      ./nixpi-install.nix\n}\n"
+            artifacts = self.module.write_nixpi_install_artifacts(
+                tmpdir,
+                {"username": "alex", "hostname": "pi-box"},
+                cfg,
+                fake_host_env_process_output,
+            )
+
+            copied = Path(artifacts["nixpi_source_target"]) / "README.md"
+            self.assertTrue(copied.exists())
+            self.assertEqual(copied.read_text(encoding="utf-8"), "nixpi")
+            self.assertEqual(len(writes), 3)
+            self.assertTrue(Path(artifacts["nixpi_install_path"]).exists())
+            self.assertTrue(Path(artifacts["nixpi_host_path"]).exists())
+            self.assertTrue(Path(artifacts["flake_path"]).exists())
+
+
+if __name__ == "__main__":
+    unittest.main()
