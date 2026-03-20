@@ -94,12 +94,13 @@ text = replace_once(
     """        [
             "nixos-install",
             "--no-root-passwd",
-            "--flake",
-            nixpi_artifacts["flake_install_ref"],
+            "--option",
+            "extra-experimental-features",
+            "nix-command flakes",
             "--root",
             root_mount_point,
 """,
-    "nixos-install flake invocation",
+    "nixos-install experimental feature options",
 )
 
 path.write_text(text)

@@ -196,10 +196,11 @@
             module="${installerPkgs.calamares-nixos-extensions}/lib/calamares/modules/nixos/main.py"
             grep -F 'def write_nixpi_install_artifacts(' "$module" >/dev/null
             grep -F 'nix.settings.experimental-features = [ "nix-command" "flakes" ];' "$module" >/dev/null
-            grep -F '"--flake",' "$module" >/dev/null
-            grep -F 'nixpi_artifacts["flake_install_ref"]' "$module" >/dev/null
-            if grep -F -- '--extra-experimental-features' "$module" >/dev/null; then
-              echo "unexpected nixos-install experimental-features flag in $module" >&2
+            grep -F '"--option",' "$module" >/dev/null
+            grep -F '"extra-experimental-features",' "$module" >/dev/null
+            grep -F '"nix-command flakes",' "$module" >/dev/null
+            if grep -F '"--flake",' "$module" >/dev/null; then
+              echo "unexpected nixos-install flake mode in $module" >&2
               exit 1
             fi
             PYTHONPYCACHEPREFIX="$TMPDIR/pycache" python3 -m py_compile "$module"

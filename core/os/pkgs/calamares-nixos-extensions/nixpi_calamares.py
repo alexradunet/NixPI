@@ -5,7 +5,13 @@ NIXPI_SOURCE = "@nixpiSource@"
 
 NIXPI_INSTALL_MODULE_TEMPLATE = """{ ... }:
 
+let
+  piAgent = pkgs.callPackage ./nixpi/core/os/pkgs/pi {};
+  appPackage = pkgs.callPackage ./nixpi/core/os/pkgs/app { inherit piAgent; };
+in
 {
+  _module.args = { inherit piAgent appPackage; };
+
   imports = [
     ./nixpi/core/os/modules/app.nix
     ./nixpi/core/os/modules/broker.nix
