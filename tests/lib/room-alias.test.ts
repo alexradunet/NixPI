@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { sanitizeRoomAlias } from "../../core/lib/room-alias.js";
+import { sanitizeRoomAlias } from "../../core/daemon/agent-supervisor.js";
 
 describe("sanitizeRoomAlias", () => {
 	it("strips # prefix and replaces : with _", () => {

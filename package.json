@@ -30,7 +30,6 @@
 	},
 	"dependencies": {
 		"@sinclair/typebox": "^0.34.0",
-		"hosted-git-info": "^9.0.2",
 		"js-yaml": "^4.1.0",
 		"matrix-js-sdk": "^41.1.0"
 	},
@@ -38,7 +37,6 @@
 		"@biomejs/biome": "^2.0.0",
 		"@mariozechner/pi-ai": "0.60.0",
 		"@mariozechner/pi-coding-agent": "0.60.0",
-		"@types/hosted-git-info": "^3.0.5",
 		"@types/js-yaml": "^4.0.9",
 		"@vitest/coverage-v8": "^4.0.18",
 		"typescript": "^5.7.0",

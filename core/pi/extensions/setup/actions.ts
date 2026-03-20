@@ -5,7 +5,7 @@ import { existsSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import { dirname, join } from "node:path";
 import { run } from "../../../lib/exec.js";
-import { atomicWriteFile, ensureDir } from "../../../lib/fs-utils.js";
+import { atomicWriteFile, ensureDir } from "../../../lib/filesystem.js";
 import {
 	advanceStep,
 	createInitialState,

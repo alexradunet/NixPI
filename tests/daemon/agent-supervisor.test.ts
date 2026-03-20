@@ -121,6 +121,7 @@ describe("AgentSupervisor", () => {
 		await supervisor.shutdown();
 	});
 
+
 	it("routes explicit mentions to the mentioned agent, starts typing immediately, and sends replies from the correct Matrix identity", async () => {
 		const host = makeAgent("host", "@pi:nixpi", "host");
 		const planner = makeAgent("planner", "@planner:nixpi", "mentioned");

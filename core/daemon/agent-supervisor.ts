@@ -1,5 +1,4 @@
 import { join } from "node:path";
-import { sanitizeRoomAlias } from "../lib/room-alias.js";
 import { createLogger } from "../lib/shared.js";
 import type { AgentDefinition } from "./agent-registry.js";
 import type { DaemonConfig } from "./config.js";
@@ -20,6 +19,11 @@ import { PiRoomSession, type PiRoomSessionOptions } from "./runtime/pi-room-sess
 import type { TriggeredJob } from "./scheduler.js";
 
 const log = createLogger("agent-supervisor");
+
+/** Sanitize a Matrix room alias or ID into a filesystem-safe name. */
+export function sanitizeRoomAlias(alias: string): string {
+	return alias.replace(/^[#!]/, "").replaceAll(":", "_");
+}
 
 export interface MatrixBridgeLike {
 	sendText(agentId: string, roomId: string, text: string): Promise<void>;

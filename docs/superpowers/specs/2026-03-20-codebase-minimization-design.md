@@ -16,9 +16,9 @@ Two independent changes that reduce file count and simplify the install flow:
 
 ### Goal
 
-Reduce `core/lib/` from 12 files to 8 by eliminating files that exist solely as thin wrappers with one consumer, or files small enough to inline without loss of clarity.
+Reduce `core/lib/` from 12 files to 8 by eliminating files that are dead code, have a single consumer, or are naturally absorbed by a parent module.
 
-No behavior changes. All exported symbols remain identical — only file boundaries change.
+No behavior changes. All live exported symbols remain identical — only file boundaries change.
 
 ### Changes
 
@@ -26,19 +26,21 @@ No behavior changes. All exported symbols remain identical — only file boundar
 
 Move `sanitizeRoomAlias` verbatim into `core/daemon/agent-supervisor.ts`. Remove the import.
 
-#### Delete `core/lib/git.ts` (20 lines, 1 consumer)
+#### Delete `core/lib/git.ts` (20 lines, 0 consumers — dead code)
 
-Move `parseGithubSlugFromUrl` and `slugifyBranchPart` verbatim into `core/pi/extensions/os/actions-proposal.ts`. Remove the import.
+`parseGithubSlugFromUrl` and `slugifyBranchPart` are defined but never imported anywhere in the codebase. Delete the file outright.
+
+Also remove the `hosted-git-info` npm dependency from `package.json` — it is used only in `git.ts` and nowhere else.
 
 #### Delete `core/lib/fs-utils.ts` → merge into `core/lib/filesystem.ts`
 
-`filesystem.ts` already imports `safePathWithin` from `fs-utils.ts` internally. The remaining exports (`ensureDir`, `atomicWriteFile`) are added to `filesystem.ts`.
+`filesystem.ts` already imports `safePathWithin` from `fs-utils.ts` internally. Move all three functions (`ensureDir`, `atomicWriteFile`, `safePathWithin`) into `filesystem.ts`, remove the `import { safePathWithin } from "./fs-utils.js"` line, and export `ensureDir` and `atomicWriteFile` from `filesystem.ts`.
 
 `core/pi/extensions/setup/actions.ts` updates its import from `../../../lib/fs-utils.js` → `../../../lib/filesystem.js`.
 
 #### Delete `core/lib/interactions.ts` → merge into `core/lib/shared.ts`
 
-`interactions.ts` (299 lines) has exactly one importer: `shared.ts`. The entire module body is appended to `shared.ts`. The `import { requestInteraction } from "./interactions.js"` line in `shared.ts` is removed.
+`interactions.ts` (299 lines) has exactly one importer: `shared.ts`. Append the entire module body of `interactions.ts` to `shared.ts`. Remove the `import { requestInteraction } from "./interactions.js"` line from `shared.ts`.
 
 ### Remaining lib files (8)
 
@@ -46,14 +48,12 @@ Move `parseGithubSlugFromUrl` and `slugifyBranchPart` verbatim into `core/pi/ext
 |------|------|
 | `exec.ts` | Shell command execution |
 | `extension-tools.ts` | Tool registration helpers (5 consumers — kept) |
-| `filesystem.ts` | Path helpers, env-based dirs, atomic write |
+| `filesystem.ts` | Path helpers, env-based dirs, atomic write, safe path |
 | `frontmatter.ts` | YAML frontmatter parse/serialize |
-| `interactions.ts` | _(deleted — merged into shared.ts)_ |
 | `matrix-format.ts` | Matrix HTML rendering |
 | `matrix.ts` | Matrix API operations |
-| `room-alias.ts` | _(deleted — inlined)_ |
 | `setup.ts` | Setup wizard state helpers |
-| `shared.ts` | Logger, truncate, confirmation, interactions |
+| `shared.ts` | Logger, truncate, confirmation, interaction helpers |
 
 ---
 
@@ -76,11 +76,11 @@ cd ~/nixpi
 
 **After:**
 ```bash
-nix run nixpkgs#git -- clone https://github.com/alexradunet/nixpi.git ~/nixpi
+nix --extra-experimental-features 'nix-command flakes' run nixpkgs#git -- clone https://github.com/alexradunet/nixpi.git ~/nixpi
 cd ~/nixpi
 ```
 
-`nix run nixpkgs#git` provides a temporary git binary from nixpkgs without permanent installation. The resulting `~/nixpi` clone has `origin` set to upstream, so `git pull` and `git log` work normally after the initial setup.
+`nix run nixpkgs#git` provides a temporary git binary from nixpkgs without permanent installation. The `--extra-experimental-features 'nix-command flakes'` flag is required on a stock NixOS install from the official ISO, which does not enable these features by default. The resulting `~/nixpi` clone has `origin` set to upstream, so `git pull` and `git log` work normally after the initial setup.
 
 No changes to NixOS modules, services, or scripts.
 
@@ -89,5 +89,5 @@ No changes to NixOS modules, services, or scripts.
 ## Testing
 
 - All existing TypeScript unit and integration tests cover the same logic — no new tests required since no behavior changes.
-- Manually verify: `nix run nixpkgs#git -- clone ...` works on a fresh NixOS install before updating docs.
-- After Part 1: `npm run build` and `npm test` must pass without modification.
+- After Part 1: run `npx tsc --noEmit` to verify all import rewrites are correct, then `npm run build` and `npm test` must pass.
+- Manually verify the `nix run` git clone command works on a stock NixOS ISO install before publishing the doc update.

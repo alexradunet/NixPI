@@ -25,8 +25,7 @@ nixPI is installed on top of a standard NixOS system:
 
 2. **Download nixPI** after first boot (works without git installed):
    ```bash
-   curl -L https://github.com/alexradunet/nixpi/archive/refs/heads/main.tar.gz | tar xz -C ~
-   mv ~/nixpi-main ~/nixpi
+   nix --extra-experimental-features 'nix-command flakes' run nixpkgs#git -- clone https://github.com/alexradunet/nixpi.git ~/nixpi
    cd ~/nixpi
    ```
 
