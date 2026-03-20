@@ -5,7 +5,7 @@
 # It imports your existing /etc/nixos configuration.
 # 
 # USAGE:
-#   curl -fsSL https://raw.githubusercontent.com/alexradunet/nixPI/main/core/scripts/nixpi-install.sh | bash
+#   git clone https://github.com/alexradunet/nixpi.git ~/nixpi
 # 
 # Or manually:
 #   NIXPI_PRIMARY_USER=yourusername sudo --preserve-env=NIXPI_PRIMARY_USER nixos-rebuild switch --impure --flake github:alexradunet/nixpi#desktop-attach

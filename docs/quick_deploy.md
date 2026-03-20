@@ -23,17 +23,19 @@ nixPI is installed on top of a standard NixOS system:
    - Set up your user, hostname, and basic system configuration
    - Complete the standard NixOS install process
 
-2. **Attach nixPI to your existing operator account** after first boot:
+2. **Clone the nixPI repository** after first boot:
    ```bash
-   curl -fsSL https://raw.githubusercontent.com/alexradunet/nixpi/main/core/scripts/nixpi-install.sh | bash
-   ```
-   
-   Or manually specify your user:
-   ```bash
-   NIXPI_PRIMARY_USER=yourusername curl -fsSL https://raw.githubusercontent.com/alexradunet/nixpi/main/core/scripts/nixpi-install.sh | bash
+   git clone https://github.com/alexradunet/nixpi.git ~/nixpi
+   cd ~/nixpi
    ```
 
-3. **Reboot or log out/in**, then complete first-boot setup — the `setup-wizard.sh` runs automatically
+3. **Attach nixPI to your existing operator account**:
+   ```bash
+   # Replace 'alex' with your actual username
+   sudo NIXPI_PRIMARY_USER=alex nixos-rebuild switch --impure --flake .#desktop-attach
+   ```
+
+4. **Reboot or log out/in**, then complete first-boot setup — the `setup-wizard.sh` runs automatically
 
 ## 💻 Development: VM Testing
 

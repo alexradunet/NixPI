@@ -41,13 +41,14 @@ Install nixPI on an existing NixOS system:
 
 ```bash
 # 1. Install NixOS from the official ISO: https://nixos.org/download.html
-# 2. After first boot, run the nixPI installer:
-curl -fsSL https://raw.githubusercontent.com/alexradunet/nixpi/main/core/scripts/nixpi-install.sh | bash
+# 2. Clone this repo and install nixPI:
+git clone https://github.com/alexradunet/nixpi.git ~/nixpi
+cd ~/nixpi
 
-# Or manually with your username:
-# NIXPI_PRIMARY_USER=yourusername bash -c '...
+# 3. Apply nixPI to your existing user (replace 'alex' with your username)
+sudo NIXPI_PRIMARY_USER=alex nixos-rebuild switch --impure --flake .#desktop-attach
 
-# 3. Reboot or log out/in, then complete the first-boot wizard (runs automatically)
+# 4. Reboot or log out/in, then complete the first-boot wizard (runs automatically)
 ```
 
 See [docs/quick_deploy.md](docs/quick_deploy.md) for detailed instructions.

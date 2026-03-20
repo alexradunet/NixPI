@@ -39,7 +39,7 @@ in
   assertions = [
     {
       assertion = primaryUser != "";
-      message = "nixpi.primaryUser must resolve to a real human user. Set `NIXPI_PRIMARY_USER` through nixpi-install.sh or set `nixpi.primaryUser` explicitly.";
+      message = "nixpi.primaryUser must resolve to a real human user. Set `NIXPI_PRIMARY_USER` environment variable or set `nixpi.primaryUser` explicitly.;
     }
     {
       assertion = primaryHome != "";
