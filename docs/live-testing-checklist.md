@@ -2,11 +2,11 @@
 
 > 📖 [Emoji Legend](LEGEND.md)
 
-Audience: operators validating a fresh nixPI image on real hardware or a realistic VM.
+Audience: operators validating a fresh NixPI image on real hardware or a realistic VM.
 
 ## 🌱 Why This Checklist Exists
 
-This is the acceptance checklist for first real nixPI runs.
+This is the acceptance checklist for first real NixPI runs.
 
 Use it to verify that setup, messaging, and recovery paths still match the shipped documentation.
 
@@ -39,7 +39,7 @@ Pi resumes cleanly after reboot and does not require manual cleanup of partial w
 ### Recovery Cases
 
 1. Interrupt the wizard during Matrix setup, log back in, and confirm setup resumes instead of re-registering from scratch.
-2. Corrupt `~/nixPI/guardrails.yaml` and confirm nixPI falls back to the packaged defaults instead of crashing the session startup path.
+2. Corrupt `~/nixpi/guardrails.yaml` and confirm NixPI falls back to the packaged defaults instead of crashing the session startup path.
 
 ## 📚 Reference
 

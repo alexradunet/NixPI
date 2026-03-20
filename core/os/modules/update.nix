@@ -31,7 +31,7 @@ in
   };
 
   systemd.timers.nixpi-update = {
-    description = "nixPI update check timer";
+    description = "NixPI update check timer";
     wantedBy    = [ "timers.target" ];
 
     timerConfig = {

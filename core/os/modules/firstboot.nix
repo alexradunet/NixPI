@@ -15,7 +15,7 @@ let
   bootstrapAction = action: command: pkgs.writeShellScriptBin "nixpi-bootstrap-${action}" ''
     set -euo pipefail
     if [ -f "${setupCompleteFile}" ]; then
-      echo "nixPI bootstrap access is disabled after setup completes" >&2
+      echo "NixPI bootstrap access is disabled after setup completes" >&2
       exit 1
     fi
     exec ${command} "$@"
@@ -44,7 +44,7 @@ in
   ];
 
   systemd.services.nixpi-firstboot = {
-    description = "nixPI First-Boot Setup";
+    description = "NixPI First-Boot Setup";
     wantedBy = [ "multi-user.target" ];
     after = [
       "network-online.target"
@@ -71,7 +71,7 @@ in
       StandardError = "journal";
       Environment = [
         "HOME=${primaryHome}"
-        "NIXPI_DIR=${primaryHome}/nixPI"
+        "NIXPI_DIR=${primaryHome}/nixpi"
         "NIXPI_STATE_DIR=${stateDir}"
         "NIXPI_PI_DIR=${stateDir}/agent"
         "NIXPI_CONFIG_DIR=${stateDir}/services"
@@ -83,7 +83,7 @@ in
   };
 
   systemd.services.nixpi-post-setup = {
-    description = "nixPI post-setup security transitions";
+    description = "NixPI post-setup security transitions";
     unitConfig.ConditionPathExists = setupCompleteFile;
     serviceConfig = {
       Type = "oneshot";
@@ -99,7 +99,7 @@ in
   };
 
   systemd.paths.nixpi-post-setup = {
-    description = "Watch for nixPI setup completion";
+    description = "Watch for NixPI setup completion";
     wantedBy = [ "multi-user.target" ];
     pathConfig = {
       PathChanged = "${primaryHome}/.nixpi";

@@ -1,12 +1,12 @@
 import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createMockExtensionAPI, type MockExtensionAPI } from "../helpers/mock-extension-api.js";
-import { createTempNixpi, type TempNixpi } from "../helpers/temp-nixpi.js";
+import { createTempNixPi, type TempNixPi } from "../helpers/temp-nixpi.js";
 
-let temp: TempNixpi;
+let temp: TempNixPi;
 
 beforeEach(() => {
-	temp = createTempNixpi();
+	temp = createTempNixPi();
 });
 
 afterEach(() => {

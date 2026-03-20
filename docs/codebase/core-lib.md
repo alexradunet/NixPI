@@ -4,7 +4,7 @@
 
 ## 🌱 Why Core Library Exists
 
-The core library provides shared utilities used across all nixPI components. Centralizing these prevents duplication and ensures consistent behavior for common operations like filesystem access, Matrix formatting, and command execution.
+The core library provides shared utilities used across all NixPI components. Centralizing these prevents duplication and ensures consistent behavior for common operations like filesystem access, Matrix formatting, and command execution.
 
 ## 🚀 What It Owns
 
@@ -22,7 +22,7 @@ The core library provides shared utilities used across all nixPI components. Cen
 
 | File | Why | What | How / Notes |
 |------|-----|------|-------------|
-| `core/lib/filesystem.ts` | Safe file operations | Path helpers, atomic writes, directory creation | Used by extensions for nixPI directory operations |
+| `core/lib/filesystem.ts` | Safe file operations | Path helpers, atomic writes, directory creation | Used by extensions for NixPI directory operations |
 | `core/lib/exec.ts` | Guarded execution | Bash tool wrapper with guardrails validation | All shell commands go through here |
 | `core/lib/matrix.ts` | Matrix client utils | Registration, login, room alias helpers | Used by daemon and extensions |
 | `core/lib/matrix-format.ts` | Message formatting | HTML/markdown conversion for Matrix | Handles Matrix message rendering |
@@ -37,16 +37,16 @@ The core library provides shared utilities used across all nixPI components. Cen
 
 ### `core/lib/filesystem.ts`
 
-**Responsibility**: Safe filesystem operations with nixPI directory conventions.
+**Responsibility**: Safe filesystem operations with NixPI directory conventions.
 
 **Key Exports**:
 - `ensureDir(path)` - Create directory if missing
 - `writeFileAtomic(path, content)` - Atomic file write
 - `readFileUtf8(path)` - Read with encoding
-- `nixpiPath(...segments)` - Build paths in `~/nixPI/`
+- `nixpiPath(...segments)` - Build paths in `~/nixpi/`
 
 **Inbound Dependencies**:
-- All extensions that read/write nixPI files
+- All extensions that read/write NixPI files
 - Daemon for state persistence
 
 **Outbound Dependencies**:
@@ -65,7 +65,7 @@ The core library provides shared utilities used across all nixPI components. Cen
 - `ExecutionError` - Error type for failures
 
 **Guardrails Integration**:
-- Loads `~/nixPI/guardrails.yaml` (falls back to defaults)
+- Loads `~/nixpi/guardrails.yaml` (falls back to defaults)
 - Blocks patterns defined in guardrails config
 - Returns validation errors before execution
 
@@ -174,7 +174,7 @@ The core library provides shared utilities used across all nixPI components. Cen
 **Responsibility**: Common types and constants used across the codebase.
 
 **Key Exports**:
-- `NIXPI_DIR` - Base directory constant (`~/nixPI`)
+- `NIXPI_DIR` - Base directory constant (`~/nixpi`)
 - `AGENT_STATE_DIR` - Agent state directory (`/var/lib/nixpi`)
 - Common type definitions
 - Utility functions

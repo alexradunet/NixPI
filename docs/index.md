@@ -1,12 +1,12 @@
-# nixPI Documentation
+# NixPI Documentation
 
 > Pi-native AI companion OS on NixOS
 
-## 🌱 Why nixPI Exists
+## 🌱 Why NixPI Exists
 
-nixPI is a very opinionated NixOS build designed as an AI-first operating system. It packages Pi (the AI agent), host integration, memory management, and a small set of built-in user services into one self-hosted system.
+NixPI is a very opinionated NixOS build designed as an AI-first operating system. It packages Pi (the AI agent), host integration, memory management, and a small set of built-in user services into one self-hosted system.
 
-The design pressures that shaped nixPI:
+The design pressures that shaped NixPI:
 
 - **Single-user focus**: Built for one end user as a personal life assistant and knowledge management system
 - **AI-native interaction**: Matrix-based messaging as the primary interface, not just an add-on
@@ -16,17 +16,17 @@ The design pressures that shaped nixPI:
 
 ## 🚀 What Ships Today
 
-nixPI delivers a complete platform with:
+NixPI delivers a complete platform with:
 
 | Component | What It Does |
 |-----------|--------------|
-| **nixPI Directory** | Durable home under `~/nixPI/` with blueprint seeding |
+| **NixPI Directory** | Durable home under `~/nixpi/` with blueprint seeding |
 | **Persona System** | Injected personality, shell guardrails, memory compaction |
 | **NixOS Integration** | Proposal workflow for human-reviewed system changes |
 | **Matrix Daemon** | Always-on room runtime with multi-agent support |
 | **Built-in Services** | Home (`:8080`), Web Chat (`:8081`), Matrix (`:6167`) |
-| **Memory System** | Markdown-native durable memory in `~/nixPI/Objects/` |
-| **Episodic Memory** | Append-only capture in `~/nixPI/Episodes/` |
+| **Memory System** | Markdown-native durable memory in `~/nixpi/Objects/` |
+| **Episodic Memory** | Append-only capture in `~/nixpi/Episodes/` |
 | **First-Boot Flow** | Bash wizard + Pi-guided persona completion |
 
 ## 🧭 Where to Start
@@ -35,7 +35,7 @@ Choose your entry point:
 
 | Your Goal | Start Here |
 |-----------|------------|
-| Installing nixPI | [Quick Deploy](./operations/quick-deploy) |
+| Installing NixPI | [Quick Deploy](./operations/quick-deploy) |
 | First-time setup | [First Boot Setup](./operations/first-boot-setup) |
 | Understanding the system | [Architecture Overview](./architecture/) |
 | Reading the code | [Codebase Guide](./codebase/) |
@@ -55,7 +55,7 @@ Choose your entry point:
 
 ## 🔗 Quick Links
 
-- [GitHub Repository](https://github.com/alexradunet/nixPI)
+- [GitHub Repository](https://github.com/alexradunet/NixPI)
 - [Architecture Overview](./architecture/)
 - [Runtime Flows](./architecture/runtime-flows)
 - [Codebase Index](./codebase/)

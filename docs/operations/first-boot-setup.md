@@ -1,23 +1,23 @@
 # First Boot Setup
 
-> Bringing up a fresh nixPI host
+> Bringing up a fresh NixPI host
 
 ## 🌱 Audience
 
-Operators bringing up a fresh nixPI host.
+Operators bringing up a fresh NixPI host.
 
 ## Prerequisites
 
-Before first-boot setup, you need a system installed from the nixPI installer image:
+Before first-boot setup, you need a system installed from the NixPI installer image:
 
-1. Build or download the nixPI installer ISO
+1. Build or download the NixPI installer ISO
 2. Complete the graphical installer and choose your hostname and primary user
 3. Reboot into the installed system
 4. The installed machine now owns a standard local flake at `/etc/nixos`
 
 ## 🛡️ Security Note: NetBird is Mandatory
 
-NetBird is the network security boundary for all nixPI services. The firewall configuration (`trustedInterfaces = ["wt0"]`) only protects services when the NetBird interface (`wt0`) is active. Without NetBird:
+NetBird is the network security boundary for all NixPI services. The firewall configuration (`trustedInterfaces = ["wt0"]`) only protects services when the NetBird interface (`wt0`) is active. Without NetBird:
 
 - Matrix, Home (port 8080), and Web Chat (port 8081) are exposed to the local network
 - A compromised local device could access OS tools via prompt injection
@@ -26,7 +26,7 @@ NetBird is the network security boundary for all nixPI services. The firewall co
 
 ## 🌱 Why Setup Is Split In Two
 
-nixPI separates deterministic machine setup from Pi-guided personalization.
+NixPI separates deterministic machine setup from Pi-guided personalization.
 
 That split keeps:
 
@@ -36,7 +36,7 @@ That split keeps:
 
 ## 💻 How First Boot Works
 
-nixPI's first-boot experience has two phases.
+NixPI's first-boot experience has two phases.
 
 ### Phase 1: Bash Wizard
 
@@ -73,10 +73,10 @@ Pi injects setup guidance until that step is marked complete.
 
 During that Pi-side first conversation, Pi should also orient the user to the platform:
 
-- nixPI keeps durable state in `~/nixPI/` using inspectable files
-- nixPI can propose persona or workflow changes through tracked evolutions instead of silently changing itself
+- NixPI keeps durable state in `~/nixpi/` using inspectable files
+- NixPI can propose persona or workflow changes through tracked evolutions instead of silently changing itself
 - Matrix is the native messaging surface, with `nixpi-daemon.service` keeping Pi active in rooms outside the local terminal session as a system service running under the `agent` account
-- Multi-agent rooms are optional and activate when valid overlays exist in `~/nixPI/Agents/*/AGENTS.md`
+- Multi-agent rooms are optional and activate when valid overlays exist in `~/nixpi/Agents/*/AGENTS.md`
 
 ## 🔄 Recovery
 

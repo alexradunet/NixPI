@@ -73,11 +73,11 @@ NIXPI_INSTALL_MODULE = '''{ ... }:
 '''
 
 NIXPI_FLAKE = '''{
-  description = "nixPI installed system";
+  description = "NixPI installed system";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    nixpi.url = "github:alexradunet/nixPI";
+    nixpi.url = "github:alexradunet/NixPI";
   };
 
   outputs = { nixpkgs, nixpi, ... }:
@@ -106,7 +106,7 @@ text = text.replace(marker, injected + marker, 1)
 old_write = """    # Write the configuration.nix file
     libcalamares.utils.host_env_process_output(["cp", "/dev/stdin", config], None, cfg)
 """
-new_write = """    # Materialize the nixPI installation helpers and the standard /etc/nixos flake.
+new_write = """    # Materialize the NixPI installation helpers and the standard /etc/nixos flake.
     nixpi_etc = os.path.join(root_mount_point, "etc/nixos")
     nixpi_source_target = os.path.join(nixpi_etc, "nixpi")
     nixpi_install_path = os.path.join(nixpi_etc, "nixpi-install.nix")
@@ -149,8 +149,8 @@ PY
   '';
 
   meta = {
-    description = "Calamares modules for nixPI installs on NixOS";
-    homepage = "https://github.com/alexradunet/nixPI";
+    description = "Calamares modules for NixPI installs on NixOS";
+    homepage = "https://github.com/alexradunet/NixPI";
     license = with lib.licenses; [ mit cc-by-40 cc-by-sa-40 ];
     platforms = lib.platforms.linux;
   };

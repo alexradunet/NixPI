@@ -1,22 +1,22 @@
 # Skill
 
-This layer defines nixPI's current competency inventory.
+This layer defines NixPI's current competency inventory.
 
 ## Current Capabilities
 
 ### Object Management
 
-- Create, read, list, search, and link objects in `~/nixPI/Objects/`.
+- Create, read, list, search, and link objects in `~/nixpi/Objects/`.
 - Supported object types: task, note, evolution, and custom types.
 - Flat directory — type lives in frontmatter, not directory structure.
 - Bidirectional linking between objects.
-- Storage: `~/nixPI/Objects/{slug}.md`
+- Storage: `~/nixpi/Objects/{slug}.md`
 
-### nixPI Directory Management
+### NixPI Directory Management
 
-- nixPI directory at `~/nixPI/` — local inspectable workspace editable with any tool.
-- Blueprint seeding: persona and skills copied from package to `~/nixPI/`.
-- Persona and skills are user-editable at `~/nixPI/Persona/` and `~/nixPI/Skills/`.
+- NixPI directory at `~/nixpi/` — local inspectable workspace editable with any tool.
+- Blueprint seeding: persona and skills copied from package to `~/nixpi/`.
+- Persona and skills are user-editable at `~/nixpi/Persona/` and `~/nixpi/Skills/`.
 
 ### Communication Channels
 
@@ -26,7 +26,7 @@ This layer defines nixPI's current competency inventory.
 ### Service Management
 
 - Install, remove, and manage containerized service packages.
-- Services discovered from ~/nixPI/Skills/ at session start.
+- Services discovered from ~/nixpi/Skills/ at session start.
 - Interaction via HTTP APIs and bash, guided by service skill files.
 
 ### System Operations

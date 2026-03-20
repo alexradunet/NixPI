@@ -104,7 +104,7 @@ describe("computeNextRunAt", () => {
 });
 
 describe("isSupportedCronExpression", () => {
-	it("accepts the small cron subset used by nixPI", () => {
+	it("accepts the small cron subset used by NixPI", () => {
 		expect(isSupportedCronExpression("@daily")).toBe(true);
 		expect(isSupportedCronExpression("@hourly")).toBe(true);
 		expect(isSupportedCronExpression("@weekly")).toBe(true);

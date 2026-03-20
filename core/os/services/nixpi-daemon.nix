@@ -50,7 +50,7 @@ in
     ];
 
     systemd.service = {
-      description = "nixPI Pi Daemon (Matrix room agent)";
+      description = "NixPI Pi Daemon (Matrix room agent)";
       after = [ "network-online.target" ];
       wants = [ "network-online.target" ];
       wantedBy = [ "multi-user.target" ];
@@ -59,10 +59,10 @@ in
         User = config.nixpi-daemon.serviceUser;
         Group = config.nixpi-daemon.serviceUser;
         UMask = "0007";
-        WorkingDirectory = "${config.nixpi-daemon.primaryHome}/nixPI";
+        WorkingDirectory = "${config.nixpi-daemon.primaryHome}/nixpi";
         Environment = [
           "HOME=${config.nixpi-daemon.serviceHome}"
-          "NIXPI_DIR=${config.nixpi-daemon.primaryHome}/nixPI"
+          "NIXPI_DIR=${config.nixpi-daemon.primaryHome}/nixpi"
           "NIXPI_STATE_DIR=${config.nixpi-daemon.stateDir}"
           "NIXPI_PI_DIR=${config.nixpi-daemon.agentStateDir}"
           "NIXPI_DAEMON_STATE_DIR=${config.nixpi-daemon.stateDir}/nixpi-daemon"
@@ -78,7 +78,7 @@ in
         ProtectHome = false;
         ReadWritePaths = [
           config.nixpi-daemon.stateDir
-          "${config.nixpi-daemon.primaryHome}/nixPI"
+          "${config.nixpi-daemon.primaryHome}/nixpi"
         ];
       };
     };

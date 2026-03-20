@@ -4,7 +4,7 @@
 
 ## 🌱 Audience
 
-Operators deploying nixPI and template forkers who need to understand the security perimeter and threat model.
+Operators deploying NixPI and template forkers who need to understand the security perimeter and threat model.
 
 ---
 
@@ -12,13 +12,13 @@ Operators deploying nixPI and template forkers who need to understand the securi
 
 **NetBird is the load-bearing security boundary.**
 
-nixPI is designed as a NixOS-based personal AI-first OS where the primary security perimeter is a NetBird WireGuard mesh network. This is explicitly codified in the firewall configuration:
+NixPI is designed as a NixOS-based personal AI-first OS where the primary security perimeter is a NetBird WireGuard mesh network. This is explicitly codified in the firewall configuration:
 
 ```nix
 networking.firewall.trustedInterfaces = [ "wt0" ];
 ```
 
-The `wt0` interface is the NetBird tunnel interface. Only mesh peers can reach nixPI services. Everything behind the mesh is relatively trusted.
+The `wt0` interface is the NetBird tunnel interface. Only mesh peers can reach NixPI services. Everything behind the mesh is relatively trusted.
 
 ---
 
@@ -40,7 +40,7 @@ If NetBird is not running or not configured:
 
 1. The `wt0` interface does not exist
 2. The firewall rule `trustedInterfaces = ["wt0"]` provides **no protection**
-3. All nixPI services are exposed to the **local network**
+3. All NixPI services are exposed to the **local network**
 4. Any device on the same network can:
    - Access the Matrix homeserver
    - Interact with Pi in Matrix rooms
@@ -54,11 +54,11 @@ If NetBird is not running or not configured:
 
 The security model addresses the following threats:
 
-1. **Compromised device on the NetBird mesh** — A peer that has been compromised can attempt to interact with nixPI services or brute-force SSH.
+1. **Compromised device on the NetBird mesh** — A peer that has been compromised can attempt to interact with NixPI services or brute-force SSH.
 
-2. **Compromised service container** — A container running on the host (inside the mesh) that has been compromised can attempt to pivot to the host or manipulate nixPI state.
+2. **Compromised service container** — A container running on the host (inside the mesh) that has been compromised can attempt to pivot to the host or manipulate NixPI state.
 
-3. **Template forker without NetBird** — A user who deploys nixPI without configuring NetBird or with it misconfigured has no security perimeter and is fully exposed to the local network.
+3. **Template forker without NetBird** — A user who deploys NixPI without configuring NetBird or with it misconfigured has no security perimeter and is fully exposed to the local network.
 
 ---
 
@@ -88,13 +88,13 @@ chmod 600 ~/.ssh/authorized_keys
 
 - `agent` is a non-login system user that owns `/var/lib/nixpi`
 - The human operator keeps full OS administration through their own account
-- nixPI agent actions no longer rely on blanket passwordless sudo
+- NixPI agent actions no longer rely on blanket passwordless sudo
 - Privileged actions are routed through the root-owned `nixpi-broker` service
 
 Default autonomy:
 
 - `observe` can read state only
-- `maintain` can operate approved nixPI systemd units
+- `maintain` can operate approved NixPI systemd units
 - `admin` is available only through temporary elevation
 
 Temporary elevation is managed with:
@@ -111,7 +111,7 @@ Bootstrap-only passwordless sudo is also gated on setup state. The narrow first-
 
 ## 📋 Pre-Deployment Checklist
 
-Before exposing a nixPI host to any network:
+Before exposing a NixPI host to any network:
 
 - [ ] NetBird is enrolled and connected (`netbird status` shows "Connected")
 - [ ] The `wt0` interface exists (`ip link show wt0`)

@@ -2,7 +2,7 @@
  * Handler / business logic for os.
  */
 
-import { existsSync } from "node:fs";
+import fs from "node:fs";
 import { readFile, writeFile } from "node:fs/promises";
 import type { ExtensionContext } from "@mariozechner/pi-coding-agent";
 import { run } from "../../../lib/exec.js";
@@ -44,8 +44,8 @@ export async function handleNixosUpdate(
 
 	// apply
 	const flake = "/etc/nixos";
-	if (!existsSync("/etc/nixos/flake.nix")) {
-		return errorResult("System flake not found at /etc/nixos. nixPI updates require the installed /etc/nixos flake.");
+	if (!fs.existsSync("/etc/nixos/flake.nix")) {
+		return errorResult("System flake not found at /etc/nixos. NixPI updates require the installed /etc/nixos flake.");
 	}
 	const args = ["nixos-update", "apply"];
 	args.push(flake);
@@ -133,7 +133,7 @@ export async function checkPendingUpdates(systemPrompt: string): Promise<{ syste
 			status.notified = true;
 			await writeFile(statusFile, JSON.stringify(status), "utf-8");
 			const note =
-				"\n\n[SYSTEM] A nixPI update is available. " +
+				"\n\n[SYSTEM] A NixPI update is available. " +
 				"Inform the user and ask if they'd like to review and apply it.";
 			return { systemPrompt: systemPrompt + note };
 		}

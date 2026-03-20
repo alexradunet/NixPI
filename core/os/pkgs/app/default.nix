@@ -70,7 +70,7 @@ buildNpmPackage {
   '';
 
   meta = {
-    description = "nixPI TypeScript application";
+    description = "NixPI TypeScript application";
     license = lib.licenses.mit;
   };
 }

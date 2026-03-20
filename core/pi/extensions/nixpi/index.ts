@@ -1,5 +1,5 @@
 /**
- * nixpi — nixPI directory bootstrap, status, and blueprint seeding.
+ * nixpi — NixPI directory bootstrap, status, and blueprint seeding.
  *
  * @tools nixpi_status
  * @commands /nixpi (init | status | update-blueprints)
@@ -9,33 +9,33 @@
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
 import { defineTool, type RegisteredExtensionTool, registerTools } from "../../../lib/extension-tools.js";
-import { getNixpiDir } from "../../../lib/filesystem.js";
-import { discoverSkillPaths, ensureNixpi, getPackageDir, handleNixpiStatus } from "./actions.js";
+import { getNixPiDir } from "../../../lib/filesystem.js";
+import { discoverSkillPaths, ensureNixPi, getPackageDir, handleNixPiStatus } from "./actions.js";
 import { handleUpdateBlueprints, readBlueprintVersions, seedBlueprints } from "./actions-blueprints.js";
 
-type NixpiCommandContext = Parameters<Parameters<ExtensionAPI["registerCommand"]>[1]["handler"]>[1];
+type NixPiCommandContext = Parameters<Parameters<ExtensionAPI["registerCommand"]>[1]["handler"]>[1];
 
 export default function (pi: ExtensionAPI) {
-	const nixpiDir = getNixpiDir();
+	const nixPiDir = getNixPiDir();
 	const packageDir = getPackageDir();
 	const tools: RegisteredExtensionTool[] = [
 		defineTool({
 			name: "nixpi_status",
-			label: "nixPI Status",
-			description: "Show nixPI directory location and blueprint state",
+			label: "NixPI Status",
+			description: "Show NixPI directory location and blueprint state",
 			parameters: Type.Object({}),
 			async execute() {
-				return handleNixpiStatus(nixpiDir);
+				return handleNixPiStatus(nixPiDir);
 			},
 		}),
 	];
 	registerTools(pi, tools);
 
 	pi.on("session_start", (_event, ctx) => {
-		ensureNixpi(nixpiDir);
-		seedBlueprints(nixpiDir, packageDir);
+		ensureNixPi(nixPiDir);
+		seedBlueprints(nixPiDir, packageDir);
 
-		const versions = readBlueprintVersions(nixpiDir);
+		const versions = readBlueprintVersions(nixPiDir);
 		const updates = Object.keys(versions.updatesAvailable);
 		if (ctx.hasUI) {
 			if (updates.length > 0) {
@@ -43,27 +43,27 @@ export default function (pi: ExtensionAPI) {
 					`${updates.length} blueprint update(s) available — /nixpi update-blueprints`,
 				]);
 			}
-			ctx.ui.setStatus("nixpi", `nixPI: ${nixpiDir}`);
+			ctx.ui.setStatus("nixpi", `NixPI: ${nixPiDir}`);
 		}
 	});
 
 	pi.registerCommand("nixpi", {
-		description: "nixPI directory management: /nixpi init | status | update-blueprints",
-		handler: async (args: string, ctx) => handleNixpiCommand(pi, nixpiDir, packageDir, args, ctx),
+		description: "NixPI directory management: /nixpi init | status | update-blueprints",
+		handler: async (args: string, ctx) => handleNixPiCommand(pi, nixPiDir, packageDir, args, ctx),
 	});
 
 	pi.on("resources_discover", () => {
-		const paths = discoverSkillPaths(nixpiDir);
+		const paths = discoverSkillPaths(nixPiDir);
 		if (paths) return { skillPaths: paths };
 	});
 }
 
-async function handleNixpiCommand(
+async function handleNixPiCommand(
 	pi: ExtensionAPI,
-	nixpiDir: string,
+	nixPiDir: string,
 	packageDir: string,
 	args: string,
-	ctx: NixpiCommandContext,
+	ctx: NixPiCommandContext,
 ): Promise<void> {
 	const subcommand = args.trim().split(/\s+/)[0] ?? "";
 	if (!subcommand) {
@@ -73,15 +73,15 @@ async function handleNixpiCommand(
 
 	switch (subcommand) {
 		case "init":
-			ensureNixpi(nixpiDir);
-			seedBlueprints(nixpiDir, packageDir);
-			ctx.ui.notify("nixPI initialized", "info");
+			ensureNixPi(nixPiDir);
+			seedBlueprints(nixPiDir, packageDir);
+			ctx.ui.notify("NixPI initialized", "info");
 			return;
 		case "status":
 			pi.sendUserMessage("Show nixpi status using the nixpi_status tool.", { deliverAs: "followUp" });
 			return;
 		case "update-blueprints": {
-			const count = handleUpdateBlueprints(nixpiDir, packageDir);
+			const count = handleUpdateBlueprints(nixPiDir, packageDir);
 			ctx.ui.notify(count === 0 ? "All blueprints are up to date" : `Updated ${count} blueprint(s)`, "info");
 			return;
 		}

@@ -2,13 +2,13 @@
 # Verify bootstrap SSH access, post-setup SSH shutdown, Matrix registration
 # shutdown, fail2ban, and trusted-interface service exposure policy.
 
-{ pkgs, nixpiModulesNoShell, piAgent, appPackage, mkTestFilesystems, ... }:
+{ pkgs, nixPiModulesNoShell, piAgent, appPackage, mkTestFilesystems, ... }:
 
 let
   mkNode = { hostName, username, prefill ? false }: { ... }: let
     homeDir = "/home/${username}";
   in {
-    imports = nixpiModulesNoShell ++ [
+    imports = nixPiModulesNoShell ++ [
       ../../core/os/modules/firstboot.nix
       mkTestFilesystems
     ];
@@ -114,7 +114,7 @@ pkgs.testers.runNixOSTest {
 
     # Local application access remains available after setup.
     steady.wait_until_succeeds("curl -sf http://127.0.0.1:6167/_matrix/client/versions", timeout=60)
-    steady.wait_until_succeeds("curl -sf http://127.0.0.1:8080 | grep -q 'nixPI Home'", timeout=60)
+    steady.wait_until_succeeds("curl -sf http://127.0.0.1:8080 | grep -q 'NixPI Home'", timeout=60)
 
     # Matrix registration is disabled after setup by default.
     steady.succeed("curl -s -X POST http://127.0.0.1:6167/_matrix/client/v3/register -H 'Content-Type: application/json' -d '{\"username\":\"blocked\",\"password\":\"testpassword123\",\"inhibit_login\":false}' | grep -q 'M_FORBIDDEN'")
@@ -129,6 +129,6 @@ pkgs.testers.runNixOSTest {
         for port in blocked_ports:
             client.succeed(f"! nc -z -w 2 {host} {port}")
 
-    print("nixPI security exposure policy tests passed!")
+    print("NixPI security exposure policy tests passed!")
   '';
 }

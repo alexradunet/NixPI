@@ -63,7 +63,7 @@ export default function (pi: ExtensionAPI) {
 			name: "nix_config_proposal",
 			label: "Local Nix Config Proposal",
 			description:
-				"Inspect, validate, and refresh flake inputs in the local nixPI repo clone used for human-reviewed NixOS proposals. Does not apply system changes or publish remotely.",
+				"Inspect, validate, and refresh flake inputs in the local NixPI repo clone used for human-reviewed NixOS proposals. Does not apply system changes or publish remotely.",
 			parameters: NixConfigProposalParams,
 			async execute(_toolCallId, params, signal, _onUpdate, ctx) {
 				const p = params as Static<typeof NixConfigProposalParams>;
@@ -73,7 +73,7 @@ export default function (pi: ExtensionAPI) {
 		defineTool({
 			name: "systemd_control",
 			label: "Systemd Service Control",
-			description: "Manage a nixPI user-systemd service (start, stop, restart, status). Only nixpi-* services allowed.",
+			description: "Manage a NixPI user-systemd service (start, stop, restart, status). Only nixpi-* services allowed.",
 			parameters: SystemdControlParams,
 			async execute(_toolCallId, params, signal, _onUpdate, ctx) {
 				const p = params as Static<typeof SystemdControlParams>;
@@ -83,7 +83,7 @@ export default function (pi: ExtensionAPI) {
 		defineTool({
 			name: "update_status",
 			label: "Update Status",
-			description: "Reads the nixPI update status from the last scheduled check.",
+			description: "Reads the NixPI update status from the last scheduled check.",
 			parameters: UpdateStatusParams,
 			async execute() {
 				return handleUpdateStatus();

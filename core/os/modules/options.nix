@@ -1,5 +1,5 @@
 # core/os/modules/options.nix
-# Shared NixOS options consumed across nixPI modules.
+# Shared NixOS options consumed across NixPI modules.
 { lib, ... }:
 
 let
@@ -20,7 +20,7 @@ in
       type = lib.types.str;
       default = "";
       description = ''
-        Primary human/operator account for the nixPI machine.
+        Primary human/operator account for the NixPI machine.
       '';
     };
 
@@ -28,8 +28,8 @@ in
       type = lib.types.strMatching "^$|/.*";
       default = "";
       description = ''
-        Home directory for the primary nixPI operator account. When left empty,
-        nixPI defaults to `/home/<primaryUser>`.
+        Home directory for the primary NixPI operator account. When left empty,
+        NixPI defaults to `/home/<primaryUser>`.
       '';
     };
 
@@ -37,7 +37,7 @@ in
       type = lib.types.bool;
       default = false;
       description = ''
-        Whether nixPI should create and manage the primary operator account.
+        Whether NixPI should create and manage the primary operator account.
       '';
     };
 
@@ -46,7 +46,7 @@ in
         type = lib.types.enum [ "existing-user" "managed-user" ];
         default = "existing-user";
         description = ''
-          Whether nixPI should use an existing operator account or create and
+          Whether NixPI should use an existing operator account or create and
           manage one directly.
         '';
       };
@@ -74,7 +74,7 @@ in
       type = absolutePath;
       default = "/var/lib/nixpi";
       description = ''
-        Root directory for service-owned nixPI state.
+        Root directory for service-owned NixPI state.
       '';
     };
 
@@ -91,7 +91,7 @@ in
         type = lib.types.bool;
         default = false;
         description = ''
-          Whether SSH password authentication is enabled for the main nixPI
+          Whether SSH password authentication is enabled for the main NixPI
           host configuration.
         '';
       };
@@ -100,7 +100,7 @@ in
         type = lib.types.listOf lib.types.str;
         default = [ ];
         description = ''
-          Explicit SSH login allowlist. When empty, nixPI restricts SSH to the
+          Explicit SSH login allowlist. When empty, NixPI restricts SSH to the
           resolved primary operator account when one is available.
         '';
       };
@@ -109,7 +109,7 @@ in
         type = lib.types.str;
         default = "wt0";
         description = ''
-          Network interface trusted to reach the externally exposed nixPI
+          Network interface trusted to reach the externally exposed NixPI
           service surface.
         '';
       };
@@ -118,7 +118,7 @@ in
         type = lib.types.bool;
         default = true;
         description = ''
-          Whether nixPI service ports are opened only on the trusted interface.
+          Whether NixPI service ports are opened only on the trusted interface.
         '';
       };
 
@@ -146,7 +146,7 @@ in
         type = lib.types.bool;
         default = true;
         description = ''
-          Whether nixPI grants narrow passwordless sudo rules needed by the
+          Whether NixPI grants narrow passwordless sudo rules needed by the
           first-boot bootstrap flow.
         '';
       };
@@ -180,7 +180,7 @@ in
         type = lib.types.bool;
         default = true;
         description = ''
-          Whether the root-owned nixPI operations broker is enabled.
+          Whether the root-owned NixPI operations broker is enabled.
         '';
       };
 
@@ -206,18 +206,18 @@ in
         type = lib.types.str;
         default = "0.0.0.0";
         description = ''
-          Bind address used by the built-in nixPI service surface.
+          Bind address used by the built-in NixPI service surface.
         '';
       };
 
       home = {
-        enable = lib.mkEnableOption "nixPI Home service" // { default = true; };
-        port = mkPortOption 8080 "TCP port for the nixPI Home landing page.";
+        enable = lib.mkEnableOption "NixPI Home service" // { default = true; };
+        port = mkPortOption 8080 "TCP port for the NixPI Home landing page.";
       };
 
       chat = {
-        enable = lib.mkEnableOption "nixPI web chat service" // { default = true; };
-        port = mkPortOption 8081 "TCP port for the nixPI Chat web client.";
+        enable = lib.mkEnableOption "NixPI web chat service" // { default = true; };
+        port = mkPortOption 8081 "TCP port for the NixPI Chat web client.";
       };
     };
 
@@ -262,7 +262,7 @@ in
         default = null;
         description = ''
           Optional external file containing the Matrix registration shared
-          secret. When unset, nixPI generates one stable runtime secret.
+          secret. When unset, NixPI generates one stable runtime secret.
         '';
       };
 
@@ -271,7 +271,7 @@ in
         default = null;
         description = ''
           Optional external file containing the Matrix macaroon secret key.
-          When unset, nixPI generates one stable runtime secret.
+          When unset, NixPI generates one stable runtime secret.
         '';
       };
     };

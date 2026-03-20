@@ -1,16 +1,16 @@
 ---
 name: builtin-services
-description: Reference for nixPI's built-in user-facing services that are always available on every node
+description: Reference for NixPI's built-in user-facing services that are always available on every node
 ---
 
 # Built-In Services
 
-nixPI ships these services as part of the base NixOS system. They are not optional packages and they do not need to be installed from the repo.
+NixPI ships these services as part of the base NixOS system. They are not optional packages and they do not need to be installed from the repo.
 
 ## Always Available
 
-- `nixPI Home` on `:8080` — minimal service directory showing localhost and NetBird access details
-- `nixPI Chat` on `:8081` — FluffyChat web client for the local nixPI Matrix server
+- `NixPI Home` on `:8080` — minimal service directory showing localhost and NetBird access details
+- `NixPI Chat` on `:8081` — FluffyChat web client for the local NixPI Matrix server
 
 ## Operational Notes
 

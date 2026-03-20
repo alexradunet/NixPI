@@ -1,10 +1,10 @@
-# nixPI Codebase Guide
+# NixPI Codebase Guide
 
 > Canonical codebase reading guide for maintainers
 
 ## 🌱 Why This Guide Exists
 
-This guide documents every tracked file in the nixPI repository. For each file, you'll find:
+This guide documents every tracked file in the NixPI repository. For each file, you'll find:
 
 - **Why** it exists
 - **What** it owns
@@ -13,7 +13,7 @@ This guide documents every tracked file in the nixPI repository. For each file, 
 ## 🚀 Top-Level Directory Map
 
 ```
-nixPI/
+NixPI/
 ├── README.md              # Project entry point
 ├── package.json           # Node.js dependencies and extension manifest
 ├── flake.nix              # Nix entry point and module aggregator

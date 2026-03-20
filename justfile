@@ -1,4 +1,4 @@
-# nixPI — build, test, and develop
+# NixPI — build, test, and develop
 
 system    := "x86_64-linux"
 flake     := "."
@@ -8,7 +8,7 @@ output    := "result"
 ovmf      := "/usr/share/edk2/ovmf/OVMF_CODE.fd"
 ovmf_vars := "/usr/share/edk2/ovmf/OVMF_VARS.fd"
 
-# Build nixPI TypeScript app derivation only
+# Build NixPI TypeScript app derivation only
 build:
     nix build {{ flake }}#app
 
@@ -16,7 +16,7 @@ build:
 switch:
     sudo nixos-rebuild switch --flake {{ flake }}#{{ host }}
 
-# Apply the installed nixPI system flake
+# Apply the installed NixPI system flake
 update:
     sudo nixos-rebuild switch --flake /etc/nixos
 
@@ -28,7 +28,7 @@ rollback:
 qcow2:
     nix build {{ flake }}#nixosConfigurations.{{ vm_host }}.config.system.build.vm
 
-# Build the graphical nixPI installer ISO
+# Build the graphical NixPI installer ISO
 iso:
     nix build {{ flake }}#installerIso
 

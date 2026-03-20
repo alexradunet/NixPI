@@ -29,10 +29,11 @@ in
     process.argv = [ config.nixpi-update.command ];
 
     systemd.service = {
-      description = "nixPI NixOS update";
+      description = "NixPI NixOS update";
       after = [ "network-online.target" ];
       wants = [ "network-online.target" ];
       serviceConfig = {
+        ConditionPathExists = "/etc/nixos/flake.nix";
         Type = "oneshot";
         RemainAfterExit = false;
         Restart = "no";

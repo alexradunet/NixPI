@@ -1,30 +1,30 @@
 ---
 name: os-operations
-description: Inspect, manage, and remediate the nixPI system — NixOS updates, local proposal validation, services, and timers
+description: Inspect, manage, and remediate the NixPI system — NixOS updates, local proposal validation, services, and timers
 ---
 
 # OS Operations Skill
 
-Use this skill when the user asks about nixPI health/state, or when an error suggests infrastructure inspection.
+Use this skill when the user asks about NixPI health/state, or when an error suggests infrastructure inspection.
 
-## nixPI Architecture
+## NixPI Architecture
 
-nixPI runs on **NixOS** (declarative, flake-based):
+NixPI runs on **NixOS** (declarative, flake-based):
 
 - `/run/current-system` — immutable OS content, updated via `nixos-rebuild switch`
 - `/etc` — generated host configuration
 - `/var` — persistent runtime/user state
 
-nixPI services are **systemd units** managed by `systemd` (system) and `systemd --user` (Pi agent).
+NixPI services are **systemd units** managed by `systemd` (system) and `systemd --user` (Pi agent).
 
 ## Use Tools First
 
-Prefer nixPI extension tools over raw shell commands:
+Prefer NixPI extension tools over raw shell commands:
 
 - `system_health` — broad health snapshot
 - `nixos_update(action, source)` — status, apply from `remote` or `local`, rollback for NixOS generation
 - `nix_config_proposal(action)` — inspect the local proposal repo, validate Nix config, or refresh `flake.lock`
-- `systemd_control` — start/stop/restart/status for nixPI user services
+- `systemd_control` — start/stop/restart/status for NixPI user services
 
 ## Standard Triage Flow
 
@@ -51,5 +51,5 @@ Prefer nixPI extension tools over raw shell commands:
 
 - mutation operations require explicit user confirmation
 - only manage `nixpi-*` services
-- prefer system-scope service management for nixPI-managed units (`sudo systemctl`)
+- prefer system-scope service management for NixPI-managed units (`sudo systemctl`)
 - re-check health after every mutation

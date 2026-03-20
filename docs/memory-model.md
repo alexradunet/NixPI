@@ -1,12 +1,12 @@
-# nixPI Memory Model
+# NixPI Memory Model
 
 > 📖 [Emoji Legend](LEGEND.md)
 
 Audience: maintainers changing memory tools, storage rules, or retrieval behavior.
 
-## 🌱 Why nixPI Uses Markdown Memory
+## 🌱 Why NixPI Uses Markdown Memory
 
-nixPI memory is intentionally file-based.
+NixPI memory is intentionally file-based.
 
 The goal is to keep memory:
 
@@ -17,10 +17,10 @@ The goal is to keep memory:
 
 ## 🗂️ How The Memory Layers Work
 
-nixPI has two persistent layers:
+NixPI has two persistent layers:
 
-- `~/nixPI/Objects/` for durable long-term memory
-- `~/nixPI/Episodes/` for append-only episodic capture
+- `~/nixpi/Objects/` for durable long-term memory
+- `~/nixpi/Episodes/` for append-only episodic capture
 
 ### Working Memory
 
@@ -36,7 +36,7 @@ Do not treat working memory as canonical long-term truth.
 
 ### Episodic Memory
 
-Episodes are raw observations stored under `~/nixPI/Episodes/YYYY-MM-DD/*.md`.
+Episodes are raw observations stored under `~/nixpi/Episodes/YYYY-MM-DD/*.md`.
 
 Use episodes for:
 
@@ -50,7 +50,7 @@ Episodes are cheap to write and should remain append-only.
 
 ### Durable Memory
 
-Durable objects live in `~/nixPI/Objects/*.md`.
+Durable objects live in `~/nixpi/Objects/*.md`.
 
 Use durable objects for:
 

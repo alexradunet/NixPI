@@ -1,10 +1,10 @@
-# nixPI Architecture
+# NixPI Architecture
 
 > Major subsystem boundaries and design principles
 
 ## 🌱 Why This Architecture Exists
 
-nixPI combines several technologies to create a self-hosted AI companion OS. The architecture is shaped by these design goals:
+NixPI combines several technologies to create a self-hosted AI companion OS. The architecture is shaped by these design goals:
 
 1. **Deterministic systems**: NixOS provides reproducible system state
 2. **Always-available AI**: Matrix daemon keeps Pi active outside local sessions
@@ -61,7 +61,7 @@ nixPI combines several technologies to create a self-hosted AI companion OS. The
 
 ### Control Flow Summary
 
-1. **NixOS provisions runtime**: System boots with nixPI modules applied
+1. **NixOS provisions runtime**: System boots with NixPI modules applied
 2. **Packaged app launches daemon**: `nixpi-daemon.service` starts on boot
 3. **Daemon connects Matrix**: Authenticates to local homeserver
 4. **Extensions expose tools**: Pi uses extensions for OS operations
@@ -73,11 +73,11 @@ nixPI combines several technologies to create a self-hosted AI companion OS. The
 
 | Surface | Location | Purpose |
 |---------|----------|---------|
-| Durable Memory | `~/nixPI/Objects/*.md` | Long-term facts, preferences, decisions |
-| Episodic Memory | `~/nixPI/Episodes/YYYY-MM-DD/*.md` | Raw observations, append-only |
+| Durable Memory | `~/nixpi/Objects/*.md` | Long-term facts, preferences, decisions |
+| Episodic Memory | `~/nixpi/Episodes/YYYY-MM-DD/*.md` | Raw observations, append-only |
 | Setup State | `~/.nixpi/setup-state.json` | First-boot wizard progress |
 | Agent State | `/var/lib/nixpi/agent/` | Runtime credentials and context |
-| Guardrails | `~/nixPI/guardrails.yaml` | Tool execution safety rules |
+| Guardrails | `~/nixpi/guardrails.yaml` | Tool execution safety rules |
 
 ### Control Surfaces
 

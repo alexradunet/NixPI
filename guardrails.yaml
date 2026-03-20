@@ -1,6 +1,6 @@
-# nixPI Guardrails Policy
+# NixPI Guardrails Policy
 # This file defines safety rules for Pi tool execution.
-# Customize in ~/nixPI/guardrails.yaml (seeded from defaults).
+# Customize in ~/nixpi/guardrails.yaml (seeded from defaults).
 
 rules:
   # Block dangerous bash commands

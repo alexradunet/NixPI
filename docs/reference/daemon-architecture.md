@@ -1,10 +1,10 @@
 # Daemon Architecture
 
-> Detailed documentation of the nixPI daemon
+> Detailed documentation of the NixPI daemon
 
 ## 🌱 Why The Daemon Exists
 
-`nixpi-daemon.service` is nixPI's always-on room runtime.
+`nixpi-daemon.service` is NixPI's always-on room runtime.
 
 It exists to:
 
@@ -15,7 +15,7 @@ It exists to:
 
 ## 📡 How The Daemon Works
 
-nixPI runs through one supervisor/runtime path:
+NixPI runs through one supervisor/runtime path:
 
 - If valid agent overlays exist, it uses those Matrix identities
 - If no valid overlays exist, it synthesizes a default host agent from the primary Pi account
@@ -25,7 +25,7 @@ nixPI runs through one supervisor/runtime path:
 
 At startup:
 
-1. nixPI loads `~/nixPI/Agents/*/AGENTS.md`
+1. NixPI loads `~/nixpi/Agents/*/AGENTS.md`
 2. If no valid overlays exist, the daemon synthesizes a default host agent from the primary Pi credentials
 3. Malformed overlays are skipped with warnings instead of aborting startup
 

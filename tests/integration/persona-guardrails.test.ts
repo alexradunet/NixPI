@@ -3,14 +3,14 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createMockExtensionAPI } from "../helpers/mock-extension-api.js";
 import { createMockExtensionContext } from "../helpers/mock-extension-context.js";
-import { createTempNixpi, type TempNixpi } from "../helpers/temp-nixpi.js";
+import { createTempNixPi, type TempNixPi } from "../helpers/temp-nixpi.js";
 
-let temp: TempNixpi;
+let temp: TempNixPi;
 
 beforeEach(() => {
-	temp = createTempNixpi();
+	temp = createTempNixPi();
 	// Seed persona files so loadPersona doesn't fail
-	const personaDir = join(temp.nixpiDir, "Persona");
+	const personaDir = join(temp.nixPiDir, "Persona");
 	mkdirSync(personaDir, { recursive: true });
 	for (const file of ["SOUL.md", "BODY.md", "FACULTY.md", "SKILL.md"]) {
 		writeFileSync(join(personaDir, file), `# ${file}\ntest content`);
@@ -23,8 +23,8 @@ afterEach(() => {
 
 async function setupPersonaExtension(guardrailsYaml?: string) {
 	if (guardrailsYaml) {
-		mkdirSync(temp.nixpiDir, { recursive: true });
-		writeFileSync(join(temp.nixpiDir, "guardrails.yaml"), guardrailsYaml);
+		mkdirSync(temp.nixPiDir, { recursive: true });
+		writeFileSync(join(temp.nixPiDir, "guardrails.yaml"), guardrailsYaml);
 	}
 
 	// Each mod.default(api) call creates fresh closures (guardrails starts undefined)
@@ -118,8 +118,8 @@ describe("persona guardrail blocking via tool_call handler", () => {
 		expect(result).toEqual({ block: true, reason: "Blocked dangerous command: rm -rf /" });
 	});
 
-	it("falls back to package guardrails.yaml when nixPI copy missing", async () => {
-		// Don't seed guardrails in nixPI — extension should fall back to package root
+	it("falls back to package guardrails.yaml when NixPI copy missing", async () => {
+		// Don't seed guardrails in NixPI — extension should fall back to package root
 		const { api } = await setupPersonaExtension();
 		const result = await api.fireEvent("tool_call", {
 			toolName: "bash",

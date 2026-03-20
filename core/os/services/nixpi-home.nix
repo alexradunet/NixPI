@@ -48,21 +48,21 @@ in
       "webroot/index.html".text = ''
         <!doctype html>
         <html lang="en">
-        <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>nixPI Home</title></head>
+        <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>NixPI Home</title></head>
         <body>
-          <h1>nixPI Home</h1>
+          <h1>NixPI Home</h1>
           <p>Primary interfaces: terminal, Matrix, and the built-in web chat.</p>
           <h2>Local access</h2>
           <ul>
             <li>Home: <a href="http://localhost:${toString config.nixpi-home.port}">http://localhost:${toString config.nixpi-home.port}</a></li>
-            <li>nixPI Chat: <a href="http://localhost:${toString config.nixpi-home.chatPort}">http://localhost:${toString config.nixpi-home.chatPort}</a></li>
+            <li>NixPI Chat: <a href="http://localhost:${toString config.nixpi-home.chatPort}">http://localhost:${toString config.nixpi-home.chatPort}</a></li>
             <li>Matrix: <a href="http://localhost:${toString config.nixpi-home.matrixPort}">http://localhost:${toString config.nixpi-home.matrixPort}</a></li>
           </ul>
           <h2>Remote access</h2>
           <p>Use your NetBird hostname or mesh IP on interface ${config.nixpi-home.trustedInterface} with these ports.</p>
           <ul>
             <li>Home: ${toString config.nixpi-home.port}</li>
-            <li>nixPI Chat: ${toString config.nixpi-home.chatPort}</li>
+            <li>NixPI Chat: ${toString config.nixpi-home.chatPort}</li>
             <li>Matrix: ${toString config.nixpi-home.matrixPort}</li>
           </ul>
         </body>
@@ -88,7 +88,7 @@ in
     };
 
     systemd.service = {
-      description = "nixPI Home landing page";
+      description = "NixPI Home landing page";
       after = [ "network-online.target" ];
       wants = [ "network-online.target" ];
       wantedBy = [ "multi-user.target" ];

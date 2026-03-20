@@ -1,12 +1,12 @@
 # Operations
 
-> Deploy, operate, and maintain nixPI
+> Deploy, operate, and maintain NixPI
 
 ## 🌱 What's In This Section
 
-This section covers operational procedures for nixPI:
+This section covers operational procedures for NixPI:
 
-- Installing and deploying nixPI
+- Installing and deploying NixPI
 - First-boot setup procedures
 - Testing and validation
 - Day-to-day operations

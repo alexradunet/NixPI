@@ -1,10 +1,10 @@
-# nixPI Runtime Flows
+# NixPI Runtime Flows
 
-> End-to-end flows through the nixPI system
+> End-to-end flows through the NixPI system
 
 ## 🌱 Why Document Runtime Flows
 
-Understanding how control and data flow through nixPI is essential for:
+Understanding how control and data flow through NixPI is essential for:
 - Debugging issues that span subsystems
 - Adding new features that integrate correctly
 - Understanding failure modes and recovery paths
@@ -22,7 +22,7 @@ Understanding how control and data flow through nixPI is essential for:
 ### Flow Steps
 
 1. **Nix evaluation** (`flake.nix`)
-   - Imports nixPI modules
+   - Imports NixPI modules
    - Resolves `piAgent` and `appPackage` derivations
    - Builds system closure
 
@@ -64,7 +64,7 @@ multi-user.target
 
 1. **Config loading** (`core/daemon/config.ts`)
    - Reads environment variables
-   - Loads agent overlays from `~/nixPI/Agents/`
+   - Loads agent overlays from `~/nixpi/Agents/`
 
 2. **Registry initialization** (`core/daemon/agent-registry.ts`)
    - Scans `AGENTS.md` files
@@ -187,7 +187,7 @@ Pi decides to record
     ↓
 episode_create tool
     ↓
-Write to ~/nixPI/Episodes/YYYY-MM-DD/<slug>.md
+Write to ~/nixpi/Episodes/YYYY-MM-DD/<slug>.md
     ↓
 Update episode index
 ```
@@ -199,7 +199,7 @@ Episode(s) exist
     ↓
 episode_promote tool
     ↓
-Create ~/nixPI/Objects/<slug>.md
+Create ~/nixpi/Objects/<slug>.md
     ↓
 Copy required frontmatter
     ↓

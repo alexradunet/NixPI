@@ -19,7 +19,7 @@ export interface GuardrailsConfig {
 }
 
 /** Persisted context state for cross-compaction continuity. */
-export interface NixpiContext {
+export interface NixPiContext {
 	savedAt: string;
 	updateAvailable: boolean;
 }

@@ -1,10 +1,10 @@
-# Getting Started with nixPI
+# Getting Started with NixPI
 
-> Orienting new maintainers to the nixPI codebase
+> Orienting new maintainers to the NixPI codebase
 
 ## 🌱 How to Read This Repository
 
-nixPI is organized as a multi-layer system. Understanding these layers will help you navigate the codebase effectively.
+NixPI is organized as a multi-layer system. Understanding these layers will help you navigate the codebase effectively.
 
 ### Runtime Layers
 
@@ -19,7 +19,7 @@ nixPI is organized as a multi-layer system. Understanding these layers will help
 ### Key Directory Map
 
 ```
-nixPI/
+NixPI/
 ├── core/
 │   ├── os/          # NixOS modules, services, packages
 │   ├── daemon/      # Matrix daemon and multi-agent runtime

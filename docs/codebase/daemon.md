@@ -4,7 +4,7 @@
 
 ## 🌱 Why The Daemon Exists
 
-`nixpi-daemon.service` is nixPI's always-on room runtime. It exists to:
+`nixpi-daemon.service` is NixPI's always-on room runtime. It exists to:
 
 - Bridge Matrix rooms into Pi sessions
 - Preserve room continuity outside interactive local sessions
@@ -41,7 +41,7 @@
 |------|-----|------|-------------|
 | `core/daemon/multi-agent-runtime.ts` | Runtime orchestration | Manages all agents, rooms, sessions | Heart of the daemon |
 | `core/daemon/agent-supervisor.ts` | Agent lifecycle | Supervises individual agent instances | Health monitoring, restart |
-| `core/daemon/agent-registry.ts` | Agent discovery | Loads and validates agent overlays | Scans `~/nixPI/Agents/*/AGENTS.md` |
+| `core/daemon/agent-registry.ts` | Agent discovery | Loads and validates agent overlays | Scans `~/nixpi/Agents/*/AGENTS.md` |
 
 ### Routing and State
 
@@ -120,7 +120,7 @@
 
 **Mode Behavior**:
 - **Host-only mode**: Single synthesized agent from primary credentials
-- **Multi-agent mode**: Loads all valid overlays from `~/nixPI/Agents/`
+- **Multi-agent mode**: Loads all valid overlays from `~/nixpi/Agents/`
 
 **Inbound Dependencies**:
 - `index.ts` - Bootstrap
@@ -227,11 +227,11 @@ proactive:
 
 ### `core/daemon/agent-registry.ts`
 
-**Responsibility**: Loads and validates agent overlays from `~/nixPI/Agents/`.
+**Responsibility**: Loads and validates agent overlays from `~/nixpi/Agents/`.
 
 **Directory Structure**:
 ```
-~/nixPI/Agents/
+~/nixpi/Agents/
 ├── agent-a/
 │   └── AGENTS.md
 ├── agent-b/

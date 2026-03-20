@@ -1,14 +1,14 @@
 # tests/nixos/nixpi-network.nix
 # Test network connectivity, SSH, and NetBird mesh setup between nodes
 
-{ pkgs, lib, nixpiModules, nixpiModulesNoShell, piAgent, appPackage, mkNixpiNode, mkTestFilesystems, ... }:
+{ pkgs, lib, nixPiModules, nixPiModulesNoShell, piAgent, appPackage, mkNixPiNode, mkTestFilesystems, ... }:
 
 pkgs.testers.runNixOSTest {
   name = "nixpi-network";
 
   nodes = {
     nixpi1 = { ... }: {
-      imports = nixpiModules ++ [ mkTestFilesystems ];
+      imports = nixPiModules ++ [ mkTestFilesystems ];
       _module.args = { inherit piAgent appPackage; };
       nixpi.primaryUser = "tester1";
       nixpi.install.mode = "managed-user";
@@ -30,7 +30,7 @@ pkgs.testers.runNixOSTest {
     };
 
     nixpi2 = { ... }: {
-      imports = nixpiModules ++ [ mkTestFilesystems ];
+      imports = nixPiModules ++ [ mkTestFilesystems ];
       _module.args = { inherit piAgent appPackage; };
       nixpi.primaryUser = "tester2";
       nixpi.install.mode = "managed-user";

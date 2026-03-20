@@ -1,7 +1,7 @@
 # tests/nixos/nixpi-firstboot.nix
-# Test that the nixPI first-boot wizard runs correctly
+# Test that the NixPI first-boot wizard runs correctly
 
-{ pkgs, lib, nixpiModules, nixpiModulesNoShell, piAgent, appPackage, mkNixpiNode, mkTestFilesystems, ... }:
+{ pkgs, lib, nixPiModules, nixPiModulesNoShell, piAgent, appPackage, mkNixPiNode, mkTestFilesystems, ... }:
 
 pkgs.testers.runNixOSTest {
   name = "nixpi-firstboot";
@@ -10,7 +10,7 @@ pkgs.testers.runNixOSTest {
     username = "pi";
     homeDir = "/home/${username}";
   in {
-    imports = nixpiModulesNoShell ++ [ 
+    imports = nixPiModulesNoShell ++ [ 
       ../../core/os/modules/firstboot.nix
       mkTestFilesystems 
     ];
@@ -31,7 +31,7 @@ pkgs.testers.runNixOSTest {
     system.stateVersion = "25.05";
     # nixpkgs.config NOT set here - test framework injects its own pkgs
 
-    # Ensure the primary nixPI user exists (normally created by nixpi-shell)
+    # Ensure the primary NixPI user exists (normally created by nixpi-shell)
     users.users.${username} = {
       isNormalUser = true;
       group = username;
@@ -98,7 +98,7 @@ pkgs.testers.runNixOSTest {
     print(log_content)
     print("=== End of log ===")
     
-    assert "nixPI Firstboot Started" in log_content, "Firstboot log missing start marker"
+    assert "NixPI Firstboot Started" in log_content, "Firstboot log missing start marker"
     assert "setup complete" in log_content.lower(), "Firstboot log missing completion marker"
     
     # Test 5: wizard-state directory was created
@@ -116,7 +116,7 @@ pkgs.testers.runNixOSTest {
     nixpi.succeed("test -f /var/lib/nixpi/agent/settings.json")
     nixpi.succeed("test \"$(readlink -f " + home + "/.pi)\" = /var/lib/nixpi/agent")
     
-    # Test 9: nixPI directory may or may not exist depending on network/git availability
+    # Test 9: NixPI directory may or may not exist depending on network/git availability
     # The firstboot script attempts to clone a repo but may fail in test env
     # So we just check the script attempted it (log mentions it)
 

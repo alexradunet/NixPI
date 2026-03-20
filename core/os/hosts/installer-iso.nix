@@ -24,7 +24,7 @@ in
   nixpkgs.config.allowUnfree = true;
 
   isoImage = {
-    appendToMenuLabel = "nixPI Installer";
+    appendToMenuLabel = "NixPI Installer";
     edition = "nixpi";
     volumeID = "NIXPI_INSTALL";
   };

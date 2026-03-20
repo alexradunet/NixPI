@@ -1,6 +1,6 @@
 ---
 name: recovery
-description: Troubleshooting and recovery procedures for common nixPI system issues
+description: Troubleshooting and recovery procedures for common NixPI system issues
 ---
 
 # Recovery Playbooks
@@ -54,8 +54,8 @@ Use these procedures when diagnosing and recovering from common system issues. A
 1. Check Pi process: look for `pi` in running processes
 2. Check logs: `journalctl -u pi-coding-agent --no-pager -n 50`
 3. Common causes:
-   - Extension compilation error: `npm run build` in the nixPI package
-   - Missing dependency: `npm install` in the nixPI package
+   - Extension compilation error: `npm run build` in the NixPI package
+   - Missing dependency: `npm install` in the NixPI package
 4. Recovery: restart the Pi agent service
 
 ## Disk Space Issues

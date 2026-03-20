@@ -1,7 +1,7 @@
 # tests/nixos/nixpi-daemon.nix
 # Test that the Pi Daemon Matrix agent starts and connects to homeserver
 
-{ pkgs, lib, nixpiModules, nixpiModulesNoShell, piAgent, appPackage, mkNixpiNode, mkTestFilesystems, ... }:
+{ pkgs, lib, nixPiModules, nixPiModulesNoShell, piAgent, appPackage, mkNixPiNode, mkTestFilesystems, ... }:
 
 pkgs.testers.runNixOSTest {
   name = "nixpi-daemon";
@@ -12,7 +12,7 @@ pkgs.testers.runNixOSTest {
       username = "server";
       homeDir = "/home/${username}";
     in {
-      imports = nixpiModulesNoShell ++ [ mkTestFilesystems ];
+      imports = nixPiModulesNoShell ++ [ mkTestFilesystems ];
       _module.args = { inherit piAgent appPackage; };
       nixpi.primaryUser = username;
 
@@ -44,7 +44,7 @@ pkgs.testers.runNixOSTest {
       username = "pi";
       homeDir = "/home/${username}";
     in {
-      imports = nixpiModulesNoShell ++ [ mkTestFilesystems ];
+      imports = nixPiModulesNoShell ++ [ mkTestFilesystems ];
       _module.args = { inherit piAgent appPackage; };
       nixpi.primaryUser = username;
 
@@ -61,7 +61,7 @@ pkgs.testers.runNixOSTest {
       boot.loader.systemd-boot.enable = true;
       boot.loader.efi.canTouchEfiVariables = true;
       systemd.services.matrix-synapse.wantedBy = lib.mkForce [];
-      # Ensure the primary nixPI user exists with proper setup
+      # Ensure the primary NixPI user exists with proper setup
       users.users.${username} = {
         isNormalUser = true;
         group = username;
@@ -157,7 +157,7 @@ pkgs.testers.runNixOSTest {
         "touch " + home + "/.nixpi/.setup-complete && chown "
         + username + ":" + username + " " + home + "/.nixpi/.setup-complete"
     )
-    agent.succeed("mkdir -p " + home + "/nixPI && chown -R " + username + ":" + username + " " + home + "/nixPI")
+    agent.succeed("mkdir -p " + home + "/nixpi && chown -R " + username + ":" + username + " " + home + "/nixpi")
 
     agent.succeed("systemctl start nixpi-daemon.service || true")
 
@@ -178,8 +178,8 @@ pkgs.testers.runNixOSTest {
     working_directory = agent.succeed("systemctl show -p WorkingDirectory --value nixpi-daemon.service").strip()
     assert "node" in exec_start and "/usr/local/share/nixpi/dist/core/daemon/index.js" in exec_start, \
         "Unexpected ExecStart in nixpi-daemon service: " + exec_start
-    assert "NIXPI_DIR=/home/pi/nixPI" in environment, "Expected NIXPI_DIR environment in nixpi-daemon service"
-    assert working_directory == "/home/pi/nixPI", "Unexpected WorkingDirectory: " + working_directory
+    assert "NIXPI_DIR=/home/pi/nixpi" in environment, "Expected NIXPI_DIR environment in nixpi-daemon service"
+    assert working_directory == "/home/pi/nixpi", "Unexpected WorkingDirectory: " + working_directory
     agent.succeed("ls -la /usr/local/share/nixpi/")
 
     agent.succeed("test -f /var/lib/nixpi/agent/matrix-credentials.json")

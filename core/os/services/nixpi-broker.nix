@@ -32,7 +32,7 @@ in
     ];
 
     systemd.service = {
-      description = "nixPI privileged operations broker";
+      description = "NixPI privileged operations broker";
       after = [ "network.target" ];
       wantedBy = [ "multi-user.target" ];
       serviceConfig = {

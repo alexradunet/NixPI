@@ -1,17 +1,17 @@
 ---
 name: object-store
-description: Create, update, query, read, search, and link durable memory objects in ~/nixPI/Objects/
+description: Create, update, query, read, search, and link durable memory objects in ~/nixpi/Objects/
 ---
 
 # Object Store Skill
 
-Use this skill when the user wants to create, update, query, read, search, or link any type of durable object in nixPI's object store.
+Use this skill when the user wants to create, update, query, read, search, or link any type of durable object in NixPI's object store.
 
 ## Storage Model
 
 Every durable object is a Markdown file with YAML frontmatter stored in a flat directory:
 ```
-~/nixPI/Objects/{slug}.md
+~/nixpi/Objects/{slug}.md
 ```
 
 The type lives in frontmatter, not in the directory structure.
@@ -56,15 +56,15 @@ The type lives in frontmatter, not in the directory structure.
 - `memory_search` — Search objects by content pattern.
 - `memory_link` — Create bidirectional links between objects.
 
-### nixPI Directory Tools
+### NixPI Directory Tools
 
-- `nixpi_status` — Show nixPI directory location, file counts, and blueprint state.
-- `/nixpi init` — Initialize or re-initialize the nixPI directory.
+- `nixpi_status` — Show NixPI directory location, file counts, and blueprint state.
+- `/nixpi init` — Initialize or re-initialize the NixPI directory.
 - `/nixpi update-blueprints` — Apply pending blueprint updates from package.
 
 ### Episode Tools
 
-- `episode_create` — Capture a raw observation under `~/nixPI/Episodes/`.
+- `episode_create` — Capture a raw observation under `~/nixpi/Episodes/`.
 - `episode_list` — List stored episodes.
 - `episode_promote` — Promote an episode into a durable object.
 - `episode_consolidate` — Propose or apply conservative promotions from recent episodes.
@@ -89,7 +89,7 @@ The type lives in frontmatter, not in the directory structure.
 - Use `memory_query` before broad `memory_search` when metadata can narrow the candidate set.
 - Use `episode_create` for raw observations first when confidence is uncertain.
 - Use `episode_consolidate` to review high-signal recent episodes before bulk promotion.
-- Promote only durable, reusable knowledge into `~/nixPI/Objects/`.
+- Promote only durable, reusable knowledge into `~/nixpi/Objects/`.
 - After search, offer to read matched objects.
 - Use link proactively when connections are mentioned.
-- The nixPI directory is file-backed and may be edited externally.
+- The NixPI directory is file-backed and may be edited externally.

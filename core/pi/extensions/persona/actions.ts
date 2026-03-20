@@ -6,9 +6,9 @@ import os from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import jsYaml from "js-yaml";
-import { getNixpiDir, getPiDir, getUpdateStatusPath } from "../../../lib/filesystem.js";
+import { getNixPiDir, getPiDir, getUpdateStatusPath } from "../../../lib/filesystem.js";
 import { createLogger } from "../../../lib/shared.js";
-import type { NixpiContext, GuardrailsConfig } from "./types.js";
+import type { NixPiContext, GuardrailsConfig } from "./types.js";
 
 const log = createLogger("persona");
 
@@ -28,7 +28,7 @@ export function normalizeCommand(cmd: string): string {
 
 /** Load and compile guardrail patterns from YAML config. */
 export function loadGuardrails(): Array<{ tool: string; pattern: RegExp; label: string }> {
-	const workspaceDir = getNixpiDir();
+	const workspaceDir = getNixPiDir();
 	const packageDir = resolvePackageDir();
 
 	// User customization takes priority over defaults
@@ -63,13 +63,13 @@ export function loadGuardrails(): Array<{ tool: string; pattern: RegExp; label: 
 	}
 }
 
-/** Get the path to the nixPI context persistence file. */
+/** Get the path to the NixPI context persistence file. */
 export function getContextFile(): string {
 	return join(getPiDir(), "nixpi-context.json");
 }
 
 /** Save context state for cross-compaction continuity. */
-export function saveContext(ctx: NixpiContext): void {
+export function saveContext(ctx: NixPiContext): void {
 	try {
 		mkdirSync(getPiDir(), { recursive: true });
 		writeFileSync(getContextFile(), JSON.stringify(ctx, null, 2));
@@ -79,11 +79,11 @@ export function saveContext(ctx: NixpiContext): void {
 }
 
 /** Load previously saved context state. */
-export function loadContext(): NixpiContext | null {
+export function loadContext(): NixPiContext | null {
 	try {
 		const contextFile = getContextFile();
 		if (!existsSync(contextFile)) return null;
-		return JSON.parse(readFileSync(contextFile, "utf-8")) as NixpiContext;
+		return JSON.parse(readFileSync(contextFile, "utf-8")) as NixPiContext;
 	} catch {
 		return null;
 	}
@@ -102,7 +102,7 @@ export function checkUpdateAvailable(): boolean {
 }
 
 /** Build the restored-context system prompt block from persisted compaction state. */
-export function buildRestoredContextBlock(ctx: NixpiContext): string {
+export function buildRestoredContextBlock(ctx: NixPiContext): string {
 	const lines = ["\n\n[RESTORED CONTEXT]"];
 	if (ctx.updateAvailable) lines.push("OS update available — inform user if not already done.");
 	lines.push(`Context saved at: ${ctx.savedAt}`);
@@ -111,7 +111,7 @@ export function buildRestoredContextBlock(ctx: NixpiContext): string {
 
 /** Load the 4-layer persona from the runtime directory or default package persona. */
 export function loadPersona(): string {
-	const workspaceDir = getNixpiDir();
+	const workspaceDir = getNixPiDir();
 	const vaultDir = join(workspaceDir, "Persona");
 	const packageDir = resolvePackageDir();
 	const defaultPersonaDir = existsSync(join(packageDir, "core", "pi", "persona"))

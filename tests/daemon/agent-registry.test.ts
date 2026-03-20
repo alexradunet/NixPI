@@ -15,7 +15,7 @@ describe("loadAgentDefinitions", () => {
 		vi.restoreAllMocks();
 	});
 
-	function makeNixpiDir(): string {
+	function makeNixPiDir(): string {
 		const dir = mkdtempSync(join(tmpdir(), "nixpi-agents-"));
 		tempDirs.push(dir);
 		mkdirSync(join(dir, "Agents"), { recursive: true });
@@ -29,7 +29,7 @@ describe("loadAgentDefinitions", () => {
 	}
 
 	it("loads a valid AGENTS.md file", () => {
-		const workspaceDir = makeNixpiDir();
+		const workspaceDir = makeNixPiDir();
 		writeAgent(
 			workspaceDir,
 			"planner",
@@ -54,7 +54,7 @@ Plan first.
 `,
 		);
 
-		const agents = loadAgentDefinitions({ nixpiDir: workspaceDir });
+		const agents = loadAgentDefinitions({ nixPiDir: workspaceDir });
 		expect(agents).toHaveLength(1);
 		expect(agents[0]).toEqual({
 			id: "planner",
@@ -79,7 +79,7 @@ Plan first.
 	});
 
 	it("applies defaults for optional respond fields", () => {
-		const workspaceDir = makeNixpiDir();
+		const workspaceDir = makeNixPiDir();
 		writeAgent(
 			workspaceDir,
 			"critic",
@@ -95,7 +95,7 @@ Question assumptions.
 `,
 		);
 
-		const agents = loadAgentDefinitions({ nixpiDir: workspaceDir });
+		const agents = loadAgentDefinitions({ nixPiDir: workspaceDir });
 		expect(agents[0]?.respond).toEqual({
 			mode: "mentioned",
 			allowAgentMentions: true,
@@ -110,7 +110,7 @@ Question assumptions.
 	});
 
 	it("loads multiple agent directories", () => {
-		const workspaceDir = makeNixpiDir();
+		const workspaceDir = makeNixPiDir();
 		writeAgent(
 			workspaceDir,
 			"host",
@@ -138,12 +138,12 @@ matrix:
 `,
 		);
 
-		const agents = loadAgentDefinitions({ nixpiDir: workspaceDir });
+		const agents = loadAgentDefinitions({ nixPiDir: workspaceDir });
 		expect(agents.map((agent) => agent.id)).toEqual(["host", "planner"]);
 	});
 
 	it("skips agents with missing id and records the error", () => {
-		const workspaceDir = makeNixpiDir();
+		const workspaceDir = makeNixPiDir();
 		writeAgent(
 			workspaceDir,
 			"planner",
@@ -156,13 +156,13 @@ matrix:
 `,
 		);
 
-		const result = loadAgentDefinitionsResult({ nixpiDir: workspaceDir });
+		const result = loadAgentDefinitionsResult({ nixPiDir: workspaceDir });
 		expect(result.agents).toEqual([]);
 		expect(result.errors).toEqual([expect.stringContaining("missing required field 'id'")]);
 	});
 
 	it("skips agents with missing name and records the error", () => {
-		const workspaceDir = makeNixpiDir();
+		const workspaceDir = makeNixPiDir();
 		writeAgent(
 			workspaceDir,
 			"planner",
@@ -175,13 +175,13 @@ matrix:
 `,
 		);
 
-		const result = loadAgentDefinitionsResult({ nixpiDir: workspaceDir });
+		const result = loadAgentDefinitionsResult({ nixPiDir: workspaceDir });
 		expect(result.agents).toEqual([]);
 		expect(result.errors).toEqual([expect.stringContaining("missing required field 'name'")]);
 	});
 
 	it("skips agents with missing matrix.username and records the error", () => {
-		const workspaceDir = makeNixpiDir();
+		const workspaceDir = makeNixPiDir();
 		writeAgent(
 			workspaceDir,
 			"planner",
@@ -195,13 +195,13 @@ matrix:
 `,
 		);
 
-		const result = loadAgentDefinitionsResult({ nixpiDir: workspaceDir });
+		const result = loadAgentDefinitionsResult({ nixPiDir: workspaceDir });
 		expect(result.agents).toEqual([]);
 		expect(result.errors).toEqual([expect.stringContaining("missing required field 'matrix.username'")]);
 	});
 
 	it("loads valid agents even when another agent definition is malformed", () => {
-		const workspaceDir = makeNixpiDir();
+		const workspaceDir = makeNixPiDir();
 		writeAgent(
 			workspaceDir,
 			"host",
@@ -228,13 +228,13 @@ matrix:
 `,
 		);
 
-		const result = loadAgentDefinitionsResult({ nixpiDir: workspaceDir });
+		const result = loadAgentDefinitionsResult({ nixPiDir: workspaceDir });
 		expect(result.agents.map((agent) => agent.id)).toEqual(["host"]);
 		expect(result.errors).toHaveLength(1);
 	});
 
 	it("uses provided server name when deriving Matrix user ids", () => {
-		const workspaceDir = makeNixpiDir();
+		const workspaceDir = makeNixPiDir();
 		writeAgent(
 			workspaceDir,
 			"planner",
@@ -248,12 +248,12 @@ matrix:
 `,
 		);
 
-		const agents = loadAgentDefinitions({ nixpiDir: workspaceDir, serverName: "homebox" });
+		const agents = loadAgentDefinitions({ nixPiDir: workspaceDir, serverName: "homebox" });
 		expect(agents[0]?.matrix.userId).toBe("@planner:homebox");
 	});
 
 	it("loads proactive heartbeat and cron jobs when configured", () => {
-		const workspaceDir = makeNixpiDir();
+		const workspaceDir = makeNixPiDir();
 		writeAgent(
 			workspaceDir,
 			"host",
@@ -283,7 +283,7 @@ proactive:
 `,
 		);
 
-		const agents = loadAgentDefinitions({ nixpiDir: workspaceDir });
+		const agents = loadAgentDefinitions({ nixPiDir: workspaceDir });
 		expect(agents[0]?.proactive?.jobs).toEqual([
 			{
 				id: "daily-heartbeat",
@@ -305,7 +305,7 @@ proactive:
 	});
 
 	it("rejects proactive jobs with invalid heartbeat intervals", () => {
-		const workspaceDir = makeNixpiDir();
+		const workspaceDir = makeNixPiDir();
 		writeAgent(
 			workspaceDir,
 			"host",
@@ -326,13 +326,13 @@ proactive:
 `,
 		);
 
-		const result = loadAgentDefinitionsResult({ nixpiDir: workspaceDir });
+		const result = loadAgentDefinitionsResult({ nixPiDir: workspaceDir });
 		expect(result.agents).toEqual([]);
 		expect(result.errors).toEqual([expect.stringContaining("invalid interval_minutes")]);
 	});
 
 	it("rejects proactive jobs with unsupported cron expressions", () => {
-		const workspaceDir = makeNixpiDir();
+		const workspaceDir = makeNixPiDir();
 		writeAgent(
 			workspaceDir,
 			"host",
@@ -353,13 +353,13 @@ proactive:
 `,
 		);
 
-		const result = loadAgentDefinitionsResult({ nixpiDir: workspaceDir });
+		const result = loadAgentDefinitionsResult({ nixPiDir: workspaceDir });
 		expect(result.agents).toEqual([]);
 		expect(result.errors).toEqual([expect.stringContaining("unsupported cron")]);
 	});
 
 	it("rejects duplicate proactive job ids within the same room", () => {
-		const workspaceDir = makeNixpiDir();
+		const workspaceDir = makeNixPiDir();
 		writeAgent(
 			workspaceDir,
 			"host",
@@ -385,7 +385,7 @@ proactive:
 `,
 		);
 
-		const result = loadAgentDefinitionsResult({ nixpiDir: workspaceDir });
+		const result = loadAgentDefinitionsResult({ nixPiDir: workspaceDir });
 		expect(result.agents).toEqual([]);
 		expect(result.errors).toEqual([expect.stringContaining("duplicate proactive job 'daily-heartbeat'")]);
 	});

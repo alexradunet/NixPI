@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# firstboot.sh — Non-interactive first-boot preparation for nixPI.
-# Runs before getty via nixpi-firstboot.service as the primary nixPI user.
+# firstboot.sh — Non-interactive first-boot preparation for NixPI.
+# Runs before getty via nixpi-firstboot.service as the primary NixPI user.
 # If ~/.nixpi/prefill.env is present, first boot completes unattended; otherwise
 # it performs background preparation and leaves the interactive wizard pending.
 # On failure, exits 1 (non-fatal per SuccessExitStatus). User can re-run
@@ -12,11 +12,11 @@ FIRSTBOOT_LOG="$HOME/.nixpi/firstboot.log"
 mkdir -p "$(dirname "$FIRSTBOOT_LOG")"
 exec > >(tee -a "$FIRSTBOOT_LOG") 2>&1
 
-echo "=== nixPI Firstboot Started: $(date) ==="
+echo "=== NixPI Firstboot Started: $(date) ==="
 
 WIZARD_STATE="$HOME/.nixpi/wizard-state"
 SETUP_COMPLETE="$HOME/.nixpi/.setup-complete"
-NIXPI_DIR="${NIXPI_DIR:-$HOME/nixPI}"
+NIXPI_DIR="${NIXPI_DIR:-$HOME/nixpi}"
 NIXPI_CONFIG="${NIXPI_CONFIG_DIR:-${NIXPI_STATE_DIR:-$HOME/.config/nixpi}/services}"
 PI_DIR="${NIXPI_PI_DIR:-$HOME/.pi}"
 MATRIX_HOMESERVER="http://localhost:6167"
@@ -165,7 +165,7 @@ firstboot_repo_clone() {
         echo "nixpi-firstboot: skipping repo clone until network is available"
         return 0
     fi
-    if timeout 30 git clone --depth 1 https://github.com/alexradunet/nixPI.git "$repo_dir"; then
+    if timeout 30 git clone --depth 1 https://github.com/alexradunet/NixPI.git "$repo_dir"; then
         echo "nixpi-firstboot: cloned pi-nixpi repo"
     else
         echo "nixpi-firstboot: repo clone failed (non-fatal)" >&2

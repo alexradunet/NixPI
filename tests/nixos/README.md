@@ -1,6 +1,6 @@
-# NixOS Integration Tests for nixPI
+# NixOS Integration Tests for NixPI
 
-This directory contains NixOS integration tests for the nixPI platform. These tests use the `pkgs.testers.runNixOSTest` framework to spin up QEMU VMs and verify that nixPI services work correctly together.
+This directory contains NixOS integration tests for the NixPI platform. These tests use the `pkgs.testers.runNixOSTest` framework to spin up QEMU VMs and verify that NixPI services work correctly together.
 
 ## Test Lanes
 
@@ -68,7 +68,7 @@ tests/nixos/
 ├── nixpi-network.nix          # Network/mesh test
 ├── nixpi-daemon.nix           # Pi daemon test
 ├── nixpi-e2e.nix              # End-to-end integration test
-├── nixpi-home.nix             # nixPI Home and built-in system services test
+├── nixpi-home.nix             # NixPI Home and built-in system services test
 ├── nixpi-modular-services.nix # system.services/configData regression
 ├── nixpi-matrix-bridge.nix    # multi-node Matrix daemon transport test
 └── README.md            # This file
@@ -84,17 +84,17 @@ When writing new NixOS tests:
 
 3. **Escape `${` in test scripts** - Nix interprets `${` as antiquotation. Escape it as `''${` inside indented strings.
 
-4. **Use `nixpiModulesNoShell` when defining your own user** - The shell module defines the primary nixPI operator user from `nixpi.primaryUser`, so tests that define their own should use `nixpiModulesNoShell` instead of `nixpiModules`.
+4. **Use `nixPiModulesNoShell` when defining your own user** - The shell module defines the primary NixPI operator user from `nixpi.primaryUser`, so tests that define their own should use `nixPiModulesNoShell` instead of `nixPiModules`.
 
 Example:
 ```nix
-{ pkgs, lib, nixpiModulesNoShell, piAgent, appPackage, mkTestFilesystems, ... }:
+{ pkgs, lib, nixPiModulesNoShell, piAgent, appPackage, mkTestFilesystems, ... }:
 
 pkgs.testers.runNixOSTest {
   name = "my-test";
   
   nodes.server = { ... }: {
-    imports = nixpiModulesNoShell ++ [ mkTestFilesystems ];
+    imports = nixPiModulesNoShell ++ [ mkTestFilesystems ];
     _module.args = { inherit piAgent appPackage; };
     
     nixpi.primaryUser = "pi";

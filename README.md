@@ -1,4 +1,4 @@
-# nixPI
+# NixPI
 
 > Pi-native AI companion OS on NixOS
 
@@ -8,13 +8,13 @@ It is very experimental and I am still currently developing it based on my needs
 
 I plan to keep this project as minimal as possible so the end user can evolve the OS through Pi without carrying a large default runtime surface.
 
-## 🌱 Why nixPI Exists
+## 🌱 Why NixPI Exists
 
-nixPI packages Pi, host integration, memory, and a small set of built-in user services into one self-hosted system.
+NixPI packages Pi, host integration, memory, and a small set of built-in user services into one self-hosted system.
 
-nixPI exists to give Pi:
+NixPI exists to give Pi:
 
-- a durable home directory under `~/nixPI/`
+- a durable home directory under `~/nixpi/`
 - first-class host tools for NixOS workflows
 - a local repo proposal workflow for human-reviewed system changes
 - a private Matrix-based messaging surface
@@ -24,20 +24,20 @@ nixPI exists to give Pi:
 
 Current platform capabilities:
 
-- nixPI directory management and blueprint seeding for `~/nixPI/`
+- NixPI directory management and blueprint seeding for `~/nixpi/`
 - persona injection, shell guardrails, durable-memory digest injection, and compaction context persistence
 - local-only Nix proposal support for checking the seeded repo clone, refreshing `flake.lock`, and validating config before review
 - host OS management tools for NixOS updates, local/remote switch, systemd, health, and reboot scheduling
 - built-in user services for Home and Web Chat
-- markdown-native durable memory in `~/nixPI/Objects/`
-- append-only episodic memory in `~/nixPI/Episodes/`
+- markdown-native durable memory in `~/nixpi/Objects/`
+- append-only episodic memory in `~/nixpi/Episodes/`
 - a unified Matrix room daemon with synthesized host-agent fallback and optional multi-agent overlays
 - proactive daemon jobs for heartbeat and simple cron-style scheduled turns
 - a first-boot flow split between a bash wizard and a Pi-guided persona step
 
 ## 🚀 Quick Start
 
-Install nixPI from the standard graphical nixPI installer image:
+Install NixPI from the standard graphical NixPI installer image:
 
 ```bash
 # 1. Build the installer ISO
@@ -45,32 +45,32 @@ nix build .#installerIso
 
 # 2. Write ./result/iso/*.iso to a USB stick and boot it
 # 3. Complete the graphical installer
-# 4. Reboot into nixPI, then finish first boot
+# 4. Reboot into NixPI, then finish first boot
 setup-wizard.sh
 ```
 
-After install, nixPI is operated as a normal local flake-based NixOS system:
+After install, NixPI is operated as a normal local flake-based NixOS system:
 
 ```bash
 sudo nixos-rebuild switch --flake /etc/nixos
 ```
 
-See the [documentation site](https://alexradunet.github.io/nixPI) for detailed instructions.
+See the [documentation site](https://alexradunet.github.io/NixPI) for detailed instructions.
 
 ## 🧭 Documentation
 
-Full documentation is available at **[alexradunet.github.io/nixPI](https://alexradunet.github.io/nixPI)**
+Full documentation is available at **[alexradunet.github.io/NixPI](https://alexradunet.github.io/NixPI)**
 
 Or browse by topic:
 
 | Your Goal | Start Here |
 |-----------|------------|
-| Installing nixPI | [Quick Deploy](https://alexradunet.github.io/nixPI/operations/quick-deploy) |
-| First-time setup | [First Boot Setup](https://alexradunet.github.io/nixPI/operations/first-boot-setup) |
-| Understanding the system | [Architecture Overview](https://alexradunet.github.io/nixPI/architecture/) |
-| Reading the code | [Codebase Guide](https://alexradunet.github.io/nixPI/codebase/) |
-| Operating a running system | [Operations](https://alexradunet.github.io/nixPI/operations/) |
-| Deep technical reference | [Reference](https://alexradunet.github.io/nixPI/reference/) |
+| Installing NixPI | [Quick Deploy](https://alexradunet.github.io/NixPI/operations/quick-deploy) |
+| First-time setup | [First Boot Setup](https://alexradunet.github.io/NixPI/operations/first-boot-setup) |
+| Understanding the system | [Architecture Overview](https://alexradunet.github.io/NixPI/architecture/) |
+| Reading the code | [Codebase Guide](https://alexradunet.github.io/NixPI/codebase/) |
+| Operating a running system | [Operations](https://alexradunet.github.io/NixPI/operations/) |
+| Deep technical reference | [Reference](https://alexradunet.github.io/NixPI/reference/) |
 
 To run the docs locally:
 
@@ -93,16 +93,16 @@ Installed by default:
 
 | Path | Purpose |
 |------|---------|
-| `core/` | nixPI core: NixOS modules, daemon, persona, skills, built-in extensions, and shared runtime code |
+| `core/` | NixPI core: NixOS modules, daemon, persona, skills, built-in extensions, and shared runtime code |
 | `core/os/` | NixOS modules and host configurations |
 | `core/daemon/` | Matrix room daemon and multi-agent runtime |
-| `core/pi/extensions/` | Pi-facing nixPI extensions shipped in the default runtime |
+| `core/pi/extensions/` | Pi-facing NixPI extensions shipped in the default runtime |
 | `tests/` | unit, integration, daemon, and extension tests |
 | `docs/` | live project documentation (VitePress site) |
 
 ## 🧩 Capability Model
 
-nixPI extends Pi through two active runtime layers:
+NixPI extends Pi through two active runtime layers:
 
 | Layer | What it is | Typical use |
 |------|-------------|-------------|
@@ -119,15 +119,15 @@ Built-in service surface is part of the base NixOS system:
 
 | Section | Contains |
 |---------|----------|
-| [Overview](https://alexradunet.github.io/nixPI/) | Project summary and entry points |
-| [Getting Started](https://alexradunet.github.io/nixPI/getting-started/) | New maintainer orientation |
-| [Architecture](https://alexradunet.github.io/nixPI/architecture/) | Subsystem boundaries and runtime flows |
-| [Codebase](https://alexradunet.github.io/nixPI/codebase/) | File-by-file responsibility guide |
-| [Operations](https://alexradunet.github.io/nixPI/operations/) | Deploy, setup, and run procedures |
-| [Reference](https://alexradunet.github.io/nixPI/reference/) | Deep technical documentation |
-| [Contributing](https://alexradunet.github.io/nixPI/contributing/) | Maintainer guidelines |
+| [Overview](https://alexradunet.github.io/NixPI/) | Project summary and entry points |
+| [Getting Started](https://alexradunet.github.io/NixPI/getting-started/) | New maintainer orientation |
+| [Architecture](https://alexradunet.github.io/NixPI/architecture/) | Subsystem boundaries and runtime flows |
+| [Codebase](https://alexradunet.github.io/NixPI/codebase/) | File-by-file responsibility guide |
+| [Operations](https://alexradunet.github.io/NixPI/operations/) | Deploy, setup, and run procedures |
+| [Reference](https://alexradunet.github.io/NixPI/reference/) | Deep technical documentation |
+| [Contributing](https://alexradunet.github.io/NixPI/contributing/) | Maintainer guidelines |
 
 ## 🔗 Related
 
-- [Documentation Site](https://alexradunet.github.io/nixPI)
-- [GitHub Repository](https://github.com/alexradunet/nixPI)
+- [Documentation Site](https://alexradunet.github.io/NixPI)
+- [GitHub Repository](https://github.com/alexradunet/NixPI)

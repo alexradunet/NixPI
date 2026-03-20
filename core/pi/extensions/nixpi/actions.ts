@@ -43,18 +43,18 @@ export function getPackageVersion(packageDir: string): string {
 
 // --- Directory setup ---
 
-export function ensureNixpi(nixpiDir: string): void {
+export function ensureNixPi(nixPiDir: string): void {
 	for (const dir of NIXPI_DIRS) {
-		fs.mkdirSync(path.join(nixpiDir, dir), { recursive: true });
+		fs.mkdirSync(path.join(nixPiDir, dir), { recursive: true });
 	}
 }
 
 // --- Tool handlers ---
 
-export function handleNixpiStatus(nixpiDir: string) {
-	const lines: string[] = [`nixPI: ${nixpiDir}`, ""];
+export function handleNixPiStatus(nixPiDir: string) {
+	const lines: string[] = [`NixPI: ${nixPiDir}`, ""];
 
-	const versions = readBlueprintVersions(nixpiDir);
+	const versions = readBlueprintVersions(nixPiDir);
 	lines.push(`Package version: ${versions.packageVersion}`);
 	lines.push(`Seeded blueprints: ${Object.keys(versions.seeded).length}`);
 
@@ -111,7 +111,7 @@ export function handleSkillList(workspaceDir: string) {
 		skills.push(`${entry.name} — ${desc}`);
 	}
 
-	const text = skills.length > 0 ? skills.join("\n") : "No skills found in nixPI.";
+	const text = skills.length > 0 ? skills.join("\n") : "No skills found in NixPI.";
 	return { content: [{ type: "text" as const, text }], details: {} };
 }
 

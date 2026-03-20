@@ -1,5 +1,5 @@
 /**
- * objects — Flat-file object store with YAML frontmatter in ~/nixPI/Objects/.
+ * objects — Flat-file object store with YAML frontmatter in ~/nixpi/Objects/.
  *
  * @tools memory_create, memory_update, memory_upsert, memory_read, memory_query, memory_search, memory_link, memory_list
  * @see {@link ../../AGENTS.md#objects} Extension reference
@@ -32,7 +32,7 @@ export default function (pi: ExtensionAPI) {
 		defineTool({
 			name: "memory_create",
 			label: "Memory Create",
-			description: "Create a new markdown object in ~/nixPI/Objects/",
+			description: "Create a new markdown object in ~/nixpi/Objects/",
 			parameters: Type.Object({
 				type: Type.String({
 					description: "Object type (e.g. task, note, project)",
@@ -48,7 +48,7 @@ export default function (pi: ExtensionAPI) {
 				body: Type.Optional(Type.String({ description: "Optional markdown body content" })),
 				path: Type.Optional(
 					Type.String({
-						description: "Optional file path relative to home dir (default: nixPI/Objects/{slug}.md)",
+						description: "Optional file path relative to home dir (default: NixPI/Objects/{slug}.md)",
 					}),
 				),
 			}),
@@ -59,7 +59,7 @@ export default function (pi: ExtensionAPI) {
 		defineTool({
 			name: "memory_update",
 			label: "Memory Update",
-			description: "Update an existing markdown object in ~/nixPI/Objects/",
+			description: "Update an existing markdown object in ~/nixpi/Objects/",
 			parameters: Type.Object({
 				type: Type.String({ description: "Object type" }),
 				slug: Type.String({ description: "Object slug" }),
@@ -74,7 +74,7 @@ export default function (pi: ExtensionAPI) {
 		defineTool({
 			name: "memory_upsert",
 			label: "Memory Upsert",
-			description: "Create or update a markdown object in ~/nixPI/Objects/",
+			description: "Create or update a markdown object in ~/nixpi/Objects/",
 			parameters: Type.Object({
 				type: Type.String({ description: "Object type" }),
 				slug: Type.String({ description: "Object slug" }),
@@ -89,7 +89,7 @@ export default function (pi: ExtensionAPI) {
 		defineTool({
 			name: "memory_read",
 			label: "Memory Read",
-			description: "Read a markdown object from ~/nixPI/Objects/",
+			description: "Read a markdown object from ~/nixpi/Objects/",
 			parameters: Type.Object({
 				type: Type.String({ description: "Object type" }),
 				slug: Type.String({ description: "Object slug" }),
@@ -162,7 +162,7 @@ export default function (pi: ExtensionAPI) {
 			description: "List objects, optionally filtered by type or frontmatter fields",
 			parameters: Type.Object({
 				type: Type.Optional(Type.String({ description: "Object type to filter by" })),
-				directory: Type.Optional(Type.String({ description: "Directory to walk (default: ~/nixPI/Objects/)" })),
+				directory: Type.Optional(Type.String({ description: "Directory to walk (default: ~/nixpi/Objects/)" })),
 				filters: Type.Optional(
 					Type.Record(Type.String(), Type.String(), {
 						description: "Frontmatter field filters",

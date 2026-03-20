@@ -2,33 +2,33 @@ import { mkdtempSync, rmSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-export interface TempNixpi {
-	nixpiDir: string;
+export interface TempNixPi {
+	nixPiDir: string;
 	cleanup: () => void;
 }
 
-export function createTempNixpi(): TempNixpi {
-	const nixpiDir = mkdtempSync(path.join(os.tmpdir(), "nixpi-test-root-"));
+export function createTempNixPi(): TempNixPi {
+	const nixPiDir = mkdtempSync(path.join(os.tmpdir(), "nixpi-test-root-"));
 	const origResolved = process.env._NIXPI_DIR_RESOLVED;
-	const origNixpiDir = process.env.NIXPI_DIR;
+	const origNixPiDir = process.env.NIXPI_DIR;
 
-	process.env._NIXPI_DIR_RESOLVED = nixpiDir;
-	process.env.NIXPI_DIR = nixpiDir;
+	process.env._NIXPI_DIR_RESOLVED = nixPiDir;
+	process.env.NIXPI_DIR = nixPiDir;
 
 	return {
-		nixpiDir,
+		nixPiDir,
 		cleanup() {
 			if (origResolved !== undefined) {
 				process.env._NIXPI_DIR_RESOLVED = origResolved;
 			} else {
 				process.env._NIXPI_DIR_RESOLVED = undefined;
 			}
-			if (origNixpiDir !== undefined) {
-				process.env.NIXPI_DIR = origNixpiDir;
+			if (origNixPiDir !== undefined) {
+				process.env.NIXPI_DIR = origNixPiDir;
 			} else {
 				process.env.NIXPI_DIR = undefined;
 			}
-			rmSync(nixpiDir, { recursive: true, force: true });
+			rmSync(nixPiDir, { recursive: true, force: true });
 		},
 	};
 }

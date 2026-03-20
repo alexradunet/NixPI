@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# setup-wizard.sh — First-boot setup wizard for nixPI.
+# setup-wizard.sh — First-boot setup wizard for NixPI.
 # Runs on first login before Pi starts. Uses read -p prompts.
 # Each completed step writes a checkpoint to ~/.nixpi/wizard-state/.
 # If interrupted (Ctrl+C), resumes from the last incomplete step on next login.
@@ -10,11 +10,11 @@ WIZARD_LOG="$HOME/.nixpi/wizard.log"
 mkdir -p "$(dirname "$WIZARD_LOG")"
 exec > >(tee -a "$WIZARD_LOG") 2>&1
 
-echo "=== nixPI Wizard Started: $(date) ==="
+echo "=== NixPI Wizard Started: $(date) ==="
 
 WIZARD_STATE="$HOME/.nixpi/wizard-state"
 SETUP_COMPLETE="$HOME/.nixpi/.setup-complete"
-NIXPI_DIR="${NIXPI_DIR:-$HOME/nixPI}"
+NIXPI_DIR="${NIXPI_DIR:-$HOME/nixpi}"
 NIXPI_CONFIG="${NIXPI_CONFIG_DIR:-${NIXPI_STATE_DIR:-$HOME/.config/nixpi}/services}"
 PI_DIR="${NIXPI_PI_DIR:-$HOME/.pi}"
 MATRIX_HOMESERVER="http://localhost:6167"
@@ -94,19 +94,19 @@ print_service_access_summary() {
 
 	echo "  Service access:"
 	if [[ -n "$mesh_host" ]]; then
-		echo "    nixPI Home   - http://${mesh_host}:8080"
+		echo "    NixPI Home   - http://${mesh_host}:8080"
 	fi
 	if [[ -n "$mesh_ip" && "$mesh_ip" != "$mesh_host" ]]; then
-		echo "    nixPI Home   - http://${mesh_ip}:8080"
+		echo "    NixPI Home   - http://${mesh_ip}:8080"
 	fi
-	echo "    Share this   - send other NetBird peers the nixPI Home URL"
+	echo "    Share this   - send other NetBird peers the NixPI Home URL"
 	if [[ -n "$mesh_host" ]]; then
-		echo "    nixPI Chat   - http://${mesh_host}:8081"
+		echo "    NixPI Chat   - http://${mesh_host}:8081"
 	fi
 	if [[ -n "$mesh_ip" && "$mesh_ip" != "$mesh_host" ]]; then
-		echo "    nixPI Chat   - http://${mesh_ip}:8081"
+		echo "    NixPI Chat   - http://${mesh_ip}:8081"
 	fi
-	echo "    FluffyChat   - preconfigured for this nixPI server"
+	echo "    FluffyChat   - preconfigured for this NixPI server"
 	if [[ -n "$mesh_host" ]]; then
 		echo "    Matrix       - http://${mesh_host}:6167"
 	fi
@@ -121,7 +121,7 @@ print_service_access_summary() {
 
 step_welcome() {
 	echo ""
-	echo "Welcome to nixPI."
+	echo "Welcome to NixPI."
 	echo "Let's configure your device. This takes a few minutes."
 	echo "Press Ctrl+C at any time to abort — you'll resume where you left off next login."
 	echo ""
@@ -371,9 +371,9 @@ step_services() {
 	write_fluffychat_runtime_config
 	write_service_home_runtime "$mesh_ip" "$mesh_fqdn"
 	if install_home_infrastructure; then
-		echo "  nixPI Home ready."
+		echo "  NixPI Home ready."
 	else
-		echo "  nixPI Home setup failed."
+		echo "  NixPI Home setup failed."
 	fi
     root_command nixpi-bootstrap-brokerctl systemd restart nixpi-home.service || echo "  home restart failed."
     root_command nixpi-bootstrap-brokerctl systemd restart nixpi-chat.service || echo "  chat restart failed."
@@ -384,7 +384,7 @@ step_services() {
 step_bootc_switch() {
 	echo ""
 	echo "--- System Updates ---"
-	echo "nixPI uses NixOS with automatic OTA updates."
+	echo "NixPI uses NixOS with automatic OTA updates."
 	echo "The nixpi-update timer checks for updates every 6 hours."
 	echo ""
 	echo "To update manually at any time: sudo nixos-rebuild switch --flake /etc/nixos"

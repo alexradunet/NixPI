@@ -1,5 +1,5 @@
 # tests/nixos/default.nix
-# NixOS integration test suite for nixPI
+# NixOS integration test suite for NixPI
 #
 # Usage:
 #   nix build .#checks.x86_64-linux.nixpi-matrix
@@ -19,9 +19,9 @@ let
   testLib = import ./lib.nix { inherit pkgs lib; };
   
   inherit (testLib)
-    nixpiModules
-    nixpiModulesNoShell
-    mkNixpiNode
+    nixPiModules
+    nixPiModulesNoShell
+    mkNixPiNode
     mkTestFilesystems
     matrixTestClient
     matrixRegisterScript
@@ -34,11 +34,11 @@ let
     inherit
       pkgs
       lib
-      nixpiModules
-      nixpiModulesNoShell
+      nixPiModules
+      nixPiModulesNoShell
       piAgent
       appPackage
-      mkNixpiNode
+      mkNixPiNode
       mkTestFilesystems
       matrixTestClient
       matrixRegisterScript
@@ -72,7 +72,7 @@ in
   # End-to-end integration test
   nixpi-e2e = mkTest ./nixpi-e2e.nix;
 
-  # nixPI Home landing page and user service test
+  # NixPI Home landing page and user service test
   nixpi-home = mkTest ./nixpi-home.nix;
 
   # Firewall and service exposure policy test

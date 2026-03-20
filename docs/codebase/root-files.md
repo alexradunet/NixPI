@@ -35,7 +35,7 @@ The root files define how the project is built, tested, and deployed. They are t
 |------|-----|------|-------------|
 | `vitest.config.ts` | Test runner | Test discovery, coverage thresholds | Unit: 85% lines, 72% lib, 60% extensions |
 | `biome.json` | Lint/format | Code style, import validation, complexity | Warns on complexity > 15 |
-| `guardrails.yaml` | Tool safety | Default blocked patterns for bash tool | Overridable in `~/nixPI/guardrails.yaml` |
+| `guardrails.yaml` | Tool safety | Default blocked patterns for bash tool | Overridable in `~/nixpi/guardrails.yaml` |
 
 ### Documentation
 
@@ -55,8 +55,8 @@ The root files define how the project is built, tested, and deployed. They are t
 - `packages.${system}.pi` - Pi agent package
 - `packages.${system}.app` - Main app package
 - `packages.${system}.installerIso` - Graphical installer image
-- `nixosModules.nixpi` - Composable module exporting all nixPI features
-- `nixosConfigurations.desktop` - Managed nixPI desktop profile
+- `nixosModules.nixpi` - Composable module exporting all NixPI features
+- `nixosConfigurations.desktop` - Managed NixPI desktop profile
 - `nixosConfigurations.desktop-vm` - VM/dev profile
 - `nixosConfigurations.installer-iso` - Official installer image
 - `checks.${system}.*` - Build and VM tests
@@ -216,7 +216,7 @@ The root files define how the project is built, tested, and deployed. They are t
 - `git push --force` - Force push
 - `chmod 777` - Overly permissive
 
-**Override Path**: `~/nixPI/guardrails.yaml`
+**Override Path**: `~/nixpi/guardrails.yaml`
 
 ---
 
@@ -225,7 +225,7 @@ The root files define how the project is built, tested, and deployed. They are t
 **Responsibility**: Project landing page for GitHub visitors. Provides quick start and capability summary.
 
 **Key Sections**:
-- Why nixPI Exists
+- Why NixPI Exists
 - What Ships Today
 - Quick Start
 - Repository Layout

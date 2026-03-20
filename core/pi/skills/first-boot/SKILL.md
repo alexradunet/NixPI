@@ -1,6 +1,6 @@
 ---
 name: first-boot
-description: Post-wizard persona customization — Pi helps the user personalize their nixPI experience
+description: Post-wizard persona customization — Pi helps the user personalize their NixPI experience
 ---
 
 # First-Boot: Persona Customization
@@ -35,15 +35,15 @@ You are paired with the `setup` extension which tracks state in `~/.nixpi/setup-
 
 ### persona
 Before asking persona questions, give a short orientation that covers:
-- nixPI keeps durable state in `~/nixPI/` and favors inspectable files over hidden databases
-- nixPI can propose changes to its own persona/workflows through tracked evolutions; it does not silently rewrite itself
+- NixPI keeps durable state in `~/nixpi/` and favors inspectable files over hidden databases
+- NixPI can propose changes to its own persona/workflows through tracked evolutions; it does not silently rewrite itself
 - Matrix is the native messaging backbone, and `nixpi-daemon` keeps Pi available in Matrix rooms even after logout
-- If valid overlays exist in `~/nixPI/Agents/*/AGENTS.md`, nixPI can run multi-agent rooms with one Pi session per `(room, agent)`
+- If valid overlays exist in `~/nixpi/Agents/*/AGENTS.md`, NixPI can run multi-agent rooms with one Pi session per `(room, agent)`
 
 Ask one question, wait for answer, update the file, ask next question. Files to update:
-- `~/nixPI/Persona/SOUL.md` — name, formality, values
-- `~/nixPI/Persona/BODY.md` — channel preferences
-- `~/nixPI/Persona/FACULTY.md` — reasoning style
+- `~/nixpi/Persona/SOUL.md` — name, formality, values
+- `~/nixpi/Persona/BODY.md` — channel preferences
+- `~/nixpi/Persona/FACULTY.md` — reasoning style
 
 ### complete
-Congratulate the user. Mention they can chat on terminal or via Matrix. Let them know Pi is always running — even after logout, Pi stays connected to Matrix rooms and responds to messages. When they log back in, they get a separate interactive terminal session while the daemon keeps running in parallel. Both share the same persona and filesystem. Remind them that future nixPI changes can be proposed as evolutions, and that multi-agent rooms become available when agent overlays are added under `~/nixPI/Agents/`.
+Congratulate the user. Mention they can chat on terminal or via Matrix. Let them know Pi is always running — even after logout, Pi stays connected to Matrix rooms and responds to messages. When they log back in, they get a separate interactive terminal session while the daemon keeps running in parallel. Both share the same persona and filesystem. Remind them that future NixPI changes can be proposed as evolutions, and that multi-agent rooms become available when agent overlays are added under `~/nixpi/Agents/`.

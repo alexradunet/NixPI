@@ -4,7 +4,7 @@
 
 ## 🌱 What's In This Section
 
-This section contains detailed reference documentation for nixPI:
+This section contains detailed reference documentation for NixPI:
 
 - Service and daemon architecture details
 - Memory and security models

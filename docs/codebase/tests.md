@@ -4,7 +4,7 @@
 
 ## 🌱 Why Tests Exist
 
-Tests ensure nixPI works correctly across:
+Tests ensure NixPI works correctly across:
 
 - **Unit tests**: Individual function behavior
 - **Integration tests**: Component interactions
@@ -118,7 +118,7 @@ Tests ensure nixPI works correctly across:
 |------|---------|
 | `mock-extension-api.ts` | Mock Pi extension API |
 | `mock-extension-context.ts` | Mock extension context |
-| `temp-nixpi.ts` | Temporary nixPI directory |
+| `temp-nixpi.ts` | Temporary NixPI directory |
 
 ---
 

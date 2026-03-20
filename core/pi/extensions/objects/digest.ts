@@ -1,5 +1,5 @@
 import path from "node:path";
-import { getNixpiDir } from "../../../lib/filesystem.js";
+import { getNixPiDir } from "../../../lib/filesystem.js";
 import { walkMdFiles } from "./actions.js";
 import { readMemoryRecord } from "./memory.js";
 
@@ -66,7 +66,7 @@ function buildDigestItem(filepath: string, preferences: ScopePreference[]): Dige
 }
 
 function topItems(type: string, limit: number, preferences: ScopePreference[]): DigestItem[] {
-	const dir = path.join(getNixpiDir(), "Objects");
+	const dir = path.join(getNixPiDir(), "Objects");
 	const items = walkMdFiles(dir)
 		.map((filepath) => buildDigestItem(filepath, preferences))
 		.filter((item): item is DigestItem => item !== null && item.type === type)

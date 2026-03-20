@@ -1,5 +1,5 @@
 # core/os/hosts/x86_64.nix
-# Canonical nixPI desktop profile used for dev builds and the installed system shape.
+# Canonical NixPI desktop profile used for dev builds and the installed system shape.
 { lib, ... }:
 
 {

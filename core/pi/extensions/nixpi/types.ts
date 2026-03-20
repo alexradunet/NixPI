@@ -1,4 +1,4 @@
-// Extension-specific types for nixPI
+// Extension-specific types for NixPI
 
 /** Tracks which blueprints have been seeded and their content hashes. */
 export interface BlueprintVersions {

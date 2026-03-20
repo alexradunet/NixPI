@@ -4,7 +4,7 @@
 
 ## 🌱 Why OS Modules Exist
 
-The OS modules define how nixPI integrates with NixOS. They provide:
+The OS modules define how NixPI integrates with NixOS. They provide:
 
 - System service definitions
 - NixOS option declarations
@@ -27,8 +27,8 @@ The OS modules define how nixPI integrates with NixOS. They provide:
 
 | File | Why | What | How / Notes |
 |------|-----|------|-------------|
-| `options.nix` | Option surface | Declares all nixPI options | Central option definition |
-| `app.nix` | App packaging | nixPI app derivation, service | Main application |
+| `options.nix` | Option surface | Declares all NixPI options | Central option definition |
+| `app.nix` | App packaging | NixPI app derivation, service | Main application |
 | `broker.nix` | Privilege broker | `nixpi-broker` service | Privilege escalation |
 | `llm.nix` | LLM integration | Local AI service integration | Ollama, etc. |
 | `matrix.nix` | Matrix server | Synapse configuration | Homeserver setup |
@@ -78,7 +78,7 @@ The OS modules define how nixPI integrates with NixOS. They provide:
 | File | Why | What | How / Notes |
 |------|-----|------|-------------|
 | `pi/default.nix` | Pi agent package | Pi AI agent derivation | Peer dependency |
-| `app/default.nix` | App package | nixPI app derivation | Main package |
+| `app/default.nix` | App package | NixPI app derivation | Main package |
 
 ### Package Flow
 
@@ -98,7 +98,7 @@ NixOS modules use appPackage
 
 | File | Why | What | How / Notes |
 |------|-----|------|-------------|
-| `x86_64.nix` | Desktop config | Managed nixPI desktop profile | Base installed system shape |
+| `x86_64.nix` | Desktop config | Managed NixPI desktop profile | Base installed system shape |
 | `x86_64-vm.nix` | Desktop VM config | Desktop profile plus VM-only mounts | Local QEMU/dev target |
 | `installer-iso.nix` | Installer image | Graphical Calamares-based installer ISO | Official installation media |
 
@@ -132,7 +132,7 @@ NixOS modules use appPackage
 
 ### `core/os/modules/options.nix`
 
-**Responsibility**: Declares all nixPI NixOS options in one place.
+**Responsibility**: Declares all NixPI NixOS options in one place.
 
 **Option Hierarchy**:
 ```
@@ -164,7 +164,7 @@ nixpi
 
 ### `core/os/modules/app.nix`
 
-**Responsibility**: Defines the nixPI app package and main service.
+**Responsibility**: Defines the NixPI app package and main service.
 
 **Key Definitions**:
 - `nixpi-app` package (uses `appPackage` from specialArgs)
@@ -175,7 +175,7 @@ nixpi
 **Service Configuration**:
 ```nix
 systemd.services.nixpi-daemon = {
-  description = "nixPI Matrix daemon";
+  description = "NixPI Matrix daemon";
   wantedBy = [ "multi-user.target" ];
   after = [ "network.target" "matrix-synapse.service" ];
   serviceConfig = {

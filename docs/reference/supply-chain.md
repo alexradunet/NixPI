@@ -4,22 +4,22 @@
 
 ## 🌱 Supply Chain Notes
 
-nixPI relies on Nix inputs and Nixpkgs packages for its built-in service surface.
+NixPI relies on Nix inputs and Nixpkgs packages for its built-in service surface.
 
 The important supply-chain boundary is:
 
 - `flake.nix` inputs
 - The selected Nixpkgs revision
-- nixPI's own source tree
+- NixPI's own source tree
 
-Built-in services such as nixPI Home and FluffyChat are provisioned from those sources rather than from a mutable runtime package catalog.
+Built-in services such as NixPI Home and FluffyChat are provisioned from those sources rather than from a mutable runtime package catalog.
 
 ## 📚 Dependency Sources
 
 | Source | Purpose |
 |--------|---------|
 | `nixpkgs` | System packages, services |
-| `nixPI source` | Modules, extensions, daemon |
+| `NixPI source` | Modules, extensions, daemon |
 | `npm registry` | Node.js dependencies (locked) |
 
 ## 🔒 Trust Model

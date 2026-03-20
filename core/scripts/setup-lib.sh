@@ -10,8 +10,8 @@
 #   MATRIX_STATE_DIR    — path to matrix state directory
 #   MATRIX_HOMESERVER   — Matrix homeserver URL (e.g. http://localhost:6167)
 #   PI_DIR              — path to Pi config dir (e.g. /var/lib/nixpi/agent or ~/.pi)
-#   NIXPI_CONFIG        — path to nixPI service config dir
-#   NIXPI_DIR           — path to nixPI home dir
+#   NIXPI_CONFIG        — path to NixPI service config dir
+#   NIXPI_DIR           — path to NixPI home dir
 
 # --- Checkpoint helpers ---
 
@@ -238,7 +238,7 @@ write_fluffychat_runtime_config() {
 	mkdir -p "$NIXPI_CONFIG/chat"
 	cat > "$NIXPI_CONFIG/chat/config.json" <<-CONFIG
 	{
-	  "applicationName": "nixPI Chat",
+	  "applicationName": "NixPI Chat",
 	  "defaultHomeserver": "${primary_matrix_url}"
 	}
 	CONFIG

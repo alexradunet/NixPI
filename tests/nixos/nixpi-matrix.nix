@@ -1,13 +1,13 @@
 # tests/nixos/nixpi-matrix.nix
-# Test that the nixPI Matrix homeserver (Synapse) starts and accepts connections
+# Test that the NixPI Matrix homeserver (Synapse) starts and accepts connections
 
-{ pkgs, lib, nixpiModules, nixpiModulesNoShell, piAgent, appPackage, mkNixpiNode, mkTestFilesystems, ... }:
+{ pkgs, lib, nixPiModules, nixPiModulesNoShell, piAgent, appPackage, mkNixPiNode, mkTestFilesystems, ... }:
 
 pkgs.testers.runNixOSTest {
   name = "nixpi-matrix";
 
   nodes.server = { ... }: {
-    imports = nixpiModules ++ [ mkTestFilesystems ];
+    imports = nixPiModules ++ [ mkTestFilesystems ];
     _module.args = { inherit piAgent appPackage; };
     nixpi.primaryUser = "tester";
     nixpi.install.mode = "managed-user";
@@ -46,7 +46,7 @@ pkgs.testers.runNixOSTest {
     # Test 2: Matrix homeserver responds to client versions endpoint
     server.succeed("curl -sf http://localhost:6167/_matrix/client/versions")
     
-    # Test 3: Registration shared secret file was created in the stable nixPI
+    # Test 3: Registration shared secret file was created in the stable NixPI
     # secret directory and rendered into Synapse config.
     server.succeed("test -f /var/lib/nixpi/secrets/matrix-registration-shared-secret")
     server.succeed("grep -q 'registration_shared_secret' /var/lib/matrix-synapse/extra.yaml")

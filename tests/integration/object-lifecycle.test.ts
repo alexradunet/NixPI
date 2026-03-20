@@ -4,14 +4,14 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { parseFrontmatter } from "../../core/lib/frontmatter.js";
 import { createMockExtensionAPI } from "../helpers/mock-extension-api.js";
 import { createMockExtensionContext } from "../helpers/mock-extension-context.js";
-import { createTempNixpi, type TempNixpi } from "../helpers/temp-nixpi.js";
+import { createTempNixPi, type TempNixPi } from "../helpers/temp-nixpi.js";
 
-let temp: TempNixpi;
+let temp: TempNixPi;
 
 beforeEach(() => {
-	temp = createTempNixpi();
+	temp = createTempNixPi();
 	// Create Objects directory
-	mkdirSync(join(temp.nixpiDir, "Objects"), { recursive: true });
+	mkdirSync(join(temp.nixPiDir, "Objects"), { recursive: true });
 });
 
 afterEach(() => {
@@ -60,7 +60,7 @@ describe("object lifecycle", () => {
 		expect(result.isError).toBeUndefined();
 		expect(result.content[0].text).toContain("created decision/fix-bike");
 
-		const filepath = join(temp.nixpiDir, "Objects", "fix-bike.md");
+		const filepath = join(temp.nixPiDir, "Objects", "fix-bike.md");
 		expect(existsSync(filepath)).toBe(true);
 
 		const raw = readFileSync(filepath, "utf-8");

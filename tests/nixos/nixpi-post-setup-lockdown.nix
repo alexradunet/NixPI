@@ -1,4 +1,4 @@
-{ pkgs, lib, nixpiModulesNoShell, piAgent, appPackage, mkTestFilesystems, mkExistingUserConfig, mkPrefillActivation, ... }:
+{ pkgs, lib, nixPiModulesNoShell, piAgent, appPackage, mkTestFilesystems, mkExistingUserConfig, mkPrefillActivation, ... }:
 
 pkgs.testers.runNixOSTest {
   name = "nixpi-post-setup-lockdown";
@@ -8,7 +8,7 @@ pkgs.testers.runNixOSTest {
       username = "pi";
       homeDir = "/home/${username}";
     in {
-      imports = nixpiModulesNoShell ++ [
+      imports = nixPiModulesNoShell ++ [
         ../../core/os/modules/broker.nix
         ../../core/os/modules/firstboot.nix
         mkTestFilesystems
@@ -63,7 +63,7 @@ pkgs.testers.runNixOSTest {
     nixpi.wait_for_unit("nixpi-firstboot.service", timeout=180)
     nixpi.wait_until_succeeds("test -f /home/pi/.nixpi/.setup-complete", timeout=180)
     nixpi.wait_until_succeeds("curl -sf http://127.0.0.1:6167/_matrix/client/versions", timeout=60)
-    nixpi.wait_until_succeeds("curl -sf http://127.0.0.1:8080 | grep -q 'nixPI Home'", timeout=60)
+    nixpi.wait_until_succeeds("curl -sf http://127.0.0.1:8080 | grep -q 'NixPI Home'", timeout=60)
 
     client.start()
     client.wait_for_unit("multi-user.target", timeout=120)
@@ -82,7 +82,7 @@ pkgs.testers.runNixOSTest {
     """)
 
     # Local services remain available on loopback.
-    nixpi.succeed("curl -sf http://127.0.0.1:8080 | grep -q 'nixPI Home'")
+    nixpi.succeed("curl -sf http://127.0.0.1:8080 | grep -q 'NixPI Home'")
     nixpi.succeed("curl -sf http://127.0.0.1:8081/config.json | grep -q 'defaultHomeserver'")
 
     # Bootstrap wrappers refuse to run after setup.
@@ -95,6 +95,6 @@ pkgs.testers.runNixOSTest {
     for port in [6167, 8080, 8081]:
         client.succeed(f"! nc -z -w 2 nixpi-steady {port}")
 
-    print("nixPI post-setup lockdown test passed!")
+    print("NixPI post-setup lockdown test passed!")
   '';
 }

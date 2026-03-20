@@ -4,7 +4,7 @@
 
 ## 🌱 Why Persona & Skills Exist
 
-Persona and skills shape how Pi behaves when interacting with nixPI. They provide:
+Persona and skills shape how Pi behaves when interacting with NixPI. They provide:
 
 - **Persona**: Identity, personality traits, and behavioral boundaries
 - **Skills**: Written instructions for procedures, guidance, and checklists
@@ -35,7 +35,7 @@ core/pi/persona/
 
 | File | Why | What | How / Notes |
 |------|-----|------|-------------|
-| `body.md` | Physical capabilities | Hardware embodiment, sensorimotor bounds | Describes nixPI host capabilities |
+| `body.md` | Physical capabilities | Hardware embodiment, sensorimotor bounds | Describes NixPI host capabilities |
 | `faculty.md` | Cognitive capabilities | Reasoning modes, knowledge domains | Mental capabilities and limits |
 | `soul.md` | Values and personality | Ethical bounds, preferences, tone | Behavioral guardrails |
 

@@ -4,7 +4,7 @@
 
 ## 🌱 What's In This Section
 
-This section contains guidelines for contributing to nixPI:
+This section contains guidelines for contributing to NixPI:
 
 - Documentation maintenance rules
 - Code contribution guidelines

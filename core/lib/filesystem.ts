@@ -53,9 +53,9 @@ export function safePath(root: string, ...segments: string[]): string {
 	return safePathWithin(root, ...segments);
 }
 
-/** Resolve the configured app data directory. Checks `NIXPI_DIR`, then falls back to `~/nixPI`. */
-export function getNixpiDir(): string {
-	return process.env.NIXPI_DIR ?? path.join(os.homedir(), "nixPI");
+/** Resolve the configured app data directory. Checks `NIXPI_DIR`, then falls back to `~/nixpi`. */
+export function getNixPiDir(): string {
+	return process.env.NIXPI_DIR ?? path.join(os.homedir(), "nixpi");
 }
 
 /** Resolve the configured Pi runtime directory. */
@@ -79,6 +79,6 @@ export function getDaemonStateDir(): string {
 }
 
 /** Path to the local repo clone used for local-only proposal workflows. */
-export function getNixpiRepoDir(): string {
+export function getNixPiRepoDir(): string {
 	return process.env.NIXPI_REPO_DIR ?? path.join(os.homedir(), ".nixpi", "pi-nixpi");
 }

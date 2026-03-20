@@ -6,11 +6,11 @@ description: Continuwuity Matrix homeserver (native OS service, no federation)
 
 # Matrix Homeserver
 
-Native Continuwuity Matrix server baked into the nixPI image.
+Native Continuwuity Matrix server baked into the NixPI image.
 
 ## Overview
 
-nixPI runs its own Matrix homeserver through the stock `matrix-synapse.service`. Users register with any Matrix client and message Pi directly. No data leaves the device. No federation - fully private.
+NixPI runs its own Matrix homeserver through the stock `matrix-synapse.service`. Users register with any Matrix client and message Pi directly. No data leaves the device. No federation - fully private.
 
 ## Setup
 
@@ -30,7 +30,7 @@ The Matrix server starts automatically on boot. User accounts are created during
 
 ## Bridges
 
-External messaging platforms (WhatsApp, Telegram, Signal) connect via mautrix bridge containers. Bridge packaging still exists in the repo catalog, but bridge lifecycle helpers are no longer part of the default nixPI runtime and should be treated as maintainer-only setup.
+External messaging platforms (WhatsApp, Telegram, Signal) connect via mautrix bridge containers. Bridge packaging still exists in the repo catalog, but bridge lifecycle helpers are no longer part of the default NixPI runtime and should be treated as maintainer-only setup.
 
 ## Troubleshooting
 

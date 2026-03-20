@@ -6,7 +6,7 @@
 
 ### Overview
 
-nixPI runs its own Matrix homeserver through the stock `matrix-synapse.service`. Users register with any Matrix client and message Pi directly. No data leaves the device. No federation - fully private.
+NixPI runs its own Matrix homeserver through the stock `matrix-synapse.service`. Users register with any Matrix client and message Pi directly. No data leaves the device. No federation - fully private.
 
 ### Setup
 
@@ -29,7 +29,7 @@ The Matrix server starts automatically on boot. User accounts are created during
 
 ### Bridges
 
-External messaging platforms (WhatsApp, Telegram, Signal) connect via mautrix bridge containers. Bridge packaging still exists in the repo catalog, but bridge lifecycle helpers are no longer part of the default nixPI runtime and should be treated as maintainer-only setup.
+External messaging platforms (WhatsApp, Telegram, Signal) connect via mautrix bridge containers. Bridge packaging still exists in the repo catalog, but bridge lifecycle helpers are no longer part of the default NixPI runtime and should be treated as maintainer-only setup.
 
 ### Troubleshooting
 
@@ -53,15 +53,15 @@ sudo systemctl reload matrix-synapse
 
 ### Overview
 
-EU-hosted mesh networking for secure remote access to your nixPI device. Uses NetBird cloud management (free tier, up to 5 peers).
+EU-hosted mesh networking for secure remote access to your NixPI device. Uses NetBird cloud management (free tier, up to 5 peers).
 
-NetBird provides the security layer for SSH remote access and the built-in nixPI web surface.
+NetBird provides the security layer for SSH remote access and the built-in NixPI web surface.
 
 NetBird is installed as a native system service (not a container) because WireGuard requires real kernel-level CAP_NET_ADMIN.
 
 ### Setup
 
-NetBird authentication is handled during nixPI's first-boot wizard using a setup key. If you need to re-authenticate:
+NetBird authentication is handled during NixPI's first-boot wizard using a setup key. If you need to re-authenticate:
 
 1. Get a new setup key from https://app.netbird.io -> Setup Keys
 2. Run: `sudo netbird up --setup-key <KEY>`

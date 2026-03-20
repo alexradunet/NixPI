@@ -6,12 +6,12 @@
 
 | Emoji | Concept |
 |-------|---------|
-| 🌱 | nixPI / purpose / overview |
+| 🌱 | NixPI / purpose / overview |
 | 🤖 | Pi / agent behavior |
 | 📜 | Skill / written guidance |
 | 🧩 | Extension / integration layer |
 | 📦 | Service / OCI workload |
-| 🌿 | nixPI directory / host layout |
+| 🌿 | NixPI directory / host layout |
 | 🪞 | Persona / identity |
 | 💻 | OS / build / host operations |
 | 📡 | Daemon / messaging / IPC |
@@ -38,4 +38,4 @@
 
 ## 🔗 Related
 
-- [nixPI Overview](../)
+- [NixPI Overview](../)

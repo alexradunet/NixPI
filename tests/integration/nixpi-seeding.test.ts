@@ -3,20 +3,20 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createMockExtensionAPI } from "../helpers/mock-extension-api.js";
 import { createMockExtensionContext } from "../helpers/mock-extension-context.js";
-import { createTempNixpi, type TempNixpi } from "../helpers/temp-nixpi.js";
+import { createTempNixPi, type TempNixPi } from "../helpers/temp-nixpi.js";
 
-let temp: TempNixpi;
+let temp: TempNixPi;
 
 beforeEach(() => {
-	temp = createTempNixpi();
+	temp = createTempNixPi();
 });
 
 afterEach(() => {
 	temp.cleanup();
 });
 
-// We test nixPI seeding by importing and calling the nixpi extension
-// which calls ensureNixpi + seedBlueprints in its session_start handler.
+// We test NixPI seeding by importing and calling the nixpi extension
+// which calls ensureNixPi + seedBlueprints in its session_start handler.
 async function runNixpiExtension() {
 	const mod = await import("../../core/pi/extensions/nixpi/index.js");
 	const api = createMockExtensionAPI();
@@ -27,19 +27,19 @@ async function runNixpiExtension() {
 }
 
 describe("nixpi seeding", () => {
-	it("creates nixPI subdirectories", async () => {
+	it("creates NixPI subdirectories", async () => {
 		await runNixpiExtension();
 
 		const expected = ["Persona", "Skills", "Evolutions", "audit"];
 		for (const dir of expected) {
-			expect(existsSync(join(temp.nixpiDir, dir))).toBe(true);
+			expect(existsSync(join(temp.nixPiDir, dir))).toBe(true);
 		}
 	});
 
 	it("creates blueprint-versions.json", async () => {
 		await runNixpiExtension();
 
-		const versionsPath = join(temp.nixpiDir, "blueprint-versions.json");
+		const versionsPath = join(temp.nixPiDir, "blueprint-versions.json");
 		expect(existsSync(versionsPath)).toBe(true);
 
 		const versions = JSON.parse(readFileSync(versionsPath, "utf-8"));
@@ -50,7 +50,7 @@ describe("nixpi seeding", () => {
 
 	it("second call is idempotent", async () => {
 		await runNixpiExtension();
-		const versionsPath = join(temp.nixpiDir, "blueprint-versions.json");
+		const versionsPath = join(temp.nixPiDir, "blueprint-versions.json");
 		const first = readFileSync(versionsPath, "utf-8");
 
 		await runNixpiExtension();
@@ -63,32 +63,32 @@ describe("nixpi seeding", () => {
 		await runNixpiExtension();
 
 		// Modify a seeded persona file
-		const soulPath = join(temp.nixpiDir, "Persona", "SOUL.md");
+		const soulPath = join(temp.nixPiDir, "Persona", "SOUL.md");
 		if (existsSync(soulPath)) {
 			writeFileSync(soulPath, "user modified content");
 
 			// Re-run to trigger update detection
 			await runNixpiExtension();
 
-			const versionsPath = join(temp.nixpiDir, "blueprint-versions.json");
+			const versionsPath = join(temp.nixPiDir, "blueprint-versions.json");
 			const versions = JSON.parse(readFileSync(versionsPath, "utf-8"));
 			// updatesAvailable may have the modified key
 			expect(versions).toHaveProperty("updatesAvailable");
 		}
 	});
 
-	it("does not create .stignore inside nixPI dir", async () => {
+	it("does not create .stignore inside NixPI dir", async () => {
 		await runNixpiExtension();
-		expect(existsSync(join(temp.nixpiDir, ".stignore"))).toBe(false);
+		expect(existsSync(join(temp.nixPiDir, ".stignore"))).toBe(false);
 	});
 
 	it("sets _NIXPI_DIR_RESOLVED env var", async () => {
 		await runNixpiExtension();
-		expect(process.env._NIXPI_DIR_RESOLVED).toBe(temp.nixpiDir);
+		expect(process.env._NIXPI_DIR_RESOLVED).toBe(temp.nixPiDir);
 	});
 
 	it("sets UI status when hasUI is true", async () => {
 		const { ctx } = await runNixpiExtension();
-		expect(ctx.ui.setStatus).toHaveBeenCalledWith("nixpi", expect.stringContaining("nixPI:"));
+		expect(ctx.ui.setStatus).toHaveBeenCalledWith("nixpi", expect.stringContaining("NixPI:"));
 	});
 });

@@ -3,7 +3,7 @@
 # This test is hermetic: it avoids external model downloads and instead
 # verifies the gating and serving contract with a local stub server.
 
-{ pkgs, lib, nixpiModules, nixpiModulesNoShell, piAgent, appPackage, mkNixpiNode, mkTestFilesystems, self ? null, ... }:
+{ pkgs, lib, nixPiModules, nixPiModulesNoShell, piAgent, appPackage, mkNixPiNode, mkTestFilesystems, self ? null, ... }:
 
 let
   testModelName = "test-model.gguf";
@@ -12,7 +12,7 @@ pkgs.testers.runNixOSTest {
   name = "localai";
 
   nodes.server = { ... }: {
-    imports = nixpiModules ++ [ mkTestFilesystems ];
+    imports = nixPiModules ++ [ mkTestFilesystems ];
     _module.args = { inherit piAgent appPackage; };
     nixpi.primaryUser = "tester";
     nixpi.install.mode = "managed-user";

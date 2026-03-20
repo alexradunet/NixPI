@@ -40,7 +40,7 @@ in
       }
       {
         assertion = lib.length (lib.unique exposedPorts) == lib.length exposedPorts;
-        message = "nixPI service ports must be unique across built-in services and Matrix.";
+        message = "NixPI service ports must be unique across built-in services and Matrix.";
       }
     ];
 
@@ -93,7 +93,7 @@ in
     systemd.tmpfiles.rules = [
       "d ${stateDir}/services/home/tmp 0770 ${serviceUser} ${serviceUser} -"
       "d ${stateDir}/services/chat/tmp 0770 ${serviceUser} ${serviceUser} -"
-      "d ${primaryHome}/nixPI 2775 ${primaryUser} ${serviceUser} -"
+      "d ${primaryHome}/nixpi 2775 ${primaryUser} ${serviceUser} -"
     ];
 
     environment.systemPackages = with pkgs; [
@@ -132,7 +132,7 @@ in
     ];
     warnings =
       lib.optional (!securityCfg.enforceServiceFirewall && !bindsLocally) ''
-        nixPI's built-in service surface is bound to `${cfg.bindAddress}` without
+        NixPI's built-in service surface is bound to `${cfg.bindAddress}` without
         the trusted-interface firewall restriction. Home, Chat, and
         Matrix may be reachable on all network interfaces.
       '';

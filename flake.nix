@@ -1,6 +1,6 @@
 # flake.nix
 {
-  description = "nixPi — Pi-native AI companion OS on NixOS";
+  description = "NixPI — Pi-native AI companion OS on NixOS";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -28,7 +28,7 @@
       };
 
       nixosModules = {
-        # Single composable module exporting all nixPI feature modules.
+        # Single composable module exporting all NixPI feature modules.
         # Consuming flake.nix must provide piAgent and appPackage in specialArgs.
         nixpi = { piAgent, appPackage, ... }: {
           imports = [
@@ -48,11 +48,11 @@
           # overrides).  Consuming configurations set allowUnfree themselves.
         };
 
-        # First-boot service module (included separately, not part of the portable nixPI module).
+        # First-boot service module (included separately, not part of the portable NixPI module).
         firstboot = import ./core/os/modules/firstboot.nix;
       };
 
-      # Managed nixPI desktop profile used for local builds and installer generation.
+      # Managed NixPI desktop profile used for local builds and installer generation.
       nixosConfigurations.desktop = nixpkgs.lib.nixosSystem {
         inherit system specialArgs;
         modules = [
@@ -76,7 +76,7 @@
         ];
       };
 
-      # NixOS configuration that mirrors a default nixPI install
+      # NixOS configuration that mirrors a default NixPI install
       # (nixpi + firstboot + the standard machine defaults).
       # Used by checks.config and checks.boot below.
       nixosConfigurations.installed-test = nixpkgs.lib.nixosSystem {
@@ -136,7 +136,7 @@
               networking.networkmanager.enable = true;
               system.stateVersion = "25.05";
 
-              # Give the VM enough disk for the nixPI closure
+              # Give the VM enough disk for the NixPI closure
               virtualisation.diskSize = 20480;  # 20 GB
               virtualisation.memorySize = 4096;
             };
@@ -224,7 +224,7 @@
         # Note: vitest is not in nixpkgs-unstable — use 'npm install' then 'npx vitest'
 
         shellHook = ''
-          echo "nixPI dev shell"
+          echo "NixPI dev shell"
           echo "Run 'npm install' to set up JS dependencies (includes vitest)"
         '';
       };

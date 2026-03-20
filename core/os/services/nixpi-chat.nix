@@ -37,7 +37,7 @@ in
 
     configData = {
       "config.json".text = builtins.toJSON {
-        applicationName = "nixPI Chat";
+        applicationName = "NixPI Chat";
         defaultHomeserver = "http://localhost:${toString config.nixpi-chat.matrixPort}";
       };
       "nginx.conf".text = ''
@@ -65,7 +65,7 @@ in
     };
 
     systemd.service = {
-      description = "nixPI web chat client";
+      description = "NixPI web chat client";
       after = [ "network-online.target" ];
       wants = [ "network-online.target" ];
       wantedBy = [ "multi-user.target" ];

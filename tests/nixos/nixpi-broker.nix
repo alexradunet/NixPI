@@ -1,11 +1,11 @@
-{ pkgs, nixpiModules, mkTestFilesystems, piAgent, appPackage, ... }:
+{ pkgs, nixPiModules, mkTestFilesystems, piAgent, appPackage, ... }:
 
 pkgs.testers.runNixOSTest {
   name = "nixpi-broker";
 
   nodes = {
     maintain = { ... }: {
-      imports = nixpiModules ++ [
+      imports = nixPiModules ++ [
         ../../core/os/modules/broker.nix
         mkTestFilesystems
       ];
@@ -31,7 +31,7 @@ pkgs.testers.runNixOSTest {
     };
 
     observe = { ... }: {
-      imports = nixpiModules ++ [
+      imports = nixPiModules ++ [
         ../../core/os/modules/broker.nix
         mkTestFilesystems
       ];
@@ -102,6 +102,6 @@ pkgs.testers.runNixOSTest {
     revoked = json.loads(maintain.succeed("nixpi-brokerctl status"))
     assert revoked["effectiveAutonomy"] == "maintain", revoked
 
-    print("nixPI broker autonomy test passed!")
+    print("NixPI broker autonomy test passed!")
   '';
 }

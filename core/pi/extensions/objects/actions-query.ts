@@ -4,14 +4,14 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { getNixpiDir, safePath } from "../../../lib/filesystem.js";
+import { getNixPiDir, safePath } from "../../../lib/filesystem.js";
 import { parseFrontmatter } from "../../../lib/frontmatter.js";
 import { errorResult, truncate } from "../../../lib/shared.js";
 import { walkMdFiles } from "./actions.js";
 import { readMemoryRecord, type ScopePreference, scoreRecord } from "./memory.js";
 
 function resolveObjectsDir(directory?: string) {
-	if (!directory) return { dir: path.join(getNixpiDir(), "Objects") };
+	if (!directory) return { dir: path.join(getNixPiDir(), "Objects") };
 	try {
 		return { dir: safePath(os.homedir(), directory) };
 	} catch {
@@ -70,9 +70,9 @@ export function listObjects(
 	};
 }
 
-/** Search markdown files in ~/nixPI/ for a pattern. */
+/** Search markdown files in ~/nixpi/ for a pattern. */
 export function searchObjects(params: { pattern: string }, signal?: AbortSignal) {
-	const workspaceDir = getNixpiDir();
+	const workspaceDir = getNixPiDir();
 	const matches: string[] = [];
 
 	const files = fs.globSync("**/*.md", { cwd: workspaceDir });
@@ -100,7 +100,7 @@ export function searchObjects(params: { pattern: string }, signal?: AbortSignal)
 	};
 }
 
-/** Query ranked object matches from ~/nixPI/Objects/. */
+/** Query ranked object matches from ~/nixpi/Objects/. */
 export function queryObjects(
 	params: {
 		text?: string;
@@ -115,7 +115,7 @@ export function queryObjects(
 	},
 	signal?: AbortSignal,
 ) {
-	const workspaceDir = getNixpiDir();
+	const workspaceDir = getNixPiDir();
 	const dir = path.join(workspaceDir, "Objects");
 	const limit = Math.max(1, Math.min(100, Number(params.limit ?? 10)));
 	const results = [];

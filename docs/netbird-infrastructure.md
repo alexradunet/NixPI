@@ -6,15 +6,15 @@ description: Secure mesh networking via NetBird (system service)
 
 # NetBird
 
-EU-hosted mesh networking for secure remote access to your nixPI device. Uses NetBird cloud management (free tier, up to 5 peers).
+EU-hosted mesh networking for secure remote access to your NixPI device. Uses NetBird cloud management (free tier, up to 5 peers).
 
-NetBird provides the security layer for SSH remote access and the built-in nixPI web surface.
+NetBird provides the security layer for SSH remote access and the built-in NixPI web surface.
 
 NetBird is installed as a native system service (not a container) because WireGuard requires real kernel-level CAP_NET_ADMIN.
 
 ## Setup
 
-NetBird authentication is handled during nixPI's first-boot wizard using a setup key. If you need to re-authenticate:
+NetBird authentication is handled during NixPI's first-boot wizard using a setup key. If you need to re-authenticate:
 
 1. Get a new setup key from https://app.netbird.io -> Setup Keys
 2. Run: `sudo netbird up --setup-key <KEY>`

@@ -153,7 +153,7 @@ EOF
     (config.nixpi.matrix.enableRegistration
       && !config.nixpi.security.enforceServiceFirewall
       && !matrixBindsLocally) ''
-    nixPI Matrix registration is enabled while Synapse is listening on
+    NixPI Matrix registration is enabled while Synapse is listening on
     `${config.nixpi.matrix.bindAddress}` without the trusted-interface firewall
     restriction. Registration should be disabled or Matrix should be kept local.
   '';

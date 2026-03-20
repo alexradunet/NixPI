@@ -1,4 +1,4 @@
-{ pkgs, lib, nixpiModulesNoShell, piAgent, appPackage, mkTestFilesystems, mkExistingUserConfig, ... }:
+{ pkgs, lib, nixPiModulesNoShell, piAgent, appPackage, mkTestFilesystems, mkExistingUserConfig, ... }:
 
 pkgs.testers.runNixOSTest {
   name = "nixpi-bootstrap-mode";
@@ -7,7 +7,7 @@ pkgs.testers.runNixOSTest {
     bootstrap = { ... }: let
       username = "pi";
     in {
-      imports = nixpiModulesNoShell ++ [
+      imports = nixPiModulesNoShell ++ [
         ../../core/os/modules/broker.nix
         ../../core/os/modules/firstboot.nix
         mkTestFilesystems
@@ -83,6 +83,6 @@ pkgs.testers.runNixOSTest {
     for port in [6167, 8080, 8081, 5000, 8443]:
         client.succeed(f"! nc -z -w 2 nixpi-bootstrap {port}")
 
-    print("nixPI bootstrap mode test passed!")
+    print("NixPI bootstrap mode test passed!")
   '';
 }

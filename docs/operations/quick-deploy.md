@@ -1,20 +1,20 @@
 # Quick Deploy
 
-> Build, install, and validate nixPI
+> Build, install, and validate NixPI
 
 ## 🌱 Audience
 
-Operators and maintainers installing nixPI from the official installer image or validating local builds.
+Operators and maintainers installing NixPI from the official installer image or validating local builds.
 
 ## 🛡️ Security Note: NetBird is Mandatory
 
-NetBird is the network security boundary for all nixPI services. The firewall trusts only the NetBird interface (`wt0`). Without NetBird running, all services (Matrix, Home, Web Chat) are exposed to the local network.
+NetBird is the network security boundary for all NixPI services. The firewall trusts only the NetBird interface (`wt0`). Without NetBird running, all services (Matrix, Home, Web Chat) are exposed to the local network.
 
 **Complete NetBird setup and verify `wt0` is active before exposing this machine to any network.** See [Security Model](../reference/security-model) for the full threat model.
 
 ## 🚀 Installation Workflow
 
-nixPI ships as a standard graphical NixOS installer image. It is based on the upstream GNOME + Calamares installer and writes a normal `/etc/nixos/flake.nix` on the installed machine.
+NixPI ships as a standard graphical NixOS installer image. It is based on the upstream GNOME + Calamares installer and writes a normal `/etc/nixos/flake.nix` on the installed machine.
 
 ### 1. Build or Download the Installer ISO
 
@@ -34,7 +34,7 @@ Use your preferred image writer, or from a Linux host:
 sudo dd if=./result/iso/*.iso of=/dev/<usb-device> bs=4M status=progress oflag=sync
 ```
 
-### 3. Install nixPI
+### 3. Install NixPI
 
 1. Boot the USB stick
 2. Launch the graphical installer

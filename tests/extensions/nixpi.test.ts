@@ -3,10 +3,10 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
-	ensureNixpi,
+	ensureNixPi,
 	getPackageDir,
 	handleAgentCreate,
-	handleNixpiStatus,
+	handleNixPiStatus,
 	handleMentionAgent,
 	handleSkillCreate,
 	handleSkillList,
@@ -14,32 +14,32 @@ import {
 } from "../../core/pi/extensions/nixpi/actions.js";
 import { createMockExtensionAPI } from "../helpers/mock-extension-api.js";
 import { createMockExtensionContext } from "../helpers/mock-extension-context.js";
-import { createTempNixpi, type TempNixpi } from "../helpers/temp-nixpi.js";
+import { createTempNixPi, type TempNixPi } from "../helpers/temp-nixpi.js";
 
-let nixpiDir: string;
+let nixPiDir: string;
 
 beforeEach(() => {
-	nixpiDir = fs.mkdtempSync(path.join(os.tmpdir(), "nixpi-test-"));
+	nixPiDir = fs.mkdtempSync(path.join(os.tmpdir(), "nixpi-test-"));
 });
 
 afterEach(() => {
-	fs.rmSync(nixpiDir, { recursive: true, force: true });
+	fs.rmSync(nixPiDir, { recursive: true, force: true });
 });
 
 // ---------------------------------------------------------------------------
-// ensureNixpi
+// ensureNixPi
 // ---------------------------------------------------------------------------
-describe("ensureNixpi", () => {
+describe("ensureNixPi", () => {
 	it("creates all required subdirectories", () => {
-		ensureNixpi(nixpiDir);
+		ensureNixPi(nixPiDir);
 		for (const dir of ["Persona", "Skills", "Evolutions", "audit"]) {
-			expect(fs.existsSync(path.join(nixpiDir, dir))).toBe(true);
+			expect(fs.existsSync(path.join(nixPiDir, dir))).toBe(true);
 		}
 	});
 
 	it("is idempotent — calling twice does not throw", () => {
-		ensureNixpi(nixpiDir);
-		expect(() => ensureNixpi(nixpiDir)).not.toThrow();
+		ensureNixPi(nixPiDir);
+		expect(() => ensureNixPi(nixPiDir)).not.toThrow();
 	});
 });
 
@@ -90,26 +90,26 @@ describe("getPackageDir", () => {
 });
 
 // ---------------------------------------------------------------------------
-// handleNixpiStatus
+// handleNixPiStatus
 // ---------------------------------------------------------------------------
-describe("handleNixpiStatus", () => {
-	it("returns content containing the nixPI dir path", () => {
-		ensureNixpi(nixpiDir);
-		const result = handleNixpiStatus(nixpiDir);
+describe("handleNixPiStatus", () => {
+	it("returns content containing the NixPI dir path", () => {
+		ensureNixPi(nixPiDir);
+		const result = handleNixPiStatus(nixPiDir);
 		expect(result.content).toHaveLength(1);
 		expect(result.content[0].type).toBe("text");
-		expect(result.content[0].text).toContain(nixpiDir);
+		expect(result.content[0].text).toContain(nixPiDir);
 	});
 
 	it("returns a details object", () => {
-		ensureNixpi(nixpiDir);
-		const result = handleNixpiStatus(nixpiDir);
+		ensureNixPi(nixPiDir);
+		const result = handleNixPiStatus(nixPiDir);
 		expect(result.details).toBeDefined();
 	});
 
 	it("shows package version line", () => {
-		ensureNixpi(nixpiDir);
-		const result = handleNixpiStatus(nixpiDir);
+		ensureNixPi(nixPiDir);
+		const result = handleNixPiStatus(nixPiDir);
 		expect(result.content[0].text).toContain("Package version:");
 	});
 });
@@ -119,40 +119,40 @@ describe("handleNixpiStatus", () => {
 // ---------------------------------------------------------------------------
 describe("handleSkillCreate", () => {
 	beforeEach(() => {
-		ensureNixpi(nixpiDir);
+		ensureNixPi(nixPiDir);
 	});
 
 	it("creates a SKILL.md file at the expected path", () => {
-		const result = handleSkillCreate(nixpiDir, {
+		const result = handleSkillCreate(nixPiDir, {
 			name: "my-skill",
 			description: "A test skill",
 			content: "# My Skill\n\nDo things.",
 		});
 		expect(result.content[0].text).toContain("created skill: my-skill");
-		const skillFile = path.join(nixpiDir, "Skills", "my-skill", "SKILL.md");
+		const skillFile = path.join(nixPiDir, "Skills", "my-skill", "SKILL.md");
 		expect(fs.existsSync(skillFile)).toBe(true);
 	});
 
 	it("writes name and description into the frontmatter", () => {
-		handleSkillCreate(nixpiDir, {
+		handleSkillCreate(nixPiDir, {
 			name: "scoped-skill",
 			description: "Scoped description",
 			content: "Body text",
 		});
-		const raw = fs.readFileSync(path.join(nixpiDir, "Skills", "scoped-skill", "SKILL.md"), "utf-8");
+		const raw = fs.readFileSync(path.join(nixPiDir, "Skills", "scoped-skill", "SKILL.md"), "utf-8");
 		expect(raw).toContain("name: scoped-skill");
 		expect(raw).toContain("description: Scoped description");
 		expect(raw).toContain("Body text");
 	});
 
 	it("returns an error result when the skill already exists", () => {
-		handleSkillCreate(nixpiDir, { name: "dup-skill", description: "first", content: "" });
-		const result = handleSkillCreate(nixpiDir, { name: "dup-skill", description: "second", content: "" });
+		handleSkillCreate(nixPiDir, { name: "dup-skill", description: "first", content: "" });
+		const result = handleSkillCreate(nixPiDir, { name: "dup-skill", description: "second", content: "" });
 		expect(result.content[0].text).toContain("already exists");
 	});
 
-	it("blocks path traversal in skill name that escapes nixPI dir", () => {
-		const result = handleSkillCreate(nixpiDir, { name: "../../escape", description: "bad", content: "" });
+	it("blocks path traversal in skill name that escapes NixPI dir", () => {
+		const result = handleSkillCreate(nixPiDir, { name: "../../escape", description: "bad", content: "" });
 		expect(result.content[0].text).toContain("Path traversal blocked");
 	});
 });
@@ -162,13 +162,13 @@ describe("handleSkillCreate", () => {
 // ---------------------------------------------------------------------------
 describe("handleAgentCreate", () => {
 	beforeEach(() => {
-		ensureNixpi(nixpiDir);
+		ensureNixPi(nixPiDir);
 	});
 
 	it("creates agent credentials and a starter AGENTS.md", async () => {
 		const restartDaemon = vi.fn().mockResolvedValue({ ok: true });
 		const result = await handleAgentCreate(
-			nixpiDir,
+			nixPiDir,
 			{
 				id: "planner",
 				name: "Planner",
@@ -179,7 +179,7 @@ describe("handleAgentCreate", () => {
 				respond_mode: "mentioned",
 			},
 			{
-				homeDir: nixpiDir,
+				homeDir: nixPiDir,
 				loadPrimaryMatrixConfig: () => ({
 					homeserver: "http://localhost:6167",
 					registrationToken: "reg-token",
@@ -199,9 +199,9 @@ describe("handleAgentCreate", () => {
 		);
 
 		expect(result.content[0].text).toContain("created agent: planner");
-		expect(fs.existsSync(path.join(nixpiDir, ".pi", "matrix-agents", "planner.json"))).toBe(true);
-		expect(fs.existsSync(path.join(nixpiDir, "Agents", "planner", "AGENTS.md"))).toBe(true);
-		const raw = fs.readFileSync(path.join(nixpiDir, "Agents", "planner", "AGENTS.md"), "utf-8");
+		expect(fs.existsSync(path.join(nixPiDir, ".pi", "matrix-agents", "planner.json"))).toBe(true);
+		expect(fs.existsSync(path.join(nixPiDir, "Agents", "planner", "AGENTS.md"))).toBe(true);
+		const raw = fs.readFileSync(path.join(nixPiDir, "Agents", "planner", "AGENTS.md"), "utf-8");
 		expect(raw).toContain("id: planner");
 		expect(raw).toContain("name: Planner");
 		expect(raw).toContain("username: planner");
@@ -225,7 +225,7 @@ describe("handleAgentCreate", () => {
 		});
 
 		await handleAgentCreate(
-			nixpiDir,
+			nixPiDir,
 			{
 				id: "critic",
 				name: "Critic",
@@ -233,7 +233,7 @@ describe("handleAgentCreate", () => {
 				role_prompt: "Look for flaws and missing assumptions.",
 			},
 			{
-				homeDir: nixpiDir,
+				homeDir: nixPiDir,
 				loadPrimaryMatrixConfig: () => ({
 					homeserver: "http://localhost:6167",
 					registrationToken: "reg-token",
@@ -249,7 +249,7 @@ describe("handleAgentCreate", () => {
 
 	it("returns success with a warning when nixpi-daemon restart fails", async () => {
 		const result = await handleAgentCreate(
-			nixpiDir,
+			nixPiDir,
 			{
 				id: "cashus",
 				name: "Cashus",
@@ -257,7 +257,7 @@ describe("handleAgentCreate", () => {
 				role_prompt: "Provide financial guidance.",
 			},
 			{
-				homeDir: nixpiDir,
+				homeDir: nixPiDir,
 				loadPrimaryMatrixConfig: () => ({
 					homeserver: "http://localhost:6167",
 					registrationToken: "reg-token",
@@ -285,7 +285,7 @@ describe("handleAgentCreate", () => {
 
 	it("returns an error if the agent already exists", async () => {
 		await handleAgentCreate(
-			nixpiDir,
+			nixPiDir,
 			{
 				id: "planner",
 				name: "Planner",
@@ -293,7 +293,7 @@ describe("handleAgentCreate", () => {
 				role_prompt: "Focus on decomposition and sequencing.",
 			},
 			{
-				homeDir: nixpiDir,
+				homeDir: nixPiDir,
 				loadPrimaryMatrixConfig: () => ({
 					homeserver: "http://localhost:6167",
 					registrationToken: "reg-token",
@@ -312,7 +312,7 @@ describe("handleAgentCreate", () => {
 		);
 
 		const result = await handleAgentCreate(
-			nixpiDir,
+			nixPiDir,
 			{
 				id: "planner",
 				name: "Planner",
@@ -320,7 +320,7 @@ describe("handleAgentCreate", () => {
 				role_prompt: "Focus on decomposition and sequencing.",
 			},
 			{
-				homeDir: nixpiDir,
+				homeDir: nixPiDir,
 				loadPrimaryMatrixConfig: () => ({
 					homeserver: "http://localhost:6167",
 					registrationToken: "reg-token",
@@ -343,7 +343,7 @@ describe("handleAgentCreate", () => {
 
 	it("rejects invalid agent ids", async () => {
 		const result = await handleAgentCreate(
-			nixpiDir,
+			nixPiDir,
 			{
 				id: "../../evil",
 				name: "Evil",
@@ -351,7 +351,7 @@ describe("handleAgentCreate", () => {
 				role_prompt: "Nope.",
 			},
 			{
-				homeDir: nixpiDir,
+				homeDir: nixPiDir,
 				loadPrimaryMatrixConfig: () => ({
 					homeserver: "http://localhost:6167",
 					registrationToken: "reg-token",
@@ -369,23 +369,23 @@ describe("handleAgentCreate", () => {
 // ---------------------------------------------------------------------------
 describe("handleSkillList", () => {
 	it("returns message when Skills directory does not exist", () => {
-		// nixpiDir exists but Skills subdir has not been created
-		const result = handleSkillList(nixpiDir);
+		// nixPiDir exists but Skills subdir has not been created
+		const result = handleSkillList(nixPiDir);
 		expect(result.content[0].text).toContain("No skills directory found");
 	});
 
 	it("returns message when Skills directory is empty", () => {
-		fs.mkdirSync(path.join(nixpiDir, "Skills"), { recursive: true });
-		const result = handleSkillList(nixpiDir);
+		fs.mkdirSync(path.join(nixPiDir, "Skills"), { recursive: true });
+		const result = handleSkillList(nixPiDir);
 		expect(result.content[0].text).toContain("No skills found");
 	});
 
 	it("lists skills with their descriptions", () => {
-		ensureNixpi(nixpiDir);
-		handleSkillCreate(nixpiDir, { name: "alpha", description: "Alpha skill", content: "" });
-		handleSkillCreate(nixpiDir, { name: "beta", description: "Beta skill", content: "" });
+		ensureNixPi(nixPiDir);
+		handleSkillCreate(nixPiDir, { name: "alpha", description: "Alpha skill", content: "" });
+		handleSkillCreate(nixPiDir, { name: "beta", description: "Beta skill", content: "" });
 
-		const result = handleSkillList(nixpiDir);
+		const result = handleSkillList(nixPiDir);
 		expect(result.content[0].text).toContain("alpha");
 		expect(result.content[0].text).toContain("Alpha skill");
 		expect(result.content[0].text).toContain("beta");
@@ -393,10 +393,10 @@ describe("handleSkillList", () => {
 	});
 
 	it("ignores entries without a SKILL.md file", () => {
-		ensureNixpi(nixpiDir);
+		ensureNixPi(nixPiDir);
 		// Create a directory without a SKILL.md
-		fs.mkdirSync(path.join(nixpiDir, "Skills", "orphan"), { recursive: true });
-		const result = handleSkillList(nixpiDir);
+		fs.mkdirSync(path.join(nixPiDir, "Skills", "orphan"), { recursive: true });
+		const result = handleSkillList(nixPiDir);
 		expect(result.content[0].text).toContain("No skills found");
 	});
 });
@@ -406,13 +406,13 @@ describe("handleSkillList", () => {
 // ---------------------------------------------------------------------------
 describe("loadAgentInfos", () => {
 	it("returns empty array when Agents directory does not exist", () => {
-		const agents = loadAgentInfos(nixpiDir);
+		const agents = loadAgentInfos(nixPiDir);
 		expect(agents).toEqual([]);
 	});
 
 	it("parses agent definitions from AGENTS.md files", () => {
-		ensureNixpi(nixpiDir);
-		const agentDir = path.join(nixpiDir, "Agents", "cookie");
+		ensureNixPi(nixPiDir);
+		const agentDir = path.join(nixPiDir, "Agents", "cookie");
 		fs.mkdirSync(agentDir, { recursive: true });
 		fs.writeFileSync(
 			path.join(agentDir, "AGENTS.md"),
@@ -430,7 +430,7 @@ I manage memories.
 `,
 		);
 
-		const agents = loadAgentInfos(nixpiDir);
+		const agents = loadAgentInfos(nixPiDir);
 		expect(agents).toHaveLength(1);
 		expect(agents[0]).toMatchObject({
 			id: "cookie",
@@ -441,12 +441,12 @@ I manage memories.
 	});
 
 	it("skips malformed agent files", () => {
-		ensureNixpi(nixpiDir);
-		const agentDir = path.join(nixpiDir, "Agents", "bad");
+		ensureNixPi(nixPiDir);
+		const agentDir = path.join(nixPiDir, "Agents", "bad");
 		fs.mkdirSync(agentDir, { recursive: true });
 		fs.writeFileSync(path.join(agentDir, "AGENTS.md"), "not valid frontmatter");
 
-		const agents = loadAgentInfos(nixpiDir);
+		const agents = loadAgentInfos(nixPiDir);
 		expect(agents).toEqual([]);
 	});
 });
@@ -456,12 +456,12 @@ I manage memories.
 // ---------------------------------------------------------------------------
 describe("handleMentionAgent", () => {
 	beforeEach(() => {
-		ensureNixpi(nixpiDir);
+		ensureNixPi(nixPiDir);
 	});
 
 	it("formats a message with the agent's Matrix User ID", () => {
 		// Setup: create an agent
-		const agentDir = path.join(nixpiDir, "Agents", "cookie");
+		const agentDir = path.join(nixPiDir, "Agents", "cookie");
 		fs.mkdirSync(agentDir, { recursive: true });
 		fs.writeFileSync(
 			path.join(agentDir, "AGENTS.md"),
@@ -475,7 +475,7 @@ description: Memory manager
 `,
 		);
 
-		const result = handleMentionAgent(nixpiDir, {
+		const result = handleMentionAgent(nixPiDir, {
 			agent_id: "cookie",
 			message: "Please remember that I prefer dark mode",
 		});
@@ -490,7 +490,7 @@ description: Memory manager
 
 	it("returns error for unknown agent with available agents list", () => {
 		// Setup: create one agent
-		const agentDir = path.join(nixpiDir, "Agents", "planner");
+		const agentDir = path.join(nixPiDir, "Agents", "planner");
 		fs.mkdirSync(agentDir, { recursive: true });
 		fs.writeFileSync(
 			path.join(agentDir, "AGENTS.md"),
@@ -504,7 +504,7 @@ description: Planning assistant
 `,
 		);
 
-		const result = handleMentionAgent(nixpiDir, {
+		const result = handleMentionAgent(nixPiDir, {
 			agent_id: "unknown",
 			message: "Hello",
 		});
@@ -515,7 +515,7 @@ description: Planning assistant
 	});
 
 	it("returns error when no agents exist", () => {
-		const result = handleMentionAgent(nixpiDir, {
+		const result = handleMentionAgent(nixPiDir, {
 			agent_id: "anyone",
 			message: "Hello",
 		});
@@ -529,15 +529,15 @@ description: Planning assistant
 // workspace_status tool execute (via registered extension)
 // ---------------------------------------------------------------------------
 
-type NixpiStatusResult = { content: Array<{ type: string; text: string }>; details: unknown };
-type NixpiStatusExecute = () => Promise<NixpiStatusResult>;
+type NixPiStatusResult = { content: Array<{ type: string; text: string }>; details: unknown };
+type NixPiStatusExecute = () => Promise<NixPiStatusResult>;
 
 describe("nixpi_status tool execute", () => {
-	let temp: TempNixpi;
+	let temp: TempNixPi;
 	let api: ReturnType<typeof createMockExtensionAPI>;
 
 	beforeEach(async () => {
-		temp = createTempNixpi();
+		temp = createTempNixPi();
 		vi.resetModules();
 		api = createMockExtensionAPI();
 		const mod = await import("../../core/pi/extensions/nixpi/index.js");
@@ -548,32 +548,32 @@ describe("nixpi_status tool execute", () => {
 		temp.cleanup();
 	});
 
-	function getNixpiStatusExecute(): NixpiStatusExecute {
+	function getNixPiStatusExecute(): NixPiStatusExecute {
 		const tool = api._registeredTools.find((t) => t.name === "nixpi_status");
 		if (!tool) throw new Error("nixpi_status tool not found");
-		return tool.execute as NixpiStatusExecute;
+		return tool.execute as NixPiStatusExecute;
 	}
 
 	it("returns a result with content array containing a text item", async () => {
 		expect(api._registeredTools.find((t) => t.name === "nixpi_status")).toBeDefined();
-		const result = await getNixpiStatusExecute()();
+		const result = await getNixPiStatusExecute()();
 		expect(result).toHaveProperty("content");
 		expect(Array.isArray(result.content)).toBe(true);
 		expect(result.content[0]).toHaveProperty("type", "text");
 	});
 
-	it("includes the nixPI dir path in the status text", async () => {
-		const result = await getNixpiStatusExecute()();
-		expect(result.content[0].text).toContain(temp.nixpiDir);
+	it("includes the NixPI dir path in the status text", async () => {
+		const result = await getNixPiStatusExecute()();
+		expect(result.content[0].text).toContain(temp.nixPiDir);
 	});
 
 	it("includes package version line in the status text", async () => {
-		const result = await getNixpiStatusExecute()();
+		const result = await getNixPiStatusExecute()();
 		expect(result.content[0].text).toContain("Package version:");
 	});
 
 	it("includes seeded blueprints count in the status text", async () => {
-		const result = await getNixpiStatusExecute()();
+		const result = await getNixPiStatusExecute()();
 		expect(result.content[0].text).toContain("Seeded blueprints:");
 	});
 });
@@ -582,11 +582,11 @@ describe("nixpi_status tool execute", () => {
 // /nixpi command handler subcommands
 // ---------------------------------------------------------------------------
 describe("/nixpi command handler", () => {
-	let temp: TempNixpi;
+	let temp: TempNixPi;
 	let api: ReturnType<typeof createMockExtensionAPI>;
 
 	beforeEach(async () => {
-		temp = createTempNixpi();
+		temp = createTempNixPi();
 		vi.resetModules();
 		api = createMockExtensionAPI();
 		const mod = await import("../../core/pi/extensions/nixpi/index.js");
@@ -616,19 +616,19 @@ describe("/nixpi command handler", () => {
 		expect(api._sentMessages[0].message).toContain("nixpi_status");
 	});
 
-	it("init subcommand notifies with nixPI initialized", async () => {
+	it("init subcommand notifies with NixPI initialized", async () => {
 		const handler = getCommandHandler();
 		const ctx = createMockExtensionContext({ hasUI: true });
 		await handler("init", ctx);
-		expect(ctx.ui.notify).toHaveBeenCalledWith("nixPI initialized", "info");
+		expect(ctx.ui.notify).toHaveBeenCalledWith("NixPI initialized", "info");
 	});
 
-	it("init subcommand creates nixPI subdirectories", async () => {
+	it("init subcommand creates NixPI subdirectories", async () => {
 		const handler = getCommandHandler();
 		const ctx = createMockExtensionContext({ hasUI: true });
 		await handler("init", ctx);
 		for (const dir of ["Persona", "Skills", "Evolutions", "Objects", "Episodes", "Agents", "audit"]) {
-			expect(fs.existsSync(path.join(temp.nixpiDir, dir))).toBe(true);
+			expect(fs.existsSync(path.join(temp.nixPiDir, dir))).toBe(true);
 		}
 	});
 

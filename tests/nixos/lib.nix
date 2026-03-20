@@ -1,5 +1,5 @@
 # tests/nixos/lib.nix
-# Shared helpers for nixPI NixOS integration tests
+# Shared helpers for NixPI NixOS integration tests
 
 { pkgs, lib }:
 
@@ -72,9 +72,9 @@ EOF
     chmod 644 ${homeDir}/.nixpi/prefill.env
   '';
 
-  # Common test configuration for nixPI nodes
-  mkNixpiNode = { nixpiModules, piAgent, appPackage, extraConfig ? {} }: {
-    imports = nixpiModules ++ [ extraConfig ];
+  # Common test configuration for NixPI nodes
+  mkNixPiNode = { nixPiModules, piAgent, appPackage, extraConfig ? {} }: {
+    imports = nixPiModules ++ [ extraConfig ];
     _module.args = { inherit piAgent appPackage; };
 
     virtualisation.diskSize = 20480;
@@ -96,8 +96,8 @@ EOF
     fileSystems."/boot" = { device = "/dev/vda1"; fsType = "vfat"; };
   };
 
-  # Standard nixPI modules list
-  nixpiModules = [
+  # Standard NixPI modules list
+  nixPiModules = [
     ../../core/os/modules/options.nix
     ../../core/os/modules/app.nix
     ../../core/os/modules/llm.nix
@@ -107,8 +107,8 @@ EOF
     ../../core/os/modules/update.nix
   ];
 
-  # nixPI modules without nixpi-shell (for tests that define their own operator user)
-  nixpiModulesNoShell = [
+  # NixPI modules without nixpi-shell (for tests that define their own operator user)
+  nixPiModulesNoShell = [
     ../../core/os/modules/options.nix
     ../../core/os/modules/app.nix
     ../../core/os/modules/llm.nix

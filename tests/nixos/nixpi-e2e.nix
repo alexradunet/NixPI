@@ -1,18 +1,18 @@
 # tests/nixos/nixpi-e2e.nix
-# End-to-end integration test - full nixPI stack validation
+# End-to-end integration test - full NixPI stack validation
 
-{ pkgs, lib, nixpiModules, nixpiModulesNoShell, piAgent, appPackage, mkNixpiNode, mkTestFilesystems, ... }:
+{ pkgs, lib, nixPiModules, nixPiModulesNoShell, piAgent, appPackage, mkNixPiNode, mkTestFilesystems, ... }:
 
 pkgs.testers.runNixOSTest {
   name = "nixpi-e2e";
 
   nodes = {
-    # Main nixPI server
+    # Main NixPI server
     nixpi = { ... }: let
       username = "pi";
       homeDir = "/home/${username}";
     in {
-      imports = nixpiModulesNoShell ++ [ 
+      imports = nixPiModulesNoShell ++ [ 
         ../../core/os/modules/firstboot.nix
         mkTestFilesystems 
       ];
@@ -32,7 +32,7 @@ pkgs.testers.runNixOSTest {
       boot.loader.systemd-boot.enable = true;
       boot.loader.efi.canTouchEfiVariables = true;
 
-      # Ensure the primary nixPI user exists
+      # Ensure the primary NixPI user exists
       users.users.${username} = {
         isNormalUser = true;
         group = username;
@@ -89,7 +89,7 @@ pkgs.testers.runNixOSTest {
     matrix_user = "e2etest"
     matrix_password = "e2etestpass123"
     
-    # Start the nixPI server
+    # Start the NixPI server
     nixpi.start()
     nixpi.wait_for_unit("multi-user.target", timeout=300)
     nixpi.wait_until_succeeds("ip -4 addr show dev eth1 | grep -q 'inet '", timeout=60)
@@ -98,14 +98,14 @@ pkgs.testers.runNixOSTest {
     client.start()
     client.wait_until_succeeds("ip -4 addr show dev eth1 | grep -q 'inet '", timeout=60)
     
-    # E2E Test 1: nixPI server is accessible from client
+    # E2E Test 1: NixPI server is accessible from client
     client.succeed("ping -c 3 pi")
     
     # E2E Test 2: Firstboot completes and the system reaches its steady state
     nixpi.wait_for_unit("nixpi-firstboot.service", timeout=180)
     nixpi.wait_until_succeeds("test -f " + home + "/.nixpi/.setup-complete", timeout=180)
 
-    # E2E Test 3: Matrix homeserver is available locally on the nixPI node
+    # E2E Test 3: Matrix homeserver is available locally on the NixPI node
     nixpi.wait_for_unit("matrix-synapse.service", timeout=60)
     nixpi.succeed("curl -sf http://127.0.0.1:6167/_matrix/client/versions")
 
@@ -138,8 +138,8 @@ pkgs.testers.runNixOSTest {
     print("LocalAI active state: " + localai_active)
     assert localai_active in ["inactive", "failed", "unknown", ""], "LocalAI should not be running in this test: " + localai_active
     
-    # E2E Test 9: nixPI directories are correctly set up
-    nixpi.succeed("test -d " + home + "/nixPI")
+    # E2E Test 9: NixPI directories are correctly set up
+    nixpi.succeed("test -d " + home + "/nixpi")
     nixpi.succeed("test -d " + home + "/.nixpi")
     nixpi.succeed("test -d " + home + "/.pi")
     nixpi.succeed("test -d /var/lib/nixpi/agent")
@@ -172,7 +172,7 @@ pkgs.testers.runNixOSTest {
     print("All E2E tests passed!")
     print("=" * 60)
     print("Verified:")
-    print("  - Matrix homeserver is functional locally on the nixPI node")
+    print("  - Matrix homeserver is functional locally on the NixPI node")
     print("  - Firstboot logged unattended setup completion")
     print("  - Matrix self-registration is disabled after setup")
     print("  - SSH is disabled from an untrusted peer after setup")

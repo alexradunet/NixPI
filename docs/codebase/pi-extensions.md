@@ -4,7 +4,7 @@
 
 ## 🌱 Why Pi Extensions Exist
 
-Extensions provide Pi with tools to interact with the nixPI system. They bridge the gap between Pi's reasoning and actual system operations like NixOS management, memory operations, and setup tasks.
+Extensions provide Pi with tools to interact with the NixPI system. They bridge the gap between Pi's reasoning and actual system operations like NixOS management, memory operations, and setup tasks.
 
 ## 🚀 What They Own
 
@@ -22,7 +22,7 @@ Extensions provide Pi with tools to interact with the nixPI system. They bridge 
 
 ### NixPI Extension (`core/pi/extensions/nixpi/`)
 
-**Purpose**: Core nixPI platform operations.
+**Purpose**: Core NixPI platform operations.
 
 | File | Why | What | How / Notes |
 |------|-----|------|-------------|
@@ -38,8 +38,8 @@ Extensions provide Pi with tools to interact with the nixPI system. They bridge 
 | `nixos_update` | Update NixOS configuration |
 | `nixos_rollback` | Rollback to previous generation |
 | `nixos_proposal` | Propose config changes (local only) |
-| `nixpi_seed` | Seed nixPI directory |
-| `nixpi_blueprint` | Copy blueprint to nixPI directory |
+| `nixpi_seed` | Seed NixPI directory |
+| `nixpi_blueprint` | Copy blueprint to NixPI directory |
 
 ---
 
@@ -117,7 +117,7 @@ Extensions provide Pi with tools to interact with the nixPI system. They bridge 
 | `episode_consolidate` | Merge episodes into object |
 | `episode_list` | List recent episodes |
 
-**Episode Storage**: `~/nixPI/Episodes/YYYY-MM-DD/<slug>.md`
+**Episode Storage**: `~/nixpi/Episodes/YYYY-MM-DD/<slug>.md`
 
 ---
 

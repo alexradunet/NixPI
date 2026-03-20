@@ -1,7 +1,7 @@
 import { defineConfig } from "vitepress";
 
 export default defineConfig({
-	title: "nixPI",
+	title: "NixPI",
 	description: "Pi-native AI companion OS on NixOS",
 	lang: "en-US",
 	cleanUrls: true,
@@ -91,17 +91,17 @@ export default defineConfig({
 		},
 
 		socialLinks: [
-			{ icon: "github", link: "https://github.com/alexradunet/nixPI" },
+			{ icon: "github", link: "https://github.com/alexradunet/NixPI" },
 		],
 
 		editLink: {
-			pattern: "https://github.com/alexradunet/nixPI/edit/main/docs/:path",
+			pattern: "https://github.com/alexradunet/NixPI/edit/main/docs/:path",
 			text: "Edit this page on GitHub",
 		},
 
 		footer: {
 			message: "Released under the MIT License.",
-			copyright: "Copyright © 2024-present nixPI contributors",
+			copyright: "Copyright © 2024-present NixPI contributors",
 		},
 
 		search: {

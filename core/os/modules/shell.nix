@@ -9,7 +9,7 @@ let
   stateDir = config.nixpi.stateDir;
 
   bashrc = pkgs.writeText "nixpi-bashrc" ''
-    export NIXPI_DIR="${primaryHome}/nixPI"
+    export NIXPI_DIR="${primaryHome}/nixpi"
     export NIXPI_STATE_DIR="${stateDir}"
     export NIXPI_PI_DIR="${stateDir}/agent"
     export NIXPI_CONFIG_DIR="${stateDir}/services"
@@ -98,7 +98,7 @@ in
   environment.etc = {
     "skel/.bashrc".source = bashrc;
     "skel/.bash_profile".source = bashProfile;
-    "issue".text = "nixPI\n";
+    "issue".text = "NixPI\n";
   };
 
   system.activationScripts.nixpi-shell = lib.stringAfter [ "users" ] ''

@@ -1,4 +1,4 @@
-{ pkgs, lib, nixpiModulesNoShell, piAgent, appPackage, mkTestFilesystems, matrixTestClient, ... }:
+{ pkgs, lib, nixPiModulesNoShell, piAgent, appPackage, mkTestFilesystems, matrixTestClient, ... }:
 
 pkgs.testers.runNixOSTest {
   name = "nixpi-matrix-bridge";
@@ -8,7 +8,7 @@ pkgs.testers.runNixOSTest {
       username = "homeserver";
       homeDir = "/home/${username}";
     in {
-      imports = nixpiModulesNoShell ++ [ mkTestFilesystems ];
+      imports = nixPiModulesNoShell ++ [ mkTestFilesystems ];
       _module.args = { inherit piAgent appPackage; };
       nixpi.primaryUser = username;
       nixpi.security.trustedInterface = "eth1";
@@ -34,7 +34,7 @@ pkgs.testers.runNixOSTest {
       username = "pi";
       homeDir = "/home/${username}";
     in {
-      imports = nixpiModulesNoShell ++ [ mkTestFilesystems ];
+      imports = nixPiModulesNoShell ++ [ mkTestFilesystems ];
       _module.args = { inherit piAgent appPackage; };
       nixpi.primaryUser = username;
 
@@ -57,10 +57,10 @@ pkgs.testers.runNixOSTest {
 
       system.activationScripts.nixpi-bridge-fixtures = lib.stringAfter [ "users" ] ''
         install -d -m 0755 -o ${username} -g ${username} ${homeDir}/.nixpi
-        install -d -m 0775 -o ${username} -g agent ${homeDir}/nixPI
-        install -d -m 0775 -o ${username} -g agent ${homeDir}/nixPI/Agents
-        install -d -m 0775 -o ${username} -g agent ${homeDir}/nixPI/Agents/host
-        cat > ${homeDir}/nixPI/Agents/host/AGENTS.md <<'EOF'
+        install -d -m 0775 -o ${username} -g agent ${homeDir}/nixpi
+        install -d -m 0775 -o ${username} -g agent ${homeDir}/nixpi/Agents
+        install -d -m 0775 -o ${username} -g agent ${homeDir}/nixpi/Agents/host
+        cat > ${homeDir}/nixpi/Agents/host/AGENTS.md <<'EOF'
 ---
 id: host
 name: Pi
@@ -72,7 +72,7 @@ respond:
 ---
 You are Pi.
 EOF
-        chown -R ${username}:agent ${homeDir}/nixPI
+        chown -R ${username}:agent ${homeDir}/nixpi
         touch ${homeDir}/.nixpi/.setup-complete
         chown ${username}:${username} ${homeDir}/.nixpi/.setup-complete
         install -d -m 0700 -o agent -g agent /var/lib/nixpi/agent/matrix-agents
@@ -208,6 +208,6 @@ EOF
         + "' | grep -q 'hello from integration test'"
     )
 
-    print("nixPI matrix bridge transport test passed!")
+    print("NixPI matrix bridge transport test passed!")
   '';
 }

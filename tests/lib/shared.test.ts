@@ -2,7 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { getNixpiDir, safePath } from "../../core/lib/filesystem.js";
+import { getNixPiDir, safePath } from "../../core/lib/filesystem.js";
 import { parseFrontmatter, stringifyFrontmatter } from "../../core/lib/frontmatter.js";
 import {
 	createLogger,
@@ -204,9 +204,9 @@ describe("nowIso", () => {
 });
 
 // ---------------------------------------------------------------------------
-// getNixpiDir
+// getNixPiDir
 // ---------------------------------------------------------------------------
-describe("getNixpiDir", () => {
+describe("getNixPiDir", () => {
 	const origEnv = { ...process.env };
 
 	afterEach(() => {
@@ -215,13 +215,13 @@ describe("getNixpiDir", () => {
 
 	it("returns NIXPI_DIR when set", () => {
 		process.env.NIXPI_DIR = "/custom";
-		expect(getNixpiDir()).toBe("/custom");
+		expect(getNixPiDir()).toBe("/custom");
 	});
 
-	it("defaults to ~/nixPI when NIXPI_DIR is not set", () => {
+	it("defaults to ~/nixpi when NIXPI_DIR is not set", () => {
 		delete process.env.NIXPI_DIR;
-		const result = getNixpiDir();
-		expect(result).toMatch(/\/nixPI$/);
+		const result = getNixPiDir();
+		expect(result).toMatch(/\/nixpi$/);
 	});
 });
 

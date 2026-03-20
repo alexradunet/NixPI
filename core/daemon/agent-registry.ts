@@ -2,7 +2,7 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { type Static, Type } from "@sinclair/typebox";
 import { Value } from "@sinclair/typebox/value";
-import { getNixpiDir } from "../lib/filesystem.js";
+import { getNixPiDir } from "../lib/filesystem.js";
 import { parseFrontmatter } from "../lib/frontmatter.js";
 import { isSupportedCronExpression } from "./scheduler.js";
 
@@ -46,7 +46,7 @@ export interface ProactiveJobDefinition {
 }
 
 export interface LoadAgentDefinitionsOptions {
-	nixpiDir?: string;
+	nixPiDir?: string;
 	serverName?: string;
 }
 
@@ -113,9 +113,9 @@ export function loadAgentDefinitions(options: LoadAgentDefinitionsOptions = {}):
 }
 
 export function loadAgentDefinitionsResult(options: LoadAgentDefinitionsOptions = {}): LoadAgentDefinitionsResult {
-	const nixpiDir = options.nixpiDir ?? getNixpiDir();
+	const nixPiDir = options.nixPiDir ?? getNixPiDir();
 	const serverName = options.serverName ?? DEFAULT_SERVER_NAME;
-	const agentsDir = join(nixpiDir, "Agents");
+	const agentsDir = join(nixPiDir, "Agents");
 	if (!existsSync(agentsDir)) return { agents: [], errors: [] };
 
 	const agentIds = readdirSync(agentsDir, { withFileTypes: true })
