@@ -1,83 +1,26 @@
 # Daemon
 
-> Matrix room runtime and multi-agent orchestration
+> Always-on Matrix runtime
 
-## 🌱 Why The Daemon Exists
+## Responsibilities
 
-`nixpi-daemon.service` is NixPI's always-on room runtime. It exists to:
+The daemon has four moving parts:
 
-- Bridge Matrix rooms into Pi sessions
-- Preserve room continuity outside interactive local sessions
-- Support simple default-host deployments and optional multi-agent overlays
-- Schedule proactive turns without external orchestration
+1. Bootstrap in `index.ts`, `config.ts`, and `lifecycle.ts`
+2. Agent/session orchestration in `multi-agent-runtime.ts` and `agent-supervisor.ts`
+3. Routing and state in `router.ts` and `room-state.ts`
+4. Optional proactive scheduling in `scheduler.ts` and `proactive.ts`
 
-## 🚀 What It Owns
+## Reading order
 
-| Concern | Files | Purpose |
-|---------|-------|---------|
-| Bootstrap | `index.ts`, `config.ts`, `lifecycle.ts` | Startup, config loading, retry logic |
-| Runtime | `multi-agent-runtime.ts`, `agent-supervisor.ts` | Multi-agent orchestration |
-| Routing | `router.ts` | Message routing decisions |
-| State | `room-state.ts`, `agent-registry.ts` | Room and agent state management |
-| Scheduling | `scheduler.ts`, `proactive.ts` | Proactive job execution |
-| Bridge | `runtime/matrix-js-sdk-bridge.ts` | Matrix SDK transport |
-| Sessions | `runtime/pi-room-session.ts` | Pi session lifecycle |
-| Contracts | `contracts/matrix.ts`, `contracts/session.ts` | Interface definitions |
-| Resilience | `rate-limiter.ts`, `ordered-cache.ts`, `metrics.ts` | Rate limiting, caching, observability |
+- Start with `index.ts` for process startup.
+- Read `agent-registry.ts` to understand how agents are materialized.
+- Read `router.ts` and `room-state.ts` for reply policy.
+- Read `runtime/pi-room-session.ts` only when debugging session transport.
 
-## 📋 File Inventory
+## Cleanup rule
 
-### Bootstrap and Config
-
-| File | Why | What | How / Notes |
-|------|-----|------|-------------|
-| `core/daemon/index.ts` | Entry point | Bootstrap, mode selection, shutdown | Reads env vars, starts runtime |
-| `core/daemon/config.ts` | Configuration | Config loading from env and files | Determines host/overlay mode |
-| `core/daemon/lifecycle.ts` | Startup resilience | Retry/backoff for startup failures | Prevents crash loops |
-
-### Runtime Core
-
-| File | Why | What | How / Notes |
-|------|-----|------|-------------|
-| `core/daemon/multi-agent-runtime.ts` | Runtime orchestration | Manages all agents, rooms, sessions | Heart of the daemon |
-| `core/daemon/agent-supervisor.ts` | Agent lifecycle | Supervises individual agent instances | Health monitoring, restart |
-| `core/daemon/agent-registry.ts` | Agent discovery | Loads and validates agent overlays | Scans `~/nixpi/Agents/*/AGENTS.md` |
-
-### Routing and State
-
-| File | Why | What | How / Notes |
-|------|-----|------|-------------|
-| `core/daemon/router.ts` | Message routing | Decides which agent handles message | Mention detection, cooldowns |
-| `core/daemon/room-state.ts` | Room tracking | Per-room message history, budgets | Bounded, pruned over time |
-
-### Scheduling
-
-| File | Why | What | How / Notes |
-|------|-----|------|-------------|
-| `core/daemon/scheduler.ts` | Job scheduling | Cron and interval job execution | Supports `@hourly`, `@daily`, cron |
-| `core/daemon/proactive.ts` | Proactive dispatch | Dispatches proactive turns | Rate limiting, circuit breaker |
-| `core/daemon/rate-limiter.ts` | Rate protection | Prevents proactive job flooding | Per-agent hourly budgets |
-
-### Bridge and Sessions
-
-| File | Why | What | How / Notes |
-|------|-----|------|-------------|
-| `core/daemon/runtime/matrix-js-sdk-bridge.ts` | Matrix transport | SDK integration, event handling | One client per agent |
-| `core/daemon/runtime/pi-room-session.ts` | Session lifecycle | Pi SDK session per (room, agent) | Compaction, context management |
-
-### Contracts
-
-| File | Why | What | How / Notes |
-|------|-----|------|-------------|
-| `core/daemon/contracts/matrix.ts` | Matrix abstraction | Interface for Matrix operations | Allows testing without SDK |
-| `core/daemon/contracts/session.ts` | Session abstraction | Interface for Pi sessions | Testable session mocking |
-
-### Utilities
-
-| File | Why | What | How / Notes |
-|------|-----|------|-------------|
-| `core/daemon/ordered-cache.ts` | Bounded caching | LRU cache with eviction | Duplicate detection |
-| `core/daemon/metrics.ts` | Observability | Runtime metrics collection | Exportable metrics |
+Prefer central defaults over per-agent knobs. The daemon is easier to maintain when routing policy, cooldowns, and reply budgets are owned in one place instead of leaking through frontmatter.
 
 ---
 

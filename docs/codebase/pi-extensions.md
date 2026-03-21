@@ -1,83 +1,27 @@
 # Pi Extensions
 
-> Pi-facing tools, commands, and hooks
+> Pi-facing tools and session hooks
 
-## 🌱 Why Pi Extensions Exist
+## Responsibilities
 
-Extensions provide Pi with tools to interact with the NixPI system. They bridge the gap between Pi's reasoning and actual system operations like NixOS management, memory operations, and setup tasks.
+Extensions are grouped by domain, not by transport:
 
-## 🚀 What They Own
+- `nixpi/` owns directory bootstrap and blueprint seeding
+- `os/` owns system operations and local proposal workflows
+- `objects/` owns durable markdown memory
+- `episodes/` owns append-only episodic memory
+- `persona/` owns prompt injection, compaction state, and guardrails
+- `localai/` registers the local model provider
 
-| Extension | Purpose | Location |
-|-----------|---------|----------|
-| `nixpi` | NixOS operations, blueprints, proposals | `core/pi/extensions/nixpi/` |
-| `os` | OS health, systemd, updates, proposals | `core/pi/extensions/os/` |
-| `objects` | Durable memory object management | `core/pi/extensions/objects/` |
-| `episodes` | Episodic memory capture | `core/pi/extensions/episodes/` |
-| `persona` | Persona injection and guardrails | `core/pi/extensions/persona/` |
-| `localai` | Local AI integration | `core/pi/extensions/localai/` |
+## Structural rule
 
-## 📋 Extension Inventory
+Each extension should keep:
 
-### NixPI Extension (`core/pi/extensions/nixpi/`)
+1. `index.ts` for registration and hook wiring
+2. one or two action modules for real business logic
+3. no extra files unless they clearly own reusable behavior
 
-**Purpose**: Core NixPI platform operations.
-
-| File | Why | What | How / Notes |
-|------|-----|------|-------------|
-| `index.ts` | Extension entry | Tool registration, context setup | Exports extension manifest |
-| `actions.ts` | Core actions | `nixpi_status`, `nixos_update`, etc. | Main tool implementations |
-| `actions-blueprints.ts` | Blueprint actions | Seed/copy directory blueprints | Template management |
-| `types.ts` | Type definitions | Shared types for extension | TypeScript interfaces |
-
-**Key Tools**:
-| Tool | Purpose |
-|------|---------|
-| `nixpi_status` | Get system status |
-| `nixos_update` | Update NixOS configuration |
-| `nixos_rollback` | Rollback to previous generation |
-| `nixos_proposal` | Propose config changes (local only) |
-| `nixpi_seed` | Seed NixPI directory |
-| `nixpi_blueprint` | Copy blueprint to NixPI directory |
-
----
-
-### OS Extension (`core/pi/extensions/os/`)
-
-**Purpose**: Operating system management tools.
-
-| File | Why | What | How / Notes |
-|------|-----|------|-------------|
-| `index.ts` | Extension entry | Tool registration | Exports extension manifest |
-| `actions.ts` | Core actions | `systemd_control`, `observe_host`, etc. | Main tool implementations |
-| `actions-health.ts` | Health actions | Host health observation | System status gathering |
-| `actions-proposal.ts` | Proposal actions | Local change proposals | Git-based change prep |
-| `types.ts` | Type definitions | Shared types | TypeScript interfaces |
-
-**Key Tools**:
-| Tool | Purpose |
-|------|---------|
-| `systemd_control` | Start/stop/restart/status services |
-| `observe_host` | Get host state and metrics |
-| `observe_system` | Get system information |
-| `host_health` | Health check aggregation |
-| `os_propose_change` | Propose local changes |
-
----
-
-### Objects Extension (`core/pi/extensions/objects/`)
-
-**Purpose**: Durable memory object management.
-
-| File | Why | What | How / Notes |
-|------|-----|------|-------------|
-| `index.ts` | Extension entry | Tool registration | Exports extension manifest |
-| `actions.ts` | Core actions | `object_create`, `object_update`, etc. | CRUD operations |
-| `actions-query.ts` | Query actions | `object_find`, `object_list` | Search and list |
-| `memory.ts` | Memory logic | Object persistence | File operations |
-| `digest.ts` | Digest generation | Context compaction | Summarization |
-
-**Key Tools**:
+If a helper only exists to format a standard text response or wire a trivial tool, move that concern into `core/lib/extension-tools.ts` instead of duplicating it per extension.
 | Tool | Purpose |
 |------|---------|
 | `object_create` | Create durable object |

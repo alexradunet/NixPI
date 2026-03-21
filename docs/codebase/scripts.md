@@ -1,82 +1,22 @@
 # Scripts & Tools
 
-> Setup orchestration and VM/testing helpers
+> Setup orchestration and local VM helpers
 
-## 🌱 Why Scripts & Tools Exist
+## Responsibilities
 
-Scripts and tools bridge the gap between the repository and runtime operations:
+There are only two script areas that matter:
 
-- **Setup scripts**: First-boot wizard and configuration
-- **VM tools**: Development and testing in virtual machines
-- **Test helpers**: E2E and integration test support
+- `core/scripts/setup-wizard.sh` for first-boot orchestration
+- `core/scripts/setup-lib.sh` for shared setup side effects
+- `tools/run-qemu.sh` for local VM execution
 
-## 🚀 What They Own
+## Cleanup rule
 
-| Component | Purpose | Location |
-|-----------|---------|----------|
-| Setup scripts | First-boot wizard | `core/scripts/` |
-| VM runner | QEMU VM execution | `tools/run-qemu.sh` |
+Keep setup logic split by responsibility, not by historical flow:
 
-## 📋 Script Inventory
-
-### Setup Scripts (`core/scripts/`)
-
-> Setup is owned by `setup-wizard.sh`; there is no separate first-boot service path.
-
-Setup orchestration is primarily handled by:
-- `setup-wizard.sh` (installed as a system command)
-
-### VM Tools (`tools/`)
-
-| File | Why | What | How / Notes |
-|------|-----|------|-------------|
-| `run-qemu.sh` | VM execution | Run QEMU VMs for testing | Used by `just vm*` commands |
-
----
-
-## 🔍 Important File Details
-
-### `tools/run-qemu.sh`
-
-**Responsibility**: Execute QEMU VMs for development and testing.
-
-**Modes**:
-| Mode | Purpose |
-|------|---------|
-| `headless` | Serial console only |
-| `daemon` | Background, detached |
-
-**Environment Variables**:
-| Variable | Purpose | Default |
-|----------|---------|---------|
-| `NIXPI_VM_OUTPUT` | Nix build output path | `result` |
-| `NIXPI_VM_DISK_PATH` | VM disk location | `/tmp/nixpi-vm-disk.qcow2` |
-| `NIXPI_VM_LOG_PATH` | Log file | `/tmp/nixpi-vm.log` |
-| `NIXPI_VM_MEMORY_MB` | RAM in MB | `16384` |
-| `NIXPI_VM_CPUS` | CPU count | `4` |
-
-**Forwarded Ports**:
-- `2222` → Guest SSH (port 22)
-
-**Usage**:
-```bash
-# Run VM (called by justfile)
-./tools/run-qemu.sh --mode headless
-
-# Skip rebuild, use existing qcow2
-./tools/run-qemu.sh --mode headless --skip-setup
-```
-
-**Inbound Dependencies**:
-- `just vm`, `just vm-daemon`
-
-**Outbound Dependencies**:
-- QEMU system
-- `ovmf` (UEFI firmware)
-
----
-
-## 🔄 First-Boot Flow
+- `setup-wizard.sh` should own prompts, sequencing, and resume behavior
+- `setup-lib.sh` should own reusable helper actions
+- VM helpers should not embed product logic
 
 First boot is now a single flow:
 

@@ -37,6 +37,10 @@ export interface RouteOptions {
 	totalReplyBudget?: number;
 }
 
+const DEFAULT_ALLOW_AGENT_MENTIONS = true;
+const DEFAULT_MAX_PUBLIC_TURNS_PER_ROOT = 2;
+const DEFAULT_COOLDOWN_MS = 1500;
+
 interface InitialTargetDecision {
 	targets: [AgentDefinition] | [];
 	reason: RouteDecision["reason"];
@@ -86,7 +90,7 @@ export function routeRoomEnvelope(
 		envelope.roomId,
 		rootEventId,
 		targetAgent.id,
-		targetAgent.respond.maxPublicTurnsPerRoot,
+		DEFAULT_MAX_PUBLIC_TURNS_PER_ROOT,
 		totalReplyBudget,
 		envelope.timestamp,
 	);
@@ -94,7 +98,7 @@ export function routeRoomEnvelope(
 		return { targets: [], reason: "ignored-budget" };
 	}
 
-	if (isAgentCoolingDown(state, envelope.roomId, targetAgent.id, envelope.timestamp, targetAgent.respond.cooldownMs)) {
+	if (isAgentCoolingDown(state, envelope.roomId, targetAgent.id, envelope.timestamp, DEFAULT_COOLDOWN_MS)) {
 		return { targets: [], reason: "ignored-cooldown" };
 	}
 
@@ -156,7 +160,7 @@ function getAgentTargetDecision(
 	senderAgentId: string | undefined,
 	mentionedAgents: readonly AgentDefinition[],
 ): InitialTargetDecision {
-	const target = mentionedAgents.find((agent) => agent.id !== senderAgentId && agent.respond.allowAgentMentions);
+	const target = mentionedAgents.find((agent) => agent.id !== senderAgentId && DEFAULT_ALLOW_AGENT_MENTIONS);
 	if (!target) return { targets: [], reason: "ignored-policy" };
 	return { targets: [target], reason: "agent-mention" };
 }

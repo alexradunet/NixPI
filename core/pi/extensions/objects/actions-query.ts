@@ -4,6 +4,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { textToolResult } from "../../../lib/extension-tools.js";
 import { getNixPiDir, safePath } from "../../../lib/filesystem.js";
 import { parseFrontmatter } from "../../../lib/frontmatter.js";
 import { errorResult, truncate } from "../../../lib/shared.js";
@@ -64,10 +65,7 @@ export function listObjects(
 	}
 
 	const text = results.length > 0 ? results.join("\n") : "No objects found";
-	return {
-		content: [{ type: "text" as const, text: truncate(text) }],
-		details: {},
-	};
+	return textToolResult(truncate(text));
 }
 
 /** Search markdown files in ~/nixpi/ for a pattern. */
@@ -94,10 +92,7 @@ export function searchObjects(params: { pattern: string }, signal?: AbortSignal)
 	}
 
 	const text = matches.length > 0 ? matches.join("\n") : "No matches found";
-	return {
-		content: [{ type: "text" as const, text: truncate(text) }],
-		details: {},
-	};
+	return textToolResult(truncate(text));
 }
 
 /** Query ranked object matches from ~/nixpi/Objects/. */
@@ -142,8 +137,5 @@ export function queryObjects(
 					.join("\n")
 			: "No matching objects found";
 
-	return {
-		content: [{ type: "text" as const, text: truncate(text) }],
-		details: { count: top.length, results: top },
-	};
+	return textToolResult(truncate(text), { count: top.length, results: top });
 }

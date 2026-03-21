@@ -4,6 +4,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { textToolResult } from "../../../lib/extension-tools.js";
 import { getNixPiDir, safePath } from "../../../lib/filesystem.js";
 import { parseFrontmatter, stringifyFrontmatter } from "../../../lib/frontmatter.js";
 import { errorResult, nowIso, truncate } from "../../../lib/shared.js";
@@ -53,15 +54,7 @@ export function createObject(params: {
 		return errorResult(`failed to create object: ${(err as Error).message}`);
 	}
 
-	return {
-		content: [
-			{
-				type: "text" as const,
-				text: `created ${params.type}/${params.slug}`,
-			},
-		],
-		details: {},
-	};
+	return textToolResult(`created ${params.type}/${params.slug}`);
 }
 
 export function updateObject(params: {
@@ -99,10 +92,7 @@ export function updateObject(params: {
 		attributes,
 		body: params.body ?? record.body,
 	});
-	return {
-		content: [{ type: "text" as const, text: `updated ${params.type}/${params.slug}` }],
-		details: {},
-	};
+	return textToolResult(`updated ${params.type}/${params.slug}`);
 }
 
 export function upsertObject(params: {
@@ -136,10 +126,7 @@ export function upsertObject(params: {
 		attributes,
 		body: params.body ?? existing.body,
 	});
-	return {
-		content: [{ type: "text" as const, text: `upserted ${params.type}/${params.slug}` }],
-		details: { existed: true },
-	};
+	return textToolResult(`upserted ${params.type}/${params.slug}`, { existed: true });
 }
 
 /** Read a markdown object. */
@@ -174,10 +161,7 @@ export function readObject(params: { type: string; slug: string; path?: string }
 	} catch {
 		// Leave unreadable files untouched.
 	}
-	return {
-		content: [{ type: "text" as const, text: truncate(raw) }],
-		details: {},
-	};
+	return textToolResult(truncate(raw));
 }
 
 /** Add bidirectional links between two objects. */
@@ -211,13 +195,5 @@ export function linkObjects(params: { ref_a: string; ref_b: string }) {
 	addLink(pathA, params.ref_b);
 	addLink(pathB, params.ref_a);
 
-	return {
-		content: [
-			{
-				type: "text" as const,
-				text: `linked ${params.ref_a} <-> ${params.ref_b}`,
-			},
-		],
-		details: {},
-	};
+	return textToolResult(`linked ${params.ref_a} <-> ${params.ref_b}`);
 }

@@ -7,8 +7,12 @@
  * @see {@link ../../AGENTS.md#nixpi} Extension reference
  */
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
-import { Type } from "@sinclair/typebox";
-import { defineTool, type RegisteredExtensionTool, registerTools } from "../../../lib/extension-tools.js";
+import {
+	defineTool,
+	EmptyToolParams,
+	type RegisteredExtensionTool,
+	registerTools,
+} from "../../../lib/extension-tools.js";
 import { getNixPiDir } from "../../../lib/filesystem.js";
 import { discoverSkillPaths, ensureNixPi, getPackageDir, handleNixPiStatus } from "./actions.js";
 import { handleUpdateBlueprints, readBlueprintVersions, seedBlueprints } from "./actions-blueprints.js";
@@ -23,7 +27,7 @@ export default function (pi: ExtensionAPI) {
 			name: "nixpi_status",
 			label: "NixPI Status",
 			description: "Show NixPI directory location and blueprint state",
-			parameters: Type.Object({}),
+			parameters: EmptyToolParams,
 			async execute() {
 				return handleNixPiStatus(nixPiDir);
 			},

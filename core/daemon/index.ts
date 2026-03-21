@@ -32,34 +32,39 @@ async function main(): Promise<void> {
 	log.info("starting nixpi-daemon", { idleTimeoutMs: config.idleTimeoutMs });
 
 	const credentials = loadPrimaryMatrixCredentials();
-	const { agents, errors, fallbackToHost } = loadRuntimeAgents({
+	const { agents, errors } = loadRuntimeAgents({
 		primaryCredentials: credentials,
 	});
 	for (const error of errors) {
 		log.warn("skipping invalid agent definition", { error });
 	}
-	if (fallbackToHost) {
+	const usingBuiltinHost = agents.length === 1 && agents[0]?.instructionsPath === "<builtin>";
+	if (usingBuiltinHost) {
 		log.info("no valid multi-agent definitions found, using default host agent", {
 			invalidDefinitions: errors.length,
-		});
-		await runDaemon(agents, (agentId) => {
-			if (agentId !== "host") {
-				throw new Error(`No Matrix credentials at synthetic agent ${agentId}`);
-			}
-			return {
-				homeserver: credentials.homeserver,
-				userId: credentials.botUserId,
-				accessToken: credentials.botAccessToken,
-				password: credentials.botPassword,
-				username: credentials.botUserId.slice(1, credentials.botUserId.indexOf(":")),
-			};
 		});
 	} else {
 		log.info("multi-agent definitions found, starting supervisor", {
 			agents: agents.map((agent) => agent.id),
 		});
-		await runDaemon(agents, loadAgentMatrixCredentials);
 	}
+	await runDaemon(
+		agents,
+		usingBuiltinHost
+			? (agentId) => {
+					if (agentId !== "host") {
+						throw new Error(`No Matrix credentials at synthetic agent ${agentId}`);
+					}
+					return {
+						homeserver: credentials.homeserver,
+						userId: credentials.botUserId,
+						accessToken: credentials.botAccessToken,
+						password: credentials.botPassword,
+						username: credentials.botUserId.slice(1, credentials.botUserId.indexOf(":")),
+					};
+				}
+			: loadAgentMatrixCredentials,
+	);
 }
 
 async function runDaemon(

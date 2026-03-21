@@ -6,6 +6,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { run } from "../../../lib/exec.js";
+import { textToolResult } from "../../../lib/extension-tools.js";
 import { readPackageVersion, resolvePackageDir, safePath } from "../../../lib/filesystem.js";
 import { stringifyFrontmatter } from "../../../lib/frontmatter.js";
 import {
@@ -52,10 +53,7 @@ export function handleNixPiStatus(nixPiDir: string) {
 		lines.push(`Updates available: ${updates.join(", ")}`);
 	}
 
-	return {
-		content: [{ type: "text" as const, text: truncate(lines.join("\n")) }],
-		details: {},
-	};
+	return textToolResult(truncate(lines.join("\n")));
 }
 
 export function handleSkillCreate(workspaceDir: string, params: { name: string; description: string; content: string }) {
@@ -75,16 +73,13 @@ export function handleSkillCreate(workspaceDir: string, params: { name: string; 
 	const content = stringifyFrontmatter({ name: params.name, description: params.description }, `\n${params.content}\n`);
 	fs.writeFileSync(filepath, content);
 
-	return {
-		content: [{ type: "text" as const, text: `created skill: ${params.name} at ${filepath}` }],
-		details: {},
-	};
+	return textToolResult(`created skill: ${params.name} at ${filepath}`);
 }
 
 export function handleSkillList(workspaceDir: string) {
 	const skillsDir = path.join(workspaceDir, "Skills");
 	if (!fs.existsSync(skillsDir)) {
-		return { content: [{ type: "text" as const, text: "No skills directory found." }], details: {} };
+		return textToolResult("No skills directory found.");
 	}
 
 	const entries = fs.readdirSync(skillsDir, { withFileTypes: true });
@@ -101,7 +96,7 @@ export function handleSkillList(workspaceDir: string) {
 	}
 
 	const text = skills.length > 0 ? skills.join("\n") : "No skills found in NixPI.";
-	return { content: [{ type: "text" as const, text }], details: {} };
+	return textToolResult(text);
 }
 
 export interface AgentCreateParams {
@@ -265,15 +260,9 @@ export function handlePersonaEvolve(
 
 	fs.writeFileSync(filepath, stringifyFrontmatter(data, `\n${params.proposal}\n`));
 
-	return {
-		content: [
-			{
-				type: "text" as const,
-				text: `proposed persona evolution: ${params.slug}\nlayer: ${params.layer.toUpperCase()}\nstatus: proposed\n\nThe user must approve this evolution before it can be applied.`,
-			},
-		],
-		details: {},
-	};
+	return textToolResult(
+		`proposed persona evolution: ${params.slug}\nlayer: ${params.layer.toUpperCase()}\nstatus: proposed\n\nThe user must approve this evolution before it can be applied.`,
+	);
 }
 
 /** Discover skill paths for dynamic loading. */

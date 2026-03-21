@@ -22,9 +22,6 @@ export interface AgentDefinition {
 	thinking?: "off" | "minimal" | "low" | "medium" | "high" | "xhigh";
 	respond: {
 		mode: "host" | "mentioned" | "silent";
-		allowAgentMentions: boolean;
-		maxPublicTurnsPerRoot: number;
-		cooldownMs: number;
 	};
 	tools?: {
 		allow?: string[];
@@ -55,14 +52,10 @@ export interface LoadAgentDefinitionsOptions {
 export interface LoadRuntimeAgentsResult {
 	agents: AgentDefinition[];
 	errors: string[];
-	fallbackToHost: boolean;
 }
 
 const DEFAULT_SERVER_NAME = "nixpi";
 const DEFAULT_RESPOND_MODE = "mentioned";
-const DEFAULT_ALLOW_AGENT_MENTIONS = true;
-const DEFAULT_MAX_PUBLIC_TURNS_PER_ROOT = 2;
-const DEFAULT_COOLDOWN_MS = 1500;
 const THINKING_LEVELS = ["off", "minimal", "low", "medium", "high", "xhigh"] as const;
 const RESPOND_MODES = ["host", "mentioned", "silent"] as const;
 
@@ -90,9 +83,6 @@ const AgentFrontmatterSchema = Type.Object({
 	respond: Type.Optional(
 		Type.Object({
 			mode: Type.Optional(Type.Union(RESPOND_MODES.map((mode) => Type.Literal(mode)))),
-			allow_agent_mentions: Type.Optional(Type.Boolean()),
-			max_public_turns_per_root: Type.Optional(Type.Number()),
-			cooldown_ms: Type.Optional(Type.Number()),
 		}),
 	),
 	tools: Type.Optional(
@@ -148,15 +138,14 @@ function buildRuntimeAgents(
 	primaryCredentials?: MatrixCredentials,
 ): LoadRuntimeAgentsResult {
 	if (agents.length > 0) {
-		return { agents, errors, fallbackToHost: false };
+		return { agents, errors };
 	}
 	if (!primaryCredentials) {
-		return { agents, errors, fallbackToHost: false };
+		return { agents, errors };
 	}
 	return {
 		agents: [createDefaultAgent(primaryCredentials)],
 		errors,
-		fallbackToHost: true,
 	};
 }
 
@@ -175,9 +164,6 @@ function createDefaultAgent(credentials: MatrixCredentials): AgentDefinition {
 		},
 		respond: {
 			mode: "host",
-			allowAgentMentions: true,
-			maxPublicTurnsPerRoot: 2,
-			cooldownMs: DEFAULT_COOLDOWN_MS,
 		},
 	};
 }
@@ -206,9 +192,6 @@ function normalizeAgentDefinition(
 		...(normalized.thinking ? { thinking: normalized.thinking } : {}),
 		respond: {
 			mode: normalized.respond?.mode ?? DEFAULT_RESPOND_MODE,
-			allowAgentMentions: normalized.respond?.allow_agent_mentions ?? DEFAULT_ALLOW_AGENT_MENTIONS,
-			maxPublicTurnsPerRoot: normalized.respond?.max_public_turns_per_root ?? DEFAULT_MAX_PUBLIC_TURNS_PER_ROOT,
-			cooldownMs: normalized.respond?.cooldown_ms ?? DEFAULT_COOLDOWN_MS,
 		},
 		...(normalizeTools(normalized.tools) ? { tools: normalizeTools(normalized.tools) } : {}),
 		...(normalizeProactive(normalized.proactive, instructionsPath)

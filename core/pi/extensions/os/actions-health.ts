@@ -1,6 +1,7 @@
 /**
  * System health handler for os.
  */
+import { textToolResult } from "../../../lib/extension-tools.js";
 import { run } from "../../../lib/exec.js";
 import { truncate } from "../../../lib/shared.js";
 
@@ -75,5 +76,5 @@ export async function handleSystemHealth(signal: AbortSignal | undefined) {
 	if (system) sections.push(system);
 
 	const text = sections.join("\n\n");
-	return { content: [{ type: "text" as const, text: truncate(text) }], details: {} };
+	return textToolResult(truncate(text));
 }

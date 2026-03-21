@@ -59,24 +59,6 @@ prepare_local_state() {
 	rm -f "$LEGACY_SETUP_STATE"
 }
 
-ensure_local_repo_clone() {
-	local repo_dir="$HOME/.nixpi/pi-nixpi"
-	if [[ -d "$repo_dir/.git" ]]; then
-		return 0
-	fi
-	mkdir -p "$(dirname "$repo_dir")"
-	if ! curl -fsI --connect-timeout 5 https://github.com >/dev/null 2>&1; then
-		echo "Skipping local NixPI repo clone until network is available."
-		return 0
-	fi
-	echo "Cloning local NixPI repo for proposal workflows..."
-	if timeout 30 git clone --depth 1 https://github.com/alexradunet/NixPI.git "$repo_dir"; then
-		echo "Local repo ready at $repo_dir."
-	else
-		echo "Local repo clone failed. You can retry later with: git clone https://github.com/alexradunet/NixPI.git $repo_dir"
-	fi
-}
-
 
 write_pi_settings_defaults() {
 	local provider="$1" model="$2"
@@ -150,7 +132,6 @@ print_service_access_summary() {
 
 step_welcome() {
 	prepare_local_state
-	ensure_local_repo_clone
 	echo ""
 	echo "Welcome to NixPI."
 	echo "Let's configure your device. This takes a few minutes."

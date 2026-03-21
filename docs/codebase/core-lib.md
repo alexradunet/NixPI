@@ -1,83 +1,27 @@
 # Core Library
 
-> Shared runtime primitives and helpers
+> Shared TypeScript helpers used across daemon and extensions
 
-## 🌱 Why Core Library Exists
+## What lives here
 
-The core library provides shared utilities used across all NixPI components. Centralizing these prevents duplication and ensures consistent behavior for common operations like filesystem access, Matrix formatting, and command execution.
+Keep additions here narrow and shared. If logic is only used by one feature, prefer keeping it inside that feature module instead of growing `core/lib/`.
 
-## 🚀 What It Owns
+- `filesystem.ts` owns path resolution and NixPI directory conventions.
+- `exec.ts` owns guarded subprocess execution.
+- `frontmatter.ts` owns markdown frontmatter parsing/serialization.
+- `matrix.ts` and `matrix-format.ts` own Matrix-specific helpers.
+- `extension-tools.ts` owns small helpers for consistent tool registration/result shapes.
+- `shared.ts` owns cross-cutting utilities that are genuinely reused.
 
-| Concern | Files | Purpose |
-|---------|-------|---------|
-| Filesystem | `filesystem.ts` | Path operations, safe file writes |
-| Execution | `exec.ts` | Shell command execution with guardrails |
-| Matrix | `matrix.ts`, `matrix-format.ts` | Matrix client helpers, message formatting |
-| Frontmatter | `frontmatter.ts` | YAML frontmatter parsing/generation |
-| Extension Tools | `extension-tools.ts` | Pi extension utilities |
-| Shared | `shared.ts` | Common types and constants |
+## Cleanup rule
 
-## 📋 File Inventory
+Before adding a new lib file or export, check:
 
-| File | Why | What | How / Notes |
-|------|-----|------|-------------|
-| `core/lib/filesystem.ts` | Safe file operations | Path helpers, atomic writes, directory creation | Used by extensions for NixPI directory operations |
-| `core/lib/exec.ts` | Guarded execution | Bash tool wrapper with guardrails validation | All shell commands go through here |
-| `core/lib/matrix.ts` | Matrix client utils | Registration, login, room alias helpers | Used by daemon and extensions |
-| `core/lib/matrix-format.ts` | Message formatting | HTML/markdown conversion for Matrix | Handles Matrix message rendering |
-| `core/lib/frontmatter.ts` | Frontmatter handling | Parse and generate YAML frontmatter | Used by memory system |
-| `core/lib/extension-tools.ts` | Extension utils | Common extension helper functions | Used by Pi extensions |
-| `core/lib/shared.ts` | Common code | Types, constants, utilities | Shared across all lib modules |
+1. Is it used by more than one subsystem?
+2. Does it reduce duplication rather than move it?
+3. Is it smaller than the coupling cost it introduces?
 
----
-
-## 🔍 Important File Details
-
-### `core/lib/filesystem.ts`
-
-**Responsibility**: Safe filesystem operations with NixPI directory conventions.
-
-**Key Exports**:
-- `ensureDir(path)` - Create directory if missing
-- `writeFileAtomic(path, content)` - Atomic file write
-- `readFileUtf8(path)` - Read with encoding
-- `nixpiPath(...segments)` - Build paths in `~/nixpi/`
-
-**Inbound Dependencies**:
-- All extensions that read/write NixPI files
-- Daemon for state persistence
-
-**Outbound Dependencies**:
-- Node.js `fs` module
-- Node.js `path` module
-
----
-
-### `core/lib/exec.ts`
-
-**Responsibility**: Execute shell commands with guardrails validation.
-
-**Key Exports**:
-- `exec(options)` - Main execution function
-- `validateCommand(command)` - Guardrails check
-- `ExecutionError` - Error type for failures
-
-**Guardrails Integration**:
-- Loads `~/nixpi/guardrails.yaml` (falls back to defaults)
-- Blocks patterns defined in guardrails config
-- Returns validation errors before execution
-
-**Inbound Dependencies**:
-- All extensions that run shell commands
-- OS extension for NixOS operations
-
-**Outbound Dependencies**:
-- Node.js `child_process`
-- `guardrails.yaml` defaults
-
----
-
-### `core/lib/matrix.ts`
+If the answer is no, keep it local to the caller.
 
 **Responsibility**: Matrix client utilities and helpers.
 

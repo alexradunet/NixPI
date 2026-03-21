@@ -1,83 +1,21 @@
 # Tests
 
-> Test suites and validation coverage
+> Test layout and coverage intent
 
-## 🌱 Why Tests Exist
+## Suite map
 
-Tests ensure NixPI works correctly across:
+Use the test tree by risk level:
 
-- **Unit tests**: Individual function behavior
-- **Integration tests**: Component interactions
-- **E2E tests**: Full system scenarios
-- **NixOS tests**: VM-based system validation
+- `tests/lib/` for small reusable helpers
+- `tests/extensions/` for tool behavior and extension wiring
+- `tests/daemon/` for routing, runtime, and scheduling policy
+- `tests/integration/` for cross-module behavior
+- `tests/e2e/` for thin end-to-end registration checks
+- `tests/nixos/` for VM-backed system behavior
 
-## 🚀 What They Own
+## Cleanup rule
 
-| Test Suite | Purpose | Location |
-|------------|---------|----------|
-| Lib tests | Core library validation | `tests/lib/` |
-| Extension tests | Pi extension validation | `tests/extensions/` |
-| Daemon tests | Daemon component validation | `tests/daemon/` |
-| Integration tests | Cross-component validation | `tests/integration/` |
-| E2E tests | Full system scenarios | `tests/e2e/` |
-| NixOS tests | VM-based system tests | `tests/nixos/` |
-| Test helpers | Shared test utilities | `tests/helpers/` |
-
-## 📋 Test Inventory
-
-### Lib Tests (`tests/lib/`)
-
-| File | Coverage Area | Production Code |
-|------|---------------|-----------------|
-| `filesystem.test.ts` | File operations | `core/lib/filesystem.ts` |
-| `exec.test.ts` | Command execution | `core/lib/exec.ts` |
-| `matrix.test.ts` | Matrix utilities | `core/lib/matrix.ts` |
-| `matrix-format.test.ts` | Message formatting | `core/lib/matrix-format.ts` |
-| `matrix-agents.test.ts` | Agent overlay parsing | `core/lib/frontmatter.ts` |
-| `matrix-registration.test.ts` | User registration | `core/lib/matrix.ts` |
-| `room-alias.test.ts` | Room resolution | `core/lib/matrix.ts` |
-| `shared.test.ts` | Shared utilities | `core/lib/shared.ts` |
-
-### Extension Tests (`tests/extensions/`)
-
-| File | Coverage Area | Production Code |
-|------|---------------|-----------------|
-| `nixpi.test.ts` | NixPI extension | `core/pi/extensions/nixpi/` |
-| `os.test.ts` | OS extension core | `core/pi/extensions/os/` |
-| `os-update.test.ts` | OS update operations | `core/pi/extensions/os/` |
-| `os-proposal.test.ts` | OS proposal flow | `core/pi/extensions/os/` |
-| `objects.test.ts` | Objects extension | `core/pi/extensions/objects/` |
-| `episodes.test.ts` | Episodes extension | `core/pi/extensions/episodes/` |
-| `persona.test.ts` | Persona extension | `core/pi/extensions/persona/` |
-| `localai.test.ts` | LocalAI extension | `core/pi/extensions/localai/` |
-
-### Daemon Tests (`tests/daemon/`)
-
-| File | Coverage Area | Production Code |
-|------|---------------|-----------------|
-| `index.test.ts` | Bootstrap | `core/daemon/index.ts` |
-| `multi-agent-runtime.test.ts` | Runtime orchestration | `core/daemon/multi-agent-runtime.ts` |
-| `agent-supervisor.test.ts` | Agent supervision | `core/daemon/agent-supervisor.ts` |
-| `agent-registry.test.ts` | Agent loading | `core/daemon/agent-registry.ts` |
-| `router.test.ts` | Message routing | `core/daemon/router.ts` |
-| `room-state.test.ts` | Room state | `core/daemon/room-state.ts` |
-| `scheduler.test.ts` | Job scheduling | `core/daemon/scheduler.ts` |
-| `proactive.test.ts` | Proactive dispatch | `core/daemon/proactive.ts` |
-| `rate-limiter.test.ts` | Rate limiting | `core/daemon/rate-limiter.ts` |
-| `lifecycle.test.ts` | Startup retry | `core/daemon/lifecycle.ts` |
-| `matrix-js-sdk-bridge.test.ts` | Matrix transport | `core/daemon/runtime/matrix-js-sdk-bridge.ts` |
-| `pi-room-session.test.ts` | Session lifecycle | `core/daemon/runtime/pi-room-session.ts` |
-| `ordered-cache.test.ts` | Caching | `core/daemon/ordered-cache.ts` |
-| `session-events.test.ts` | Session events | `core/daemon/runtime/pi-room-session.ts` |
-
-### Integration Tests (`tests/integration/`)
-
-| File | Coverage Area |
-|------|---------------|
-| `frontmatter-roundtrip.test.ts` | Frontmatter parse/stringify |
-| `guardrails.test.ts` | Guardrails validation |
-| `matrix-bridge-resilience.test.ts` | Bridge error handling |
-| `nixpi-seeding.test.ts` | Directory seeding |
+Prefer tests that protect behavior over tests that mirror structure. When cleanup collapses files or helpers, update tests to keep asserting the user-visible behavior instead of preserving old module boundaries.
 | `object-lifecycle.test.ts` | Object create/update/read |
 | `persona-guardrails.test.ts` | Persona integration |
 | `pi-ui-parity-guard.test.ts` | UI consistency |

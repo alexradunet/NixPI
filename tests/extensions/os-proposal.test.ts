@@ -31,6 +31,7 @@ describe("os local Nix proposal handler", () => {
 	});
 
 	it("reports git branch and working tree status for the local proposal repo", async () => {
+		fs.mkdirSync(path.join(repoDir, ".git"), { recursive: true });
 		runMock
 			.mockResolvedValueOnce({ stdout: "main\n", stderr: "", exitCode: 0 })
 			.mockResolvedValueOnce({ stdout: " M flake.nix\n", stderr: "", exitCode: 0 })
@@ -46,6 +47,7 @@ describe("os local Nix proposal handler", () => {
 	});
 
 	it("runs both flake and config validation in the local repo", async () => {
+		fs.mkdirSync(path.join(repoDir, ".git"), { recursive: true });
 		runMock
 			.mockResolvedValueOnce({ stdout: "flake ok\n", stderr: "", exitCode: 0 })
 			.mockResolvedValueOnce({ stdout: "config ok\n", stderr: "", exitCode: 0 });
@@ -67,6 +69,7 @@ describe("os local Nix proposal handler", () => {
 	});
 
 	it("requires confirmation before refreshing flake.lock", async () => {
+		fs.mkdirSync(path.join(repoDir, ".git"), { recursive: true });
 		runMock
 			.mockResolvedValueOnce({ stdout: "updated inputs\n", stderr: "", exitCode: 0 })
 			.mockResolvedValueOnce({ stdout: " M flake.lock\n", stderr: "", exitCode: 0 });
@@ -81,17 +84,24 @@ describe("os local Nix proposal handler", () => {
 		expect(result.content[0].text).toContain("M flake.lock");
 	});
 
-	it("returns an error when the local proposal repo is missing", async () => {
+	it("initializes the local proposal repo lazily when missing", async () => {
 		fs.rmSync(repoDir, { recursive: true, force: true });
+		runMock
+			.mockResolvedValueOnce({ stdout: "cloned\n", stderr: "", exitCode: 0 })
+			.mockResolvedValueOnce({ stdout: "main\n", stderr: "", exitCode: 0 })
+			.mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 0 })
+			.mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 0 });
 
 		const { handleNixConfigProposal } = await import("../../core/pi/extensions/os/actions-proposal.js");
 		const result = await handleNixConfigProposal("status", undefined, createMockExtensionContext() as never);
 
-		expect(result.isError).toBe(true);
-		expect(result.content[0].text).toContain("Local NixPI repo not found");
+		expect(result.isError).toBeUndefined();
+		expect(runMock).toHaveBeenNthCalledWith(1, "git", ["clone", expect.any(String), repoDir], undefined);
+		expect(result.content[0].text).toContain("Initialized from:");
 	});
 
 	it("returns isError when validate fails", async () => {
+		fs.mkdirSync(path.join(repoDir, ".git"), { recursive: true });
 		runMock
 			.mockResolvedValueOnce({ stdout: "", stderr: "flake error", exitCode: 1 })
 			.mockResolvedValueOnce({ stdout: "", stderr: "build error", exitCode: 1 });
@@ -104,6 +114,7 @@ describe("os local Nix proposal handler", () => {
 	});
 
 	it("returns isError when update_flake_lock command fails", async () => {
+		fs.mkdirSync(path.join(repoDir, ".git"), { recursive: true });
 		runMock.mockResolvedValueOnce({ stdout: "", stderr: "network error", exitCode: 1 });
 
 		const ctx = createMockExtensionContext({ hasUI: true });
@@ -112,5 +123,15 @@ describe("os local Nix proposal handler", () => {
 
 		expect(result.isError).toBe(true);
 		expect(result.content[0].text).toContain("nix flake update failed");
+	});
+
+	it("returns an error when the proposal path exists but is not a clone", async () => {
+		fs.writeFileSync(path.join(repoDir, "README"), "not a repo", "utf-8");
+
+		const { handleNixConfigProposal } = await import("../../core/pi/extensions/os/actions-proposal.js");
+		const result = await handleNixConfigProposal("status", undefined, createMockExtensionContext() as never);
+
+		expect(result.isError).toBe(true);
+		expect(result.content[0].text).toContain("Proposal repo path exists but is not a git clone");
 	});
 });

@@ -1,7 +1,8 @@
-import { existsSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync } from "node:fs";
+import { dirname, join } from "node:path";
 import type { ExtensionContext } from "@mariozechner/pi-coding-agent";
 import { run } from "../../../lib/exec.js";
-import { getNixPiRepoDir } from "../../../lib/filesystem.js";
+import { getNixPiRepoDir, getSystemFlakeDir } from "../../../lib/filesystem.js";
 import { errorResult, requireConfirmation, truncate } from "../../../lib/shared.js";
 
 export type NixConfigProposalAction = "status" | "validate" | "update_flake_lock";
@@ -12,14 +13,41 @@ function summarizeOutput(result: { stdout: string; stderr: string; exitCode: num
 	return truncate((result.stdout || result.stderr || "").trim() || "(no output)");
 }
 
+async function ensureProposalRepo(
+	repoDir: string,
+	signal: AbortSignal | undefined,
+): Promise<{ created: boolean; source: string } | { error: string }> {
+	if (existsSync(join(repoDir, ".git"))) {
+		return { created: false, source: repoDir };
+	}
+
+	if (existsSync(repoDir)) {
+		if (readdirSync(repoDir).length > 0) {
+			return { error: `Proposal repo path exists but is not a git clone: ${repoDir}` };
+		}
+	} else {
+		mkdirSync(dirname(repoDir), { recursive: true });
+	}
+
+	const localSource = getSystemFlakeDir();
+	const cloneSource = existsSync(join(localSource, ".git")) ? localSource : "https://github.com/alexradunet/NixPI.git";
+	const clone = await run("git", ["clone", cloneSource, repoDir], signal);
+	if (clone.exitCode !== 0) {
+		return { error: `Failed to create local proposal repo at ${repoDir}:\n${summarizeOutput(clone)}` };
+	}
+
+	return { created: true, source: cloneSource };
+}
+
 export async function handleNixConfigProposal(
 	action: NixConfigProposalAction,
 	signal: AbortSignal | undefined,
 	ctx: ExtensionContext,
 ) {
 	const repoDir = getNixPiRepoDir();
-	if (!existsSync(repoDir)) {
-		return errorResult(`Local NixPI repo not found at ${repoDir}. The proposal workflow expects a cloned repo there.`);
+	const repo = await ensureProposalRepo(repoDir, signal);
+	if ("error" in repo) {
+		return errorResult(repo.error);
 	}
 
 	if (action === "status") {
@@ -31,6 +59,7 @@ export async function handleNixConfigProposal(
 
 		const lines = [
 			`Local proposal repo: ${repoDir}`,
+			...(repo.created ? [`Initialized from: ${repo.source}`, ""] : []),
 			`Branch: ${(branch.stdout || branch.stderr).trim() || "(detached or unknown)"}`,
 			"",
 			"Working tree:",
@@ -60,6 +89,7 @@ export async function handleNixConfigProposal(
 			update.exitCode === 0
 				? [
 						`Updated flake inputs in ${repoDir}.`,
+						...(repo.created ? [`Initialized from: ${repo.source}`, ""] : []),
 						"",
 						"Command output:",
 						summarizeOutput(update),
@@ -82,6 +112,7 @@ export async function handleNixConfigProposal(
 	const ok = flakeCheck.exitCode === 0 && configBuild.exitCode === 0;
 	const text = [
 		`Validated local NixPI repo at ${repoDir}`,
+		...(repo.created ? [`Initialized from: ${repo.source}`, ""] : []),
 		"",
 		`nix flake check --no-build: ${flakeCheck.exitCode === 0 ? "ok" : "failed"}`,
 		summarizeOutput(flakeCheck),

@@ -8,7 +8,12 @@
 import { StringEnum } from "@mariozechner/pi-ai";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { type Static, Type } from "@sinclair/typebox";
-import { defineTool, type RegisteredExtensionTool, registerTools } from "../../../lib/extension-tools.js";
+import {
+	defineTool,
+	EmptyToolParams,
+	type RegisteredExtensionTool,
+	registerTools,
+} from "../../../lib/extension-tools.js";
 import {
 	checkPendingUpdates,
 	handleNixosUpdate,
@@ -38,13 +43,13 @@ const SystemdControlParams = Type.Object({
 	action: StringEnum(["start", "stop", "restart", "status"] as const),
 });
 
-const UpdateStatusParams = Type.Object({});
+const UpdateStatusParams = EmptyToolParams;
 
 const ScheduleRebootParams = Type.Object({
 	delay_minutes: Type.Number({ description: "Minutes to wait before rebooting", default: 1 }),
 });
 
-const SystemHealthParams = Type.Object({});
+const SystemHealthParams = EmptyToolParams;
 
 export default function (pi: ExtensionAPI) {
 	const tools: RegisteredExtensionTool[] = [

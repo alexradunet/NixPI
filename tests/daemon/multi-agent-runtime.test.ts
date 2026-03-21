@@ -16,9 +16,6 @@ function makeAgent(id: string): AgentDefinition {
 		},
 		respond: {
 			mode: id === "host" ? "host" : "mentioned",
-			allowAgentMentions: true,
-			maxPublicTurnsPerRoot: 2,
-			cooldownMs: 1500,
 		},
 	};
 }

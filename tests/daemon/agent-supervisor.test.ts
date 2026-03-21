@@ -18,9 +18,6 @@ function makeAgent(id: string, userId: string, mode: AgentDefinition["respond"][
 		},
 		respond: {
 			mode,
-			allowAgentMentions: true,
-			maxPublicTurnsPerRoot: 2,
-			cooldownMs: 1500,
 		},
 	};
 }

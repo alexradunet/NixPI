@@ -17,9 +17,6 @@ function makeAgent(id: string, userId: string, mode: AgentDefinition["respond"][
 		},
 		respond: {
 			mode,
-			allowAgentMentions: true,
-			maxPublicTurnsPerRoot: 2,
-			cooldownMs: 1500,
 		},
 	};
 }
@@ -382,32 +379,6 @@ describe("routeRoomEnvelope", () => {
 				totalReplyBudget: 1,
 			}),
 		).toEqual({ targets: [], reason: "ignored-budget" });
-	});
-
-	it("blocks agent-to-agent routing when allowAgentMentions is false", () => {
-		const restrictedAgent: AgentDefinition = {
-			...critic,
-			respond: { ...critic.respond, allowAgentMentions: false },
-		};
-		const restrictedAgents = [host, planner, restrictedAgent, silent];
-		const state = createRoomState();
-
-		const result = routeRoomEnvelope(
-			{
-				roomId: "!room:nixpi",
-				eventId: "$evt20",
-				senderUserId: "@planner:nixpi",
-				body: "@critic:nixpi please review",
-				senderKind: "agent",
-				senderAgentId: "planner",
-				mentions: ["@critic:nixpi"],
-				timestamp: 1_000,
-			},
-			restrictedAgents,
-			state,
-		);
-
-		expect(result).toEqual({ targets: [], reason: "ignored-policy" });
 	});
 
 	it("ignores messages with no host agent when there are no mentions", () => {

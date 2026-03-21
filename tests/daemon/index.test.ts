@@ -99,7 +99,6 @@ describe("daemon bootstrap", () => {
 				},
 			],
 			errors: ["bad overlay"],
-			fallbackToHost: true,
 		});
 
 		await import("../../core/daemon/index.js");
@@ -133,7 +132,6 @@ describe("daemon bootstrap", () => {
 		loadRuntimeAgentsMock.mockReturnValue({
 			agents: [{ id: "ops" }, { id: "support" }],
 			errors: [],
-			fallbackToHost: false,
 		});
 
 		const bootstrapModule = "../../core/daemon/index.js?multi";

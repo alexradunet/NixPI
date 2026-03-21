@@ -1,82 +1,19 @@
 # Root Files
 
-> Package, build, and configuration files at the repository root
+> Root-level build and repository control surfaces
 
-## 🌱 Why These Files Matter
+## Active files
 
-The root files define how the project is built, tested, and deployed. They are the primary control surfaces that orchestrate the entire system.
+Keep the root concise:
 
-## 📋 Root File Inventory
+- `flake.nix` is the Nix entrypoint and should stay the single source of truth for packages, hosts, and checks.
+- `justfile` is the human-friendly task surface for local development.
+- `package.json`, `tsconfig.json`, `vitest.config.ts`, and `biome.json` own the TypeScript toolchain.
+- `README.md` should stay focused on install, operating model, and documentation entrypoints.
 
-### Build and Package Control
+## Cleanup rule
 
-| File | Why | What | How / Notes |
-|------|-----|------|-------------|
-| `package.json` | Node.js ecosystem entry | Dependencies, scripts, extension manifest | Defines Pi extensions in `pi.extensions` array |
-| `package-lock.json` | Deterministic installs | Locked dependency versions | Auto-generated, commit to repo |
-| `tsconfig.json` | TypeScript compilation | Compiler options, source paths | Outputs to `dist/` |
-
-### Nix Control
-
-| File | Why | What | How / Notes |
-|------|-----|------|-------------|
-| `flake.nix` | Nix ecosystem entry | Packages, NixOS configs, checks, dev shell | Defines `nixosModules.nixpi` aggregate |
-| `flake.lock` | Deterministic Nix | Locked input versions | Auto-generated, commit to repo |
-
-### Task Runner
-
-| File | Why | What | How / Notes |
-|------|-----|------|-------------|
-| `justfile` | Development tasks | VM, build, test, deploy commands | Uses `just` (modern make alternative) |
-
-### Quality Control
-
-| File | Why | What | How / Notes |
-|------|-----|------|-------------|
-| `vitest.config.ts` | Test runner | Test discovery, coverage thresholds | Unit: 85% lines, 72% lib, 60% extensions |
-| `biome.json` | Lint/format | Code style, import validation, complexity | Warns on complexity > 15 |
-| `guardrails.yaml` | Tool safety | Default blocked patterns for bash tool | Overridable in `~/nixpi/guardrails.yaml` |
-
-### Documentation
-
-| File | Why | What | How / Notes |
-|------|-----|------|-------------|
-| `README.md` | Project landing | Quick start, capability summary | Points to docs site |
-
----
-
-## 🔍 Important File Details
-
-### `flake.nix`
-
-**Responsibility**: Single entry point for the entire Nix ecosystem. Defines packages, NixOS configurations, checks, and the development shell.
-
-**Key Exports**:
-- `packages.${system}.pi` - Pi agent package
-- `packages.${system}.app` - Main app package
-- `packages.${system}.installerIso` - Minimal terminal installer image
-- `nixosModules.nixpi` - Composable module exporting all NixPI features
-- `nixosConfigurations.desktop` - Managed NixPI desktop profile
-- `nixosConfigurations.desktop-vm` - VM/dev profile
-- `nixosConfigurations.installer-iso` - Official installer image
-- `checks.${system}.*` - Build and VM tests
-
-**Inbound Dependencies**:
-- Referenced by `nixos-rebuild` commands
-- Used by `just` commands for VM operations
-
-**Outbound Dependencies**:
-- `core/os/modules/options.nix` - Module imports
-- `core/os/pkgs/pi/` - Pi agent derivation
-- `core/os/pkgs/app/` - App derivation
-- `tests/nixos/` - NixOS tests
-
-**Key Implementation Notes**:
-- Uses `specialArgs` to pass `piAgent` and `appPackage` to modules
-- `pkgsUnfree` used only for test VMs to work around nixosTest limitations
-- `allowUnfree` intentionally NOT set in module (must be set by consumer)
-
----
+Do not let root files become secondary architecture documents. If a detail is only relevant to one subsystem, document it next to that subsystem instead of expanding root-level summaries.
 
 ### `package.json`
 

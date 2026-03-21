@@ -1,83 +1,27 @@
 # OS Modules
 
-> NixOS integration and system provisioning
+> NixOS integration, packaging, and first-boot wiring
 
-## 🌱 Why OS Modules Exist
+## Responsibilities
 
-The OS modules define how NixPI integrates with NixOS. They provide:
+Keep the Nix surface split by concern:
 
-- System service definitions
-- NixOS option declarations
-- Package definitions
-- Host configurations
+- `modules/options.nix` declares the public NixPI option surface.
+- `modules/*.nix` implement services and policy.
+- `hosts/*.nix` compose concrete machines and installer profiles.
+- `pkgs/installer/*` owns install artifact generation.
+- `services/*.nix` owns standalone service wrappers and runtime assets.
 
-## 🚀 What They Own
+## Reading order
 
-| Component | Purpose | Location |
-|-----------|---------|----------|
-| Modules | NixOS option declarations and implementation | `core/os/modules/` |
-| Services | Systemd service definitions | `core/os/services/` |
-| Packages | Nix derivations for pi and app | `core/os/pkgs/` |
-| Hosts | NixOS host configurations | `core/os/hosts/` |
-| Library | Shared Nix helper functions | `core/os/lib/` |
+1. `options.nix`
+2. `app.nix`, `broker.nix`, `matrix.nix`, `network.nix`
+3. `firstboot.nix` and `shell.nix`
+4. installer code under `core/os/pkgs/installer/`
 
-## 📋 Module Inventory
+## Cleanup rule
 
-### Core Modules (`core/os/modules/`)
-
-| File | Why | What | How / Notes |
-|------|-----|------|-------------|
-| `options.nix` | Option surface | Declares all NixPI options | Central option definition |
-| `app.nix` | App packaging | NixPI app derivation, service | Main application |
-| `broker.nix` | Privilege broker | `nixpi-broker` service | Privilege escalation |
-| `llm.nix` | LLM integration | Local AI service integration | Ollama, etc. |
-| `matrix.nix` | Matrix server | Synapse configuration | Homeserver setup |
-| `network.nix` | Networking | NetBird, firewall, DNS | Network configuration |
-| `shell.nix` | Shell environment | Shell configuration, completions | User shell setup |
-| `update.nix` | Updates | Update timer and service | Automatic updates |
-| `firstboot.nix` | First boot | `nixpi-firstboot` service | Initial setup trigger |
-
-### Key Option Categories (from `options.nix`)
-
-| Category | Options | Purpose |
-|----------|---------|---------|
-| `nixpi.primaryUser` | Username | Primary operator account |
-| `nixpi.install.mode` | `managed-user`, `existing-user` | Installation scope |
-| `nixpi.createPrimaryUser` | Boolean | Auto-create user |
-| `nixpi.bootstrap.*` | Various | First-boot behavior |
-| `nixpi.services.*` | Daemon, home, chat | Service toggles |
-| `nixpi.matrix.*` | Homeserver settings | Matrix configuration |
-| `nixpi.security.*` | SSH, firewall, trusted interface | Network security settings |
-
----
-
-## 📋 Service Definitions (`core/os/services/`)
-
-| File | Why | What | How / Notes |
-|------|-----|------|-------------|
-| `nixpi-daemon.nix` | Daemon service | `nixpi-daemon.service` definition | Main runtime service |
-| `nixpi-home.nix` | Home service | Status page on :8080 | Built-in service |
-| `nixpi-element-web.nix` | Element Web service | Element Web on :8081 | Web Matrix client |
-| `nixpi-broker.nix` | Broker service | Privilege escalation service | Admin operations |
-| `nixpi-update.nix` | Update service | Automatic update timer | Maintenance window updates |
-
-### Service User Model
-
-| Service | User | Purpose |
-|---------|------|---------|
-| `nixpi-daemon.service` | `agent` | Unprivileged runtime |
-| `nixpi-broker.service` | `root` | Privileged operations |
-| `nixpi-home.service` | `agent` | Web service |
-| `nixpi-element-web.service` | `agent` | Web service |
-| `matrix-synapse.service` | `matrix-synapse` | Homeserver |
-
----
-
-## 📋 Package Definitions (`core/os/pkgs/`)
-
-| File | Why | What | How / Notes |
-|------|-----|------|-------------|
-| `pi/default.nix` | Pi agent package | Pi AI agent derivation | Peer dependency |
+Avoid encoding the same install or service policy in multiple places. If shell scripts, Python installer helpers, and Nix modules all need the same rule, pick one canonical owner and make the rest thin wrappers.
 | `app/default.nix` | App package | NixPI app derivation | Main package |
 
 ### Package Flow

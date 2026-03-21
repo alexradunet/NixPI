@@ -54,9 +54,8 @@ Plan first.
 `,
 		);
 
-		const { agents, fallbackToHost } = loadRuntimeAgents({ nixPiDir: workspaceDir });
+		const { agents } = loadRuntimeAgents({ nixPiDir: workspaceDir });
 		expect(agents).toHaveLength(1);
-		expect(fallbackToHost).toBe(false);
 		expect(agents[0]).toEqual({
 			id: "planner",
 			name: "Planner",
@@ -72,9 +71,6 @@ Plan first.
 			thinking: "medium",
 			respond: {
 				mode: "mentioned",
-				allowAgentMentions: true,
-				maxPublicTurnsPerRoot: 3,
-				cooldownMs: 2000,
 			},
 		});
 	});
@@ -99,9 +95,6 @@ Question assumptions.
 		const { agents } = loadRuntimeAgents({ nixPiDir: workspaceDir });
 		expect(agents[0]?.respond).toEqual({
 			mode: "mentioned",
-			allowAgentMentions: true,
-			maxPublicTurnsPerRoot: 2,
-			cooldownMs: 1500,
 		});
 		expect(agents[0]?.matrix).toEqual({
 			username: "critic",
@@ -404,7 +397,6 @@ proactive:
 				registrationToken: "reg-token",
 			},
 		});
-		expect(result.fallbackToHost).toBe(true);
 		expect(result.agents).toEqual([
 			expect.objectContaining({
 				id: "host",
