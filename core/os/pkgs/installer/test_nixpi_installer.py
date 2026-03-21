@@ -51,6 +51,8 @@ class NixpiInstallerTests(unittest.TestCase):
         self.assertIn('nixpi.install.mode = "managed-user";', artifacts["nixpi_install_module"])
         self.assertIn('nixpi.createPrimaryUser = true;', artifacts["nixpi_install_module"])
         self.assertIn('nixosConfigurations."pi-box"', artifacts["nixpi_flake"])
+        self.assertIn('inputs = {\n    nixpkgs.url = "github:NixOS/nixpkgs/', artifacts["nixpi_flake"])
+        self.assertNotIn('nixpi.url = "path:./nixpi";', artifacts["nixpi_flake"])
         self.assertIn('networking.hostName = "pi-box";', artifacts["host_cfg"])
         self.assertIn("./nixpi-host.nix", artifacts["configuration_module"])
         self.assertIn("./nixpi-install.nix", artifacts["configuration_module"])

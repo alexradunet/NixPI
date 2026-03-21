@@ -4,6 +4,7 @@ export default defineConfig({
 	title: "NixPI",
 	description: "Pi-native AI companion OS on NixOS",
 	lang: "en-US",
+	appearance: false,
 	cleanUrls: true,
 	lastUpdated: true,
 	ignoreDeadLinks: true,
@@ -11,15 +12,25 @@ export default defineConfig({
 	themeConfig: {
 		nav: [
 			{ text: "Overview", link: "/" },
-			{ text: "Getting Started", link: "/getting-started/" },
+			{ text: "Why NixPI", link: "/why-nixpi" },
 			{ text: "Architecture", link: "/architecture/" },
-			{ text: "Codebase", link: "/codebase/" },
-			{ text: "Operations", link: "/operations/" },
-			{ text: "Reference", link: "/reference/" },
-			{ text: "Contributing", link: "/contributing/" },
+			{ text: "Install", link: "/install" },
+			{ text: "Docs", link: "/getting-started/" },
+			{ text: "GitHub", link: "https://github.com/alexradunet/NixPI" },
 		],
 
 		sidebar: {
+			"/": [
+				{
+					text: "Presentation",
+					items: [
+						{ text: "Overview", link: "/" },
+						{ text: "Why NixPI", link: "/why-nixpi" },
+						{ text: "Install", link: "/install" },
+					],
+				},
+			],
+
 			"/getting-started/": [
 				{
 					text: "Getting Started",

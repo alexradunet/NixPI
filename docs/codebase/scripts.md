@@ -44,7 +44,6 @@ Setup orchestration is primarily handled by:
 | Mode | Purpose |
 |------|---------|
 | `headless` | Serial console only |
-| `gui` | Full graphical display |
 | `daemon` | Background, detached |
 
 **Environment Variables**:
@@ -69,7 +68,7 @@ Setup orchestration is primarily handled by:
 ```
 
 **Inbound Dependencies**:
-- `just vm`, `just vm-gui`, `just vm-daemon`
+- `just vm`, `just vm-daemon`
 
 **Outbound Dependencies**:
 - QEMU system

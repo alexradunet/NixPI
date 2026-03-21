@@ -77,31 +77,46 @@ pkgs.testers.runNixOSTest {
         "lsblk -dnbpo NAME,SIZE,TYPE,RO | awk '$3 == \"disk\" && $4 == 0 && $2 == 21474836480 { print $1; exit }'"
     ).strip()
     assert target_disk_device, "failed to resolve target disk device"
-    installer.succeed(
-        "bash -lc "
-        + shlex.quote(
-            "nixpi-installer --disk "
-            + target_disk_device
-            + " --hostname installer-vm --primary-user installer --yes --system "
-            + shlex.quote("${self.checks.${pkgs.system}.installer-generated-config}")
-            + " > /tmp/nixpi-installer.log 2>&1 || { cat /tmp/nixpi-installer.log >&2; exit 1; }"
+
+    def run_install_case(name, hostname, layout_args, expect_swap):
+        installer.succeed("rm -f /tmp/nixpi-installer.log /tmp/nixpi-installer-artifacts.json")
+        installer.succeed(
+            "bash -lc "
+            + shlex.quote(
+                "nixpi-installer --disk "
+                + target_disk_device
+                + " --hostname "
+                + hostname
+                + " --primary-user installer "
+                + layout_args
+                + " --yes --system "
+                + shlex.quote("${self.checks.${pkgs.system}.installer-generated-config}")
+                + " > /tmp/nixpi-installer.log 2>&1 || { cat /tmp/nixpi-installer.log >&2; exit 1; }"
+            )
         )
-    )
-    installer.wait_until_succeeds("test -f /tmp/nixpi-installer-artifacts.json", timeout=60)
-    installer.succeed("cat /tmp/nixpi-installer-artifacts.json | jq -e '.flake_install_ref == \"" + target_mount + "/etc/nixos#installer-vm\"'")
+        installer.wait_until_succeeds("test -f /tmp/nixpi-installer-artifacts.json", timeout=60)
+        installer.succeed("cat /tmp/nixpi-installer-artifacts.json | jq -e '.flake_install_ref == \"" + target_mount + "/etc/nixos#" + hostname + "\"'")
 
-    installer.succeed("test -f " + target_mount + "/etc/nixos/configuration.nix")
-    installer.succeed("test -f " + target_mount + "/etc/nixos/nixpi-install.nix")
-    installer.succeed("test -f " + target_mount + "/etc/nixos/nixpi-host.nix")
-    installer.succeed("test -f " + target_mount + "/etc/nixos/flake.nix")
-    installer.succeed("grep -q 'nixpi.primaryUser = \"installer\";' " + target_mount + "/etc/nixos/nixpi-install.nix")
-    installer.succeed("grep -q 'nixpi.install.mode = \"managed-user\";' " + target_mount + "/etc/nixos/nixpi-install.nix")
-    installer.succeed("grep -q 'networking.hostName = \"installer-vm\";' " + target_mount + "/etc/nixos/nixpi-host.nix")
-    installer.succeed("grep -q 'imports = \\[' " + target_mount + "/etc/nixos/configuration.nix")
+        installer.succeed("test -f " + target_mount + "/etc/nixos/configuration.nix")
+        installer.succeed("test -f " + target_mount + "/etc/nixos/nixpi-install.nix")
+        installer.succeed("test -f " + target_mount + "/etc/nixos/nixpi-host.nix")
+        installer.succeed("test -f " + target_mount + "/etc/nixos/flake.nix")
+        installer.succeed("grep -q 'nixpi.primaryUser = \"installer\";' " + target_mount + "/etc/nixos/nixpi-install.nix")
+        installer.succeed("grep -q 'nixpi.install.mode = \"managed-user\";' " + target_mount + "/etc/nixos/nixpi-install.nix")
+        installer.succeed("grep -q 'networking.hostName = \"" + hostname + "\";' " + target_mount + "/etc/nixos/nixpi-host.nix")
+        installer.succeed("grep -q 'imports = \\[' " + target_mount + "/etc/nixos/configuration.nix")
 
-    installer.succeed("nixos-enter --root " + target_mount + " -c 'getent passwd installer'")
-    installer.succeed("nixos-enter --root " + target_mount + " -c 'getent passwd agent'")
-    installer.succeed("nixos-enter --root " + target_mount + " -c 'command -v setup-wizard.sh'")
-    installer.succeed("nixos-enter --root " + target_mount + " -c 'test -d /etc/nixos/nixpi'")
+        if expect_swap:
+            installer.succeed("lsblk -nrpo LABEL " + target_disk_device + " | grep -qx swap")
+        else:
+            installer.fail("lsblk -nrpo LABEL " + target_disk_device + " | grep -qx swap")
+
+        installer.succeed("nixos-enter --root " + target_mount + " -c 'getent passwd installer'")
+        installer.succeed("nixos-enter --root " + target_mount + " -c 'getent passwd agent'")
+        installer.succeed("nixos-enter --root " + target_mount + " -c 'command -v setup-wizard.sh'")
+        installer.succeed("nixos-enter --root " + target_mount + " -c 'test -d /etc/nixos/nixpi'")
+
+    run_install_case("no-swap", "installer-vm-noswap", "--layout no-swap", False)
+    run_install_case("swap", "installer-vm-swap", "--layout swap --swap-size 8GiB", True)
   '';
 }

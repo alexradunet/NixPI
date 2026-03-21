@@ -35,13 +35,13 @@ iso:
     nix build {{ flake }}#installerIso
 
 # Boot the minimal installer ISO in QEMU for full install-flow testing.
+# This runs in the terminal over the serial console.
 # Override with:
 #   NIXPI_INSTALL_VM_DISK_PATH=$HOME/custom.qcow2
 #   NIXPI_INSTALL_VM_DISK_SIZE=32G
 #   NIXPI_INSTALL_VM_MEMORY_MB=8192
 #   NIXPI_INSTALL_VM_CPUS=4
 #   NIXPI_INSTALL_VM_SSH_PORT=2222
-#   NIXPI_INSTALL_VM_DISPLAY_BACKEND=sdl|gtk|spice-app
 vm-install-iso: iso
     #!/usr/bin/env bash
     set -euo pipefail
@@ -51,7 +51,6 @@ vm-install-iso: iso
     memory_mb="${NIXPI_INSTALL_VM_MEMORY_MB:-8192}"
     vm_cpus="${NIXPI_INSTALL_VM_CPUS:-4}"
     ssh_port="${NIXPI_INSTALL_VM_SSH_PORT:-2222}"
-    display_backend="${NIXPI_INSTALL_VM_DISPLAY_BACKEND:-sdl}"
     ovmf_code="{{ ovmf }}"
     ovmf_vars_template="{{ ovmf_vars }}"
     ovmf_vars="${NIXPI_INSTALL_VM_OVMF_VARS_PATH:-$HOME/.cache/nixpi-install-ovmf-vars.fd}"
@@ -73,28 +72,27 @@ vm-install-iso: iso
     echo "Booting installer ISO: $iso_path"
     echo "Disk: $disk"
     echo "SSH forward: localhost:$ssh_port -> guest:22"
-    echo "Display backend: $display_backend"
+    echo "Console: serial"
 
-    exec qemu-system-x86_64 \
-        -enable-kvm \
-        -m "$memory_mb" \
-        -smp "$vm_cpus" \
-        -drive if=pflash,format=raw,readonly=on,file="$ovmf_code" \
-        -drive if=pflash,format=raw,file="$ovmf_vars" \
-        -drive file="$disk",format=qcow2,if=virtio \
-        -cdrom "$iso_path" \
-        -boot d \
-        -nic user,model=virtio-net-pci,hostfwd=tcp::"$ssh_port"-:22 \
-        -display "$display_backend" \
-        -vga virtio
+    qemu_args=(
+        -enable-kvm
+        -m "$memory_mb"
+        -smp "$vm_cpus"
+        -drive "if=pflash,format=raw,readonly=on,file=$ovmf_code"
+        -drive "if=pflash,format=raw,file=$ovmf_vars"
+        -drive "file=$disk,format=qcow2,if=virtio"
+        -cdrom "$iso_path"
+        -boot d
+        -nic "user,model=virtio-net-pci,hostfwd=tcp::$ssh_port-:22"
+    )
+
+    qemu_args+=(-nographic -serial mon:stdio)
+
+    exec qemu-system-x86_64 "${qemu_args[@]}"
 
 # Run VM (fresh build from current codebase)
 vm: qcow2
     tools/run-qemu.sh --mode headless
-
-# Run VM with GUI display
-vm-gui: qcow2
-    tools/run-qemu.sh --mode gui
 
 # Run VM with existing qcow2 (no rebuild)
 vm-run:

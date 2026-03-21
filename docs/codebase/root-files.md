@@ -54,7 +54,7 @@ The root files define how the project is built, tested, and deployed. They are t
 **Key Exports**:
 - `packages.${system}.pi` - Pi agent package
 - `packages.${system}.app` - Main app package
-- `packages.${system}.installerIso` - Graphical installer image
+- `packages.${system}.installerIso` - Minimal terminal installer image
 - `nixosModules.nixpi` - Composable module exporting all NixPI features
 - `nixosConfigurations.desktop` - Managed NixPI desktop profile
 - `nixosConfigurations.desktop-vm` - VM/dev profile
@@ -129,7 +129,7 @@ The root files define how the project is built, tested, and deployed. They are t
 | `build` | Build the TypeScript app derivation |
 | `switch` | Apply local flake to running system |
 | `update` | Apply remote GitHub flake to system |
-| `vm` / `vm-gui` | Build and run test VM |
+| `vm` | Build and run test VM |
 | `vm-ssh` | SSH into running VM |
 | `check-config` | Fast NixOS config validation |
 | `check-boot` | Full VM boot test |

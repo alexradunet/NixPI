@@ -47,6 +47,7 @@ nix build .#installerIso
 # 3. In the live environment:
 #    sudo -i
 #    nixpi-installer
+#    choose the target disk and layout in the terminal wizard
 # 4. Reboot into NixPI, then finish first boot
 setup-wizard.sh
 ```

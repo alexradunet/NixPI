@@ -39,9 +39,14 @@ sudo dd if=./result/iso/*.iso of=/dev/<usb-device> bs=4M status=progress oflag=s
 1. Boot the USB stick
 2. Open a root shell with `sudo -i`
 3. Run `nixpi-installer`
-4. Choose the target disk, hostname, and primary user
-5. Confirm the destructive install
-6. Reboot into the installed system
+4. Choose the target disk
+5. Choose the disk layout:
+   - `EFI + ext4 root`
+   - `EFI + ext4 root + 8GiB swap`
+   - `EFI + ext4 root + custom swap`
+6. Enter the hostname and primary user
+7. Confirm the destructive install
+8. Reboot into the installed system
 
 The installed machine lands with a standard local system flake in `/etc/nixos` and a local NixPI working tree should be maintained in `~/nixpi`.
 
@@ -79,7 +84,6 @@ just deps
 ```bash
 just iso             # Build the installer ISO
 just vm              # Build and run VM (headless, serial console)
-just vm-gui          # Run VM with GUI display
 just vm-ssh          # SSH into running VM
 just vm-stop         # Stop the VM
 just check-config    # Fast: validate NixOS config

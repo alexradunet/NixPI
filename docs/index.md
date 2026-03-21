@@ -1,65 +1,85 @@
-# NixPI Documentation
+---
+layout: home
 
-> Pi-native AI companion OS on NixOS
+hero:
+  name: NixPI
+  text: Pi-native AI companion OS on NixOS
+  tagline: A self-hosted, inspectable operating model for one-person AI computing. NixPI combines NixOS, a persistent agent runtime, file-native memory, and a private messaging surface into a machine you can actually operate and evolve.
+  image:
+    src: /nixpi-mark.svg
+    alt: NixPI
+  actions:
+    - theme: brand
+      text: Start Here
+      link: /why-nixpi
+    - theme: alt
+      text: Install
+      link: /install
+    - theme: alt
+      text: Read the Docs
+      link: /getting-started/
 
-## 🌱 Why NixPI Exists
-
-NixPI is a very opinionated NixOS build designed as an AI-first operating system. It packages Pi (the AI agent), host integration, memory management, and a small set of built-in user services into one self-hosted system.
-
-The design pressures that shaped NixPI:
-
-- **Single-user focus**: Built for one end user as a personal life assistant and knowledge management system
-- **AI-native interaction**: Matrix-based messaging as the primary interface, not just an add-on
-- **Inspectable by design**: All memory is file-based Markdown, editable without special tooling
-- **Minimal footprint**: Carries only what's necessary, letting the user evolve the system through Pi
-- **Deterministic**: NixOS foundation provides reproducible system state
-
-## 🚀 What Ships Today
-
-NixPI delivers a complete platform with:
-
-| Component | What It Does |
-|-----------|--------------|
-| **NixPI Directory** | Durable home under `~/nixpi/` with blueprint seeding |
-| **Persona System** | Injected personality, shell guardrails, memory compaction |
-| **NixOS Integration** | Proposal workflow for human-reviewed system changes |
-| **Matrix Daemon** | Always-on room runtime with multi-agent support |
-| **Built-in Services** | Home (`:8080`), Element Web (`:8081`), Matrix (`:6167`) |
-| **Memory System** | Markdown-native durable memory in `~/nixpi/Objects/` |
-| **Episodic Memory** | Append-only capture in `~/nixpi/Episodes/` |
-| **First-Boot Flow** | Bash wizard + Pi-guided persona completion |
-
-## 🧭 Where to Start
-
-Choose your entry point:
-
-| Your Goal | Start Here |
-|-----------|------------|
-| Installing NixPI | [Quick Deploy](./operations/quick-deploy) |
-| First-time setup | [First Boot Setup](./operations/first-boot-setup) |
-| Understanding the system | [Architecture Overview](./architecture/) |
-| Reading the code | [Codebase Guide](./codebase/) |
-| Operating a running system | [Operations](./operations/) |
-| Deep technical reference | [Reference](./reference/) |
-
-## 📚 Documentation Map
-
-| Section | Contains |
-|---------|----------|
-| [Getting Started](./getting-started/) | New maintainer orientation |
-| [Architecture](./architecture/) | Subsystem boundaries and runtime flows |
-| [Codebase](./codebase/) | File-by-file responsibility guide |
-| [Operations](./operations/) | Deploy, setup, and run procedures |
-| [Reference](./reference/) | Deep technical documentation |
-| [Contributing](./contributing/) | Maintainer guidelines |
-
-## 🔗 Quick Links
-
-- [GitHub Repository](https://github.com/alexradunet/NixPI)
-- [Architecture Overview](./architecture/)
-- [Runtime Flows](./architecture/runtime-flows)
-- [Codebase Index](./codebase/)
-
+features:
+  - title: Inspectable by design
+    details: Durable memory, system workflows, and operating surfaces stay rooted in files, Markdown, NixOS, and systemd instead of opaque hosted abstractions.
+  - title: Built for one operator
+    details: NixPI is opinionated around a single-user machine that acts like a personal assistant, knowledge system, and controlled automation surface.
+  - title: AI lives inside the system
+    details: Pi is not just a browser session. The runtime includes Matrix, a resident daemon, host integrations, and first-class OS workflows.
+  - title: Minimal default surface
+    details: The base stays deliberately small so the operator can evolve the machine through Pi without inheriting a large fixed platform.
 ---
 
-**Note**: This documentation uses emoji notation for visual scanning. See the [Emoji Legend](./reference/emoji-legend) for the full reference.
+<PresentationBand
+  eyebrow="Project shape"
+  title="A presentation site on top of the real documentation"
+  lede="This site now serves two audiences at once: people evaluating the idea of an AI-first operating system, and maintainers who need the technical truth. The product story leads; the docs remain intact underneath."
+>
+
+<div class="signal-grid">
+  <div class="signal-card">
+    <strong>Presentation first</strong>
+    Use this front page and <a href="./why-nixpi">Why NixPI</a> to understand the thesis, capability shape, and what makes the project distinct.
+  </div>
+  <div class="signal-card">
+    <strong>Documentation preserved</strong>
+    The existing architecture, operations, codebase, and reference sections remain the maintained technical source of truth.
+  </div>
+  <div class="signal-card">
+    <strong>Install path included</strong>
+    Public visitors can move directly from concept to a runnable system through the new <a href="./install">Install</a> path.
+  </div>
+  <div class="signal-card">
+    <strong>Warm technical language</strong>
+    The site favors an editorial, systems-oriented visual language over generic developer-docs chrome or flashy AI branding.
+  </div>
+</div>
+
+</PresentationBand>
+
+<SectionHeading
+  label="What ships today"
+  title="The project already spans provisioning, runtime, memory, and service surface"
+  lede="NixPI is more than a set of prompts or scripts. It already behaves like a small operating environment designed around a durable assistant."
+/>
+
+| Subsystem | What it contributes |
+| --- | --- |
+| NixOS foundation | Reproducible machine state, modules, packaging, and deployment workflow |
+| Matrix daemon | Persistent room runtime with scheduling, routing, and multi-agent support |
+| Memory model | Markdown-native durable memory and append-only episodes |
+| Built-in services | Home, Element Web, and a private Matrix surface |
+| First-boot workflow | Installer path plus operator-guided setup and persona completion |
+
+<PresentationBand
+  eyebrow="Explore"
+  title="Choose the right entry point"
+  lede="The fastest way through the project depends on whether you are evaluating the idea, trying the system, or maintaining the code."
+>
+
+- Read [Why NixPI](./why-nixpi) for the thesis and operating model.
+- Open [Install](./install) for the shortest path to a running system.
+- Use [Getting Started](./getting-started/) for the maintainer path.
+- Jump to [Architecture](./architecture/) or [Reference](./reference/) for technical depth.
+
+</PresentationBand>

@@ -3,7 +3,7 @@
 # Uses the generated NixOS VM runner in result/bin/run-nixos-vm.
 #
 # Usage:
-#   run-qemu.sh --mode headless|gui|daemon [--skip-setup]
+#   run-qemu.sh --mode headless|daemon [--skip-setup]
 set -euo pipefail
 
 DISK="${NIXPI_VM_DISK_PATH:-/tmp/nixpi-vm-disk.qcow2}"
@@ -13,7 +13,6 @@ LOG_FILE="${NIXPI_VM_LOG_PATH:-/tmp/nixpi-vm.log}"
 DISK_SIZE="${NIXPI_VM_DISK_SIZE:-24G}"
 MEMORY_MB="${NIXPI_VM_MEMORY_MB:-16384}"
 VM_CPUS="${NIXPI_VM_CPUS:-4}"
-DISPLAY_BACKEND="${NIXPI_VM_DISPLAY_BACKEND:-sdl}"
 MIN_DISK_BYTES=$((8 * 1024 * 1024 * 1024))
 HOST_REPO_PATH="${NIXPI_VM_HOST_REPO_PATH:-$PWD}"
 HOST_NIXPI_PATH="${NIXPI_VM_HOST_STATE_PATH:-$HOME/.nixpi}"
@@ -66,7 +65,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [[ -z "$mode" ]]; then
-    echo "Error: --mode is required (headless|gui|daemon)" >&2
+    echo "Error: --mode is required (headless|daemon)" >&2
     exit 1
 fi
 
@@ -114,11 +113,6 @@ case "$mode" in
         export QEMU_OPTS="${QEMU_OPTS} -nographic -serial mon:stdio"
         exec "$RUNNER"
         ;;
-    gui)
-        echo "Starting VM with GUI (${DISPLAY_BACKEND})... Close window to exit"
-        export QEMU_OPTS="${QEMU_OPTS} -vga virtio -display ${DISPLAY_BACKEND}"
-        exec "$RUNNER"
-        ;;
     daemon)
         if pgrep -f "[r]un-nixos-vm|[q]emu-system-x86_64.*${DISK}" > /dev/null; then
             echo "VM already running. Use 'just vm-ssh' to connect or 'just vm-stop' to stop."
@@ -141,7 +135,7 @@ case "$mode" in
         echo "VM starting... try 'just vm-ssh' in a few seconds"
         ;;
     *)
-        echo "Error: unknown mode '$mode'. Must be headless, gui, or daemon." >&2
+        echo "Error: unknown mode '$mode'. Must be headless or daemon." >&2
         exit 1
         ;;
 esac

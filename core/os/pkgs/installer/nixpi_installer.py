@@ -13,11 +13,10 @@ NIXPI_FLAKE_TEMPLATE = """{
   description = "NixPI installed system";
 
   inputs = {
-    nixpi.url = "path:./nixpi";
-    nixpkgs.follows = "nixpi/nixpkgs";
+    nixpkgs.url = "github:NixOS/nixpkgs/@@nixpkgsRev@@?narHash=@@nixpkgsNarHash@@";
   };
 
-  outputs = { nixpkgs, nixpi, ... }:
+  outputs = { nixpkgs, ... }:
     let
       system = "x86_64-linux";
       pkgs = nixpkgs.legacyPackages.${system};
