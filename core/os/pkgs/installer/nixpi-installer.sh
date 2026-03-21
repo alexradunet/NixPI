@@ -6,6 +6,7 @@ HELPER_BIN="@helperBin@"
 ROOT_MOUNT="/mnt"
 HOSTNAME_VALUE=""
 PRIMARY_USER_VALUE=""
+PRIMARY_PASSWORD_VALUE=""
 TARGET_DISK=""
 FORCE_YES=0
 SYSTEM_CLOSURE=""
@@ -16,7 +17,7 @@ LOG_REDIRECTED=0
 
 usage() {
   cat <<'EOF'
-Usage: nixpi-installer [--disk /dev/sdX] [--hostname NAME] [--primary-user USER] [--layout no-swap|swap] [--swap-size 8GiB] [--yes] [--system PATH]
+Usage: nixpi-installer [--disk /dev/sdX] [--hostname NAME] [--primary-user USER] [--password VALUE] [--layout no-swap|swap] [--swap-size 8GiB] [--yes] [--system PATH]
 
 Performs a destructive UEFI install with:
 - EFI system partition: 1 MiB - 512 MiB
@@ -131,6 +132,37 @@ prompt_inputs() {
       printf '%s\n' "Primary user cannot be empty." >&2
     done
   fi
+}
+
+prompt_password() {
+  if [[ -n "$PRIMARY_PASSWORD_VALUE" ]]; then
+    return
+  fi
+
+  if [[ "$FORCE_YES" -eq 1 ]]; then
+    echo "--yes requires --password for the primary user." >&2
+    exit 1
+  fi
+
+  require_tty
+
+  local password confirm_password
+  while true; do
+    read -rsp "Primary user password: " password
+    echo ""
+    if [[ -z "$password" ]]; then
+      echo "Password cannot be empty." >&2
+      continue
+    fi
+    read -rsp "Confirm primary user password: " confirm_password
+    echo ""
+    if [[ "$password" != "$confirm_password" ]]; then
+      echo "Passwords do not match." >&2
+      continue
+    fi
+    PRIMARY_PASSWORD_VALUE="$password"
+    return
+  done
 }
 
 validate_swap_size() {
@@ -315,6 +347,7 @@ confirm_install() {
     "Layout: ${layout_summary}" \
     "Hostname: ${HOSTNAME_VALUE}" \
     "Primary user: ${PRIMARY_USER_VALUE}" \
+    "Primary user password: [set]" \
     "" \
     "This will erase the selected disk."
   read -rp "Proceed with destructive install? [y/N]: " proceed
@@ -370,7 +403,13 @@ run_install_steps() {
   nixos-generate-config --root "$ROOT_MOUNT"
 
   log_step "Writing NixPI install artifacts"
-  "$HELPER_BIN" --root "$ROOT_MOUNT" --hostname "$HOSTNAME_VALUE" --primary-user "$PRIMARY_USER_VALUE" | tee /tmp/nixpi-installer-artifacts.json
+  "$HELPER_BIN" \
+    --root "$ROOT_MOUNT" \
+    --hostname "$HOSTNAME_VALUE" \
+    --primary-user "$PRIMARY_USER_VALUE" \
+    --password "$PRIMARY_PASSWORD_VALUE" \
+    >/tmp/nixpi-installer-artifacts.json
+  log_step "Installer artifacts written to /tmp/nixpi-installer-artifacts.json"
 
   if [[ -n "$SYSTEM_CLOSURE" ]]; then
     log_step "Installing prebuilt system closure"
@@ -414,6 +453,10 @@ main() {
         PRIMARY_USER_VALUE="$2"
         shift 2
         ;;
+      --password)
+        PRIMARY_PASSWORD_VALUE="$2"
+        shift 2
+        ;;
       --layout)
         LAYOUT_MODE="$2"
         shift 2
@@ -445,6 +488,7 @@ main() {
   ensure_root
   choose_disk
   prompt_inputs
+  prompt_password
   prompt_network_setup
   choose_layout
   normalize_layout_inputs

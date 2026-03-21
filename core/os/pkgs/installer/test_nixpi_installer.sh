@@ -61,3 +61,15 @@ assert_contains "--wait 30 device wifi connect TestNet password supersecret" "$N
 rm -f "$ONLINE_FLAG" "$NMCLI_LOG"
 prompt_network_setup <<< $'3\n'
 [[ ! -f "$ONLINE_FLAG" ]]
+
+PRIMARY_PASSWORD_VALUE=""
+FORCE_YES=0
+prompt_password <<< $'pass123\npass123\n'
+[[ "$PRIMARY_PASSWORD_VALUE" == "pass123" ]]
+
+PRIMARY_PASSWORD_VALUE=""
+FORCE_YES=1
+if ( prompt_password ) 2>/dev/null; then
+  echo "prompt_password should fail when --yes is used without --password" >&2
+  exit 1
+fi

@@ -1,23 +1,27 @@
 # core/os/hosts/x86_64.nix
 # Canonical NixPI desktop profile used for dev builds and the installed system shape.
-{ lib, self, ... }:
+{ lib, ... }:
 
 {
   imports = [
-    self.nixosModules.nixpi
-    self.nixosModules.firstboot
+    ../modules/options.nix
+    ../modules/setup.nix
+    ../modules/network.nix
+    ../modules/update.nix
+    ../modules/runtime.nix
+    ../modules/collab.nix
+    ../modules/llm.nix
+    ../modules/tooling.nix
+    ../modules/shell.nix
+    ../modules/firstboot.nix
     ../modules/desktop-openbox.nix
   ];
 
   system.stateVersion = "25.05";
-  nixpkgs.hostPlatform = "x86_64-linux";
 
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
   boot.kernelParams = [ "console=tty0" "console=ttyS0,115200" ];
-
-  nixpkgs.config.allowUnfree = true;
-
   nixpi.primaryUser = lib.mkDefault "pi";
   nixpi.install.mode = lib.mkDefault "managed-user";
   nixpi.createPrimaryUser = lib.mkDefault true;

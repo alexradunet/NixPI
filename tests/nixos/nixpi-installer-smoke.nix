@@ -1,4 +1,4 @@
-{ pkgs, installerHelper, self, ... }:
+{ pkgs, installerHelper, self, lib, ... }:
 
 pkgs.testers.runNixOSTest {
   name = "nixpi-installer-smoke";
@@ -18,6 +18,7 @@ pkgs.testers.runNixOSTest {
       networking.hostName = "nixpi-installer-test";
       networking.networkmanager.enable = true;
       services.getty.autologinUser = "nixos";
+      users.users.root.initialHashedPassword = lib.mkForce null;
 
       virtualisation.diskImage = null;
       virtualisation.memorySize = 6144;
@@ -47,7 +48,7 @@ pkgs.testers.runNixOSTest {
       ];
 
       system.extraDependencies = [
-        self.checks.${pkgs.system}.installer-generated-config
+        self.checks.${pkgs.stdenv.hostPlatform.system}.installer-generated-config
       ];
     };
 
@@ -88,9 +89,10 @@ pkgs.testers.runNixOSTest {
                 + " --hostname "
                 + hostname
                 + " --primary-user installer "
+                + " --password installerpass123 "
                 + layout_args
                 + " --yes --system "
-                + shlex.quote("${self.checks.${pkgs.system}.installer-generated-config}")
+                + shlex.quote("${self.checks.${pkgs.stdenv.hostPlatform.system}.installer-generated-config}")
                 + " > /tmp/nixpi-installer.log 2>&1 || { cat /tmp/nixpi-installer.log >&2; exit 1; }"
             )
         )
@@ -109,6 +111,7 @@ pkgs.testers.runNixOSTest {
         installer.succeed("grep -q 'nixpi-appliance.nix' " + target_mount + "/etc/nixos/flake.nix")
         installer.succeed("grep -q 'networking.hostName = \"" + hostname + "\";' " + target_mount + "/etc/nixos/nixpi-host.nix")
         installer.succeed("grep -q 'imports = \\[' " + target_mount + "/etc/nixos/configuration.nix")
+        installer.succeed("grep -q 'users.users.\"installer\".initialPassword = \"installerpass123\";' " + target_mount + "/etc/nixos/nixpi-install.nix")
 
         if expect_swap:
             installer.succeed("lsblk -nrpo LABEL " + target_disk_device + " | grep -qx swap")

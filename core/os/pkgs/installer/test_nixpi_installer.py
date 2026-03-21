@@ -39,6 +39,7 @@ class NixpiInstallerTests(unittest.TestCase):
             "/mnt/target",
             "alex",
             "pi-box",
+            "supersecret",
             cfg,
         )
 
@@ -52,6 +53,7 @@ class NixpiInstallerTests(unittest.TestCase):
         self.assertIn('nixpi.primaryUser = "alex";', artifacts["nixpi_install_module"])
         self.assertIn('nixpi.install.mode = "managed-user";', artifacts["nixpi_install_module"])
         self.assertIn('nixpi.createPrimaryUser = true;', artifacts["nixpi_install_module"])
+        self.assertIn('users.users."alex".initialPassword = "supersecret";', artifacts["nixpi_install_module"])
         self.assertIn('nixosConfigurations."pi-box"', artifacts["nixpi_flake"])
         self.assertIn('./nixpi-appliance.nix', artifacts["nixpi_flake"])
         self.assertIn('./nixpi/core/os/modules/desktop-openbox.nix', artifacts["nixpi_appliance_module"])
@@ -80,6 +82,7 @@ class NixpiInstallerTests(unittest.TestCase):
                 root,
                 "alex",
                 "pi-box",
+                "supersecret",
                 self.module.load_base_host_config(nixos_etc),
             )
 
@@ -103,7 +106,7 @@ class NixpiInstallerTests(unittest.TestCase):
             source_dir.mkdir()
             self.module.NIXPI_SOURCE = str(source_dir)
 
-            argv = ["nixpi-installer", "--root", tmpdir, "--hostname", "pi-box", "--primary-user", "alex"]
+            argv = ["nixpi-installer", "--root", tmpdir, "--hostname", "pi-box", "--primary-user", "alex", "--password", "supersecret"]
             with mock.patch("sys.argv", argv):
                 with mock.patch("builtins.print") as print_mock:
                     self.module.main()

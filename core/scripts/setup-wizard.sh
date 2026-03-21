@@ -230,6 +230,11 @@ step_password() {
 	# Check if user already has a password set
 	if passwd -S "$(whoami)" 2>/dev/null | grep -qE 'P[[:space:]]+[0-9]{2}/[0-9]{2}/[0-9]{4}'; then
 		echo "You already have a password set for this account."
+		if [[ "${NIXPI_INSTALL_MODE:-}" == "managed-user" ]]; then
+			echo "Keeping the password set during installation."
+			mark_done password
+			return
+		fi
 		if [[ "$NONINTERACTIVE_SETUP" -eq 1 ]]; then
 			echo "Keeping existing password for noninteractive setup."
 			mark_done password

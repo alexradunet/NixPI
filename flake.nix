@@ -91,6 +91,10 @@
         inherit system specialArgs;
         modules = [
           ./core/os/hosts/x86_64.nix
+          {
+            nixpkgs.hostPlatform = system;
+            nixpkgs.config.allowUnfree = true;
+          }
         ];
       };
 
@@ -99,6 +103,10 @@
         inherit system specialArgs;
         modules = [
           ./core/os/hosts/x86_64-vm.nix
+          {
+            nixpkgs.hostPlatform = system;
+            nixpkgs.config.allowUnfree = true;
+          }
         ];
       };
 
@@ -118,6 +126,8 @@
         modules = [
           ./core/os/hosts/x86_64.nix
           {
+            nixpkgs.hostPlatform = system;
+            nixpkgs.config.allowUnfree = true;
             nixpi.primaryUser = "alex";
             nixpi.install.mode = "managed-user";
             nixpi.createPrimaryUser = true;
@@ -141,8 +151,8 @@
             in
             builtins.toFile "nixpi-install-generated.nix" (
               lib.replaceStrings
-                [ "@@username@@" "./nixpi/" ]
-                [ "installer" "${sourceRoot}/" ]
+                [ "@@username@@" "@@password@@" "./nixpi/" ]
+                [ "installer" "\"installerpass123\"" "${sourceRoot}/" ]
                 template
             );
           # Import the NixOS integration test suite
@@ -158,7 +168,7 @@
               imports = [
                 ./core/os/hosts/x86_64.nix
               ];
-              _module.args = { inherit piAgent appPackage setupPackage; };
+              _module.args = { inherit piAgent appPackage setupPackage self; };
 
               nixpi.primaryUser = "alex";
               nixpi.install.mode = "managed-user";
@@ -206,7 +216,7 @@
             install_template="${installerHelper}/share/nixpi-installer/nixpi-install-module.nix.in"
             grep -F 'def write_nixpi_install_artifacts(' "$module" >/dev/null
             grep -F 'nix.settings.experimental-features = [ "nix-command" "flakes" ];' "$install_template" >/dev/null
-            grep -F '{ ... }:' "$install_template" >/dev/null
+            grep -F '{ pkgs, ... }:' "$install_template" >/dev/null
             grep -F 'NIXPI_CONFIGURATION_TEMPLATE' "$module" >/dev/null
             grep -F 'nixpi.install.mode = "managed-user";' "$install_template" >/dev/null
             PYTHONPYCACHEPREFIX="$TMPDIR/pycache" ${pkgs.python3}/bin/python3 -m py_compile "$module"

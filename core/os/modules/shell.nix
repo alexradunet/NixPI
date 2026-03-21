@@ -13,6 +13,7 @@ let
     export NIXPI_STATE_DIR="${stateDir}"
     export NIXPI_PI_DIR="${stateDir}/agent"
     export NIXPI_CONFIG_DIR="${stateDir}/services"
+    export NIXPI_INSTALL_MODE="${config.nixpi.install.mode}"
     export NIXPI_KEEP_SSH_AFTER_SETUP="${if config.nixpi.bootstrap.keepSshAfterSetup then "1" else "0"}"
     if command -v chromium >/dev/null 2>&1; then
       export BROWSER="chromium"

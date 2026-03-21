@@ -101,7 +101,7 @@ def load_base_host_config(nixos_etc):
     raise FileNotFoundError(f"missing configuration.nix under {nixos_etc}")
 
 
-def prepare_nixpi_install_artifacts(root_mount_point, username, hostname, cfg):
+def prepare_nixpi_install_artifacts(root_mount_point, username, hostname, password, cfg):
     nixos_etc = Path(root_mount_point) / "etc/nixos"
     host_cfg = upsert_hostname(strip_nixpi_imports(cfg), hostname)
     return {
@@ -114,7 +114,11 @@ def prepare_nixpi_install_artifacts(root_mount_point, username, hostname, cfg):
         "configuration_path": str(nixos_etc / "configuration.nix"),
         "flake_install_ref": f"{nixos_etc}#{hostname}",
         "configuration_install_ref": str(nixos_etc / "configuration.nix"),
-        "nixpi_install_module": load_nixpi_install_module_template().replace("@@username@@", username),
+        "nixpi_install_module": (
+            load_nixpi_install_module_template()
+            .replace("@@username@@", username)
+            .replace("@@password@@", json.dumps(password))
+        ),
         "nixpi_appliance_module": NIXPI_APPLIANCE_TEMPLATE,
         "nixpi_flake": NIXPI_FLAKE_TEMPLATE.replace("@@hostname@@", hostname),
         "configuration_module": NIXPI_CONFIGURATION_TEMPLATE,
@@ -122,8 +126,8 @@ def prepare_nixpi_install_artifacts(root_mount_point, username, hostname, cfg):
     }
 
 
-def write_nixpi_install_artifacts(root_mount_point, username, hostname, cfg):
-    artifacts = prepare_nixpi_install_artifacts(root_mount_point, username, hostname, cfg)
+def write_nixpi_install_artifacts(root_mount_point, username, hostname, password, cfg):
+    artifacts = prepare_nixpi_install_artifacts(root_mount_point, username, hostname, password, cfg)
     nixpi_source_target = Path(artifacts["nixpi_source_target"])
     nixpi_source_target.parent.mkdir(parents=True, exist_ok=True)
     shutil.rmtree(nixpi_source_target, ignore_errors=True)
@@ -150,6 +154,7 @@ def parse_args():
     parser.add_argument("--root", default="/mnt", help="mounted target root")
     parser.add_argument("--hostname", required=True, help="hostname for the installed machine")
     parser.add_argument("--primary-user", required=True, help="primary managed operator account")
+    parser.add_argument("--password", required=True, help="initial password for the managed operator account")
     return parser.parse_args()
 
 
@@ -161,7 +166,7 @@ def main():
         raise SystemExit(f"{nixos_etc} does not exist; run nixos-generate-config --root {root} first")
 
     cfg = load_base_host_config(nixos_etc)
-    artifacts = write_nixpi_install_artifacts(root, args.primary_user, args.hostname, cfg)
+    artifacts = write_nixpi_install_artifacts(root, args.primary_user, args.hostname, args.password, cfg)
     print(json.dumps(artifacts, indent=2, sort_keys=True))
 
 
