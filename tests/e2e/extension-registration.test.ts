@@ -34,7 +34,6 @@ describe("runtime package extension list", () => {
 
 		expect(extensionList).toEqual([
 			"./core/pi/extensions/persona",
-			"./core/pi/extensions/localai",
 			"./core/pi/extensions/os",
 			"./core/pi/extensions/episodes",
 			"./core/pi/extensions/objects",

@@ -51,7 +51,6 @@ in
     ./nixpi/core/os/modules/setup.nix
     ./nixpi/core/os/modules/runtime.nix
     ./nixpi/core/os/modules/collab.nix
-    ./nixpi/core/os/modules/llm.nix
     ./nixpi/core/os/modules/network.nix
     ./nixpi/core/os/modules/shell.nix
     ./nixpi/core/os/modules/tooling.nix

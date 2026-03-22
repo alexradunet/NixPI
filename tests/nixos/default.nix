@@ -4,7 +4,6 @@
 # Usage:
 #   nix build .#checks.x86_64-linux.nixpi-matrix
 #   nix build .#checks.x86_64-linux.nixpi-firstboot
-#   nix build .#checks.x86_64-linux.localai
 #   nix build .#checks.x86_64-linux.nixpi-network
 #   nix build .#checks.x86_64-linux.nixpi-daemon
 #   nix build .#checks.x86_64-linux.nixpi-e2e
@@ -82,9 +81,6 @@ in
   
   # First-boot wizard test
   nixpi-firstboot = mkTest ./nixpi-firstboot.nix;
-  
-  # LocalAI inference test (with test model)
-  localai = mkTest ./localai.nix;
   
   # Network connectivity test
   nixpi-network = mkTest ./nixpi-network.nix;

@@ -526,10 +526,9 @@ step_ai() {
 		mark_done_with ai "skipped"
 		return
 	fi
-	echo "Configuring Pi to use local AI (llama-server on port 11435)..."
-	write_pi_settings_defaults "localai" "Qwen3.5-4B-Q4_K_M"
-	echo "  Local AI configured. Pi will use Qwen 3.5 4B by default."
-	mark_done_with ai "localai"
+	echo "No local AI provider is bundled with this image."
+	echo "  Pi will prompt for login or model selection when you start it."
+	mark_done_with ai "skipped"
 }
 
 step_services() {
@@ -636,19 +635,6 @@ finalize() {
 		echo ""
 		print_service_access_summary "$services" "$mesh_ip" "$mesh_fqdn"
 		echo ""
-	fi
-	if [[ "$ai_provider" == "localai" ]] && has_command curl; then
-		echo "  Waiting for local AI to be ready..."
-		for i in $(seq 1 180); do
-			if curl -sf http://localhost:11435/health > /dev/null 2>&1; then
-				echo "  Local AI ready."
-				break
-			fi
-			if [[ $i -eq 180 ]]; then
-				echo "  Local AI is taking longer than expected — it will finish loading soon."
-			fi
-			sleep 1
-		done
 	fi
 	echo ""
 	if has_command pi; then

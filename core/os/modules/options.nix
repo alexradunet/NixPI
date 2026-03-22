@@ -286,26 +286,6 @@ in
       };
     };
 
-    llm = {
-      enable = lib.mkEnableOption "LocalAI model bootstrap and local inference service";
-
-      modelFileName = lib.mkOption {
-        type = lib.types.str;
-        default = "Qwen3.5-4B-Q4_K_M.gguf";
-        description = ''
-          Filename used for the local GGUF model artifact.
-        '';
-      };
-
-      modelUrl = lib.mkOption {
-        type = lib.types.str;
-        default = "https://huggingface.co/unsloth/Qwen3.5-4B-GGUF/resolve/main/Qwen3.5-4B-Q4_K_M.gguf?download=true";
-        description = ''
-          Upstream URL used to download the local GGUF model artifact.
-        '';
-      };
-    };
-
     update = {
       onBootSec = lib.mkOption {
         type = lib.types.str;

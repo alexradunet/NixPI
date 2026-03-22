@@ -11,7 +11,6 @@ Extensions are grouped by domain, not by transport:
 - `objects/` owns durable markdown memory
 - `episodes/` owns append-only episodic memory
 - `persona/` owns prompt injection, compaction state, and guardrails
-- `localai/` registers the local model provider
 
 ## Structural rule
 
@@ -82,18 +81,6 @@ If a helper only exists to format a standard text response or wire a trivial too
 
 ---
 
-### LocalAI Extension (`core/pi/extensions/localai/`)
-
-**Purpose**: Local AI integration.
-
-| File | Why | What | How / Notes |
-|------|-----|------|-------------|
-| `index.ts` | Extension entry | Tool registration | Exports extension manifest |
-
-**Purpose**: Integrates with local AI providers for offline operation.
-
----
-
 ## 🔄 Extension Registration
 
 Extensions are registered in `package.json`:
@@ -103,7 +90,6 @@ Extensions are registered in `package.json`:
   "pi": {
     "extensions": [
       "./core/pi/extensions/persona",
-      "./core/pi/extensions/localai",
       "./core/pi/extensions/os",
       "./core/pi/extensions/episodes",
       "./core/pi/extensions/objects",
@@ -162,7 +148,6 @@ export default {
 | `tests/extensions/episodes.test.ts` | Episodes extension |
 | `tests/extensions/setup.test.ts` | Setup extension |
 | `tests/extensions/persona.test.ts` | Persona extension |
-| `tests/extensions/localai.test.ts` | LocalAI extension |
 
 ---
 

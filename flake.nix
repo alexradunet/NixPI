@@ -64,7 +64,6 @@
             self.nixosModules.nixpi-base-no-shell
             ./core/os/modules/runtime.nix
             ./core/os/modules/collab.nix
-            ./core/os/modules/llm.nix
             ./core/os/modules/tooling.nix
           ];
         };
@@ -292,7 +291,6 @@
             { name = "boot"; path = bootCheck; }
             { name = "nixpi-matrix"; path = nixosTests.nixpi-matrix; }
             { name = "nixpi-firstboot"; path = nixosTests.nixpi-firstboot; }
-            { name = "localai"; path = nixosTests.localai; }
             { name = "nixpi-network"; path = nixosTests.nixpi-network; }
             { name = "nixpi-daemon"; path = nixosTests.nixpi-daemon; }
             { name = "nixpi-e2e"; path = nixosTests.nixpi-e2e; }

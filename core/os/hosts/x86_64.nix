@@ -10,7 +10,6 @@
     ../modules/update.nix
     ../modules/runtime.nix
     ../modules/collab.nix
-    ../modules/llm.nix
     ../modules/tooling.nix
     ../modules/shell.nix
     ../modules/firstboot.nix

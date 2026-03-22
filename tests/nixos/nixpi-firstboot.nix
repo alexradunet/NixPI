@@ -107,7 +107,7 @@ pkgs.testers.runNixOSTest {
     # Test 5: wizard-state directory was created
     nixpi.succeed("test -d " + home + "/.nixpi/wizard-state")
     
-    # Test 7: Checkpoints exist in wizard-state (at minimum localai should be done)
+    # Test 7: Checkpoints exist in wizard-state
     checkpoints = nixpi.succeed("ls " + home + "/.nixpi/wizard-state/ 2>/dev/null || true").strip().split('\n')
     checkpoints = [c for c in checkpoints if c]  # filter empty lines
     assert len(checkpoints) > 0, f"No checkpoints found in wizard-state. Found: {checkpoints}"

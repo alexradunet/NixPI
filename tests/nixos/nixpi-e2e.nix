@@ -129,14 +129,7 @@ pkgs.testers.runNixOSTest {
     for svc in services:
         nixpi.succeed("systemctl is-active " + svc + ".service")
     
-    # E2E Test 8: LocalAI is intentionally disabled for this smoke test.
-    localai_enabled = nixpi.succeed("systemctl is-enabled localai.service || true").strip()
-    localai_active = nixpi.succeed("systemctl is-active localai.service || true").strip()
-    print("LocalAI enabled state: " + localai_enabled)
-    print("LocalAI active state: " + localai_active)
-    assert localai_active in ["inactive", "failed", "unknown", ""], "LocalAI should not be running in this test: " + localai_active
-    
-    # E2E Test 9: NixPI directories are correctly set up
+    # E2E Test 8: NixPI directories are correctly set up
     nixpi.succeed("test -d " + home + "/nixpi")
     nixpi.succeed("test -d " + home + "/.nixpi")
     nixpi.succeed("test -d " + home + "/.pi")

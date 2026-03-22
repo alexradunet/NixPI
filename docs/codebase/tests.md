@@ -36,7 +36,6 @@ Prefer tests that protect behavior over tests that mirror structure. When cleanu
 | `smoke-broker` | Broker service | `checks.x86_64-linux.nixos-smoke` |
 | `nixpi-matrix` | Matrix integration | `checks.x86_64-linux.nixos-full` |
 | `nixpi-firstboot` | Full firstboot | `checks.x86_64-linux.nixos-full` |
-| `localai` | Local AI | `checks.x86_64-linux.nixos-full` |
 | `nixpi-network` | Network config | `checks.x86_64-linux.nixos-full` |
 | `nixpi-daemon` | Daemon service | `checks.x86_64-linux.nixos-full` |
 | `nixpi-e2e` | End-to-end | `checks.x86_64-linux.nixos-full` |

@@ -26,7 +26,6 @@ Do not let root files become secondary architecture documents. If a detail is on
   "pi": {
     "extensions": [
       "./core/pi/extensions/persona",
-      "./core/pi/extensions/localai",
       "./core/pi/extensions/os",
       "./core/pi/extensions/episodes",
       "./core/pi/extensions/objects",
