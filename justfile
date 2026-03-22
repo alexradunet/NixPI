@@ -54,7 +54,13 @@ vm-install-iso: iso
     ovmf_code="{{ ovmf }}"
     ovmf_vars_template="{{ ovmf_vars }}"
     ovmf_vars="${NIXPI_INSTALL_VM_OVMF_VARS_PATH:-$HOME/.cache/nixpi-install-ovmf-vars.fd}"
-    iso_path="$(find result/iso -maxdepth 1 -name '*.iso' | head -n1)"
+    iso_path=""
+
+    if [ -f result ] && [[ "$(readlink -f result)" = *.iso ]]; then
+        iso_path="$(readlink -f result)"
+    elif [ -d result/iso ]; then
+        iso_path="$(find result/iso -maxdepth 1 -name '*.iso' | head -n1)"
+    fi
 
     if [ -z "$iso_path" ]; then
         echo "Installer ISO not found under result/iso"
@@ -72,6 +78,7 @@ vm-install-iso: iso
     fi
 
     echo "Booting installer ISO: $iso_path"
+    echo "ISO timestamp: $(stat -c '%y' "$iso_path")"
     echo "Disk: $disk"
     echo "SSH forward: localhost:$ssh_port -> guest:22"
     echo "Console: graphical"
