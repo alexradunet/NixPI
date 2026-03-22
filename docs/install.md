@@ -43,11 +43,11 @@ setup-wizard.sh
   </div>
   <div class="quick-card">
     <strong>3. Run the installer</strong>
-    The installer prepares the target system and seeds the NixPI layout.
+    The installer prepares a minimal bootable NixPI base on the target system.
   </div>
   <div class="quick-card">
     <strong>4. Finish first boot</strong>
-    The wizard and Pi-guided persona flow complete the initial operating setup.
+    The wizard brings up WiFi, clones `~/nixpi`, writes `/etc/nixos`, and promotes the machine into the full appliance.
   </div>
 </div>
 
@@ -62,11 +62,9 @@ The installed system now boots into the official NixPI Openbox desktop automatic
 <TerminalFrame title="Post-install workflow">
 ```bash
 cd ~/nixpi
-sudo nixos-rebuild switch --flake .
-
 git fetch upstream
 git rebase upstream/main
-sudo nixos-rebuild switch --flake .
+sudo nixos-rebuild switch --flake /etc/nixos#$(hostname -s)
 ```
 </TerminalFrame>
 

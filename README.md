@@ -56,7 +56,7 @@ After install, NixPI is operated from the local `~/nixpi` git checkout:
 
 ```bash
 cd ~/nixpi
-sudo nixos-rebuild switch --flake .
+sudo nixos-rebuild switch --flake /etc/nixos#$(hostname -s)
 ```
 
 To sync with upstream later:
@@ -65,7 +65,7 @@ To sync with upstream later:
 cd ~/nixpi
 git fetch upstream
 git rebase upstream/main
-sudo nixos-rebuild switch --flake .
+sudo nixos-rebuild switch --flake /etc/nixos#$(hostname -s)
 ```
 
 See the [documentation site](https://alexradunet.github.io/NixPI) for detailed instructions.

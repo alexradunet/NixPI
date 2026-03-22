@@ -101,7 +101,10 @@ login
 setup-wizard.sh
     ↓
 ├─ Password change
-├─ Connectivity check
+├─ WiFi / internet setup
+├─ Clone ~/nixpi
+├─ Write /etc/nixos host flake
+├─ nixos-rebuild switch to full appliance
 ├─ NetBird enrollment
 ├─ Matrix account bootstrap
 ├─ AI provider defaults

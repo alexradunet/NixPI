@@ -14,8 +14,9 @@ Before first-boot setup, you need a system installed from the NixPI installer im
 2. Boot the installer and run `sudo -i && nixpi-installer`
 3. Choose your target disk and layout, then enter your hostname and primary user in the terminal wizard
 4. Reboot into the installed system
-5. The installed machine now owns a standard local flake at `/etc/nixos`, but the recommended editable source of truth is the `~/nixpi` git checkout
-6. The installed system boots into the official NixPI Openbox desktop; use it as a local automation surface and fallback GUI, not as the main setup surface
+5. The installed machine initially boots a minimal NixPI base from `/etc/nixos`
+6. During first boot, the setup wizard creates the local `~/nixpi` checkout and the host-specific flake at `/etc/nixos`
+7. The installed system boots into the official NixPI Openbox desktop; use it as a local automation surface and fallback GUI, not as the main setup surface
 
 ## 🛡️ Security Note: NetBird is Mandatory
 
@@ -46,12 +47,14 @@ NixPI's first-boot experience has two phases.
 
 **Current responsibilities**:
 
-1. Password change and connectivity checks
-2. NetBird enrollment
-3. Primary Matrix account bootstrap
-4. AI provider defaults for Pi
-5. Built-in service provisioning
-6. User-facing system update guidance for operating the local `~/nixpi` checkout
+1. Password change and WiFi/internet setup
+2. Clone `~/nixpi` and write the host-specific `/etc/nixos` flake
+3. Promote the minimal base into the full appliance with `nixos-rebuild switch`
+4. NetBird enrollment
+5. Primary Matrix account bootstrap
+6. AI provider defaults for Pi
+7. Built-in service provisioning
+8. User-facing system update guidance for operating the local `~/nixpi` checkout
 
 **Built-in services provisioned**:
 
@@ -76,7 +79,7 @@ Pi injects setup guidance until that step is marked complete.
 During that Pi-side first conversation, Pi should also orient the user to the platform:
 
 - NixPI keeps durable state in `~/nixpi/` using inspectable files
-- `~/nixpi` is the canonical git working tree for syncing with a fork, pulling from upstream, and rebuilding the system
+- `~/nixpi` is the canonical git working tree for syncing with a fork and pulling from upstream, while `/etc/nixos` is the deployed host flake used for rebuilds
 - NixPI can propose persona or workflow changes through tracked evolutions instead of silently changing itself
 - Matrix is the native messaging surface, with `nixpi-daemon.service` keeping Pi active in rooms outside the local terminal session as a system service running under the `agent` account
 - Multi-agent rooms are optional and activate when valid overlays exist in `~/nixpi/Agents/*/AGENTS.md`

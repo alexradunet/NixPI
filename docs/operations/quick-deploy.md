@@ -48,7 +48,7 @@ sudo dd if=./result/iso/*.iso of=/dev/<usb-device> bs=4M status=progress oflag=s
 7. Confirm the destructive install
 8. Reboot into the installed system
 
-The installed machine lands with a standard local system flake in `/etc/nixos` and a local NixPI working tree should be maintained in `~/nixpi`.
+The installer writes a minimal bootable NixPI base in `/etc/nixos`. The full host flake and local `~/nixpi` checkout are created during first-boot setup after the machine has network access.
 
 ### 4. Complete Setup
 
@@ -59,6 +59,13 @@ setup-wizard.sh
 ```
 
 The wizard auto-runs on TTY login before setup completes. If it doesn't start, run `setup-wizard.sh` manually.
+
+During first boot, the wizard:
+
+1. Connects the machine to WiFi or confirms Ethernet/internet is already up
+2. Clones the NixPI checkout into `~/nixpi`
+3. Writes the host-specific flake under `/etc/nixos`
+4. Runs `sudo nixos-rebuild switch --flake /etc/nixos#$(hostname -s)` to promote the system into the full appliance
 
 ## 💻 Development: Local Builds and VM Testing
 
@@ -107,8 +114,7 @@ git remote add upstream https://github.com/alexradunet/nixpi.git
 To apply local changes manually:
 
 ```bash
-cd ~/nixpi
-sudo nixos-rebuild switch --flake .
+sudo nixos-rebuild switch --flake /etc/nixos#$(hostname -s)
 ```
 
 To sync with upstream and rebuild:
@@ -118,7 +124,7 @@ cd ~/nixpi
 git fetch upstream
 git rebase upstream/main
 git push origin main
-sudo nixos-rebuild switch --flake .
+sudo nixos-rebuild switch --flake /etc/nixos#$(hostname -s)
 ```
 
 Automatic updates remain local-only and do not `git pull` for the user. Syncing a fork with upstream stays a manual step so local customizations remain under the operator's control.
