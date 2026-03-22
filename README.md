@@ -52,7 +52,7 @@ nix build .#installerIso
 setup-wizard.sh
 ```
 
-After install, NixPI is operated from the local `~/nixpi` git checkout:
+After install, edit and sync NixPI from the local `~/nixpi` git checkout, and rebuild the machine through the host flake in `/etc/nixos`:
 
 ```bash
 cd ~/nixpi

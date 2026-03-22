@@ -114,6 +114,7 @@ git remote add upstream https://github.com/alexradunet/nixpi.git
 To apply local changes manually:
 
 ```bash
+cd ~/nixpi
 sudo nixos-rebuild switch --flake /etc/nixos#$(hostname -s)
 ```
 

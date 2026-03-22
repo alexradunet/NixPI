@@ -56,7 +56,7 @@ The installed system now boots into the official NixPI Openbox desktop automatic
 <PresentationBand
   eyebrow="After install"
   title="Operate the machine from the local checkout"
-  lede="Once the system is live, NixPI is managed as a local flake-backed checkout. Changes stay reviewable and use normal NixOS workflows."
+  lede="Once the system is live, you edit and sync NixPI in `~/nixpi`, while `/etc/nixos` remains the deployed host flake used for rebuilds."
 >
 
 <TerminalFrame title="Post-install workflow">
