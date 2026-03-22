@@ -20,8 +20,8 @@ let
     fi
     exec ${command} "$@"
   '';
-  bootstrapReadMatrixSecret = bootstrapAction "read-matrix-secret" "/run/current-system/sw/bin/cat ${matrixRegistrationSecretFile}";
-  bootstrapReadPrimaryPassword = bootstrapAction "read-primary-password" "/run/current-system/sw/bin/cat ${bootstrapPrimaryPasswordFile}";
+  bootstrapReadMatrixSecret = bootstrapAction "read-matrix-secret" "/run/current-system/sw/bin/sh -c 'tr -d \"\\n\" < ${matrixRegistrationSecretFile}'";
+  bootstrapReadPrimaryPassword = bootstrapAction "read-primary-password" "/run/current-system/sw/bin/sh -c 'tr -d \"\\n\" < ${bootstrapPrimaryPasswordFile}'";
   bootstrapRemovePrimaryPassword = bootstrapAction "remove-primary-password" "/run/current-system/sw/bin/rm -f ${bootstrapPrimaryPasswordFile}";
   bootstrapMatrixJournal = bootstrapAction "matrix-journal" "/run/current-system/sw/bin/journalctl -u continuwuity --no-pager";
   bootstrapNetbird = bootstrapAction "netbird-up" "/run/current-system/sw/bin/netbird up";

@@ -16,6 +16,9 @@ Use the test tree by risk level:
 ## Cleanup rule
 
 Prefer tests that protect behavior over tests that mirror structure. When cleanup collapses files or helpers, update tests to keep asserting the user-visible behavior instead of preserving old module boundaries.
+
+| File | Coverage Area |
+|------|---------------|
 | `object-lifecycle.test.ts` | Object create/update/read |
 | `persona-guardrails.test.ts` | Persona integration |
 | `pi-ui-parity-guard.test.ts` | UI consistency |
@@ -76,6 +79,12 @@ From `vitest.config.ts`:
 npm run test
 ```
 
+### CI Gate
+```bash
+npm run test:ci
+```
+Runs the Vitest suites, coverage, and the NixOS smoke lane.
+
 ### By Suite
 ```bash
 npm run test:unit          # lib, extensions, daemon
@@ -95,6 +104,9 @@ npm run test:watch
 
 ### NixOS Tests
 ```bash
+npm run test:system:smoke      # PR-oriented VM subset
+npm run test:system:full       # Comprehensive VM lane
+npm run test:system:destructive # Long-running/manual lane
 just check-nixos-smoke       # Smoke tests
 just check-nixos-full        # Full suite
 just check-nixos-destructive # Long-running tests

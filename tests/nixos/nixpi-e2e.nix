@@ -153,7 +153,7 @@ pkgs.testers.runNixOSTest {
     # E2E Test 13: Required system packages are available
     packages = ["git", "curl", "jq", "htop", "netbird", "chromium"]
     for pkg in packages:
-        nixpi.succeed("which " + pkg + " || true")  # Some may be in different paths
+        nixpi.succeed("command -v " + pkg)
     
     # E2E Test 14: System can resolve DNS
     nixpi.succeed("getent hosts pi")

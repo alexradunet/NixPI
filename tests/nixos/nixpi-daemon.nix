@@ -91,7 +91,6 @@ pkgs.testers.runNixOSTest {
 
   testScript = ''
     import json
-    import time
 
     agent = machines[0]
     server = machines[1]
@@ -149,7 +148,10 @@ pkgs.testers.runNixOSTest {
     agent.succeed("test -d /usr/local/share/nixpi")
     agent.succeed("test -f /usr/local/share/nixpi/dist/core/daemon/index.js")
 
-    time.sleep(5)
+    agent.wait_until_succeeds(
+        "systemctl is-active nixpi-daemon.service | grep -Eq 'active|activating'",
+        timeout=30,
+    )
     daemon_status = agent.succeed("systemctl is-active nixpi-daemon.service || true").strip()
     journal = agent.succeed("journalctl -u nixpi-daemon.service -n 20 --no-pager || true")
     print("nixpi-daemon status: " + daemon_status)

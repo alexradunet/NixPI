@@ -122,18 +122,24 @@ read_bootstrap_matrix_registration_token() {
 matrix_register() {
 	local username="$1" password="$2" registration_token="${3:-}"
 	local url="${MATRIX_HOMESERVER}/_matrix/client/v3/register"
-	local result
-	result=$(curl -s -X POST "$url" \
+	local result status body_file
+	body_file=$(mktemp)
+	status=$(curl -sS -o "$body_file" -w "%{http_code}" -X POST "$url" \
 		-H "Content-Type: application/json" \
-		-d "{\"username\":\"${username}\",\"password\":\"${password}\",\"inhibit_login\":false}")
+		-d "{\"username\":\"${username}\",\"password\":\"${password}\",\"inhibit_login\":false}" || true)
+	result=$(cat "$body_file")
+	rm -f "$body_file"
 
-	if echo "$result" | grep -q '"access_token"'; then
+	if [[ "$status" == "200" ]] && echo "$result" | grep -q '"access_token"'; then
 		echo "$result"
 		return 0
 	fi
 
-	if ! echo "$result" | grep -q '"errcode"'; then
-		echo "ERROR: Matrix registration failed for ${username}" >&2
+	if [[ "$status" != "401" ]]; then
+		echo "ERROR: Matrix registration failed for ${username} (HTTP ${status:-000})" >&2
+		if [[ -n "$result" ]]; then
+			printf '%s\n' "$result" >&2
+		fi
 		return 1
 	fi
 
@@ -176,21 +182,30 @@ matrix_register() {
 			break
 		fi
 
-		result=$(jq -cn \
+		body_file=$(mktemp)
+		status=$(jq -cn \
 			--arg username "$username" \
 			--arg password "$password" \
 			--argjson auth "$auth_payload" \
 			'{ username: $username, password: $password, inhibit_login: false, auth: $auth }' \
-			| curl -s -X POST "$url" -H "Content-Type: application/json" -d @-)
+			| curl -sS -o "$body_file" -w "%{http_code}" -X POST "$url" -H "Content-Type: application/json" -d @- || true)
+		result=$(cat "$body_file")
+		rm -f "$body_file"
 
-		if echo "$result" | grep -q '"access_token"'; then
+		if [[ "$status" == "200" ]] && echo "$result" | grep -q '"access_token"'; then
 			echo "$result"
 			return 0
 		fi
+
+		if [[ "$status" != "401" ]]; then
+			break
+		fi
 	done
 
-	echo "$result"
-	return 0
+	if [[ -n "$result" ]]; then
+		printf '%s\n' "$result" >&2
+	fi
+	return 1
 }
 
 # Password-login an existing Matrix account.
@@ -327,6 +342,22 @@ step_matrix() {
 		sleep 1
 	done
 	echo "Matrix homeserver is running."
+	attempts=0
+	while ! curl -sf "${MATRIX_HOMESERVER}/_matrix/client/versions" >/dev/null 2>&1; do
+		attempts=$((attempts + 1))
+		if [[ $attempts -ge 30 ]]; then
+			echo "ERROR: Matrix client API did not become ready within 30 seconds." >&2
+			if command -v nixpi-bootstrap-matrix-journal >/dev/null 2>&1; then
+				echo "Recent continuwuity logs:" >&2
+				root_command nixpi-bootstrap-matrix-journal >&2 || true
+			else
+				root_command journalctl -u continuwuity --no-pager >&2 || true
+			fi
+			return 1
+		fi
+		sleep 1
+	done
+	echo "Matrix client API is responding."
 
 	# Read registration token
 	load_existing_matrix_credentials
