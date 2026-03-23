@@ -314,6 +314,7 @@
             { name = "smoke-security"; path = nixosTests.smoke-security; }
             { name = "smoke-broker"; path = nixosTests.smoke-broker; }
             { name = "smoke-desktop"; path = nixosTests.smoke-desktop; }
+            { name = "installer-smoke"; path = nixosTests.installer-smoke; }
           ];
 
           nixos-full = mkCheckLane "nixos-full" [
@@ -332,6 +333,8 @@
             { name = "nixpi-bootstrap-mode"; path = nixosTests.nixpi-bootstrap-mode; }
             { name = "nixpi-post-setup-lockdown"; path = nixosTests.nixpi-post-setup-lockdown; }
             { name = "nixpi-broker"; path = nixosTests.nixpi-broker; }
+            { name = "nixpi-update"; path = nixosTests.nixpi-update; }
+            { name = "nixpi-options-validation"; path = nixosTests.nixpi-options-validation; }
           ];
 
           nixos-destructive = mkCheckLane "nixos-destructive" [
