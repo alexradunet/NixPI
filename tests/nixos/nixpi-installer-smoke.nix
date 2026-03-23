@@ -101,6 +101,7 @@
 
         installer.succeed("test -f " + target_mount + "/etc/nixos/configuration.nix")
         installer.succeed("test -f " + target_mount + "/etc/nixos/nixpi-install.nix")
+        installer.succeed("grep -q './hardware-configuration.nix' " + target_mount + "/etc/nixos/configuration.nix")
         installer.succeed("grep -q 'desktop-xfce.nix' " + target_mount + "/etc/nixos/nixpi-install.nix")
         installer.succeed("grep -q 'nixpi.primaryUser = \"installer\";' " + target_mount + "/etc/nixos/nixpi-install.nix")
         installer.fail("grep -q 'nixpi.install.mode = ' " + target_mount + "/etc/nixos/nixpi-install.nix")

@@ -70,13 +70,14 @@ class NixpiInstallerTests(unittest.TestCase):
                 encoding="utf-8",
             )
 
-            artifacts = self.module.write_nixpi_install_artifacts(
-                root,
-                "alex",
-                "pi-box",
-                "supersecret",
-                self.module.load_base_host_config(nixos_etc),
-            )
+            with mock.patch.object(self.module, "hash_password", return_value="$6$fixedhash"):
+                artifacts = self.module.write_nixpi_install_artifacts(
+                    root,
+                    "alex",
+                    "pi-box",
+                    "supersecret",
+                    self.module.load_base_host_config(nixos_etc),
+                )
 
             for key in ("nixpi_install_path", "configuration_path"):
                 self.assertTrue(Path(artifacts[key]).exists())
@@ -100,6 +101,22 @@ class NixpiInstallerTests(unittest.TestCase):
         self.assertIn("  imports = [\n", artifacts["configuration_module"])
         self.assertIn("    ./hardware-configuration.nix", artifacts["configuration_module"])
         self.assertIn("    ./nixpi-install.nix", artifacts["configuration_module"])
+        self.assertIn('networking.hostName = "pi-box";', artifacts["configuration_module"])
+
+    def test_prepare_artifacts_restores_hardware_import_when_missing(self):
+        cfg = "{\n}\n"
+
+        with mock.patch.object(self.module, "hash_password", return_value="$6$fixedhash"):
+            artifacts = self.module.prepare_nixpi_install_artifacts(
+                "/mnt/target",
+                "alex",
+                "pi-box",
+                "supersecret",
+                cfg,
+            )
+
+        self.assertIn("./hardware-configuration.nix", artifacts["configuration_module"])
+        self.assertIn("./nixpi-install.nix", artifacts["configuration_module"])
         self.assertIn('networking.hostName = "pi-box";', artifacts["configuration_module"])
 
     def test_main_prints_json(self):

@@ -74,7 +74,10 @@ def hash_password(password):
 
 def prepare_nixpi_install_artifacts(root_mount_point, username, hostname, password, cfg):
     nixos_etc = Path(root_mount_point) / "etc/nixos"
-    configuration_module = upsert_hostname(ensure_import(cfg, "./nixpi-install.nix"), hostname)
+    configuration_module = cfg
+    configuration_module = ensure_import(configuration_module, "./hardware-configuration.nix")
+    configuration_module = ensure_import(configuration_module, "./nixpi-install.nix")
+    configuration_module = upsert_hostname(configuration_module, hostname)
     password_hash = hash_password(password)
     return {
         "hostname": hostname,
