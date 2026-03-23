@@ -1,0 +1,95 @@
+{ nixPiModules, mkTestFilesystems, mkManagedUserConfig, piAgent, appPackage, setupPackage, ... }:
+
+{
+  name = "nixpi-options-validation";
+
+  nodes = {
+    defaults = { ... }: {
+      imports = nixPiModules ++ [
+        mkTestFilesystems
+        (mkManagedUserConfig { username = "pi"; })
+      ];
+      _module.args = { inherit piAgent appPackage setupPackage; };
+
+      networking.hostName = "nixpi-defaults-test";
+
+      virtualisation.diskSize = 20480;
+      virtualisation.memorySize = 4096;
+
+      boot.loader.systemd-boot.enable = true;
+      boot.loader.efi.canTouchEfiVariables = true;
+      networking.networkmanager.enable = true;
+      time.timeZone = "UTC";
+      i18n.defaultLocale = "en_US.UTF-8";
+      system.stateVersion = "25.05";
+    };
+
+    overrides = { ... }: {
+      imports = nixPiModules ++ [
+        mkTestFilesystems
+        (mkManagedUserConfig { username = "pi"; })
+      ];
+      _module.args = { inherit piAgent appPackage setupPackage; };
+
+      networking.hostName = "nixpi-overrides-test";
+
+      virtualisation.diskSize = 20480;
+      virtualisation.memorySize = 4096;
+
+      boot.loader.systemd-boot.enable = true;
+      boot.loader.efi.canTouchEfiVariables = true;
+      networking.networkmanager.enable = true;
+      time.timeZone = "UTC";
+      i18n.defaultLocale = "en_US.UTF-8";
+      system.stateVersion = "25.05";
+
+      nixpi.matrix.port = 7777;
+      nixpi.services.home.port = 9090;
+      nixpi.security.fail2ban.enable = false;
+      nixpi.security.ssh.passwordAuthentication = true;
+    };
+  };
+
+  testScript = ''
+    defaults = machines[0]
+    overrides = machines[1]
+
+    defaults.start()
+    defaults.wait_for_unit("multi-user.target", timeout=300)
+
+    defaults.succeed("id pi")
+
+    defaults.wait_for_unit("continuwuity.service", timeout=60)
+    defaults.succeed("curl -sf http://localhost:6167/_matrix/client/versions")
+
+    defaults.wait_for_unit("nixpi-home.service", timeout=60)
+    defaults.succeed("curl -sf http://localhost:8080/")
+
+    defaults.wait_for_unit("nixpi-element-web.service", timeout=60)
+    defaults.succeed("curl -sf http://localhost:8081/")
+
+    broker_cfg = defaults.succeed(
+        "systemctl show nixpi-broker.service -p Environment --value"
+        " | grep -oP 'NIXPI_BROKER_CONFIG=\\K\\S+'"
+    ).strip()
+    defaults.succeed(f"grep -q maintain {broker_cfg}")
+
+    defaults.succeed("systemctl is-active fail2ban")
+    defaults.succeed("sshd -T | grep -i 'passwordauthentication no'")
+
+    overrides.start()
+    overrides.wait_for_unit("multi-user.target", timeout=300)
+
+    overrides.wait_for_unit("continuwuity.service", timeout=60)
+    overrides.succeed("curl -sf http://localhost:7777/_matrix/client/versions")
+    overrides.fail("curl -sf http://localhost:6167/_matrix/client/versions")
+
+    overrides.wait_for_unit("nixpi-home.service", timeout=60)
+    overrides.succeed("curl -sf http://localhost:9090/")
+
+    overrides.fail("systemctl is-active fail2ban")
+    overrides.succeed("sshd -T | grep -i 'passwordauthentication yes'")
+
+    print("All nixpi-options-validation tests passed!")
+  '';
+}
