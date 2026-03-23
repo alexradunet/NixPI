@@ -55,7 +55,7 @@ fileSystems."/boot" = lib.mkDefault { device = "/dev/disk/by-label/boot"; fsType
 This is simpler and more robust than importing `hardware-configuration.nix` for filesystem entries. `hardware-configuration.nix` (called with `--no-filesystems`) still provides kernel modules and hardware detection.
 
 **Fix — firstboot.nix dynamic system:**
-`firstboot.nix` uses `pkgs.writeShellScriptBin` to produce the bootstrap script. The Nix string `${pkgs.stdenv.hostPlatform.system}` inside `pkgs.writeShellScriptBin` is interpolated at **Nix build time** (when the ISO or system closure is built), and baked into the script as a literal string. This is the correct mechanism — the ISO already knows its target architecture at build time, and the generated flake will reflect it. Replace the hardcoded `"x86_64-linux"` in the heredoc with `${pkgs.stdenv.hostPlatform.system}` in the `pkgs.writeShellScriptBin` string. This is not runtime-dynamic (it doesn't detect arch at install time) — it locks the generated flake to the arch of the ISO that was built, which is the correct and intended behavior.
+`firstboot.nix` uses `pkgs.writeShellScriptBin` to produce the bootstrap script. Inside a `pkgs.writeShellScriptBin` string, `${pkgs.stdenv.hostPlatform.system}` is a **Nix build-time interpolation** — evaluated when the NixOS closure is built, producing a literal string (e.g. `"x86_64-linux"`) baked into the resulting shell script. This is intentional: the ISO knows its target architecture at build time. The generated `/etc/nixos/flake.nix` will contain the correct arch string for the machine the ISO was built for. Cross-compilation is out of scope. Replace the hardcoded string `"x86_64-linux"` in the heredoc template with `${pkgs.stdenv.hostPlatform.system}` at the Nix level.
 
 ---
 
@@ -81,14 +81,7 @@ i18n.defaultLocale = config.nixpi.locale;
 
 **Prefill support:** The setup wizard reads `~/.nixpi/prefill.env` (or `/mnt/host-nixpi/prefill.env` in VM mode) for `NIXPI_TIMEZONE` and `NIXPI_LOCALE` environment variables. If set, skip interactive prompts and use the prefill values.
 
-**Wizard step** (see §5a for wizard UI details): After the timezone/locale step, the wizard appends the chosen values to `/etc/nixos/nixpi-host.nix` (the same file where hostname and primaryUser are written by the existing `nixpi-bootstrap-install-host-flake` script) and runs `nixos-rebuild switch` to apply. The append writes:
-
-```nix
-nixpi.timezone = "<chosen-timezone>";
-nixpi.locale = "<chosen-locale>";
-```
-
-These lines are added inside the existing `{ ... }` block in `nixpi-host.nix`. The wizard must use `sed` or a structured append that stays within the Nix attribute set — not a naive `echo >>` that would produce invalid Nix.
+**Wizard step:** §5a is the implementation of this wizard step. §2b owns the Nix options; §5a owns the wizard UI and write mechanism. There is no separate §2b wizard step — §5a covers it entirely. Do not implement a write in §2b; only add the Nix options and wire them into x86_64.nix.
 
 ---
 
@@ -172,7 +165,7 @@ Keyboard layout [us]: _
 
 Common timezone suggestions printed above prompt: `UTC, Europe/Paris, Europe/London, America/New_York, America/Los_Angeles, Asia/Tokyo`.
 Common keyboard layout suggestions: `us, uk, fr, de, es`.
-Accept any free-form string. Write chosen values to a checkpoint file and to the host flake via `nixos-rebuild switch`.
+Accept any free-form string. Write chosen values by **rewriting `nixpi-host.nix` in full** — not appending with `sed`. The wizard reads the current hostname and primaryUser from the existing file, constructs a new complete Nix attrset including all four values (hostname, primaryUser, timezone, keyboard), and overwrites the file atomically. This avoids fragile sed injection and is idempotent (re-running the step produces the same result). Then run `nixos-rebuild switch`.
 
 Prefill: if `NIXPI_TIMEZONE` and `NIXPI_KEYBOARD` are set in `prefill.env`, skip interactive prompts.
 
