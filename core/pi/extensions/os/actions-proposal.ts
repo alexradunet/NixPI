@@ -2,12 +2,13 @@ import { existsSync, mkdirSync, readdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import type { ExtensionContext } from "@mariozechner/pi-coding-agent";
 import { run } from "../../../lib/exec.js";
-import { getNixPiRepoDir, getSystemFlakeDir } from "../../../lib/filesystem.js";
+import { getSystemFlakeDir } from "../../../lib/filesystem.js";
 import { errorResult, requireConfirmation, truncate } from "../../../lib/shared.js";
 
 export type NixConfigProposalAction = "status" | "validate" | "update_flake_lock";
 
 const DEFAULT_CHECK = "checks.x86_64-linux.config";
+const PROPOSAL_REPO_DIR = "/var/lib/nixpi/pi-nixpi";
 
 function summarizeOutput(result: { stdout: string; stderr: string; exitCode: number }): string {
 	return truncate((result.stdout || result.stderr || "").trim() || "(no output)");
@@ -44,7 +45,7 @@ export async function handleNixConfigProposal(
 	signal: AbortSignal | undefined,
 	ctx: ExtensionContext,
 ) {
-	const repoDir = getNixPiRepoDir();
+	const repoDir = PROPOSAL_REPO_DIR;
 	const repo = await ensureProposalRepo(repoDir, signal);
 	if ("error" in repo) {
 		return errorResult(repo.error);

@@ -5,28 +5,53 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createMockExtensionContext } from "../helpers/mock-extension-context.js";
 
 const runMock = vi.fn();
+const PROPOSAL_REPO_DIR = "/var/lib/nixpi/pi-nixpi";
+const CANONICAL_REPO_DIR = "/srv/nixpi";
+const proposalRepoState = vi.hoisted(() => ({ tempDir: "" }));
 
 vi.mock("../../core/lib/exec.js", () => ({
 	run: (...args: unknown[]) => runMock(...args),
 }));
 
+vi.mock("node:fs", async () => {
+	const actual = await vi.importActual<typeof import("node:fs")>("node:fs");
+	const resolvePath = (target: fs.PathLike) => {
+		const asString = String(target);
+		if (!proposalRepoState.tempDir) return target;
+		if (asString === PROPOSAL_REPO_DIR) return proposalRepoState.tempDir;
+		if (asString.startsWith(`${PROPOSAL_REPO_DIR}/`)) {
+			return path.join(proposalRepoState.tempDir, asString.slice(PROPOSAL_REPO_DIR.length + 1));
+		}
+		return target;
+	};
+
+	return {
+		...actual,
+		existsSync: (target: fs.PathLike) => actual.existsSync(resolvePath(target)),
+		mkdirSync: (target: fs.PathLike, options?: fs.MakeDirectoryOptions & { recursive?: boolean }) =>
+			actual.mkdirSync(resolvePath(target), options),
+		readdirSync: (
+			target: fs.PathLike,
+			options?:
+				| { encoding?: BufferEncoding | null; withFileTypes?: false; recursive?: boolean }
+				| BufferEncoding
+				| null,
+		) => actual.readdirSync(resolvePath(target), options as never),
+	};
+});
+
 describe("os local Nix proposal handler", () => {
 	let repoDir: string;
-	const originalRepoDir = process.env.NIXPI_REPO_DIR;
 
 	beforeEach(() => {
 		vi.resetModules();
 		runMock.mockReset();
 		repoDir = fs.mkdtempSync(path.join(os.tmpdir(), "nixpi-repo-"));
-		process.env.NIXPI_REPO_DIR = repoDir;
+		proposalRepoState.tempDir = repoDir;
 	});
 
 	afterEach(() => {
-		if (originalRepoDir === undefined) {
-			delete process.env.NIXPI_REPO_DIR;
-		} else {
-			process.env.NIXPI_REPO_DIR = originalRepoDir;
-		}
+		proposalRepoState.tempDir = "";
 		fs.rmSync(repoDir, { recursive: true, force: true });
 	});
 
@@ -41,9 +66,11 @@ describe("os local Nix proposal handler", () => {
 		const result = await handleNixConfigProposal("status", undefined, createMockExtensionContext() as never);
 
 		expect(result.isError).toBeUndefined();
-		expect(result.content[0].text).toContain(`Local proposal repo: ${repoDir}`);
+		expect(result.content[0].text).toContain(`Local proposal repo: ${PROPOSAL_REPO_DIR}`);
+		expect(result.content[0].text).not.toContain(CANONICAL_REPO_DIR);
 		expect(result.content[0].text).toContain("Branch: main");
 		expect(result.content[0].text).toContain("M flake.nix");
+		expect(result.details?.repoDir).toBe(PROPOSAL_REPO_DIR);
 	});
 
 	it("runs both flake and config validation in the local repo", async () => {
@@ -58,13 +85,13 @@ describe("os local Nix proposal handler", () => {
 		expect(result.isError).toBe(false);
 		expect(result.content[0].text).toContain("nix flake check --no-build: ok");
 		expect(result.content[0].text).toContain("nix build .#checks.x86_64-linux.config --no-link: ok");
-		expect(runMock).toHaveBeenNthCalledWith(1, "nix", ["flake", "check", "--no-build"], undefined, repoDir);
+		expect(runMock).toHaveBeenNthCalledWith(1, "nix", ["flake", "check", "--no-build"], undefined, PROPOSAL_REPO_DIR);
 		expect(runMock).toHaveBeenNthCalledWith(
 			2,
 			"nix",
 			["build", ".#checks.x86_64-linux.config", "--no-link"],
 			undefined,
-			repoDir,
+			PROPOSAL_REPO_DIR,
 		);
 	});
 
@@ -96,7 +123,8 @@ describe("os local Nix proposal handler", () => {
 		const result = await handleNixConfigProposal("status", undefined, createMockExtensionContext() as never);
 
 		expect(result.isError).toBeUndefined();
-		expect(runMock).toHaveBeenNthCalledWith(1, "git", ["clone", expect.any(String), repoDir], undefined);
+		expect(runMock).toHaveBeenNthCalledWith(1, "git", ["clone", expect.any(String), PROPOSAL_REPO_DIR], undefined);
+		expect(runMock).not.toHaveBeenCalledWith("git", ["clone", expect.any(String), CANONICAL_REPO_DIR], undefined);
 		expect(result.content[0].text).toContain("Initialized from:");
 	});
 
