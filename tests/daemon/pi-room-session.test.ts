@@ -48,7 +48,10 @@ vi.mock("@mariozechner/pi-coding-agent", () => ({
 		create: vi.fn().mockReturnValue({}),
 	},
 	SettingsManager: {
-		create: vi.fn().mockReturnValue({}),
+		create: vi.fn().mockReturnValue({
+			getDefaultProvider: vi.fn().mockReturnValue(undefined),
+			getDefaultModel: vi.fn().mockReturnValue(undefined),
+		}),
 	},
 }));
 
