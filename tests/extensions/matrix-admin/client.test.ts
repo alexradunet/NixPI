@@ -90,3 +90,178 @@ describe("admin room discovery", () => {
     expect(cached.adminRoomId).toBe("!new:nixpi");
   });
 });
+
+describe("getSinceToken", () => {
+  let tmpDir: string;
+
+  beforeEach(() => { tmpDir = makeTempDir(); });
+  afterEach(() => { fs.rmSync(tmpDir, { recursive: true, force: true }); });
+
+  it("calls /sync?timeout=0 with room filter and returns next_batch", async () => {
+    const mockFetch = vi.fn().mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ next_batch: "s123_456" }),
+    } as Response);
+
+    const client = makeClient(tmpDir, mockFetch);
+    const token = await client.getSinceToken("!room:nixpi");
+
+    expect(token).toBe("s123_456");
+    const callUrl = mockFetch.mock.calls[0][0] as string;
+    expect(callUrl).toContain("timeout=0");
+    expect(callUrl).toContain(encodeURIComponent("!room:nixpi"));
+  });
+
+  it("throws SyncError on non-200 response", async () => {
+    const mockFetch = vi.fn().mockResolvedValueOnce({ ok: false, status: 500 } as Response);
+    const client = makeClient(tmpDir, mockFetch);
+    await expect(client.getSinceToken("!room:nixpi")).rejects.toThrow("sync failed: 500");
+  });
+});
+
+describe("sendAdminCommand", () => {
+  let tmpDir: string;
+
+  beforeEach(() => { tmpDir = makeTempDir(); });
+  afterEach(() => { fs.rmSync(tmpDir, { recursive: true, force: true }); });
+
+  it("sends !admin prefixed message to the room", async () => {
+    const mockFetch = vi.fn().mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ event_id: "$evt1" }),
+    } as Response);
+
+    const client = makeClient(tmpDir, mockFetch);
+    await client.sendAdminCommand("!room:nixpi", "users list-users", undefined);
+
+    const [url, opts] = mockFetch.mock.calls[0] as [string, RequestInit];
+    expect(url).toContain("/_matrix/client/v3/rooms/");
+    expect(url).toContain("/send/m.room.message/");
+    const body = JSON.parse(opts.body as string);
+    expect(body.body).toBe("!admin users list-users");
+    expect(body.msgtype).toBe("m.text");
+  });
+
+  it("appends a codeblock when body is provided", async () => {
+    const mockFetch = vi.fn().mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ event_id: "$evt2" }),
+    } as Response);
+
+    const client = makeClient(tmpDir, mockFetch);
+    await client.sendAdminCommand("!room:nixpi", "rooms moderation ban-list-of-rooms", "!bad:nixpi\n!worse:nixpi");
+
+    const [, opts] = mockFetch.mock.calls[0] as [string, RequestInit];
+    const body = JSON.parse(opts.body as string);
+    expect(body.body).toContain("!admin rooms moderation ban-list-of-rooms");
+    expect(body.body).toContain("!bad:nixpi");
+    expect(body.body).toContain("!worse:nixpi");
+  });
+
+  it("throws on HTTP error", async () => {
+    const mockFetch = vi.fn().mockResolvedValueOnce({ ok: false, status: 403 } as Response);
+    const client = makeClient(tmpDir, mockFetch);
+    await expect(client.sendAdminCommand("!room:nixpi", "users list-users", undefined))
+      .rejects.toThrow("send failed: 403");
+  });
+});
+
+describe("pollForResponse", () => {
+  let tmpDir: string;
+
+  beforeEach(() => { tmpDir = makeTempDir(); });
+  afterEach(() => { fs.rmSync(tmpDir, { recursive: true, force: true }); });
+
+  it("returns the first message body from the server bot", async () => {
+    const mockFetch = vi.fn().mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        next_batch: "s2",
+        rooms: {
+          join: {
+            "!room:nixpi": {
+              timeline: {
+                events: [
+                  {
+                    type: "m.room.message",
+                    sender: "@conduit:nixpi",
+                    content: { body: "Listed 3 users." },
+                  },
+                ],
+              },
+            },
+          },
+        },
+      }),
+    } as Response);
+
+    const client = makeClient(tmpDir, mockFetch);
+    const response = await client.pollForResponse("!room:nixpi", "s1", 5000);
+
+    expect(response).toBe("Listed 3 users.");
+  });
+
+  it("ignores messages from other senders and advances since token between polls", async () => {
+    const mockFetch = vi.fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          next_batch: "s2",
+          rooms: {
+            join: {
+              "!room:nixpi": {
+                timeline: {
+                  events: [
+                    { type: "m.room.message", sender: "@pi:nixpi", content: { body: "not the bot" } },
+                  ],
+                },
+              },
+            },
+          },
+        }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          next_batch: "s3",
+          rooms: {
+            join: {
+              "!room:nixpi": {
+                timeline: {
+                  events: [
+                    { type: "m.room.message", sender: "@conduit:nixpi", content: { body: "Real reply" } },
+                  ],
+                },
+              },
+            },
+          },
+        }),
+      } as Response);
+
+    const client = makeClient(tmpDir, mockFetch);
+    const response = await client.pollForResponse("!room:nixpi", "s1", 5000);
+
+    expect(response).toBe("Real reply");
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+    const secondCallUrl = mockFetch.mock.calls[1][0] as string;
+    expect(secondCallUrl).toContain("since=s2");
+  });
+
+  it("returns null on timeout (no response before deadline)", async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ next_batch: "sN", rooms: {} }),
+    } as Response);
+
+    const client = makeClient(tmpDir, mockFetch);
+    const response = await client.pollForResponse("!room:nixpi", "s1", 50);
+
+    expect(response).toBeNull();
+  });
+
+  it("throws on sync HTTP error", async () => {
+    const mockFetch = vi.fn().mockResolvedValueOnce({ ok: false, status: 429 } as Response);
+    const client = makeClient(tmpDir, mockFetch);
+    await expect(client.pollForResponse("!room:nixpi", "s1", 5000)).rejects.toThrow("sync error: 429");
+  });
+});

@@ -14,6 +14,21 @@ interface AdminConfig {
   adminRoomId?: string;
 }
 
+interface SyncResponse {
+  next_batch: string;
+  rooms?: {
+    join?: Record<string, {
+      timeline?: {
+        events?: Array<{
+          type: string;
+          sender: string;
+          content: { body: string };
+        }>;
+      };
+    }>;
+  };
+}
+
 export interface RunCommandResult {
   ok: boolean;
   response?: string;
@@ -122,7 +137,94 @@ export class MatrixAdminClient {
     return data.room_id;
   }
 
-  // getSinceToken, sendAdminCommand, pollForResponse, runCommand added in Tasks 3-5
+  async getSinceToken(roomId: string): Promise<string> {
+    const filter = encodeURIComponent(
+      JSON.stringify({
+        room: { rooms: [roomId], timeline: { limit: 1 } },
+        presence: { not_types: ["*"] },
+        account_data: { not_types: ["*"] },
+      }),
+    );
+    const url = `${this.homeserver}/_matrix/client/v3/sync?timeout=0&filter=${filter}`;
+    const resp = await this._fetch(url, {
+      headers: { Authorization: `Bearer ${this.accessToken}` },
+    });
+    if (!resp.ok) throw new Error(`sync failed: ${resp.status}`);
+    const data = (await resp.json()) as { next_batch: string };
+    return data.next_batch;
+  }
+
+  async sendAdminCommand(
+    roomId: string,
+    command: string,
+    body: string | undefined,
+  ): Promise<void> {
+    let text = `!admin ${command}`;
+    if (body) {
+      text = `${text}\n\`\`\`\n${body}\n\`\`\``;
+    }
+
+    const txnId = `matrix-admin-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const encodedRoomId = encodeURIComponent(roomId);
+    const url = `${this.homeserver}/_matrix/client/v3/rooms/${encodedRoomId}/send/m.room.message/${txnId}`;
+
+    const resp = await this._fetch(url, {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${this.accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ msgtype: "m.text", body: text }),
+    });
+
+    if (!resp.ok) throw new Error(`send failed: ${resp.status}`);
+  }
+
+  async pollForResponse(
+    roomId: string,
+    since: string,
+    timeoutMs: number,
+  ): Promise<string | null> {
+    const filter = encodeURIComponent(
+      JSON.stringify({
+        room: { rooms: [roomId], timeline: { limit: 50 } },
+        presence: { not_types: ["*"] },
+        account_data: { not_types: ["*"] },
+      }),
+    );
+
+    const deadline = Date.now() + timeoutMs;
+    let currentSince = since;
+
+    while (Date.now() < deadline) {
+      const remaining = deadline - Date.now();
+      if (remaining <= 0) break;
+      const syncTimeout = Math.min(remaining, 15000);
+
+      const url = `${this.homeserver}/_matrix/client/v3/sync?since=${currentSince}&timeout=${syncTimeout}&filter=${filter}`;
+      const resp = await this._fetch(url, {
+        headers: { Authorization: `Bearer ${this.accessToken}` },
+      });
+
+      if (!resp.ok) throw new Error(`sync error: ${resp.status}`);
+
+      const data = (await resp.json()) as SyncResponse;
+      const roomData = data.rooms?.join?.[roomId];
+      if (roomData?.timeline?.events) {
+        for (const event of roomData.timeline.events) {
+          if (event.type === "m.room.message" && event.sender === this._serverBotId) {
+            return event.content.body;
+          }
+        }
+      }
+
+      currentSince = data.next_batch;
+    }
+
+    return null;
+  }
+
+  // runCommand added in Task 5
   async runCommand(_options: RunCommandOptions): Promise<RunCommandResult> {
     throw new Error("Not yet implemented — coming in Task 5");
   }
