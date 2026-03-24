@@ -8,6 +8,18 @@ function makeTempDir() {
   return fs.mkdtempSync(path.join(os.tmpdir(), "pi-test-"));
 }
 
+function makeClientWithRoom(tmpDir: string, mockFetch: ReturnType<typeof vi.fn>) {
+  const configPath = path.join(tmpDir, "matrix-admin.json");
+  fs.writeFileSync(configPath, JSON.stringify({ adminRoomId: "!admin:nixpi" }));
+  return new MatrixAdminClient({
+    homeserver: "http://localhost:6167",
+    accessToken: "tok",
+    botUserId: "@pi:nixpi",
+    configPath,
+    fetch: mockFetch,
+  });
+}
+
 function makeClient(tmpDir: string, fetchImpl: typeof fetch) {
   return new MatrixAdminClient({
     homeserver: "http://localhost:6167",
@@ -263,5 +275,143 @@ describe("pollForResponse", () => {
     const mockFetch = vi.fn().mockResolvedValueOnce({ ok: false, status: 429 } as Response);
     const client = makeClient(tmpDir, mockFetch);
     await expect(client.pollForResponse("!room:nixpi", "s1", 5000)).rejects.toThrow("sync error: 429");
+  });
+});
+
+describe("runCommand", () => {
+  let tmpDir: string;
+
+  beforeEach(() => { tmpDir = makeTempDir(); });
+  afterEach(() => { fs.rmSync(tmpDir, { recursive: true, force: true }); });
+
+  it("returns ok:true with response text on success", async () => {
+    const mockFetch = vi.fn()
+      // getSinceToken
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ next_batch: "s1" }) } as Response)
+      // sendAdminCommand
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ event_id: "$e1" }) } as Response)
+      // pollForResponse
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          next_batch: "s2",
+          rooms: { join: { "!admin:nixpi": { timeline: { events: [
+            { type: "m.room.message", sender: "@conduit:nixpi", content: { body: "Done." } },
+          ] } } } },
+        }),
+      } as Response);
+
+    const client = makeClientWithRoom(tmpDir, mockFetch);
+    const result = await client.runCommand({ command: "server uptime" });
+
+    expect(result).toEqual({ ok: true, response: "Done." });
+  });
+
+  it("returns ok:false with error:timeout when no response arrives", async () => {
+    const mockFetch = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ next_batch: "s1" }) } as Response)
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ event_id: "$e1" }) } as Response)
+      .mockResolvedValue({ ok: true, json: async () => ({ next_batch: "s2", rooms: {} }) } as Response);
+
+    const client = makeClientWithRoom(tmpDir, mockFetch);
+    const result = await client.runCommand({ command: "server uptime", timeoutMs: 50 });
+
+    expect(result).toEqual({ ok: false, error: "timeout" });
+  });
+
+  it("returns ok:true immediately when awaitResponse is false", async () => {
+    const mockFetch = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ event_id: "$e1" }) } as Response);
+
+    const client = makeClientWithRoom(tmpDir, mockFetch);
+    const result = await client.runCommand({ command: "server admin-notice hi", awaitResponse: false });
+
+    expect(result).toEqual({ ok: true });
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("serialises concurrent calls — responses are not cross-contaminated", async () => {
+    const call1Response = "Response for call 1";
+    const call2Response = "Response for call 2";
+
+    let callIndex = 0;
+    const mockFetch = vi.fn().mockImplementation(async () => {
+      const idx = callIndex++;
+      // Pairs: [sinceToken, send, poll] × 2
+      if (idx === 0 || idx === 3) return { ok: true, json: async () => ({ next_batch: `s${idx}` }) };
+      if (idx === 1 || idx === 4) return { ok: true, json: async () => ({ event_id: "$e" }) };
+      // poll responses
+      const body = idx === 2 ? call1Response : call2Response;
+      return {
+        ok: true,
+        json: async () => ({
+          next_batch: `s${idx}`,
+          rooms: { join: { "!admin:nixpi": { timeline: { events: [
+            { type: "m.room.message", sender: "@conduit:nixpi", content: { body } },
+          ] } } } },
+        }),
+      };
+    });
+
+    const client = makeClientWithRoom(tmpDir, mockFetch);
+    const [r1, r2] = await Promise.all([
+      client.runCommand({ command: "server uptime" }),
+      client.runCommand({ command: "server memory-usage" }),
+    ]);
+
+    expect(r1).toEqual({ ok: true, response: call1Response });
+    expect(r2).toEqual({ ok: true, response: call2Response });
+  });
+
+  it("re-discovers admin room on 403 send error", async () => {
+    const mockFetch = vi.fn()
+      // getSinceToken
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ next_batch: "s1" }) } as Response)
+      // sendAdminCommand — 403 triggers re-discovery
+      .mockResolvedValueOnce({ ok: false, status: 403 } as Response)
+      // re-discover room
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ room_id: "!newadmin:nixpi" }) } as Response)
+      // retry getSinceToken
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ next_batch: "s2" }) } as Response)
+      // retry send
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ event_id: "$e1" }) } as Response)
+      // poll
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          next_batch: "s3",
+          rooms: { join: { "!newadmin:nixpi": { timeline: { events: [
+            { type: "m.room.message", sender: "@conduit:nixpi", content: { body: "OK" } },
+          ] } } } },
+        }),
+      } as Response);
+
+    const client = makeClientWithRoom(tmpDir, mockFetch);
+    const result = await client.runCommand({ command: "server uptime" });
+
+    expect(result).toEqual({ ok: true, response: "OK" });
+  });
+
+  it("applies command transformations before sending", async () => {
+    const mockFetch = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ next_batch: "s1" }) } as Response)
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ event_id: "$e1" }) } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          next_batch: "s2",
+          rooms: { join: { "!admin:nixpi": { timeline: { events: [
+            { type: "m.room.message", sender: "@conduit:nixpi", content: { body: "Joined." } },
+          ] } } } },
+        }),
+      } as Response);
+
+    const client = makeClientWithRoom(tmpDir, mockFetch);
+    await client.runCommand({ command: "users force-join-list-of-local-users !room:nixpi" });
+
+    // Verify the sent message includes the auto-appended flag
+    const [, opts] = mockFetch.mock.calls[1] as [string, RequestInit];
+    const sentBody = JSON.parse(opts.body as string);
+    expect(sentBody.body).toContain("--yes-i-want-to-do-this");
   });
 });

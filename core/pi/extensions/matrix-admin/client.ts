@@ -224,8 +224,59 @@ export class MatrixAdminClient {
     return null;
   }
 
-  // runCommand added in Task 5
-  async runCommand(_options: RunCommandOptions): Promise<RunCommandResult> {
-    throw new Error("Not yet implemented — coming in Task 5");
+  async runCommand(options: RunCommandOptions): Promise<RunCommandResult> {
+    const { body, awaitResponse = true, timeoutMs = 15000 } = options;
+    const command = applyTransformations(options.command);
+
+    const release = await this._mutex.acquire();
+    try {
+      if (!awaitResponse) {
+        const roomId = await this.getAdminRoomId();
+        await this.sendAdminCommand(roomId, command, body);
+        return { ok: true };
+      }
+
+      let roomId = await this.getAdminRoomId();
+
+      // Capture since token before sending (timeout clock starts at mutex acquisition)
+      let since = "";
+      try {
+        since = await this.getSinceToken(roomId);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        return { ok: false, error: msg };
+      }
+
+      // Send — retry once with room re-discovery on 403/404
+      try {
+        await this.sendAdminCommand(roomId, command, body);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        if (msg.includes("403") || msg.includes("404")) {
+          await this.invalidateRoomCache();
+          try {
+            roomId = await this.getAdminRoomId();
+          } catch {
+            return { ok: false, error: "admin room not found" };
+          }
+          since = await this.getSinceToken(roomId);
+          await this.sendAdminCommand(roomId, command, body);
+        } else {
+          return { ok: false, error: msg };
+        }
+      }
+
+      // Poll for response
+      try {
+        const response = await this.pollForResponse(roomId, since, timeoutMs);
+        if (response === null) return { ok: false, error: "timeout" };
+        return { ok: true, response };
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        return { ok: false, error: msg };
+      }
+    } finally {
+      release();
+    }
   }
 }
