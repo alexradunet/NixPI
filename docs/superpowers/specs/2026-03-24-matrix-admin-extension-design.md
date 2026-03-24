@@ -31,13 +31,15 @@ Pi agent calls matrix_admin tool
   → return { ok: true, response: "<server reply>" }
 ```
 
-**Since token capture:** A `GET /sync?timeout=0` immediately before the send call returns the current stream position with no waiting. The `since` token is then used on the follow-up long-poll. The narrow race window (between token capture and the send completing) is acceptable: if the server bot somehow replies before the first long-poll is issued, the response event will still appear in the next sync batch because the `since` token predates the send. The extension does not skip events; it reads all timeline events in the batch ordered by server timestamp and returns the first one from `@conduit:nixpi`.
+**Since token capture:** A `GET /sync?timeout=0` immediately before the send call returns the current stream position with no waiting. The `since` token is captured *before* the send. Any reply the bot sends after the send — regardless of when the long-poll is issued — will appear at a position after the token and will therefore be returned by the long-poll. The extension does not skip events; it reads all timeline events in the batch ordered by server timestamp and returns the first one from `@conduit:nixpi`.
 
 **Response correlation:** The extension correlates responses by event ordering, not content matching. It takes the first `m.room.message` event from `@conduit:nixpi` that arrives after the `since` token. Concurrent calls are serialised via a per-extension mutex (see Concurrency section below).
 
 ### Concurrency
 
-Concurrent `matrix_admin` calls are serialised with a single async mutex held for the duration of each call (token capture → send → poll → return). If a second call arrives while one is in flight, it queues and runs after the first completes. This prevents `since` token overlap and response cross-contamination. The timeout applies per call, not globally.
+Concurrent `matrix_admin` calls are serialised with a single async mutex held for the duration of each call (token capture → send → poll → return). If a second call arrives while one is in flight, it queues and runs after the first completes. This prevents `since` token overlap and response cross-contamination.
+
+The timeout clock starts when the mutex is acquired and the call begins executing — not when the tool is invoked. A call waiting in the queue does not consume its timeout.
 
 ### Credentials
 
@@ -70,7 +72,7 @@ output: {
 }
 ```
 
-The `command` value is everything after `!admin `. The extension prepends the prefix automatically.
+The `command` value is everything after `!admin `. The extension prepends the prefix automatically. Codeblock formatting via `body` is always applied before the send, regardless of `await_response`.
 
 ### Codeblock Commands
 
@@ -103,8 +105,12 @@ The extension formats the full message as:
 core/pi/extensions/matrix-admin/
   index.ts      — tool definition and registration
   client.ts     — Matrix CS API: send message, incremental sync, room discovery
-  commands.ts   — typed command catalogue and dangerous command list
+  commands.ts   — typed command catalogue, dangerous command list, and pre-send command transformations
 ```
+
+**Command transformations** are owned by `commands.ts`. Before `client.ts` sends any message, `commands.ts` applies any required mutations to the command string. Current transformations:
+
+- `users force-join-list-of-local-users` — appends `--yes-i-want-to-do-this` automatically if not already present
 
 ### Modified files
 
@@ -176,7 +182,7 @@ core/pi/extensions/index.ts   — register the matrix-admin extension
 | Command | Description | Dangerous |
 |---|---|---|
 | `server uptime` | Time since startup | |
-| `server show-config` | Show all config values (contains secrets) | |
+| `server show-config` | Show all config values (contains secrets — do not display output unless user asks) | ⚠️ |
 | `server reload-config` | Reload config from disk | |
 | `server memory-usage` | DB memory stats | |
 | `server clear-caches` | Clear all caches | |
@@ -202,7 +208,7 @@ core/pi/extensions/index.ts   — register the matrix-admin extension
 | Command | Description | Dangerous |
 |---|---|---|
 | `media delete <mxc or eventId>` | Delete single media file | |
-| `media delete-list` | Delete codeblock list of MXC URLs | ⚠️ |
+| `media delete-list` | Delete codeblock list of MXC URLs (codeblock) | ⚠️ |
 | `media delete-past-remote-media -b <duration>` | Delete remote media older than duration | ⚠️ |
 | `media delete-all-from-user <@u:nixpi>` | Delete all local media from user | ⚠️ |
 | `media delete-all-from-server <server>` | Delete all remote media from server | ⚠️ |
@@ -297,3 +303,4 @@ Pass the command string exactly as shown below (without the `!admin` prefix).
 3. **Timeout test** — simulate no server reply; verify graceful `{ ok: false, error: "timeout" }` return
 4. **Admin room discovery** — clear cache, verify room is found and cached on first call
 5. **Dangerous command guard** — verify agent instructions are correct in loaded AGENTS.md
+6. **Concurrency** — fire two simultaneous calls; verify responses are not cross-contaminated and both complete successfully with correct responses
