@@ -10,12 +10,12 @@
 
 Bloom OS currently uses NetBird as a passive mesh networking layer — services are firewalled to `wt0`, and the mesh is activated via setup key during first-boot. This design makes the integration active and declarative across four dimensions:
 
-1. **Network awareness** — NetBird events streamed into Matrix as bot messages
-2. **Simpler access** — hostname-based DNS, identity-aware SSH with OIDC (no key management)
+1. **Network awareness** — NetBird events streamed into Matrix as bot messages; provisioning progress visible during setup
+2. **Simpler access** — hostname-based DNS, NetBird-authenticated SSH (no key management)
 3. **Harder security** — auto-group enrollment, granular ACL policies, posture checks
 4. **Resilience** — declarative cloud state convergence on every activation
 
-Cloud-hosted NetBird is retained (no self-hosted management server). Google/GitHub OAuth is the IdP for identity-aware SSH and JWT group sync.
+Cloud-hosted NetBird is retained (no self-hosted management server). Google/GitHub OAuth is the IdP for JWT group sync.
 
 ---
 
@@ -25,11 +25,11 @@ Cloud-hosted NetBird is retained (no self-hosted management server). Google/GitH
 
 **Layer 1 — NetBird cloud state** (groups, policies, posture checks, DNS, setup keys)
 
-A new `nixpi-netbird-provisioner` NixOS module drives a systemd oneshot service that calls the NetBird management API on activation to converge cloud state to desired state. Config is declared in NixOS options (`nixpi.netbird.*`) and applied idempotently — creates what's missing, updates what's changed, ignores what already matches.
+A new `nixpi-netbird-provisioner` NixOS module drives a systemd oneshot service that calls the NetBird management API on activation to converge cloud state to desired state. Config is declared in NixOS options (`nixpi.netbird.*`) and applied idempotently — creates what's missing, ignores what already matches. Setup keys are create-only (NetBird API does not support mutating existing keys; config changes require manual revocation in the dashboard and a re-run of the provisioner to recreate).
 
 **Layer 2 — Local NixOS config** (SSH daemon, DNS resolver, events bot)
 
-Changes to `network.nix` and new service files configure how the Pi participates in the mesh locally.
+Changes to `network.nix` and new module files configure how the Pi participates in the mesh locally.
 
 ### Peer Topology
 
@@ -37,7 +37,7 @@ Changes to `network.nix` and new service files configure how the Pi participates
 [admin laptop]  ──NetBird mesh──  [Pi / bloom.local]
 [phone]         ──NetBird mesh──     ├── Matrix      :6167  (TCP, admins group only)
 [other device]  ──NetBird mesh──     ├── Element Web :8081  (TCP, bloom-devices group)
-                                     ├── SSH         :22022 (NetBird SSH, admins group)
+                                     ├── SSH         :22022 (NetBird SSH daemon, admins group)
                                      └── RDP         :3389  (TCP, admins group)
 ```
 
@@ -46,19 +46,38 @@ No new open ports. All API calls are outbound from the Pi. Services remain gated
 ### Data Flow — Events Bot
 
 ```
-NetBird cloud API (/api/events)
-    → poll every 60s (systemd timer)
-    → nixpi-netbird-watcher service
-    → filter by last-seen event ID (persisted to state file)
-    → Continuwuity client API
-    → #network-activity:<hostname> Matrix room
+NetBird cloud API (/api/events, newest-first, no cursor support)
+    → poll every 60s (systemd timer → oneshot service)
+    → compare against last-seen event ID (read from StateDirectory)
+    → post new events to Matrix room via Continuwuity client API
+    → write new last-seen event ID to StateDirectory
+    → #network-activity:<hostname>
 ```
+
+The NetBird events API returns events newest-first with no cursor/pagination parameter. The watcher fetches the latest 100 events each cycle and filters client-side by last-seen ID. If a burst of >100 events occurs within 60 seconds, intermediate events are silently skipped — acceptable for an informational audit trail.
+
+### Setup Wizard Visibility
+
+During first-boot, the provisioner runs interactively and streams its output to the wizard terminal so the operator can see each step as it completes:
+
+```
+[netbird] Creating group: bloom-devices ... ✓
+[netbird] Creating group: admins ... ✓ (already existed)
+[netbird] Creating setup key: bloom-device ... ✓
+[netbird] Creating posture check: min-client-version ... ✓
+[netbird] Creating policy: matrix-access ... ✓
+[netbird] Creating policy: element-web-access ... ✓
+[netbird] Configuring DNS: bloom.local → bloom-devices ... ✓
+[netbird] Done. Network topology applied.
+```
+
+The wizard also surfaces the `#network-activity` room alias and explains that future peer connections will appear there.
 
 ---
 
 ## NixOS Options (`nixpi.netbird.*`)
 
-New options added to `options.nix`:
+New options added to `options.nix`. The `dns` and `ssh` sub-namespaces are bare attribute sets inside the `nixpi.netbird` option (consistent with how other nested namespaces like `nixpi.matrix` are handled in the existing `options.nix` — no outer `mkOption` wrapper needed when declared directly within the module's `options` block).
 
 ```nix
 nixpi.netbird = {
@@ -71,13 +90,20 @@ nixpi.netbird = {
     default = "https://api.netbird.io";
   };
 
-  # Groups to ensure exist in NetBird cloud
+  # Groups to ensure exist in NetBird cloud.
+  # "All" is a NetBird built-in reserved group — never include it here;
+  # the provisioner skips creating any group named "All".
+  # "bloom-pi" is the group the Pi peer is enrolled into via its setup key;
+  # it is used as the destination group in ACL policies so policies apply
+  # only to the Pi, not to every peer in the mesh.
   groups = mkOption {
     type = types.listOf types.str;
-    default = [ "bloom-devices" "admins" ];
+    default = [ "bloom-devices" "admins" "bloom-pi" ];
   };
 
-  # Setup keys with auto-group assignment
+  # Setup keys with auto-group assignment.
+  # Keys are create-only: changes to an existing key's config require
+  # manual revocation in the NetBird dashboard, then a provisioner re-run.
   setupKeys = mkOption {
     type = types.listOf (types.submodule {
       options = {
@@ -88,32 +114,38 @@ nixpi.netbird = {
       };
     });
     default = [
-      { name = "bloom-device"; autoGroups = [ "bloom-devices" ]; ephemeral = false; usageLimit = 0; }
-      { name = "admin-device"; autoGroups = [ "bloom-devices" "admins" ]; ephemeral = false; usageLimit = 0; }
+      { name = "bloom-pi";     autoGroups = [ "bloom-pi" ];                       ephemeral = false; usageLimit = 1; } # Pi itself
+      { name = "bloom-device"; autoGroups = [ "bloom-devices" ];                  ephemeral = false; usageLimit = 0; }
+      { name = "admin-device"; autoGroups = [ "bloom-devices" "admins" ];          ephemeral = false; usageLimit = 0; }
     ];
   };
 
-  # ACL policies
+  # ACL policies.
+  # destGroup = "bloom-pi" targets only the Pi peer, not every mesh peer.
+  # This is the least-privilege choice: policies grant access to Pi services
+  # only, regardless of how many other devices are enrolled in the mesh.
   policies = mkOption {
     type = types.listOf (types.submodule {
       options = {
-        name        = mkOption { type = types.str; };
-        sourceGroup = mkOption { type = types.str; };
-        destGroup   = mkOption { type = types.str; };
-        protocol    = mkOption { type = types.enum [ "tcp" "udp" "icmp" "all" ]; default = "tcp"; };
-        ports       = mkOption { type = types.listOf types.str; default = []; };
+        name          = mkOption { type = types.str; };
+        sourceGroup   = mkOption { type = types.str; };
+        destGroup     = mkOption { type = types.str; };
+        protocol      = mkOption { type = types.enum [ "tcp" "udp" "icmp" "all" ]; default = "tcp"; };
+        ports         = mkOption { type = types.listOf types.str; default = []; };
         postureChecks = mkOption { type = types.listOf types.str; default = []; };
       };
     });
     default = [
-      { name = "matrix-access";      sourceGroup = "admins";        destGroup = "All"; protocol = "tcp"; ports = [ "6167" ]; }
-      { name = "element-web-access"; sourceGroup = "bloom-devices"; destGroup = "All"; protocol = "tcp"; ports = [ "8081" ]; }
-      { name = "rdp-access";         sourceGroup = "admins";        destGroup = "All"; protocol = "tcp"; ports = [ "3389" ]; }
-      { name = "ssh-access";         sourceGroup = "admins";        destGroup = "All"; protocol = "tcp"; ports = [ "22022" ]; }
+      { name = "matrix-access";      sourceGroup = "admins";        destGroup = "bloom-pi"; protocol = "tcp"; ports = [ "6167" ]; }
+      { name = "element-web-access"; sourceGroup = "bloom-devices"; destGroup = "bloom-pi"; protocol = "tcp"; ports = [ "8081" ]; }
+      { name = "rdp-access";         sourceGroup = "admins";        destGroup = "bloom-pi"; protocol = "tcp"; ports = [ "3389" ]; }
+      { name = "ssh-access";         sourceGroup = "admins";        destGroup = "bloom-pi"; protocol = "tcp"; ports = [ "22022" ]; }
     ];
   };
 
-  # Posture checks
+  # Posture checks. Currently only minVersion is supported.
+  # For other check types (geo, OS version, process), extend via the NetBird dashboard;
+  # the provisioner does not manage check types beyond minVersion.
   postureChecks = mkOption {
     type = types.listOf (types.submodule {
       options = {
@@ -124,13 +156,22 @@ nixpi.netbird = {
     default = [ { name = "min-client-version"; minVersion = "0.61.0"; } ];
   };
 
-  # DNS
+  # DNS: configure a NetBird nameserver group so peers in targetGroups
+  # resolve cfg.dns.domain via the Pi's NetBird IP.
+  # localForwarderPort: NetBird's local DNS forwarder port (default 22054 since v0.59.0).
+  # If your NetBird client uses a custom CustomDNSAddress, update this to match.
   dns = {
-    domain = mkOption { type = types.str; default = "bloom.local"; };
-    targetGroups = mkOption { type = types.listOf types.str; default = [ "bloom-devices" ]; };
+    domain             = mkOption { type = types.str; default = "bloom.local"; };
+    targetGroups       = mkOption { type = types.listOf types.str; default = [ "bloom-devices" ]; };
+    localForwarderPort = mkOption { type = types.int; default = 22054; };
   };
 
-  # Identity-aware SSH
+  # SSH: enable NetBird's built-in SSH daemon on the Pi (port 22022).
+  # Authentication uses NetBird's own peer identity (WireGuard key), not OIDC.
+  # Access is controlled by the "ssh-access" ACL policy (admins group only).
+  # userMappings: maps a NetBird group to the local OS user the SSH session runs as.
+  # Note: standard SSH key-based auth on port 22 remains available per
+  # nixpi.bootstrap.keepSshAfterSetup; NetBird SSH is an additional access method.
   ssh = {
     enable = mkOption { type = types.bool; default = true; };
     userMappings = mkOption {
@@ -157,35 +198,47 @@ Systemd oneshot service that converges NetBird cloud state on every `nixos-rebui
 **Behaviour:**
 - Runs after `network-online.target`
 - Reads API token from `cfg.netbird.apiTokenFile`
-- For each resource type (groups → setup keys → posture checks → policies → DNS):
-  - GET existing resources
+- For each resource type in order (groups → setup keys → posture checks → policies → DNS nameserver group):
+  - GET existing resources from NetBird API
   - Compare against desired state
-  - POST/PUT only what differs
-- Logs each mutation with structured fields to journald
+  - POST only what is missing (setup keys: create-only; never PUT/PATCH)
+  - For policies and posture checks: PUT to update if name matches but config differs
+  - Skip group named `"All"` — NetBird built-in, cannot be created via API
+- Streams progress lines to stdout (visible in wizard terminal and journald)
 - `Restart=on-failure`, `RestartSec=30s`, max 3 attempts
-- All API calls use the overridable `cfg.netbird.apiEndpoint` (enables test mocking)
+- All API calls use `cfg.netbird.apiEndpoint` (overridable for tests)
 
 **Security:**
 - Runs as `nixpi` user (no root)
-- API token passed via file path, never logged
+- API token read from file at runtime, never logged or interpolated into command strings
 - No secrets in Nix store
 
-### `core/os/services/nixpi-netbird-watcher.nix`
+### `core/os/modules/nixpi-netbird-watcher.nix`
 
 Systemd timer + oneshot service that polls NetBird events and posts to Matrix.
 
 **Timer:** `OnBootSec=2min`, `OnUnitActiveSec=60s`
 
 **Service behaviour:**
-- GET `/api/events?limit=100` from NetBird cloud API
-- Load last-seen event ID from `/var/lib/nixpi/netbird-watcher/last-event-id`
-  - First run (no state file): process only the last 10 events (no flood)
-- For each new event, POST message to `#network-activity:<hostname>` via Continuwuity client API
-- Write new last-seen ID to state file
-- If NetBird API unreachable: skip cycle silently
-- If Matrix unreachable: buffer up to 50 events in memory, retry next cycle; beyond 50, log and drop
-- `StateDirectory = "nixpi/netbird-watcher"`
+- GET `/api/events?limit=100` from NetBird cloud API (returns newest-first)
+- Load last-seen event ID from `$STATE_DIRECTORY/last-event-id`
+  - First run (no state file): process only the 10 newest events (no room flood)
+- For each new event (ID newer than last-seen), POST message to `#network-activity:<hostname>`
+  via Continuwuity client API using the `@netbird-watcher:<hostname>` bot account
+- Write the newest event ID seen this cycle to `$STATE_DIRECTORY/last-event-id`
+- If NetBird API unreachable: exit 0, skip cycle (timer will retry in 60s)
+- If Matrix unreachable: serialise undelivered event objects (full payload, not just IDs)
+  to `$STATE_DIRECTORY/pending-events` as a JSON array (up to 50 entries); deliver on
+  next successful cycle by reading from the file — no re-fetch from NetBird API needed.
+  Beyond 50 entries, log and discard the oldest.
+- `StateDirectory = "nixpi/netbird-watcher"` → `/var/lib/nixpi/netbird-watcher/`
 - Runs as `nixpi` user
+
+**Bot account:**
+- MXID: `@netbird-watcher:<hostname>`
+- Provisioned during first-boot wizard via registration shared secret (same mechanism as existing bot accounts)
+- Access token stored at `$STATE_DIRECTORY/matrix-token`
+- Room `#network-activity:<hostname>` created by wizard; bot invited and joined before watcher starts
 
 **Event → Message mapping:**
 
@@ -204,13 +257,15 @@ Systemd timer + oneshot service that polls NetBird events and posts to Matrix.
 ### `core/os/modules/network.nix`
 
 - Enable NetBird SSH daemon: `services.netbird.clients.default.config.SSHAllowed = true`
-- Configure systemd-resolved to forward `<cfg.netbird.dns.domain>` to NetBird's local DNS forwarder (port 22054)
-- Post-setup SSH: `nixpi.bootstrap.keepSshAfterSetup` remains the guard; NetBird SSH becomes the primary access method after wizard
+- Configure systemd-resolved to forward `cfg.netbird.dns.domain` to `127.0.0.1:<cfg.netbird.dns.localForwarderPort>` (NetBird's local DNS forwarder)
+- NetBird SSH on port 22022 becomes the primary remote access method post-setup; standard SSH on port 22 remains governed by `nixpi.bootstrap.keepSshAfterSetup`
 
-### `core/os/modules/collab.nix` (or `firstboot.nix`)
+### `core/os/modules/firstboot.nix`
 
-- During first-boot wizard: create `#network-activity:<hostname>` Matrix room and invite bot account
-- Add `nixpi.netbird.apiTokenFile` as a wizard prompt (operator pastes NetBird API token)
+- Add wizard step: prompt operator to paste NetBird management API token; write to `nixpi.netbird.apiTokenFile` path
+- Run `nixpi-netbird-provisioner` interactively during wizard, streaming output to terminal
+- After provisioner completes: create `#network-activity:<hostname>` Matrix room, register `@netbird-watcher:<hostname>` bot account, invite bot, store bot access token
+- Display completion summary: provisioner results, room alias, and instructions for what the operator will see there
 
 ---
 
@@ -220,27 +275,29 @@ Systemd timer + oneshot service that polls NetBird events and posts to Matrix.
 
 | Failure | Behaviour |
 |---|---|
-| API token missing | Fail with clear log message; other services unaffected |
+| API token missing | Fail immediately with clear log message; other services unaffected |
 | NetBird API unreachable | Retry 3× with 30s backoff; log warning; existing mesh config unchanged |
-| Resource already matches desired state | No API call made (silent) |
-| Partial failure (one resource fails) | Log and continue; next boot re-attempts |
+| Resource already exists and matches | No API call (silent) |
+| Partial failure (one resource fails) | Log and continue; next boot re-attempts the failed resource |
+| Setup key config changed in Nix | Log notice: "Key '<name>' already exists — to apply config changes, revoke it in the NetBird dashboard and re-run the provisioner" |
 
 ### Watcher
 
 | Failure | Behaviour |
 |---|---|
-| NetBird API unreachable | Skip cycle; try next tick |
-| Matrix unreachable | Buffer up to 50 events; retry next cycle; drop beyond 50 |
-| State file missing (first run) | Fetch last 10 events only |
-| Continuwuity rejects message | Log, continue; no retry |
+| NetBird API unreachable | Exit 0; timer retries in 60s |
+| Matrix unreachable | Serialise full event payloads to `pending-events` state file; deliver next cycle (max 50 buffered) |
+| State file missing (first run) | Process only 10 newest events |
+| Continuwuity rejects message | Log, continue; no retry for that event |
+| >100 events in one 60s window | Events beyond the 100-event fetch window are silently skipped |
 
 ### SSH
 
-Fail-closed by design. If NetBird SSH daemon or OIDC auth fails, the connection is refused. Bootstrap SSH (port 22) remains available when `nixpi.bootstrap.keepSshAfterSetup = true`.
+NetBird SSH daemon on port 22022 is authenticated by NetBird peer identity (WireGuard key). If the NetBird daemon is down or the peer is not in the `admins` group, connection is refused. Bootstrap SSH on port 22 remains the fallback per `nixpi.bootstrap.keepSshAfterSetup`.
 
 ### DNS
 
-Fail-open. If NetBird DNS forwarder is down, systemd-resolved falls back to upstream. `bloom.local` stops resolving; internet access unaffected. Services remain reachable by NetBird IP.
+Fail-open. If NetBird's local DNS forwarder is unavailable, systemd-resolved falls back to upstream resolvers. `bloom.local` stops resolving; internet access and NetBird-IP-based service access are unaffected.
 
 ---
 
@@ -249,18 +306,21 @@ Fail-open. If NetBird DNS forwarder is down, systemd-resolved falls back to upst
 ### New NixOS Tests
 
 **`nixpi-netbird-provisioner` test:**
-- Mock NetBird API with local HTTP server (overriding `nixpi.netbird.apiEndpoint`)
-- Verify correct API calls in correct order (groups before policies, posture checks before policies)
-- Verify idempotency: second activation with identical config makes zero API calls
-- Verify graceful failure on 401 and 503
+- Mock NetBird API with local HTTP server; override `nixpi.netbird.apiEndpoint`
+- Verify API calls in correct order (groups before policies, posture checks before policies that reference them)
+- Verify idempotency: second activation with identical config makes zero POST/PUT calls
+- Verify graceful failure on 401 (bad token) and 503 (API down)
+- Verify setup key with matching name is not re-created (create-only semantics)
+- Verify group `"All"` is never sent to the groups creation endpoint
 
 **`nixpi-netbird-watcher` test:**
-- Mock NetBird events API and Matrix client API
+- Mock NetBird events API (returning events newest-first) and Matrix client API
 - Verify correct message format per event type
-- Verify `last-event-id` state file is written and read correctly
-- Verify first-run behaviour (no state file → only last 10 events processed)
-- Verify no Matrix calls when no new events
-- Verify skip-cycle behaviour when NetBird API returns 503
+- Verify `last-event-id` state file written after each cycle
+- Verify first-run behaviour: no state file → only 10 newest events posted
+- Verify pending-events state file written when Matrix returns 503
+- Verify pending events delivered on next successful cycle
+- Verify no Matrix calls when no new events since last-seen ID
 
 ### Extensions to Existing Tests
 
@@ -268,10 +328,11 @@ Fail-open. If NetBird DNS forwarder is down, systemd-resolved falls back to upst
 - Verify `nixpi-netbird-provisioner.service` reaches `active (exited)`
 - Verify `nixpi-netbird-watcher.timer` is active
 - Verify `#network-activity` room exists in Matrix after first boot
+- Verify `@netbird-watcher` account exists in Continuwuity
 
 **SSH test:**
-- Verify `/etc/ssh/ssh_config.d/99-netbird.conf` is present when `nixpi.netbird.ssh.enable = true`
-- OIDC flow: manual verification only (can't exercise real OIDC in NixOS VM tests)
+- Verify `/etc/ssh/ssh_config.d/99-netbird.conf` present when `nixpi.netbird.ssh.enable = true`
+- Verify NetBird service config includes `SSHAllowed = true`
 
 ---
 
@@ -279,5 +340,7 @@ Fail-open. If NetBird DNS forwarder is down, systemd-resolved falls back to upst
 
 - NetBird self-hosted management server
 - NetBird reverse proxy / Matrix federation exposure (federation disabled by design in Bloom OS)
-- Real-time event webhooks (cloud-only feature; polling is the self-hosted workaround)
+- Real-time event webhooks (cloud-only NetBird feature; polling is the workaround for cloud API)
 - Multi-Pi routing peer configuration
+- OIDC-based SSH (e.g. Teleport/Smallstep) — NetBird SSH uses peer identity, not OIDC tokens
+- Posture check types beyond `minVersion` (geo, OS version, process checks managed via dashboard)
