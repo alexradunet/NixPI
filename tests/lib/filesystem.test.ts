@@ -97,16 +97,31 @@ describe("getNixPiDir", () => {
 // getSystemFlakeDir
 // ---------------------------------------------------------------------------
 describe("getSystemFlakeDir", () => {
+	let origPrimaryUser: string | undefined;
+
+	beforeEach(() => {
+		origPrimaryUser = process.env.NIXPI_PRIMARY_USER;
+		process.env.NIXPI_PRIMARY_USER = "alex";
+	});
+
+	afterEach(() => {
+		if (origPrimaryUser !== undefined) {
+			process.env.NIXPI_PRIMARY_USER = origPrimaryUser;
+		} else {
+			delete process.env.NIXPI_PRIMARY_USER;
+		}
+	});
+
 	it("defaults to the canonical ~/nixpi checkout", () => {
 		delete process.env.NIXPI_SYSTEM_FLAKE_DIR;
 		delete process.env.NIXPI_DIR;
-		expect(getSystemFlakeDir()).toBe(path.join(os.homedir(), "nixpi"));
+		expect(getSystemFlakeDir()).toBe("/home/alex/nixpi");
 	});
 
 	it("stays aligned with the canonical repo even when NIXPI_DIR is set", () => {
 		delete process.env.NIXPI_SYSTEM_FLAKE_DIR;
 		process.env.NIXPI_DIR = "/workspace/nixpi";
-		expect(getSystemFlakeDir()).toBe(path.join(os.homedir(), "nixpi"));
+		expect(getSystemFlakeDir()).toBe("/home/alex/nixpi");
 	});
 
 	it("prefers explicit NIXPI_SYSTEM_FLAKE_DIR override", () => {
@@ -144,6 +159,11 @@ describe("canonical repo policy", () => {
 	it("returns the configured primary user when NIXPI_PRIMARY_USER is set", () => {
 		process.env.NIXPI_PRIMARY_USER = "pi";
 		expect(getPrimaryUser()).toBe("pi");
+	});
+
+	it("rejects invalid primary user values", () => {
+		process.env.NIXPI_PRIMARY_USER = "../escape";
+		expect(() => getPrimaryUser()).toThrow("Invalid primary user for canonical repo path: ../escape");
 	});
 
 	it("builds the canonical repo dir under /home/<primaryUser>/nixpi", () => {
@@ -257,5 +277,14 @@ describe("canonical repo metadata", () => {
 
 	it("returns undefined when canonical repo metadata is absent", () => {
 		expect(readCanonicalRepoMetadata("codex-test-user", metadataPath)).toBeUndefined();
+	});
+
+	it("rejects malformed canonical repo metadata", () => {
+		fs.mkdirSync(path.dirname(metadataPath), { recursive: true });
+		fs.writeFileSync(metadataPath, JSON.stringify({ path: "/home/codex-test-user/nixpi" }));
+
+		expect(() => readCanonicalRepoMetadata("codex-test-user", metadataPath)).toThrow(
+			`Invalid canonical repo metadata in ${metadataPath}`,
+		);
 	});
 });

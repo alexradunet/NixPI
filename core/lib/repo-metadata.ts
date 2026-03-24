@@ -18,7 +18,15 @@ export function readCanonicalRepoMetadata(
 	metadataPath = getCanonicalRepoMetadataPath(primaryUser),
 ): CanonicalRepoMetadata | undefined {
 	if (!existsSync(metadataPath)) return undefined;
-	return JSON.parse(readFileSync(metadataPath, "utf-8")) as CanonicalRepoMetadata;
+	const parsed = JSON.parse(readFileSync(metadataPath, "utf-8")) as Partial<CanonicalRepoMetadata>;
+	if (
+		typeof parsed.path !== "string" ||
+		typeof parsed.origin !== "string" ||
+		typeof parsed.branch !== "string"
+	) {
+		throw new Error(`Invalid canonical repo metadata in ${metadataPath}`);
+	}
+	return parsed;
 }
 
 export function writeCanonicalRepoMetadata(

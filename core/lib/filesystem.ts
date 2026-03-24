@@ -93,7 +93,11 @@ export function getSystemReadyPath(): string {
 
 /** Resolve the primary account name used for the canonical repo checkout. */
 export function getPrimaryUser(): string {
-	return process.env.NIXPI_PRIMARY_USER ?? os.userInfo().username;
+	const primaryUser = process.env.NIXPI_PRIMARY_USER ?? os.userInfo().username;
+	if (!/^[a-z_][a-z0-9_-]*[$]?$/i.test(primaryUser)) {
+		throw new Error(`Invalid primary user for canonical repo path: ${primaryUser}`);
+	}
+	return primaryUser;
 }
 
 /** Resolve the canonical working repo path for the primary user. */
