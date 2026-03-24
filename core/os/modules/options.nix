@@ -171,6 +171,11 @@ in
         enable = lib.mkEnableOption "NixPI Element Web service" // { default = true; };
         port = mkPortOption 8081 "TCP port for the NixPI Element Web client.";
       };
+
+      secureWeb = {
+        enable = lib.mkEnableOption "TLS-backed secure web entry point for Element and Matrix" // { default = true; };
+        port = mkPortOption 8443 "TCP port for the TLS-backed NixPI web entry point.";
+      };
     };
 
     matrix = {
@@ -306,6 +311,7 @@ in
         default = [
           { name = "matrix-access";      sourceGroup = "admins";        destGroup = "bloom-pi"; protocol = "tcp"; ports = [ "6167" ]; postureChecks = []; }
           { name = "element-web-access"; sourceGroup = "bloom-devices"; destGroup = "bloom-pi"; protocol = "tcp"; ports = [ "8081" ]; postureChecks = []; }
+          { name = "secure-web-access";  sourceGroup = "bloom-devices"; destGroup = "bloom-pi"; protocol = "tcp"; ports = [ "8443" ]; postureChecks = []; }
           { name = "rdp-access";         sourceGroup = "admins";        destGroup = "bloom-pi"; protocol = "tcp"; ports = [ "3389" ]; postureChecks = []; }
           { name = "ssh-access";         sourceGroup = "admins";        destGroup = "bloom-pi"; protocol = "tcp"; ports = [ "22022" ]; postureChecks = []; }
         ];

@@ -22,6 +22,7 @@ let
     ++
     lib.optionals cfg.home.enable [ cfg.home.port ]
     ++ lib.optionals cfg.elementWeb.enable [ cfg.elementWeb.port ]
+    ++ lib.optionals cfg.secureWeb.enable [ cfg.secureWeb.port ]
     ++ [ config.nixpi.matrix.port ]
     ++ lib.optionals config.nixpi.netbird.ssh.enable [ 22022 ];
   preferWifi = pkgs.writeShellScriptBin "nixpi-prefer-wifi" ''

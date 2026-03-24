@@ -325,17 +325,17 @@ print_service_access_summary() {
 	fi
 	echo "    Share this   - send other NetBird peers the NixPI Home URL"
 	if [[ -n "$mesh_host" ]]; then
-		echo "    Element Web  - http://${mesh_host}:8081"
+		echo "    Element Web  - https://${mesh_host}:8443"
 	fi
 	if [[ -n "$mesh_ip" && "$mesh_ip" != "$mesh_host" ]]; then
-		echo "    Element Web  - http://${mesh_ip}:8081"
+		echo "    Element Web  - https://${mesh_ip}:8443"
 	fi
 	echo "    Elmenet Web   - preconfigured for this NixPI server"
 	if [[ -n "$mesh_host" ]]; then
-		echo "    Matrix       - http://${mesh_host}:6167"
+		echo "    Matrix       - https://${mesh_host}:8443"
 	fi
 	if [[ -n "$mesh_ip" && "$mesh_ip" != "$mesh_host" ]]; then
-		echo "    Matrix       - http://${mesh_ip}:6167"
+		echo "    Matrix       - https://${mesh_ip}:8443"
 	fi
 	echo "    Matrix       - http://localhost:6167 (local access on the box)"
 }

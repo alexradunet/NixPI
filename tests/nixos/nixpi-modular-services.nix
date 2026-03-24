@@ -47,6 +47,8 @@
 
     nixpi.wait_until_succeeds("curl -sf http://127.0.0.1:8080 | grep -q 'NixPI Home'", timeout=60)
     nixpi.wait_until_succeeds("curl -sf http://127.0.0.1:8081/config.json | grep -q 'default_server_config'", timeout=60)
+    nixpi.wait_until_succeeds("curl -skf https://127.0.0.1:8443/config.json | grep -q 'default_server_config'", timeout=60)
+    nixpi.wait_until_succeeds("curl -skf https://127.0.0.1:8443/_matrix/client/versions | grep -q 'versions'", timeout=60)
 
     print("NixPI modular service tests passed!")
   '';

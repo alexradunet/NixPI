@@ -152,6 +152,19 @@
       background: rgba(138, 109, 59, 0.14);
       color: var(--idle);
     }
+    .remote-card {
+      margin: 20px 0;
+      padding: 20px 22px;
+    }
+    .remote-card ul {
+      margin: 12px 0 0;
+      padding-left: 20px;
+      color: var(--muted);
+      line-height: 1.7;
+    }
+    .remote-card li {
+      margin: 4px 0;
+    }
     .footer-note {
       margin-top: 18px;
       padding: 16px 18px;
@@ -177,13 +190,23 @@
       <div class="share-grid">
         <div class="share-card">
           <p class="eyebrow">Share this page</p>
-          <code>@@PAGE_URL@@</code>
+          <code data-page-url>@@PAGE_URL@@</code>
         </div>
         <div class="share-card">
           <p class="eyebrow">Preferred host for services</p>
-          <code>@@MESH_HOST@@</code>
+          <code data-service-host>@@MESH_HOST@@</code>
         </div>
       </div>
+    </section>
+    <section class="service-card remote-card">
+      <p class="eyebrow">Remote access</p>
+      <p class="service-description">Use your NetBird hostname or mesh IP on interface wt0. Home stays on bare HTTP. Element Web and Matrix use the secure HTTPS entry point on port 8443 for browser-safe remote access.</p>
+      <ul>
+        <li>Home: <a class="service-link" data-page-link href="@@PAGE_URL@@">@@PAGE_URL@@</a></li>
+        <li>Home direct port: <a class="service-link" data-home-direct-link href="@@HOME_DIRECT_URL@@">@@HOME_DIRECT_URL@@</a></li>
+        <li>Element Web: <a class="service-link" data-element-link href="@@ELEMENT_WEB_URL@@">@@ELEMENT_WEB_URL@@</a></li>
+        <li>Matrix URL: <a class="service-link" data-matrix-link href="@@MATRIX_URL@@">@@MATRIX_URL@@</a></li>
+      </ul>
     </section>
     <section class="services-grid">
       <article class="service-card">
@@ -195,7 +218,7 @@
           </div>
           <span class="service-status status-live">Running</span>
         </div>
-        <p class="service-meta"><span class="service-label">URL</span><a class="service-link" href="@@PAGE_URL@@">@@PAGE_URL@@</a></p>
+        <p class="service-meta"><span class="service-label">URL</span><a class="service-link" data-page-link href="@@PAGE_URL@@">@@PAGE_URL@@</a></p>
       </article>
       <article class="service-card">
         <div class="service-head">
@@ -206,7 +229,7 @@
           </div>
           <span class="service-status status-live">Running</span>
         </div>
-        <p class="service-meta"><span class="service-label">URL</span><a class="service-link" href="@@ELEMENT_WEB_URL@@">@@ELEMENT_WEB_URL@@</a></p>
+        <p class="service-meta"><span class="service-label">URL</span><a class="service-link" data-element-link href="@@ELEMENT_WEB_URL@@">@@ELEMENT_WEB_URL@@</a></p>
         <p class="service-meta"><span class="service-label">Note</span>Terminal and Matrix-native clients remain the primary interfaces.</p>
       </article>
       <article class="service-card">
@@ -218,12 +241,49 @@
           </div>
           <span class="service-status status-live">Running</span>
         </div>
-        <p class="service-meta"><span class="service-label">URL</span><a class="service-link" href="@@MATRIX_URL@@">@@MATRIX_URL@@</a></p>
+        <p class="service-meta"><span class="service-label">URL</span><a class="service-link" data-matrix-link href="@@MATRIX_URL@@">@@MATRIX_URL@@</a></p>
       </article>
     </section>
     <section class="footer-note">
       Generated @@GENERATED_AT@@. URLs prefer the current NetBird FQDN when available, then fall back to the mesh IP.
     </section>
   </main>
+  <script>
+    (function () {
+      const currentHost = window.location.hostname;
+      if (!currentHost) {
+        return;
+      }
+
+      const origin = window.location.origin.replace(/\/$/, "");
+      const pageUrl = origin + "/";
+      const homeDirectUrl = "http://" + currentHost + ":8080/";
+      const elementUrl = "https://" + currentHost + ":8443/";
+      const matrixUrl = "https://" + currentHost + ":8443";
+
+      for (const node of document.querySelectorAll("[data-page-url]")) {
+        node.textContent = pageUrl;
+      }
+      for (const node of document.querySelectorAll("[data-service-host]")) {
+        node.textContent = currentHost;
+      }
+      for (const node of document.querySelectorAll("[data-page-link]")) {
+        node.textContent = pageUrl;
+        node.href = pageUrl;
+      }
+      for (const node of document.querySelectorAll("[data-home-direct-link]")) {
+        node.textContent = homeDirectUrl;
+        node.href = homeDirectUrl;
+      }
+      for (const node of document.querySelectorAll("[data-element-link]")) {
+        node.textContent = elementUrl;
+        node.href = elementUrl;
+      }
+      for (const node of document.querySelectorAll("[data-matrix-link]")) {
+        node.textContent = matrixUrl;
+        node.href = matrixUrl;
+      }
+    })();
+  </script>
 </body>
 </html>
