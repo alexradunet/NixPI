@@ -16,7 +16,7 @@ function makeClientWithRoom(tmpDir: string, mockFetch: ReturnType<typeof vi.fn>)
     accessToken: "tok",
     botUserId: "@pi:nixpi",
     configPath,
-    fetch: mockFetch,
+    fetch: mockFetch as typeof globalThis.fetch,
   });
 }
 
