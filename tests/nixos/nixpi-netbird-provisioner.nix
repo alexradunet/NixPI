@@ -23,15 +23,18 @@
     };
     users.groups.pi = {};
 
-    # Write a fake API token so the provisioner can start
+    # Write a fake API token so the provisioner can start.
+    # Keep it outside /var/lib/nixpi/secrets because matrix.nix manages that
+    # directory for Continuwuity.
     system.activationScripts.netbird-test-token = ''
-      install -d -m 0700 /var/lib/nixpi/secrets
-      echo -n "test-token-abc123" > /var/lib/nixpi/secrets/netbird-api-token
-      chown -R nixpi:nixpi /var/lib/nixpi/secrets || true
+      install -d -m 0750 -o pi -g pi /var/lib/nixpi
+      echo -n "test-token-abc123" > /var/lib/nixpi/netbird-api-token
+      chown pi:pi /var/lib/nixpi/netbird-api-token
+      chmod 0600 /var/lib/nixpi/netbird-api-token
     '';
 
     # Override endpoint to point at mock server
-    nixpi.netbird.apiTokenFile = "/var/lib/nixpi/secrets/netbird-api-token";
+    nixpi.netbird.apiTokenFile = "/var/lib/nixpi/netbird-api-token";
     nixpi.netbird.apiEndpoint = "http://127.0.0.1:19999";
 
     # Mock NetBird API server (returns empty lists for all GETs, 200 for POSTs)
