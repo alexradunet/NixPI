@@ -241,7 +241,7 @@ in
 
     netbird = {
       apiTokenFile = lib.mkOption {
-        type = lib.types.nullOr lib.types.path;
+        type = lib.types.nullOr externalAbsolutePath;
         default = null;
         description = ''
           Path to a file containing the NetBird management API personal access
@@ -341,14 +341,10 @@ in
           default = [ "bloom-devices" ];
           description = "Peer groups that receive the bloom.local DNS route via NetBird nameserver group.";
         };
-        localForwarderPort = lib.mkOption {
-          type = lib.types.int;
-          default = 22054;
-          description = ''
-            Port of NetBird's local DNS forwarder (default 22054 since v0.59.0).
-            If the client uses a custom CustomDNSAddress, update this to match.
-          '';
-        };
+        localForwarderPort = mkPortOption 22054 ''
+          Port of NetBird's local DNS forwarder (default 22054 since v0.59.0).
+          If the client uses a custom CustomDNSAddress, update this to match.
+        '';
       };
 
       ssh = {
@@ -368,8 +364,8 @@ in
               localUser    = lib.mkOption { type = lib.types.str; };
             };
           });
-          default = [ { netbirdGroup = "admins"; localUser = "alex"; } ];
-          description = "Maps a NetBird peer group to the local OS user an SSH session runs as.";
+          default = [ { netbirdGroup = "admins"; localUser = "pi"; } ];
+          description = "Maps a NetBird peer group to the local OS user an SSH session runs as. Update localUser to match your nixpi.primaryUser.";
         };
       };
     };
