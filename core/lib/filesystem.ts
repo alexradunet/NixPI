@@ -4,6 +4,18 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+export interface CanonicalRepoValidationArgs {
+	path?: string;
+	origin?: string;
+	branch?: string;
+	expectedPath?: string;
+	expectedOrigin?: string;
+	expectedBranch?: string;
+	actualPath?: string;
+	actualOrigin?: string;
+	actualBranch?: string;
+}
+
 /** Ensure a directory exists. */
 export function ensureDir(dir: string, mode?: number): void {
 	if (existsSync(dir)) return;
@@ -79,6 +91,16 @@ export function getSystemReadyPath(): string {
 	return path.join(getWizardStateDir(), "system-ready");
 }
 
+/** Resolve the primary account name used for the canonical repo checkout. */
+export function getPrimaryUser(): string {
+	return process.env.NIXPI_PRIMARY_USER ?? os.userInfo().username;
+}
+
+/** Resolve the canonical working repo path for the primary user. */
+export function getCanonicalRepoDir(primaryUser = getPrimaryUser()): string {
+	return path.join("/home", primaryUser, "nixpi");
+}
+
 /** Resolve the persona-complete marker path. */
 export function getPersonaDonePath(): string {
 	return path.join(getWizardStateDir(), "persona-done");
@@ -96,7 +118,7 @@ export function getUpdateStatusPath(): string {
 
 /** Path to the canonical system flake checkout used for rebuilds. */
 export function getSystemFlakeDir(): string {
-	return process.env.NIXPI_SYSTEM_FLAKE_DIR ?? getNixPiDir();
+	return process.env.NIXPI_SYSTEM_FLAKE_DIR ?? getCanonicalRepoDir();
 }
 
 /** Resolve the dedicated daemon state directory. */
@@ -106,7 +128,43 @@ export function getDaemonStateDir(): string {
 
 /** Path to the local repo clone used for local-only proposal workflows. */
 export function getNixPiRepoDir(): string {
-	return process.env.NIXPI_REPO_DIR ?? path.join(getNixPiStateDir(), "pi-nixpi");
+	return process.env.NIXPI_REPO_DIR ?? getCanonicalRepoDir();
+}
+
+function getExpectedCanonicalRepoValues(args: CanonicalRepoValidationArgs) {
+	return {
+		expectedPath: args.expectedPath ?? args.path ?? getCanonicalRepoDir(),
+		expectedOrigin: args.expectedOrigin ?? args.origin,
+		expectedBranch: args.expectedBranch ?? args.branch,
+		actualPath: args.actualPath ?? args.path,
+		actualOrigin: args.actualOrigin ?? args.origin,
+		actualBranch: args.actualBranch ?? args.branch,
+	};
+}
+
+/** Validate repo path, origin, and branch against the canonical policy. */
+export function assertCanonicalRepo(args: CanonicalRepoValidationArgs): void {
+	const { expectedPath, expectedOrigin, expectedBranch, actualPath, actualOrigin, actualBranch } =
+		getExpectedCanonicalRepoValues(args);
+
+	if (actualPath !== expectedPath) {
+		throw new Error(`Canonical repo path mismatch: expected ${expectedPath}, got ${actualPath ?? "(missing)"}`);
+	}
+	if (actualOrigin !== expectedOrigin) {
+		throw new Error(
+			`Canonical repo origin mismatch: expected ${expectedOrigin ?? "(missing)"}, got ${actualOrigin ?? "(missing)"}`,
+		);
+	}
+	if (actualBranch !== expectedBranch) {
+		throw new Error(
+			`Canonical repo branch mismatch: expected ${expectedBranch ?? "(missing)"}, got ${actualBranch ?? "(missing)"}`,
+		);
+	}
+}
+
+/** Backward-compatible alias for canonical repo policy checks. */
+export function validateCanonicalRepo(args: CanonicalRepoValidationArgs): void {
+	assertCanonicalRepo(args);
 }
 
 /** Resolve the package root by walking up from the current module URL. */

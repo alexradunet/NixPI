@@ -1,7 +1,16 @@
 import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { getNixPiDir, getSystemFlakeDir, safePath } from "../../core/lib/filesystem.js";
+import {
+	assertCanonicalRepo,
+	getCanonicalRepoDir,
+	getNixPiDir,
+	getNixPiRepoDir,
+	getPrimaryUser,
+	getSystemFlakeDir,
+	safePath,
+} from "../../core/lib/filesystem.js";
+import { getCanonicalRepoMetadataPath } from "../../core/lib/repo-metadata.js";
 
 const ROOT = path.join(os.tmpdir(), "nixpi-fs-test-root");
 
@@ -88,15 +97,101 @@ describe("getSystemFlakeDir", () => {
 		expect(getSystemFlakeDir()).toBe(path.join(os.homedir(), "nixpi"));
 	});
 
-	it("falls back to NIXPI_DIR when present", () => {
+	it("stays aligned with the canonical repo even when NIXPI_DIR is set", () => {
 		delete process.env.NIXPI_SYSTEM_FLAKE_DIR;
 		process.env.NIXPI_DIR = "/workspace/nixpi";
-		expect(getSystemFlakeDir()).toBe("/workspace/nixpi");
+		expect(getSystemFlakeDir()).toBe(path.join(os.homedir(), "nixpi"));
 	});
 
 	it("prefers explicit NIXPI_SYSTEM_FLAKE_DIR override", () => {
 		process.env.NIXPI_DIR = "/workspace/nixpi";
 		process.env.NIXPI_SYSTEM_FLAKE_DIR = "/system/flake";
 		expect(getSystemFlakeDir()).toBe("/system/flake");
+	});
+});
+
+// ---------------------------------------------------------------------------
+// canonical repo policy
+// ---------------------------------------------------------------------------
+describe("canonical repo policy", () => {
+	let origPrimaryUser: string | undefined;
+	let origRepoDir: string | undefined;
+
+	beforeEach(() => {
+		origPrimaryUser = process.env.NIXPI_PRIMARY_USER;
+		origRepoDir = process.env.NIXPI_REPO_DIR;
+	});
+
+	afterEach(() => {
+		if (origPrimaryUser !== undefined) {
+			process.env.NIXPI_PRIMARY_USER = origPrimaryUser;
+		} else {
+			delete process.env.NIXPI_PRIMARY_USER;
+		}
+		if (origRepoDir !== undefined) {
+			process.env.NIXPI_REPO_DIR = origRepoDir;
+		} else {
+			delete process.env.NIXPI_REPO_DIR;
+		}
+	});
+
+	it("returns the configured primary user when NIXPI_PRIMARY_USER is set", () => {
+		process.env.NIXPI_PRIMARY_USER = "pi";
+		expect(getPrimaryUser()).toBe("pi");
+	});
+
+	it("builds the canonical repo dir under /home/<primaryUser>/nixpi", () => {
+		expect(getCanonicalRepoDir("alex")).toBe("/home/alex/nixpi");
+	});
+
+	it("defaults the repo dir to /home/<primaryUser>/nixpi", () => {
+		delete process.env.NIXPI_REPO_DIR;
+		process.env.NIXPI_PRIMARY_USER = "alex";
+		expect(getNixPiRepoDir()).toBe("/home/alex/nixpi");
+	});
+
+	it("builds the canonical repo metadata path under /home/<primaryUser>/.nixpi", () => {
+		expect(getCanonicalRepoMetadataPath("alex")).toBe("/home/alex/.nixpi/canonical-repo.json");
+	});
+
+	it("rejects repos outside the canonical path", () => {
+		expect(() =>
+			assertCanonicalRepo({
+				path: "/home/alex/.nixpi/pi-nixpi",
+				origin: "https://github.com/alexradunet/nixpi.git",
+				branch: "main",
+				expectedPath: "/home/alex/nixpi",
+				expectedOrigin: "https://github.com/alexradunet/nixpi.git",
+				expectedBranch: "main",
+			}),
+		).toThrow("Canonical repo path mismatch: expected /home/alex/nixpi, got /home/alex/.nixpi/pi-nixpi");
+	});
+
+	it("rejects repos with the wrong origin", () => {
+		expect(() =>
+			assertCanonicalRepo({
+				path: "/home/alex/nixpi",
+				origin: "git@github.com:alexradunet/nixpi.git",
+				branch: "main",
+				expectedPath: "/home/alex/nixpi",
+				expectedOrigin: "https://github.com/alexradunet/nixpi.git",
+				expectedBranch: "main",
+			}),
+		).toThrow(
+			"Canonical repo origin mismatch: expected https://github.com/alexradunet/nixpi.git, got git@github.com:alexradunet/nixpi.git",
+		);
+	});
+
+	it("rejects repos on the wrong branch", () => {
+		expect(() =>
+			assertCanonicalRepo({
+				path: "/home/alex/nixpi",
+				origin: "https://github.com/alexradunet/nixpi.git",
+				branch: "feature/task-1",
+				expectedPath: "/home/alex/nixpi",
+				expectedOrigin: "https://github.com/alexradunet/nixpi.git",
+				expectedBranch: "main",
+			}),
+		).toThrow("Canonical repo branch mismatch: expected main, got feature/task-1");
 	});
 });
