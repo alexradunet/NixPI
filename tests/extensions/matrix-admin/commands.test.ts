@@ -3,42 +3,42 @@ import { DANGEROUS_COMMANDS, applyTransformations, isDangerous } from "../../../
 
 describe("DANGEROUS_COMMANDS", () => {
   it("includes destructive user commands", () => {
-    expect(DANGEROUS_COMMANDS.has("users deactivate")).toBe(true);
-    expect(DANGEROUS_COMMANDS.has("users deactivate-all")).toBe(true);
-    expect(DANGEROUS_COMMANDS.has("users logout")).toBe(true);
-    expect(DANGEROUS_COMMANDS.has("users make-user-admin")).toBe(true);
-    expect(DANGEROUS_COMMANDS.has("users force-join-list-of-local-users")).toBe(true);
-    expect(DANGEROUS_COMMANDS.has("users force-join-all-local-users")).toBe(true);
+    expect(isDangerous("users deactivate")).toBe(true);
+    expect(isDangerous("users deactivate-all")).toBe(true);
+    expect(isDangerous("users logout")).toBe(true);
+    expect(isDangerous("users make-user-admin")).toBe(true);
+    expect(isDangerous("users force-join-list-of-local-users")).toBe(true);
+    expect(isDangerous("users force-join-all-local-users")).toBe(true);
   });
 
   it("includes destructive room commands", () => {
-    expect(DANGEROUS_COMMANDS.has("rooms moderation ban-room")).toBe(true);
-    expect(DANGEROUS_COMMANDS.has("rooms moderation ban-list-of-rooms")).toBe(true);
+    expect(isDangerous("rooms moderation ban-room")).toBe(true);
+    expect(isDangerous("rooms moderation ban-list-of-rooms")).toBe(true);
   });
 
   it("includes dangerous server commands", () => {
-    expect(DANGEROUS_COMMANDS.has("server restart")).toBe(true);
-    expect(DANGEROUS_COMMANDS.has("server shutdown")).toBe(true);
-    expect(DANGEROUS_COMMANDS.has("server show-config")).toBe(true);
+    expect(isDangerous("server restart")).toBe(true);
+    expect(isDangerous("server shutdown")).toBe(true);
+    expect(isDangerous("server show-config")).toBe(true);
   });
 
   it("includes dangerous federation and appservice commands", () => {
-    expect(DANGEROUS_COMMANDS.has("federation disable-room")).toBe(true);
-    expect(DANGEROUS_COMMANDS.has("appservices unregister")).toBe(true);
+    expect(isDangerous("federation disable-room")).toBe(true);
+    expect(isDangerous("appservices unregister")).toBe(true);
   });
 
   it("includes dangerous media and token commands", () => {
-    expect(DANGEROUS_COMMANDS.has("media delete-list")).toBe(true);
-    expect(DANGEROUS_COMMANDS.has("media delete-past-remote-media")).toBe(true);
-    expect(DANGEROUS_COMMANDS.has("media delete-all-from-user")).toBe(true);
-    expect(DANGEROUS_COMMANDS.has("media delete-all-from-server")).toBe(true);
-    expect(DANGEROUS_COMMANDS.has("token destroy")).toBe(true);
+    expect(isDangerous("media delete-list")).toBe(true);
+    expect(isDangerous("media delete-past-remote-media")).toBe(true);
+    expect(isDangerous("media delete-all-from-user")).toBe(true);
+    expect(isDangerous("media delete-all-from-server")).toBe(true);
+    expect(isDangerous("token destroy")).toBe(true);
   });
 
   it("does NOT include safe read commands", () => {
-    expect(DANGEROUS_COMMANDS.has("users list-users")).toBe(false);
-    expect(DANGEROUS_COMMANDS.has("rooms list-rooms")).toBe(false);
-    expect(DANGEROUS_COMMANDS.has("server uptime")).toBe(false);
+    expect(isDangerous("users list-users")).toBe(false);
+    expect(isDangerous("rooms list-rooms")).toBe(false);
+    expect(isDangerous("server uptime")).toBe(false);
   });
 });
 
@@ -51,6 +51,12 @@ describe("isDangerous", () => {
   it("returns false for safe commands", () => {
     expect(isDangerous("users list-users")).toBe(false);
     expect(isDangerous("rooms list-rooms")).toBe(false);
+  });
+
+  it("does not false-positive on a command that shares a prefix string but not a word boundary", () => {
+    // "users deactivate" should not match "users deactivates-everything" (hypothetical)
+    // The + " " guard in isDangerous prevents this
+    expect(isDangerous("users deactivates-everything")).toBe(false);
   });
 });
 
@@ -81,5 +87,10 @@ describe("applyTransformations", () => {
   it("does not modify other commands", () => {
     expect(applyTransformations("users list-users")).toBe("users list-users");
     expect(applyTransformations("rooms list-rooms")).toBe("rooms list-rooms");
+  });
+
+  it("does not modify dangerous commands that have no transformation rule", () => {
+    expect(applyTransformations("users deactivate @alice:nixpi")).toBe("users deactivate @alice:nixpi");
+    expect(applyTransformations("server restart")).toBe("server restart");
   });
 });
