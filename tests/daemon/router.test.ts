@@ -1,8 +1,69 @@
 import { describe, expect, it } from "vitest";
 
 import type { AgentDefinition } from "../../core/daemon/agent-registry.js";
-import { createRoomState } from "../../core/daemon/room-state.js";
+import { enforceMapLimit, pruneExpiredEntries } from "../../core/daemon/ordered-cache.js";
+import type { RoomStateLike } from "../../core/daemon/router.js";
 import { classifySender, extractMentions, routeRoomEnvelope } from "../../core/daemon/router.js";
+
+// Minimal in-process implementation of RoomStateLike for router unit tests.
+function createRoomState(): RoomStateLike {
+	const processedEvents = new Map<string, number>();
+	const rootReplies = new Map<
+		string,
+		{ perAgentReplies: Map<string, number>; totalReplies: number; lastTouchedAt: number }
+	>();
+	const lastReplyAtByRoomAgent = new Map<string, number>();
+
+	const PROCESSED_EVENT_TTL = 5 * 60 * 1000;
+	const ROOT_REPLY_TTL = 60 * 60 * 1000;
+	const ROOM_AGENT_TTL = 60 * 60 * 1000;
+
+	function prune(now: number): void {
+		pruneExpiredEntries(processedEvents, now, (ts) => ts, PROCESSED_EVENT_TTL);
+		pruneExpiredEntries(lastReplyAtByRoomAgent, now, (ts) => ts, ROOM_AGENT_TTL);
+		pruneExpiredEntries(rootReplies, now, (s) => s.lastTouchedAt, ROOT_REPLY_TTL);
+	}
+
+	return {
+		hasProcessedEvent(eventId, now) {
+			prune(now);
+			return processedEvents.has(eventId);
+		},
+		markEventProcessed(eventId, now) {
+			prune(now);
+			processedEvents.set(eventId, now);
+			enforceMapLimit(processedEvents, 10_000);
+		},
+		isAgentCoolingDown(roomId, agentId, now, cooldownMs) {
+			prune(now);
+			const last = lastReplyAtByRoomAgent.get(`${roomId}::${agentId}`);
+			if (last === undefined) return false;
+			return now - last < cooldownMs;
+		},
+		canReplyForRoot(roomId, rootEventId, agentId, maxPublicTurns, totalBudget, now) {
+			if (typeof now === "number") prune(now);
+			const state = rootReplies.get(`${roomId}::${rootEventId}`);
+			if (!state) return true;
+			if (state.totalReplies >= totalBudget) return false;
+			return (state.perAgentReplies.get(agentId) ?? 0) < maxPublicTurns;
+		},
+		markReplySent(roomId, rootEventId, agentId, now) {
+			prune(now);
+			lastReplyAtByRoomAgent.set(`${roomId}::${agentId}`, now);
+			enforceMapLimit(lastReplyAtByRoomAgent, 2_000);
+			const key = `${roomId}::${rootEventId}`;
+			let state = rootReplies.get(key);
+			if (!state) {
+				state = { totalReplies: 0, perAgentReplies: new Map(), lastTouchedAt: now };
+				rootReplies.set(key, state);
+			}
+			state.totalReplies++;
+			state.lastTouchedAt = now;
+			state.perAgentReplies.set(agentId, (state.perAgentReplies.get(agentId) ?? 0) + 1);
+			enforceMapLimit(rootReplies, 2_000);
+		},
+	};
+}
 
 function makeAgent(id: string, userId: string, mode: AgentDefinition["respond"]["mode"]): AgentDefinition {
 	return {

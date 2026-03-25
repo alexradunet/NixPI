@@ -736,6 +736,177 @@ describe("AgentSupervisor", () => {
 		await supervisor.shutdown();
 	});
 
+	// ── Room-state behaviour (ported from room-state.test.ts) ────────────────
+
+	it("ignores duplicate event ids", async () => {
+		const host = makeAgent("host", "@pi:nixpi", "host");
+		const createdSessions: FakeSession[] = [];
+		const matrixBridge = {
+			getRoomAlias: vi.fn().mockResolvedValue("#general:nixpi"),
+			sendText: vi.fn().mockResolvedValue(undefined),
+			setTyping: vi.fn().mockResolvedValue(undefined),
+			stop: vi.fn(),
+		};
+		const supervisor = new AgentSupervisor({
+			agents: [host],
+			matrixBridge,
+			sessionBaseDir: "/tmp/sessions",
+			idleTimeoutMs: 60_000,
+			createSession: (opts) => {
+				const session = new FakeSession(opts);
+				createdSessions.push(session);
+				return session;
+			},
+		});
+
+		const envelope = {
+			roomId: "!room:nixpi",
+			eventId: "$dup-evt",
+			senderUserId: "@alex:nixpi",
+			body: "hello",
+			senderKind: "human" as const,
+			mentions: [],
+			timestamp: 1_000,
+		};
+
+		await supervisor.handleEnvelope(envelope);
+		// Second dispatch of the same eventId — router should block it as a duplicate
+		await supervisor.handleEnvelope(envelope);
+
+		// Only one session message should have been dispatched (second was a duplicate)
+		expect(createdSessions[0]?.sentMessages).toHaveLength(1);
+
+		await supervisor.shutdown();
+	});
+
+	it("respects agent cooldown between replies", async () => {
+		const host = makeAgent("host", "@pi:nixpi", "host");
+		const createdSessions: FakeSession[] = [];
+		const matrixBridge = {
+			getRoomAlias: vi.fn().mockResolvedValue("#general:nixpi"),
+			sendText: vi.fn().mockResolvedValue(undefined),
+			setTyping: vi.fn().mockResolvedValue(undefined),
+			stop: vi.fn(),
+		};
+		const supervisor = new AgentSupervisor({
+			agents: [host],
+			matrixBridge,
+			sessionBaseDir: "/tmp/sessions",
+			idleTimeoutMs: 60_000,
+			createSession: (opts) => {
+				const session = new FakeSession(opts);
+				createdSessions.push(session);
+				return session;
+			},
+		});
+
+		// First message — marks reply sent at timestamp 1_000, cooldown is 1_500 ms
+		await supervisor.handleEnvelope({
+			roomId: "!room:nixpi",
+			eventId: "$cool-evt1",
+			senderUserId: "@alex:nixpi",
+			body: "hello",
+			senderKind: "human",
+			mentions: [],
+			timestamp: 1_000,
+		});
+
+		// Second message within the cooldown window (timestamp 2_000, only 1_000 ms later)
+		await supervisor.handleEnvelope({
+			roomId: "!room:nixpi",
+			eventId: "$cool-evt2",
+			senderUserId: "@alex:nixpi",
+			body: "hello again",
+			senderKind: "human",
+			mentions: [],
+			timestamp: 2_000,
+		});
+
+		// Third message after cooldown has elapsed (timestamp 3_000, 2_000 ms after first reply)
+		await supervisor.handleEnvelope({
+			roomId: "!room:nixpi",
+			eventId: "$cool-evt3",
+			senderUserId: "@alex:nixpi",
+			body: "hello once more",
+			senderKind: "human",
+			mentions: [],
+			timestamp: 3_000,
+		});
+
+		// Only the first and third messages should have been dispatched; the second was in cooldown
+		expect(createdSessions[0]?.sentMessages).toHaveLength(2);
+
+		await supervisor.shutdown();
+	});
+
+	it("enforces the total reply budget per root event via room-state methods", async () => {
+		const host = makeAgent("host", "@pi:nixpi", "host");
+		const matrixBridge = {
+			getRoomAlias: vi.fn().mockResolvedValue("#general:nixpi"),
+			sendText: vi.fn().mockResolvedValue(undefined),
+			setTyping: vi.fn().mockResolvedValue(undefined),
+			stop: vi.fn(),
+		};
+		const supervisor = new AgentSupervisor({
+			agents: [host],
+			matrixBridge,
+			sessionBaseDir: "/tmp/sessions",
+			idleTimeoutMs: 60_000,
+			createSession: (opts) => new FakeSession(opts),
+		});
+
+		const roomId = "!room:nixpi";
+		const rootEventId = "$root1";
+		const agentId = "planner";
+		const maxPublicTurns = 2;
+		const totalBudget = 4;
+
+		// Initially can reply
+		expect(supervisor.canReplyForRoot(roomId, rootEventId, agentId, maxPublicTurns, totalBudget)).toBe(true);
+
+		// After first reply
+		supervisor.markReplySent(roomId, rootEventId, agentId, 1_000);
+		expect(supervisor.canReplyForRoot(roomId, rootEventId, agentId, maxPublicTurns, totalBudget)).toBe(true);
+
+		// After second reply — per-agent limit (maxPublicTurns=2) reached
+		supervisor.markReplySent(roomId, rootEventId, agentId, 2_000);
+		expect(supervisor.canReplyForRoot(roomId, rootEventId, agentId, maxPublicTurns, totalBudget)).toBe(false);
+
+		await supervisor.shutdown();
+	});
+
+	it("enforces total reply budget across agents for the same root event", async () => {
+		const host = makeAgent("host", "@pi:nixpi", "host");
+		const matrixBridge = {
+			getRoomAlias: vi.fn().mockResolvedValue("#general:nixpi"),
+			sendText: vi.fn().mockResolvedValue(undefined),
+			setTyping: vi.fn().mockResolvedValue(undefined),
+			stop: vi.fn(),
+		};
+		const supervisor = new AgentSupervisor({
+			agents: [host],
+			matrixBridge,
+			sessionBaseDir: "/tmp/sessions",
+			idleTimeoutMs: 60_000,
+			createSession: (opts) => new FakeSession(opts),
+		});
+
+		const roomId = "!room:nixpi";
+		const rootEventId = "$root1";
+		const maxPublicTurns = 2;
+		const totalBudget = 4;
+
+		supervisor.markReplySent(roomId, rootEventId, "host", 1_000);
+		supervisor.markReplySent(roomId, rootEventId, "planner", 2_000);
+		supervisor.markReplySent(roomId, rootEventId, "critic", 3_000);
+		supervisor.markReplySent(roomId, rootEventId, "host", 4_000);
+
+		// Total budget (4) exhausted — no further replies allowed regardless of agent
+		expect(supervisor.canReplyForRoot(roomId, rootEventId, "planner", maxPublicTurns, totalBudget)).toBe(false);
+
+		await supervisor.shutdown();
+	});
+
 	it("handles multiple pending proactive jobs in order", async () => {
 		const host = makeAgent("host", "@pi:nixpi", "host");
 		const createdSessions: FakeSession[] = [];

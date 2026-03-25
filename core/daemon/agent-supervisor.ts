@@ -13,7 +13,7 @@ import {
 	emitSessionSpawned,
 } from "./metrics.js";
 import { withRetry } from "../lib/retry.js";
-import { createRoomState } from "./room-state.js";
+import { enforceMapLimit, pruneExpiredEntries } from "./ordered-cache.js";
 import { type RoomEnvelope, routeRoomEnvelope } from "./router.js";
 import { PiRoomSession, type PiRoomSessionOptions } from "./runtime/pi-room-session.js";
 import type { TriggeredJob } from "./scheduler.js";
@@ -67,7 +67,12 @@ export class AgentSupervisor {
 	private readonly config: DaemonConfig;
 	private readonly activeProactiveJobs = new Set<string>();
 	private readonly createSession: (opts: AgentSessionOptions) => AgentSessionLike;
-	private readonly roomState: ReturnType<typeof createRoomState>;
+	private readonly processedEvents = new Map<string, number>();
+	private readonly rootReplies = new Map<
+		string,
+		{ perAgentReplies: Map<string, number>; totalReplies: number; lastTouchedAt: number }
+	>();
+	private readonly lastReplyAtByRoomAgent = new Map<string, number>();
 	private readonly pendingProactiveJobs = new Map<string, PendingProactiveJob[]>();
 	private readonly sessions = new Map<string, AgentSessionLike>();
 	private readonly preambleSent = new Set<string>();
@@ -80,21 +85,13 @@ export class AgentSupervisor {
 		this.sessionBaseDir = options.sessionBaseDir;
 		this.idleTimeoutMs = options.idleTimeoutMs;
 		this.config = options.config ?? getDefaultConfig();
-		this.roomState = createRoomState({
-			processedEventTtlMs: this.config.processedEventTtlMs,
-			rootReplyTtlMs: this.config.rootReplyTtlMs,
-			roomAgentTtlMs: this.config.roomAgentTtlMs,
-			maxProcessedEvents: this.config.maxProcessedEvents,
-			maxRootReplies: this.config.maxRootReplies,
-			maxRoomAgentEntries: this.config.maxRoomAgentEntries,
-		});
 		this.createSession = options.createSession ?? ((opts) => new PiRoomSession(buildPiRoomSessionOptions(opts)));
 	}
 
 	async handleEnvelope(envelope: RoomEnvelope): Promise<void> {
 		if (this.shuttingDown) return;
 		const startTime = Date.now();
-		const decision = routeRoomEnvelope(envelope, this.agents, this.roomState, {
+		const decision = routeRoomEnvelope(envelope, this.agents, this, {
 			totalReplyBudget: this.config.totalReplyBudget,
 		});
 
@@ -321,6 +318,90 @@ export class AgentSupervisor {
 		}
 		return job;
 	}
+
+	// ── Room-state methods ────────────────────────────────────────────────────
+
+	hasProcessedEvent(eventId: string, now: number): boolean {
+		this.pruneRoomState(now);
+		return this.processedEvents.has(eventId);
+	}
+
+	markEventProcessed(eventId: string, now: number): void {
+		this.pruneRoomState(now);
+		this.processedEvents.set(eventId, now);
+		enforceMapLimit(this.processedEvents, this.config.maxProcessedEvents);
+	}
+
+	isAgentCoolingDown(roomId: string, agentId: string, now: number, cooldownMs: number): boolean {
+		this.pruneRoomState(now);
+		const lastReplyAt = this.lastReplyAtByRoomAgent.get(roomAgentKey(roomId, agentId));
+		if (lastReplyAt === undefined) return false;
+		return now - lastReplyAt < cooldownMs;
+	}
+
+	canReplyForRoot(
+		roomId: string,
+		rootEventId: string,
+		agentId: string,
+		maxPublicTurnsPerRoot: number,
+		totalReplyBudget: number,
+		now?: number,
+	): boolean {
+		if (typeof now === "number") {
+			this.pruneRoomState(now);
+		}
+		const rootState = this.rootReplies.get(rootKey(roomId, rootEventId));
+		if (!rootState) return true;
+		if (rootState.totalReplies >= totalReplyBudget) return false;
+		return (rootState.perAgentReplies.get(agentId) ?? 0) < maxPublicTurnsPerRoot;
+	}
+
+	markReplySent(roomId: string, rootEventId: string, agentId: string, now: number): void {
+		this.pruneRoomState(now);
+		this.lastReplyAtByRoomAgent.set(roomAgentKey(roomId, agentId), now);
+		enforceMapLimit(this.lastReplyAtByRoomAgent, this.config.maxRoomAgentEntries);
+
+		const key = rootKey(roomId, rootEventId);
+		let rootState = this.rootReplies.get(key);
+		if (!rootState) {
+			rootState = { totalReplies: 0, perAgentReplies: new Map(), lastTouchedAt: now };
+			this.rootReplies.set(key, rootState);
+		}
+
+		rootState.totalReplies++;
+		rootState.lastTouchedAt = now;
+		rootState.perAgentReplies.set(agentId, (rootState.perAgentReplies.get(agentId) ?? 0) + 1);
+		enforceMapLimit(this.rootReplies, this.config.maxRootReplies);
+	}
+
+	private pruneRoomState(now: number): void {
+		pruneExpiredEntries(
+			this.processedEvents,
+			now,
+			(timestamp) => timestamp,
+			this.config.processedEventTtlMs,
+		);
+		pruneExpiredEntries(
+			this.lastReplyAtByRoomAgent,
+			now,
+			(timestamp) => timestamp,
+			this.config.roomAgentTtlMs,
+		);
+		pruneExpiredEntries(
+			this.rootReplies,
+			now,
+			(rootState) => rootState.lastTouchedAt,
+			this.config.rootReplyTtlMs,
+		);
+	}
+}
+
+function roomAgentKey(roomId: string, agentId: string): string {
+	return `${roomId}::${agentId}`;
+}
+
+function rootKey(roomId: string, rootEventId: string): string {
+	return `${roomId}::${rootEventId}`;
 }
 
 function missingMatrixBridge(): never {

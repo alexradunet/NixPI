@@ -1,12 +1,19 @@
 import type { AgentDefinition } from "./agent-registry.js";
-import {
-	canReplyForRoot,
-	hasProcessedEvent,
-	isAgentCoolingDown,
-	markEventProcessed,
-	markReplySent,
-	type RoomState,
-} from "./room-state.js";
+
+export interface RoomStateLike {
+	hasProcessedEvent(eventId: string, now: number): boolean;
+	markEventProcessed(eventId: string, now: number): void;
+	isAgentCoolingDown(roomId: string, agentId: string, now: number, cooldownMs: number): boolean;
+	canReplyForRoot(
+		roomId: string,
+		rootEventId: string,
+		agentId: string,
+		maxPublicTurnsPerRoot: number,
+		totalReplyBudget: number,
+		now?: number,
+	): boolean;
+	markReplySent(roomId: string, rootEventId: string, agentId: string, now: number): void;
+}
 
 export interface RoomEnvelope {
 	roomId: string;
@@ -69,7 +76,7 @@ export function classifySender(
 export function routeRoomEnvelope(
 	envelope: RoomEnvelope,
 	agents: readonly AgentDefinition[],
-	state: RoomState,
+	state: RoomStateLike,
 	options: RouteOptions = {},
 ): RouteDecision {
 	const ignoredReason = getIgnoredReason(envelope, state);
@@ -85,8 +92,7 @@ export function routeRoomEnvelope(
 		return { targets: [], reason: "ignored-policy" };
 	}
 
-	const canReply = canReplyForRoot(
-		state,
+	const canReply = state.canReplyForRoot(
 		envelope.roomId,
 		rootEventId,
 		targetAgent.id,
@@ -98,11 +104,11 @@ export function routeRoomEnvelope(
 		return { targets: [], reason: "ignored-budget" };
 	}
 
-	if (isAgentCoolingDown(state, envelope.roomId, targetAgent.id, envelope.timestamp, DEFAULT_COOLDOWN_MS)) {
+	if (state.isAgentCoolingDown(envelope.roomId, targetAgent.id, envelope.timestamp, DEFAULT_COOLDOWN_MS)) {
 		return { targets: [], reason: "ignored-cooldown" };
 	}
 
-	markReplySent(state, envelope.roomId, rootEventId, targetAgent.id, envelope.timestamp);
+	state.markReplySent(envelope.roomId, rootEventId, targetAgent.id, envelope.timestamp);
 
 	return {
 		targets: [targetAgent.id],
@@ -112,11 +118,11 @@ export function routeRoomEnvelope(
 
 function getIgnoredReason(
 	envelope: RoomEnvelope,
-	state: RoomState,
+	state: RoomStateLike,
 ): Extract<RouteDecision["reason"], "ignored-self" | "ignored-duplicate"> | undefined {
 	if (envelope.senderKind === "self") return "ignored-self";
-	if (hasProcessedEvent(state, envelope.eventId, envelope.timestamp)) return "ignored-duplicate";
-	markEventProcessed(state, envelope.eventId, envelope.timestamp);
+	if (state.hasProcessedEvent(envelope.eventId, envelope.timestamp)) return "ignored-duplicate";
+	state.markEventProcessed(envelope.eventId, envelope.timestamp);
 	return undefined;
 }
 

@@ -26,8 +26,19 @@ if [ -z "$iso_path" ]; then
 fi
 
 echo "WARNING: This will delete ~/.nixpi (VM state reset). Continue? [y/N]"
-read -r confirm
-[[ "$confirm" =~ ^[Yy]$ ]] || { echo "Aborted."; exit 1; }
+if IFS= read -r confirm; then
+    :
+elif [[ -r /dev/tty ]] && IFS= read -r confirm </dev/tty; then
+    :
+else
+    echo "Aborted."
+    echo "Confirmation requires an interactive terminal." >&2
+    exit 1
+fi
+confirm="${confirm//$'\r'/}"
+confirm="${confirm#"${confirm%%[![:space:]]*}"}"
+confirm="${confirm%"${confirm##*[![:space:]]}"}"
+[[ "${confirm,,}" == "y" ]] || { echo "Aborted."; exit 1; }
 echo "Resetting installer VM state..."
 rm -f "$disk"
 rm -f "$ovmf_vars"
