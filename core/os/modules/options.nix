@@ -120,7 +120,6 @@ in
           "netbird.service"
           "nixpi-home.service"
           "nixpi-element-web.service"
-          "continuwuity.service"
           "nixpi-update.service"
         ];
         description = ''
@@ -176,64 +175,6 @@ in
         enable = lib.mkEnableOption "canonical HTTPS gateway for Home, Element Web, and Matrix" // { default = true; };
         port = mkPortOption 443 "TCP port for the canonical HTTPS NixPI entry point.";
       };
-    };
-
-    matrix = {
-      bindAddress = lib.mkOption {
-        type = lib.types.str;
-        default = "0.0.0.0";
-        description = ''
-          Bind address used by the local Matrix homeserver listener.
-        '';
-      };
-
-      port = mkPortOption 6167 "TCP port for the local Matrix homeserver.";
-
-      clientBaseUrl = lib.mkOption {
-        type = lib.types.str;
-        default = "";
-        description = ''
-          Client-facing Matrix base URL used by Element Web and advertised to
-          operators. When left empty, NixPI derives it from the hostname and
-          configured Matrix port.
-        '';
-      };
-
-      enableRegistration = lib.mkOption {
-        type = lib.types.bool;
-        default = true;
-        description = ''
-          Whether Matrix account registration is enabled.
-        '';
-      };
-
-      keepRegistrationAfterSetup = lib.mkOption {
-        type = lib.types.bool;
-        default = false;
-        description = ''
-          Whether Matrix account registration should remain enabled after the
-          first-boot setup completes.
-        '';
-      };
-
-      maxUploadSize = lib.mkOption {
-        type = lib.types.str;
-        default = "20M";
-        description = ''
-          Maximum upload size accepted by the local Matrix homeserver.
-        '';
-      };
-
-      registrationSharedSecretFile = lib.mkOption {
-        type = lib.types.nullOr externalAbsolutePath;
-        default = null;
-        description = ''
-          Optional external file containing the Matrix registration secret
-          maintained for NixPI bootstrap compatibility. When unset, NixPI
-          generates one stable runtime secret file.
-        '';
-      };
-
     };
 
     netbird = {

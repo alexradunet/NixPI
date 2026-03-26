@@ -26,14 +26,6 @@ in
       type = types.port;
     };
 
-    matrixPort = mkOption {
-      type = types.port;
-    };
-
-    matrixClientBaseUrl = mkOption {
-      type = types.str;
-    };
-
     trustedInterface = mkOption {
       type = types.str;
     };
@@ -64,7 +56,6 @@ in
           <ul>
             <li>Home: <a data-page-link href="">canonical host not available on localhost recovery</a></li>
             <li>Element Web: <a data-element-link href="">canonical host not available on localhost recovery</a></li>
-            <li>Matrix URL: <a data-matrix-link href="">canonical host not available on localhost recovery</a></li>
           </ul>
           <h2>Recovery</h2>
           <p>Use <a href="http://localhost/">http://localhost/</a> only when NetBird access is unavailable on the box.</p>
@@ -78,7 +69,6 @@ in
               const canonicalHost = currentHost;
               const pageUrl = "https://" + canonicalHost + "/";
               const elementUrl = "https://" + canonicalHost + "/element/";
-              const matrixUrl = "https://" + canonicalHost;
               for (const node of document.querySelectorAll("[data-page-link]")) {
                 node.textContent = pageUrl;
                 node.href = pageUrl;
@@ -86,10 +76,6 @@ in
               for (const node of document.querySelectorAll("[data-element-link]")) {
                 node.textContent = elementUrl;
                 node.href = elementUrl;
-              }
-              for (const node of document.querySelectorAll("[data-matrix-link]")) {
-                node.textContent = matrixUrl;
-                node.href = matrixUrl;
               }
             })();
           </script>

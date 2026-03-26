@@ -7,15 +7,6 @@ let
   tlsDir = "/var/lib/nixpi-tls";
   tlsCertPath = "${tlsDir}/nixpi-secure.crt";
   tlsKeyPath = "${tlsDir}/nixpi-secure.key";
-  secureWebMatrixBaseUrl = "https://${config.networking.hostName}";
-  matrixClientWellKnown = builtins.toJSON {
-    "m.homeserver" = {
-      base_url = "https://$host";
-    };
-  };
-  matrixServerWellKnown = builtins.toJSON {
-    "m.server" = "$host:443";
-  };
   secureWebTlsSetup = pkgs.writeShellScript "nixpi-secure-web-tls-setup" ''
     set -euo pipefail
 
@@ -99,14 +90,6 @@ in
             bindAddress = "127.0.0.1";
             inherit primaryUser;
             elementWebPort = cfg.elementWeb.port;
-            matrixPort = config.nixpi.matrix.port;
-            matrixClientBaseUrl =
-              if cfg.secureWeb.enable then
-                secureWebMatrixBaseUrl
-              else if config.nixpi.matrix.clientBaseUrl != "" then
-                config.nixpi.matrix.clientBaseUrl
-              else
-                "http://${config.networking.hostName}:${toString config.nixpi.matrix.port}";
             trustedInterface = securityCfg.trustedInterface;
           };
         };
@@ -118,14 +101,8 @@ in
             port = cfg.elementWeb.port;
             bindAddress = "127.0.0.1";
             inherit primaryUser;
-            matrixServerName = config.networking.hostName;
-            matrixClientBaseUrl =
-              if cfg.secureWeb.enable then
-                secureWebMatrixBaseUrl
-              else if config.nixpi.matrix.clientBaseUrl != "" then
-                config.nixpi.matrix.clientBaseUrl
-              else
-                "http://${config.networking.hostName}:${toString config.nixpi.matrix.port}";
+            matrixServerName = "matrix.org";
+            matrixClientBaseUrl = "https://matrix.org";
           };
         };
       })
@@ -187,16 +164,6 @@ in
           locations."/".proxyPass = "http://127.0.0.1:${toString cfg.home.port}";
           locations."= /element".return = "302 /element/";
           locations."/element/".proxyPass = "http://127.0.0.1:${toString cfg.elementWeb.port}/";
-          locations."/_matrix".proxyPass = "http://127.0.0.1:${toString config.nixpi.matrix.port}";
-          locations."/_synapse".proxyPass = "http://127.0.0.1:${toString config.nixpi.matrix.port}";
-          locations."= /.well-known/matrix/client".extraConfig = ''
-            default_type application/json;
-            return 200 '${matrixClientWellKnown}';
-          '';
-          locations."= /.well-known/matrix/server".extraConfig = ''
-            default_type application/json;
-            return 200 '${matrixServerWellKnown}';
-          '';
         };
       })
     ];
