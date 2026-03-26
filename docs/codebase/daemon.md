@@ -1,229 +1,110 @@
 # Daemon
 
-> Always-on Matrix runtime
+> Local chat runtime and session lifecycle
 
 ## Responsibilities
 
-The daemon has four moving parts:
+The runtime described here now lives in `core/chat-server/`, even though this page keeps the historical "Daemon" label for navigation continuity.
 
-1. Bootstrap in `index.ts`, `config.ts`, and `lifecycle.ts`
-2. Agent/session orchestration in `multi-agent-runtime.ts` and `agent-supervisor.ts`
-3. Routing and state in `router.ts` and `room-state.ts`
-4. Optional proactive scheduling in `scheduler.ts` and `proactive.ts`
+The current runtime has three moving parts:
+
+1. HTTP bootstrap and static asset serving in `index.ts`
+2. Session creation, reuse, and eviction in `session.ts`
+3. Browser-side chat behavior in `frontend/app.ts`
 
 ## Reading order
 
-- Start with `index.ts` for process startup.
-- Read `agent-registry.ts` to understand how agents are materialized.
-- Read `router.ts` and `room-state.ts` for reply policy.
-- Read `runtime/pi-room-session.ts` only when debugging session transport.
+- Start with `core/chat-server/index.ts` for the HTTP surface and environment wiring.
+- Read `core/chat-server/session.ts` for the session cache, Pi agent integration, and streaming event translation.
+- Read `core/chat-server/frontend/app.ts` when debugging browser behavior or event rendering.
+- Read `core/os/services/nixpi-chat.nix` if you need to understand how systemd starts the runtime.
 
 ## Cleanup rule
 
-Prefer central defaults over per-agent knobs. The daemon is easier to maintain when routing policy, cooldowns, and reply budgets are owned in one place instead of leaking through frontmatter.
+Keep the runtime local and session-scoped. Browser requests, on-disk session state, and the `pi-coding-agent` lifecycle should stay easy to trace from one entry point without hidden transport layers.
 
 ---
 
 ## Important File Details
 
-### `core/daemon/index.ts`
+### `core/chat-server/index.ts`
 
-**Responsibility**: Daemon entry point and bootstrap coordination.
+**Responsibility**: Entry point for the local chat backend.
 
-**Key Functions**:
-- `main()` - Entry point
-- `bootstrap()` - Config loading and runtime initialization
-- `shutdown()` - Graceful shutdown handler
+**Key Behavior**:
+- Creates a single `ChatSessionManager`
+- Accepts `POST /chat` and streams newline-delimited JSON events
+- Accepts `DELETE /chat/:sessionId` to reset a session
+- Serves the built frontend files for `GET /`
 
 **Environment Variables**:
-- `NIXPI_DAEMON_MODE` - `host-only` or `multi-agent`
-- `NIXPI_MATRIX_HOMESERVER` - Matrix server URL
+- `NIXPI_CHAT_PORT` - backend port, default `8080`
+- `NIXPI_SHARE_DIR` - packaged share dir, default `/usr/local/share/nixpi`
+- `PI_DIR` - Pi runtime dir, default `~/.pi`
+- `NIXPI_CHAT_IDLE_TIMEOUT` - idle eviction window in seconds
+- `NIXPI_CHAT_MAX_SESSIONS` - maximum concurrent in-memory sessions
 
 **Inbound Dependencies**:
-- Systemd service startup
-- `nixpi-daemon.service` unit
+- `nixpi-chat.service`
+- Browser requests proxied through nginx
 
 **Outbound Dependencies**:
-- `multi-agent-runtime.ts` - Runtime initialization
-- `lifecycle.ts` - Startup retry logic
+- `session.ts` for runtime state
+- `frontend/dist` for static assets
 
 ---
 
-### `core/daemon/multi-agent-runtime.ts`
+### `core/chat-server/session.ts`
 
-**Responsibility**: Orchestrates all agents, rooms, and sessions. The heart of the daemon.
+**Responsibility**: Owns per-session Pi runtime state.
 
-**Key Class**: `MultiAgentRuntime`
+**Key Class**: `ChatSessionManager`
 
 **Responsibilities**:
-- Creates Matrix client per agent
-- Manages room subscriptions
-- Routes messages to appropriate sessions
-- Handles agent overlay lifecycle
+- Creates session directories under `~/.pi/chat-sessions/<sessionId>`
+- Builds a `SettingsManager`, `DefaultResourceLoader`, and `SessionManager`
+- Creates `pi-coding-agent` sessions on first use
+- Reuses active sessions and evicts old or idle sessions
+- Translates agent events into the chat UI event stream
 
-**Mode Behavior**:
-- **Host-only mode**: Single synthesized agent from primary credentials
-- **Multi-agent mode**: Loads all valid overlays from `~/nixpi/Agents/`
+**Session Model**:
+- One browser `sessionId` maps to one local working directory
+- Sessions are created lazily
+- The oldest session is evicted when `maxSessions` is exceeded
+- Idle sessions are disposed after `idleTimeoutMs`
 
 **Inbound Dependencies**:
-- `index.ts` - Bootstrap
-- `matrix-js-sdk-bridge.ts` - Event delivery
+- `index.ts` for all chat requests
 
 **Outbound Dependencies**:
-- `agent-registry.ts` - Overlay loading
-- `router.ts` - Message routing
-- `room-state.ts` - State management
-- `scheduler.ts` - Proactive job triggering
+- `@mariozechner/pi-coding-agent`
+- `core/lib/` helpers loaded through Pi resources
 
 ---
 
-### `core/daemon/router.ts`
+### `core/chat-server/frontend/app.ts`
 
-**Responsibility**: Decides which agent handles each incoming message.
+**Responsibility**: Browser-side chat client for the local runtime.
 
-**Routing Rules** (in order):
-1. Host mode only → Route to default agent
-2. Explicit mention → Route to mentioned agent
-3. First eligible → Route to first non-cooldown agent
-4. Budget exhausted → Queue or drop
+**Key Behavior**:
+- Sends chat turns to `POST /chat`
+- Consumes streamed NDJSON events
+- Renders text, tool calls, and tool results progressively
+- Reuses the browser-held session ID until reset
 
-**Cooldown Logic**:
-- Prevents agent spam
-- Configurable per-agent cooldown periods
-- Tracks per-room reply budgets
-
-**Inbound Dependencies**:
-- `multi-agent-runtime.ts` - Routing requests
-- `room-state.ts` - Historical context
-
-**Outbound Dependencies**:
-- `pi-room-session.ts` - Session delivery
+This file is part of the runtime contract even though it runs in the browser, because the backend event format is tailored to it.
 
 ---
 
-### `core/daemon/scheduler.ts`
+### `core/os/services/nixpi-chat.nix`
 
-**Responsibility**: Executes proactive jobs on schedules.
+**Responsibility**: Wraps the local chat runtime as a modular systemd service.
 
-**Supported Schedules**:
-| Expression | Description |
-|------------|-------------|
-| `@hourly` | Every hour at :00 |
-| `@daily` | Midnight UTC daily |
-| `@weekly` | Midnight UTC Sundays |
-| `MM HH * * *` | Daily at specific time |
-| `MM HH * * D` | Weekly on specific day |
-
-**Not Supported**:
-- Day-of-month fields
-- Month fields
-- Sub-hour intervals (`*/5`)
-
-**Job Definition** (from AGENTS.md frontmatter):
-```yaml
-proactive:
-  jobs:
-    - id: daily-heartbeat
-      kind: heartbeat
-      room: "!ops:nixpi"
-      interval_minutes: 1440
-      prompt: "Review room and host state"
-      quiet_if_noop: true
-      no_op_token: "HEARTBEAT_OK"
-```
-
-**Inbound Dependencies**:
-- `multi-agent-runtime.ts` - Job registration
-- `agent-registry.ts` - Job discovery from overlays
-
-**Outbound Dependencies**:
-- `proactive.ts` - Job dispatch
-- `rate-limiter.ts` - Rate limit checking
-
----
-
-### `core/daemon/proactive.ts`
-
-**Responsibility**: Dispatches proactive jobs with rate limiting and circuit breaking.
-
-**Rate Limiting**:
-- Default: 60 jobs/hour per agent
-- Configurable: `NIXPI_PROACTIVE_MAX_JOBS_PER_HOUR`
-
-**Circuit Breaker**:
-- Threshold: 5 consecutive failures
-- Reset: 60 seconds
-- States: closed (normal), open (rejected), half-open (testing)
-
-**Quiet if Noop**:
-- When `quiet_if_noop: true` and response matches `no_op_token`
-- Reply is suppressed
-
-**Inbound Dependencies**:
-- `scheduler.ts` - Job triggers
-
-**Outbound Dependencies**:
-- `pi-room-session.ts` - Session for dispatch
-- `rate-limiter.ts` - Limit checking
-
----
-
-### `core/daemon/agent-registry.ts`
-
-**Responsibility**: Loads and validates agent overlays from `~/nixpi/Agents/`.
-
-**Directory Structure**:
-```
-~/nixpi/Agents/
-├── agent-a/
-│   └── AGENTS.md
-├── agent-b/
-│   └── AGENTS.md
-└── ...
-```
-
-**AGENTS.md Format**:
-```yaml
----
-id: agent-id
-name: Agent Name
-matrix:
-  user_id: "@agent:nixpi"
-  access_token: "..."
-proactive:
-  jobs: [...]
----
-```
-
-**Validation**:
-- Required fields: `id`, `name`, `matrix.user_id`
-- Malformed overlays are skipped with warnings (not fatal)
-
-**Inbound Dependencies**:
-- `multi-agent-runtime.ts` - Registry queries
-
-**Outbound Dependencies**:
-- `lib/frontmatter.ts` - Frontmatter parsing
-
----
-
-### `core/daemon/room-state.ts`
-
-**Responsibility**: Tracks per-room state including message history and reply budgets.
-
-**State Tracked**:
-- Message history (bounded)
-- Agent reply counts
-- Cooldown timestamps
-- Duplicate event IDs
-
-**Pruning**:
-- Old entries evicted automatically
-- Prevents unbounded memory growth
-
-**Inbound Dependencies**:
-- `router.ts` - State queries
-- `multi-agent-runtime.ts` - State updates
+**Key Behavior**:
+- Launches Node against `dist/core/chat-server/index.js`
+- Sets the runtime environment expected by `core/chat-server/index.ts`
+- Runs as `nixpi-chat.primaryUser`
+- Uses the primary user's `.pi` directory as the runtime working area
 
 ---
 
@@ -231,25 +112,13 @@ proactive:
 
 | Test File | Coverage |
 |-----------|----------|
-| `tests/daemon/index.test.ts` | Bootstrap and lifecycle |
-| `tests/daemon/multi-agent-runtime.test.ts` | Runtime orchestration |
-| `tests/daemon/agent-supervisor.test.ts` | Agent supervision |
-| `tests/daemon/agent-registry.test.ts` | Overlay loading |
-| `tests/daemon/router.test.ts` | Message routing |
-| `tests/daemon/room-state.test.ts` | Room state management |
-| `tests/daemon/scheduler.test.ts` | Job scheduling |
-| `tests/daemon/proactive.test.ts` | Proactive dispatch |
-| `tests/daemon/rate-limiter.test.ts` | Rate limiting |
-| `tests/daemon/lifecycle.test.ts` | Startup retry |
-| `tests/daemon/matrix-js-sdk-bridge.test.ts` | Matrix transport |
-| `tests/daemon/pi-room-session.test.ts` | Session lifecycle |
-| `tests/daemon/ordered-cache.test.ts` | Caching |
-| `tests/daemon/session-events.test.ts` | Session events |
+| `tests/chat-server/server.test.ts` | HTTP contract, NDJSON streaming, and session reset endpoint |
+| `tests/chat-server/session.test.ts` | Session creation, reuse, eviction, and disposal |
+| `tests/nixos/nixpi-chat.nix` | Service-level NixOS coverage for the built-in local chat surface |
 
 ---
 
 ## Related
 
-- [Reference: Daemon Architecture](../reference/daemon-architecture) - Detailed daemon docs
 - [Architecture: Runtime Flows](../architecture/runtime-flows) - End-to-end flows
 - [Tests](./tests) - Test coverage details

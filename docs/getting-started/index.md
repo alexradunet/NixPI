@@ -11,7 +11,7 @@ NixPI is organized as a multi-layer system. Understanding these layers will help
 | Layer | Technology | Purpose |
 |-------|------------|---------|
 | **OS Layer** | NixOS/Nix | System provisioning, services, packaging |
-| **Daemon Layer** | TypeScript/Node.js | Always-on Matrix room runtime |
+| **Runtime Layer** | TypeScript/Node.js | Local web chat runtime and session management |
 | **Extension Layer** | TypeScript | Pi-facing tools, commands, hooks |
 | **Memory Layer** | Markdown | Durable and episodic storage |
 | **Documentation** | VitePress | This documentation site |
@@ -22,7 +22,7 @@ NixPI is organized as a multi-layer system. Understanding these layers will help
 NixPI/
 ├── core/
 │   ├── os/          # NixOS modules, services, packages
-│   ├── daemon/      # Matrix daemon and multi-agent runtime
+│   ├── chat-server/ # Local chat backend and frontend
 │   ├── lib/         # Shared runtime helpers
 │   └── pi/          # Pi-facing extensions and persona
 │       ├── extensions/  # Built-in Pi extensions
@@ -104,7 +104,7 @@ If you're diving into the codebase, this order will help you build mental models
 
 3. **Dive into subsystems**
    - [Core Library](../codebase/core-lib) - shared primitives
-   - [Daemon](../codebase/daemon) - room runtime
+   - [Daemon](../codebase/daemon) - local runtime
    - [Pi Extensions](../codebase/pi-extensions) - tool surface
    - [OS Modules](../codebase/os) - NixOS integration
 

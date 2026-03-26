@@ -7,7 +7,7 @@ description: Post-wizard persona customization — Pi helps the user personalize
 
 ## Prerequisite
 
-The bash wizard (`setup-wizard.sh`) has already completed OS-level setup: password, network, NetBird, Matrix, git identity, and services. The sentinel file `~/.nixpi/wizard-state/system-ready` exists.
+The bash wizard (`setup-wizard.sh`) has already completed OS-level setup: password, network, local chat setup, git identity, and services. The sentinel file `~/.nixpi/wizard-state/system-ready` exists.
 
 If `~/.nixpi/wizard-state/persona-done` exists, persona customization is also done. Skip this skill entirely. You can still help the user reconfigure their persona if they ask.
 
@@ -36,8 +36,8 @@ This flow no longer uses a separate setup extension or `setup-state.json`.
 Before asking persona questions, give a short orientation that covers:
 - NixPI keeps durable state in `~/nixpi/` and favors inspectable files over hidden databases
 - NixPI can propose changes to its own persona/workflows through tracked evolutions; it does not silently rewrite itself
-- Matrix is the native messaging backbone, and `nixpi-daemon` keeps Pi available in Matrix rooms even after logout
-- If valid overlays exist in `~/nixpi/Agents/*/AGENTS.md`, NixPI can run multi-agent rooms with one Pi session per `(room, agent)`
+- Local web chat is the primary way to talk to Pi on the machine
+- If valid overlays exist in `~/nixpi/Agents/*/AGENTS.md`, NixPI can run multi-agent conversations with one Pi session per active surface and agent
 
 Ask one question, wait for answer, update the file, ask next question. Files to update:
 - `~/nixpi/Persona/SOUL.md` — name, formality, values
@@ -45,4 +45,4 @@ Ask one question, wait for answer, update the file, ask next question. Files to 
 - `~/nixpi/Persona/FACULTY.md` — reasoning style
 
 ### complete
-Congratulate the user. Mention they can chat on terminal or via Matrix. Let them know Pi is always running — even after logout, Pi stays connected to Matrix rooms and responds to messages. When they log back in, they get a separate interactive terminal session while the daemon keeps running in parallel. Both share the same persona and filesystem. Remind them that future NixPI changes can be proposed as evolutions, and that multi-agent rooms become available when agent overlays are added under `~/nixpi/Agents/`.
+Congratulate the user. Mention they can chat in the terminal or through the local web chat. Let them know Pi keeps the same persona and filesystem across those surfaces. Remind them that future NixPI changes can be proposed as evolutions, and that multi-agent conversations become available when agent overlays are added under `~/nixpi/Agents/`.

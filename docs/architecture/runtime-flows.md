@@ -1,13 +1,13 @@
 # NixPI Runtime Flows
 
-> End-to-end flows through the NixPI system
+> End-to-end flows through the current local-only NixPI system
 
 ## Why Document Runtime Flows
 
-Understanding how control and data flow through NixPI is essential for:
-- Debugging issues that span subsystems
-- Adding new features that integrate correctly
-- Understanding failure modes and recovery paths
+Understanding how control and data move through NixPI helps with:
+- Debugging issues that span NixOS services, the web chat surface, and Pi sessions
+- Tracing where setup markers, session state, and memory files are written
+- Changing one layer without breaking the local runtime contract
 
 ## Install/Build Flow
 
@@ -15,34 +15,35 @@ Understanding how control and data flow through NixPI is essential for:
 
 | Entry Point | Command | Purpose |
 |-------------|---------|---------|
-| Local build | `nix build .#app` | Build TypeScript app derivation |
-| System switch | `just switch` | Apply local flake to running system |
-| Remote update | `just update` | Apply remote flake to running system |
+| Local build | `nix build .#app` | Build the packaged app and bundled assets |
+| System switch | `just switch` | Apply the local flake to the running machine |
+| Remote update | `just update` | Pull and apply the configured remote flake |
 
 ### Flow Steps
 
 1. **Nix evaluation** (`flake.nix`)
-   - Imports NixPI modules
-   - Resolves `piAgent` and `appPackage` derivations
-   - Builds system closure
+   - Imports the NixPI module set
+   - Resolves `piAgent`, `appPackage`, and system checks
+   - Produces the machine closure
 
-2. **TypeScript compilation** (`npm run build`)
-   - Compiles `core/**/*.ts` to `dist/`
-   - Extension discovery from `package.json` `pi.extensions`
+2. **App build** (`npm run build`)
+   - Compiles TypeScript into `dist/`
+   - Builds the local chat frontend with Vite
+   - Reads `package.json` for Pi extension and skill registration
 
-3. **Service installation**
-   - `nixpi-daemon.service` enabled
-   - `nixpi-home.service`, `nixpi-element-web.service` configured
-   - Matrix Continuwuity provisioned
+3. **Service wiring**
+   - `core/os/modules/app.nix` installs the packaged app and Pi agent
+   - `nixpi-chat.service` is registered as the local runtime
+   - `nginx` is configured as the HTTP/HTTPS entry point
 
 ### Key Files
 
 | File | Role |
 |------|------|
-| `flake.nix` | Entry point, module aggregation |
-| `core/os/modules/app.nix` | App packaging and service |
-| `core/os/pkgs/app/default.nix` | Package derivation |
-| `package.json` | Extension manifest, dependencies |
+| `flake.nix` | Module aggregation, packages, checks |
+| `core/os/modules/app.nix` | App package install and chat service wiring |
+| `core/os/services/nixpi-chat.nix` | `nixpi-chat.service` wrapper |
+| `package.json` | Build scripts, extensions, runtime dependencies |
 
 ## Boot/Service Startup Flow
 
@@ -53,47 +54,48 @@ systemd boot
     ↓
 multi-user.target
     ↓
-├─ continuwuity.service
 ├─ netbird.service
-├─ nixpi-home.service
-├─ nixpi-element-web.service
-└─ nixpi-daemon.service (after setup complete)
+├─ nixpi-app-setup.service
+├─ nixpi-chat.service
+├─ nixpi-update.service
+└─ nginx.service
 ```
 
-### Daemon Startup Flow
+### Local Chat Startup Flow
 
-1. **Config loading** (`core/daemon/config.ts`)
-   - Reads environment variables
-   - Loads agent overlays from `~/nixpi/Agents/`
+1. **State preparation** (`core/os/modules/app.nix`)
+   - Creates `/var/lib/nixpi`
+   - Seeds `~/.pi/settings.json` from the packaged defaults when missing
+   - Ensures the runtime directories are owned by the primary user
 
-2. **Registry initialization** (`core/daemon/agent-registry.ts`)
-   - Scans `AGENTS.md` files
-   - Validates overlay structure
-   - Synthesizes default host agent if needed
+2. **HTTP server bootstrap** (`core/chat-server/index.ts`)
+   - Reads `NIXPI_CHAT_PORT`, `NIXPI_SHARE_DIR`, `PI_DIR`, `NIXPI_CHAT_IDLE_TIMEOUT`, and `NIXPI_CHAT_MAX_SESSIONS`
+   - Starts the local HTTP server on `127.0.0.1`
+   - Serves the built frontend from `core/chat-server/frontend/dist`
 
-3. **Runtime bootstrap** (`core/daemon/multi-agent-runtime.ts`)
-   - Creates Matrix client per agent
-   - Initializes room state manager
-   - Starts scheduler for proactive jobs
+3. **Session manager initialization** (`core/chat-server/session.ts`)
+   - Creates per-session working directories under `~/.pi/chat-sessions/<sessionId>`
+   - Loads Pi resources from the packaged share dir
+   - Creates a `pi-coding-agent` session on first use
 
-4. **Message loop** (`core/daemon/runtime/matrix-js-sdk-bridge.ts`)
-   - Listens for Matrix events
-   - Routes to appropriate session
+4. **Web entry point** (`core/os/modules/service-surface.nix`)
+   - `nginx` proxies inbound HTTP/HTTPS traffic to the local chat server
+   - HTTP on port `80` redirects to HTTPS when the secure gateway is enabled
 
 ### Key Files
 
 | File | Role |
 |------|------|
-| `core/daemon/index.ts` | Bootstrap entry point |
-| `core/daemon/lifecycle.ts` | Startup retry/backoff |
-| `core/daemon/agent-registry.ts` | Agent overlay loading |
-| `core/daemon/multi-agent-runtime.ts` | Runtime orchestration |
+| `core/chat-server/index.ts` | HTTP entry point for local chat |
+| `core/chat-server/session.ts` | Session lifecycle, eviction, event streaming |
+| `core/os/services/nixpi-chat.nix` | Systemd unit wrapper and env wiring |
+| `core/os/modules/service-surface.nix` | Reverse proxy and TLS setup |
 
 ## First-Boot/Setup Flow
 
-### Phase 1: Bash Wizard
+### Phase 1: Setup Wizard
 
-**Entry**: XFCE desktop autologin opens the NixPI terminal
+**Entry**: XFCE autologin launches the setup terminal
 
 ```
 LightDM autologin
@@ -106,83 +108,83 @@ setup-wizard.sh
     ↓
 ├─ Password change
 ├─ WiFi / internet setup
-├─ Clone ~/nixpi
-├─ Write /etc/nixos host flake
-├─ nixos-rebuild switch to full appliance
+├─ Clone canonical repo checkout
+├─ Write host config
+├─ nixos-rebuild switch
 ├─ NetBird enrollment
-├─ Matrix account bootstrap
-├─ AI provider defaults
-└─ Enable nixpi-daemon.service
+├─ Seed local Pi settings
+└─ Mark system ready
 ```
 
-### Phase 2: Pi Persona Step
+### Phase 2: Persona Completion
 
-**Entry**: Opening Pi after wizard completes
+**Entry**: First local Pi chat after the system-ready marker exists
 
 ```
 Pi session start
     ↓
-check persona-done marker
+check wizard-state markers
     ↓
-Pending "persona" step?
+persona-done present?
     ↓
-Yes: Inject persona guidance
-     No: Normal conversation
+No: inject persona-completion guidance
+Yes: continue with normal conversation
 ```
 
 ### State Files
 
 | File | Purpose |
 |------|---------|
-| `~/.nixpi/.setup-complete` | Wizard completion sentinel |
-| `~/.nixpi/wizard-state/persona-done` | Persona step marker |
+| `~/.nixpi/wizard-state/system-ready` | First-boot completion sentinel used by services and tests |
+| `~/.nixpi/wizard-state/persona-done` | Persona onboarding completion marker |
+| `~/.pi/settings.json` | Local Pi runtime defaults and user-selected settings |
 
 ### Key Files
 
 | File | Role |
 |------|------|
-| `core/pi/extensions/persona/` | Persona setup prompt injection |
-| `core/scripts/` | First-boot scripts |
+| `core/os/modules/firstboot/` | First-boot users, repo, and marker flow |
+| `core/pi/extensions/persona/` | Persona-completion prompt injection |
+| `core/scripts/` | Wizard and install helpers |
 
-## Matrix Room Message Flow
+## Local Chat Request Flow
 
 ### Incoming Message Flow
 
 ```
-Matrix homeserver
+Browser UI
     ↓
-matrix-js-sdk-bridge.ts
+POST /chat
     ↓
-router.ts (routing decision)
+createChatServer()
     ↓
-├─ Duplicate? → Drop
-├─ Cooldown active? → Queue/delay
-└─ Route to session
+ChatSessionManager.sendMessage()
     ↓
-pi-room-session.ts
+get or create ~/.pi/chat-sessions/<sessionId>
     ↓
-Pi session processes message
+pi-coding-agent session prompt()
     ↓
-Response sent via bridge
+stream NDJSON events back to browser
 ```
 
-### Routing Rules
+### Session Rules
 
 | Condition | Action |
 |-----------|--------|
-| Host mode only | Route to default agent |
-| Explicit mention | Route to mentioned agent |
-| First eligible | Route to first non-cooldown agent |
-| Reply budget exhausted | Queue or drop |
+| Existing session ID | Reuse session and reset idle timer |
+| New session ID | Create a new session directory and agent session |
+| Session limit reached | Evict the least recently used session |
+| Idle timeout reached | Dispose the session automatically |
+| `DELETE /chat/:sessionId` | Tear down the session immediately |
 
 ### Key Files
 
 | File | Role |
 |------|------|
-| `core/daemon/router.ts` | Message routing logic |
-| `core/daemon/room-state.ts` | Per-room state tracking |
-| `core/daemon/runtime/pi-room-session.ts` | Session lifecycle |
-| `core/daemon/runtime/matrix-js-sdk-bridge.ts` | Matrix transport |
+| `core/chat-server/index.ts` | `/chat` and static asset routing |
+| `core/chat-server/session.ts` | Session cache, eviction, event translation |
+| `tests/chat-server/server.test.ts` | HTTP contract coverage |
+| `tests/chat-server/session.test.ts` | Session manager behavior |
 
 ## Memory/Object Flow
 
@@ -239,7 +241,7 @@ Mark sources superseded
 ```
 Pi proposes change
     ↓
-Edit files in ~/.nixpi/pi-nixpi/
+Edit files in the canonical working checkout
     ↓
 Run validation (npm run test, etc.)
     ↓
@@ -270,48 +272,45 @@ Apply on next window or manual trigger
 | `core/os/modules/update.nix` | Update service |
 | `core/os/services/nixpi-update.nix` | Update timer/service |
 
-## Proactive Job Flow
+## Session Reset / Cleanup Flow
 
-### Heartbeat Job Flow
-
-```
-Scheduler tick
-    ↓
-Job due (interval_minutes elapsed)?
-    ↓
-Rate limit check
-    ↓
-Circuit breaker closed?
-    ↓
-Dispatch proactive turn
-    ↓
-Record execution time
-    ↓
-Quiet if noop? + matches no_op_token? → Suppress reply
-```
-
-### Cron Job Flow
+### Browser-Initiated Reset
 
 ```
-Scheduler tick (every minute)
+User resets chat session
     ↓
-Parse cron expression
+DELETE /chat/:sessionId
     ↓
-Current time matches?
+ChatSessionManager.delete()
     ↓
-Dispatch proactive turn
+Dispose Pi session
+    ↓
+Remove session from in-memory cache
+```
+
+### Idle Eviction
+
+```
+No activity for idle timeout window
+    ↓
+Session timer fires
+    ↓
+ChatSessionManager.evict()
+    ↓
+Dispose Pi session
+    ↓
+Free one local runtime slot
 ```
 
 ### Key Files
 
 | File | Role |
 |------|------|
-| `core/daemon/scheduler.ts` | Job scheduling |
-| `core/daemon/proactive.ts` | Dispatch logic |
-| `core/daemon/rate-limiter.ts` | Rate limiting |
+| `core/chat-server/index.ts` | Reset endpoint |
+| `core/chat-server/session.ts` | Eviction and disposal logic |
+| `tests/chat-server/session.test.ts` | Session lifecycle coverage |
 
 ## Related
 
-- [Daemon Architecture](../reference/daemon-architecture) - Detailed daemon documentation
 - [Memory Model](../reference/memory-model) - Memory system details
 - [Codebase: Daemon](../codebase/daemon) - Daemon file inventory

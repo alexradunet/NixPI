@@ -15,14 +15,13 @@ Keep the Nix surface split by concern:
 ## Reading order
 
 1. `options.nix`
-2. `app.nix`, `broker.nix`, `matrix.nix`, `network.nix`
-3. `firstboot.nix` and `shell.nix`
+2. `app.nix`, `broker.nix`, `network.nix`, `service-surface.nix`
+3. `firstboot/` and `shell.nix`
 4. installer code under `core/os/pkgs/installer/`
 
 ## Cleanup rule
 
 Avoid encoding the same install or service policy in multiple places. If shell scripts, Python installer helpers, and Nix modules all need the same rule, pick one canonical owner and make the rest thin wrappers.
-| `app/default.nix` | App package | NixPI app derivation | Main package |
 
 ### Package Flow
 
@@ -74,17 +73,20 @@ NixOS modules use appPackage
 nixpi
 ├── primaryUser
 ├── stateDir
+├── security
+│   ├── trustedInterface
+│   └── ...
 ├── bootstrap
 │   ├── keepSshAfterSetup
 │   └── ...
-├── services
-│   ├── daemon.enable
-│   ├── home.enable
-│   └── chat.enable
-├── matrix
-│   ├── enable
-│   ├── port
+├── agent
+│   ├── autonomy
+│   ├── broker.enable
 │   └── ...
+├── services
+│   ├── bindAddress
+│   ├── home.enable
+│   └── secureWeb.enable
 └── network
     ├── netbird.enable
     └── ...
@@ -98,26 +100,23 @@ nixpi
 
 ### `core/os/modules/app.nix`
 
-**Responsibility**: Defines the NixPI app package and main service.
+**Responsibility**: Installs the packaged app and wires up the local chat runtime.
 
 **Key Definitions**:
-- `nixpi-app` package (uses `appPackage` from specialArgs)
-- `nixpi-daemon.service` systemd unit
-- Runtime directory setup
-- Environment configuration
+- `appPackage` and `piAgent` in `environment.systemPackages`
+- `/usr/local/share/nixpi` symlink and runtime tmpfiles
+- `nixpi-chat.service` modular service import
+- `nixpi-app-setup.service` to seed `~/.pi/settings.json`
 
 **Service Configuration**:
 ```nix
-systemd.services.nixpi-daemon = {
-  description = "NixPI Matrix daemon";
-  wantedBy = [ "multi-user.target" ];
-  after = [ "network.target" "continuwuity.service" ];
-  serviceConfig = {
-    User = config.nixpi.primaryUser;
-    ExecStart = "${appPackage}/bin/nixpi-daemon";
-    # ...
+system.services.nixpi-chat = {
+  imports = [ (lib.modules.importApply ../services/nixpi-chat.nix { inherit pkgs; }) ];
+  nixpi-chat = {
+    package = appPackage;
+    inherit primaryUser agentStateDir;
   };
-};
+}
 ```
 
 ---
@@ -142,17 +141,15 @@ systemd.services.nixpi-daemon = {
 
 ---
 
-### `core/os/modules/matrix.nix`
+### `core/os/modules/service-surface.nix`
 
-**Responsibility**: Matrix Continuwuity homeserver configuration.
+**Responsibility**: Exposes the local chat runtime through HTTP and HTTPS.
 
 **Key Features**:
-- Non-federating configuration (private server)
-- Registration token required
-- SQLite database (default)
-- Runs on port 6167
-
-**Registration Token**: Stored in `/var/lib/continuwuity/registration_token`
+- Asserts that hosted access keeps the secure web entrypoint enabled
+- Generates a self-signed TLS certificate for the canonical secure endpoint
+- Proxies inbound traffic to the local backend on `127.0.0.1:${toString config.nixpi.services.home.port}`
+- Keeps the backend itself off the external interface
 
 ---
 
@@ -174,12 +171,38 @@ networking.firewall = {
 
 ---
 
+### `core/os/modules/runtime.nix`
+
+**Responsibility**: Composes the runtime-facing modules.
+
+**Current Imports**:
+- `app.nix` for packaged runtime setup
+- `broker.nix` for privileged operations
+
+This file is intentionally small. It defines the runtime boundary, not the behavior itself.
+
+---
+
+### `core/os/modules/default.nix`
+
+**Responsibility**: Aggregates the full appliance module stack.
+
+**Current Imports**:
+- Core options and packaging
+- Network and update policy
+- Runtime and service surface
+- Tooling, shell, desktop, and first-boot modules
+
+Read this file when you need the shortest path to "what ships on a normal NixPI host?"
+
+---
+
 ## Related Tests
 
 | Test Area | Location | Coverage |
 |-----------|----------|----------|
-| NixOS smoke | `tests/nixos/` | Basic service startup |
-| NixOS full | `tests/nixos/` | Comprehensive VM tests |
+| NixOS smoke | `tests/nixos/` | Chat service, broker, and first-boot sanity checks |
+| NixOS full | `tests/nixos/` | Broader VM coverage for network, desktop, update, security, and install flows |
 
 See [Tests](./tests) for detailed test documentation.
 

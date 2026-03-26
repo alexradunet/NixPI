@@ -7,7 +7,7 @@
 NixPI combines several technologies to create a self-hosted AI companion OS. The architecture is shaped by these design goals:
 
 1. **Deterministic systems**: NixOS provides reproducible system state
-2. **Always-available AI**: Matrix daemon keeps Pi active outside local sessions
+2. **Local-first AI runtime**: the built-in web chat keeps Pi available without external messaging infrastructure
 3. **Inspectable memory**: Markdown files for human-readable, editable storage
 4. **Minimal base**: Small footprint that users evolve through Pi
 5. **Human-in-the-loop**: Local proposal workflow for system changes
@@ -19,7 +19,7 @@ NixPI combines several technologies to create a self-hosted AI companion OS. The
 | Subsystem | Purpose | Location |
 |-----------|---------|----------|
 | **NixOS Modules** | System provisioning and service definitions | `core/os/` |
-| **Matrix Daemon** | Always-on room runtime | `core/daemon/` |
+| **Local Chat Runtime** | Session-backed web chat server and frontend | `core/chat-server/` |
 | **Pi Extensions** | Tool surface for Pi | `core/pi/extensions/` |
 | **Core Library** | Shared runtime primitives | `core/lib/` |
 | **Persona & Skills** | Behavior configuration | `core/pi/persona/`, `core/pi/skills/` |
@@ -28,9 +28,9 @@ NixPI combines several technologies to create a self-hosted AI companion OS. The
 
 | Service | Port | Purpose |
 |---------|------|---------|
-| Home | `:8080` | Service directory and status page |
-| Element Web | `:8081` | Element Web client |
-| Matrix | `:6167` | Continuwuity homeserver |
+| Local chat backend | `127.0.0.1:8080` by default | Session-backed Pi chat server |
+| HTTP entrypoint | `:80` | Reverse proxy into the local chat runtime |
+| HTTPS entrypoint | `:443` | Canonical secure web entrypoint |
 
 ## How The Layers Connect
 
@@ -39,7 +39,7 @@ NixPI combines several technologies to create a self-hosted AI companion OS. The
 ```
 ┌─────────────────────────────────────────┐
 │           User Interface                │
-│   (Matrix, Element Web, CLI tools)      │
+│   (Local web chat, CLI tools)           │
 └─────────────────┬───────────────────────┘
                   │
 ┌─────────────────▼───────────────────────┐
@@ -48,9 +48,9 @@ NixPI combines several technologies to create a self-hosted AI companion OS. The
 └─────────────────┬───────────────────────┘
                   │
 ┌─────────────────▼───────────────────────┐
-│           Matrix Daemon                 │
-│  (multi-agent runtime, routing,         │
-│   scheduling, room state)               │
+│         Local Chat Runtime              │
+│  (HTTP server, session manager,         │
+│   streaming events)                     │
 └─────────────────┬───────────────────────┘
                   │
 ┌─────────────────▼───────────────────────┐
@@ -62,8 +62,8 @@ NixPI combines several technologies to create a self-hosted AI companion OS. The
 ### Control Flow Summary
 
 1. **NixOS provisions runtime**: System boots with NixPI modules applied
-2. **Packaged app launches daemon**: `nixpi-daemon.service` starts on boot
-3. **Daemon connects Matrix**: Authenticates to local homeserver
+2. **Packaged app launches local chat**: `nixpi-chat.service` starts on boot
+3. **Nginx fronts the app**: local HTTP/HTTPS entrypoints proxy into the backend
 4. **Extensions expose tools**: Pi uses extensions for OS operations
 5. **Scripts drive setup**: First-boot wizard configures the system
 
@@ -75,8 +75,8 @@ NixPI combines several technologies to create a self-hosted AI companion OS. The
 |---------|----------|---------|
 | Durable Memory | `~/nixpi/Objects/*.md` | Long-term facts, preferences, decisions |
 | Episodic Memory | `~/nixpi/Episodes/YYYY-MM-DD/*.md` | Raw observations, append-only |
-| Setup Markers | `~/.nixpi/.setup-complete`, `~/.nixpi/wizard-state/persona-done` | Machine setup and persona completion |
-| Agent State | `~/.pi/` | Runtime credentials and context |
+| Setup Markers | `~/.nixpi/wizard-state/system-ready`, `~/.nixpi/wizard-state/persona-done` | Machine setup and persona completion |
+| Pi Runtime State | `~/.pi/` | Settings, chat sessions, and agent runtime state |
 | Guardrails | `~/nixpi/guardrails.yaml` | Tool execution safety rules |
 
 ### Control Surfaces
@@ -85,7 +85,7 @@ NixPI combines several technologies to create a self-hosted AI companion OS. The
 |---------|-----------|---------|
 | `just` commands | Local shell | Development and VM operations |
 | `nixos-rebuild` | System | Apply system configuration |
-| Matrix rooms | Messaging | Interactive Pi sessions |
+| Local web chat | Browser | Interactive Pi sessions |
 | `nixpi-broker` | Privileged service | Elevated OS operations |
 
 ## Security Boundaries
@@ -109,7 +109,7 @@ The `wt0` interface (NetBird WireGuard tunnel) is the only trusted interface in 
 Each subsystem has its own detailed documentation:
 
 - [Core Library](../codebase/core-lib) - Shared primitives and helpers
-- [Daemon](../codebase/daemon) - Room runtime and multi-agent support
+- [Daemon](../codebase/daemon) - Local chat runtime and session lifecycle
 - [Pi Extensions](../codebase/pi-extensions) - Tool and command surface
 - [OS Modules](../codebase/os) - NixOS integration
 

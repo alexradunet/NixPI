@@ -1,6 +1,6 @@
 # Core Library
 
-> Shared TypeScript helpers used across daemon and extensions
+> Shared TypeScript helpers used across the local runtime and Pi extensions
 
 ## What lives here
 
@@ -8,10 +8,11 @@ Keep additions here narrow and shared. If logic is only used by one feature, pre
 
 - `filesystem.ts` owns path resolution and NixPI directory conventions.
 - `exec.ts` owns guarded subprocess execution.
-- `frontmatter.ts` owns markdown frontmatter parsing/serialization.
-- `matrix.ts` and `matrix-format.ts` own Matrix-specific helpers.
-- `extension-tools.ts` owns small helpers for consistent tool registration/result shapes.
-- `shared.ts` owns cross-cutting utilities that are genuinely reused.
+- `frontmatter.ts` owns markdown frontmatter parsing and serialization.
+- `interactions.ts` owns pending user-input requests and reply resolution.
+- `logging.ts` owns logger construction.
+- `repo-metadata.ts` owns canonical repo metadata read/write helpers.
+- `retry.ts`, `utils.ts`, and `validation.ts` own small reusable primitives.
 
 ## Cleanup rule
 
@@ -23,36 +24,18 @@ Before adding a new lib file or export, check:
 
 If the answer is no, keep it local to the caller.
 
-**Responsibility**: Matrix client utilities and helpers.
-
-**Key Exports**:
-- `registerUser(homeserver, options)` - Register new Matrix user
-- `loginUser(homeserver, credentials)` - Authenticate existing user
-- `resolveRoomAlias(homeserver, alias)` - Get room ID from alias
-- `ensureRoomJoined(client, roomId)` - Join room if not member
-
-**Inbound Dependencies**:
-- Daemon for Matrix authentication
-- Setup extension for account creation
-- Tests for Matrix integration
-
-**Outbound Dependencies**:
-- `matrix-js-sdk`
-
 ---
 
-### `core/lib/matrix-format.ts`
+### `core/lib/filesystem.ts`
 
-**Responsibility**: Format messages for Matrix display.
+**Responsibility**: Canonical path resolution and filesystem safety checks.
 
 **Key Exports**:
-- `markdownToHtml(markdown)` - Convert markdown to Matrix HTML
-- `formatCodeBlock(code, language)` - Format code for display
-- `stripHtml(html)` - Remove HTML tags
-
-**Inbound Dependencies**:
-- Daemon for message formatting
-- Extensions for tool output display
+- `safePathWithin()` / `safePath()` - traversal-safe path resolution
+- `getNixPiDir()` / `getNixPiStateDir()` / `getPiDir()` - runtime directory conventions
+- `getSystemReadyPath()` / `getPersonaDonePath()` - wizard marker paths
+- `getCanonicalRepoDir()` / `assertCanonicalRepo()` - canonical repo policy helpers
+- `resolvePackageDir()` / `readPackageVersion()` - package metadata helpers
 
 ---
 
@@ -61,43 +44,41 @@ If the answer is no, keep it local to the caller.
 **Responsibility**: Parse and generate YAML frontmatter.
 
 **Key Exports**:
-- `parseFrontmatter(content)` - Extract frontmatter from markdown
-- `stringifyFrontmatter(data, content)` - Add frontmatter to content
-- `FrontmatterData` - Type for frontmatter objects
+- `parseFrontmatter(content)` - extract frontmatter from markdown
+- `stringifyFrontmatter(data, content)` - serialize metadata back into markdown
+- `FrontmatterData` - type used by markdown-backed objects
 
 **Used By**:
 - Episode extension for episode files
 - Object extension for durable objects
-- AGENTS.md parsing for agent overlays
+- `AGENTS.md` parsing for local agent configuration
 
 **Outbound Dependencies**:
 - `js-yaml` for YAML parsing
 
 ---
 
-### `core/lib/extension-tools.ts`
+### `core/lib/interactions.ts`
 
-**Responsibility**: Common utilities for Pi extensions.
+**Responsibility**: Tracks prompts that require explicit user interaction.
 
 **Key Exports**:
-- Tool definition helpers
-- Context access utilities
-- Response formatting helpers
-
-**Inbound Dependencies**:
-- All Pi extensions
+- `requestInteraction()` / `resolveInteractionReply()` - create and complete pending prompts
+- `requestTextInput()` / `requestSelection()` / `requireConfirmation()` - higher-level helpers
+- `getPendingInteractions()` - inspect unresolved prompts
 
 ---
 
-### `core/lib/shared.ts`
+### `core/lib/repo-metadata.ts`
 
-**Responsibility**: Common types and constants used across the codebase.
+**Responsibility**: Reads and validates canonical repo metadata for supported rebuild flows.
 
 **Key Exports**:
-- `NIXPI_DIR` - Base directory constant (`~/nixpi`)
-- `AGENT_STATE_DIR` - Service state directory (`/var/lib/nixpi`)
-- Common type definitions
-- Utility functions
+- `getCanonicalRepoMetadataPath()` - resolve the metadata file location
+- `readCanonicalRepoMetadata()` - load repo metadata from disk
+- `writeCanonicalRepoMetadata()` - persist canonical repo metadata
+
+This file works with `filesystem.ts` to keep rebuild and update flows pinned to the supported checkout.
 
 ---
 
@@ -105,17 +86,15 @@ If the answer is no, keep it local to the caller.
 
 | Test File | Coverage |
 |-----------|----------|
-| `tests/lib/filesystem.test.ts` | Filesystem operations |
+| `tests/lib/filesystem.test.ts` | Filesystem operations and path safety |
 | `tests/lib/exec.test.ts` | Command execution with guardrails |
-| `tests/lib/matrix.test.ts` | Matrix client utilities |
-| `tests/lib/matrix-format.test.ts` | Message formatting |
-| `tests/lib/setup.test.ts` | Setup state management |
-| `tests/lib/shared.test.ts` | Shared utilities |
+| `tests/lib/retry.test.ts` | Retry helpers |
+| `tests/lib/shared.test.ts` | Frontmatter, interactions, logging, utils, and validation helpers |
 
 ---
 
 ## Related
 
 - [Pi Extensions](./pi-extensions) - Primary consumers of lib utilities
-- [Daemon](./daemon) - Uses Matrix and filesystem utilities
+- [Daemon](./daemon) - Uses filesystem and runtime helpers
 - [Tests](./tests) - Test coverage details

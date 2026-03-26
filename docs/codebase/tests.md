@@ -8,7 +8,7 @@ Use the test tree by risk level:
 
 - `tests/lib/` for small reusable helpers
 - `tests/extensions/` for tool behavior and extension wiring
-- `tests/daemon/` for routing, runtime, and scheduling policy
+- `tests/chat-server/` for the local chat HTTP surface and session lifecycle
 - `tests/integration/` for cross-module behavior
 - `tests/e2e/` for thin end-to-end registration checks
 - `tests/nixos/` for VM-backed system behavior
@@ -17,11 +17,23 @@ Use the test tree by risk level:
 
 Prefer tests that protect behavior over tests that mirror structure. When cleanup collapses files or helpers, update tests to keep asserting the user-visible behavior instead of preserving old module boundaries.
 
+### Integration Tests (`tests/integration/`)
+
 | File | Coverage Area |
 |------|---------------|
+| `frontmatter-roundtrip.test.ts` | Markdown metadata roundtrips |
+| `guardrails.test.ts` | Guardrail policy behavior |
+| `nixpi-seeding.test.ts` | Seeded NixPI content and defaults |
 | `object-lifecycle.test.ts` | Object create/update/read |
 | `persona-guardrails.test.ts` | Persona integration |
 | `pi-ui-parity-guard.test.ts` | UI consistency |
+
+### Chat Runtime Tests (`tests/chat-server/`)
+
+| File | Coverage Area |
+|------|---------------|
+| `server.test.ts` | HTTP contract, NDJSON streaming, and reset endpoint |
+| `session.test.ts` | Session creation, reuse, and eviction |
 
 ### E2E Tests (`tests/e2e/`)
 
@@ -33,22 +45,23 @@ Prefer tests that protect behavior over tests that mirror structure. When cleanu
 
 | Test | Purpose | Check Name |
 |------|---------|------------|
-| `smoke-matrix` | Matrix starts | `checks.x86_64-linux.nixos-smoke` |
-| `smoke-firstboot` | Setup wizard path | `checks.x86_64-linux.nixos-smoke` |
-| `smoke-security` | Basic security | `checks.x86_64-linux.nixos-smoke` |
+| `smoke-chat` | Built-in local chat service | `checks.x86_64-linux.nixos-smoke` |
 | `smoke-broker` | Broker service | `checks.x86_64-linux.nixos-smoke` |
-| `nixpi-matrix` | Matrix integration | `checks.x86_64-linux.nixos-full` |
+| `smoke-firstboot` | Setup wizard path | `checks.x86_64-linux.nixos-smoke` |
 | `nixpi-firstboot` | Full firstboot | `checks.x86_64-linux.nixos-full` |
 | `nixpi-network` | Network config | `checks.x86_64-linux.nixos-full` |
-| `nixpi-daemon` | Daemon service | `checks.x86_64-linux.nixos-full` |
 | `nixpi-e2e` | End-to-end | `checks.x86_64-linux.nixos-full` |
-| `nixpi-home` | Home service | `checks.x86_64-linux.nixos-full` |
+| `nixpi-desktop` | XFCE desktop and local app boot | `checks.x86_64-linux.nixos-full` |
+| `nixpi-rdp` | Remote desktop path | `checks.x86_64-linux.nixos-full` |
 | `nixpi-security` | Security model | `checks.x86_64-linux.nixos-full` |
 | `nixpi-modular-services` | Services | `checks.x86_64-linux.nixos-full` |
-| `nixpi-matrix-bridge` | Matrix bridge | `checks.x86_64-linux.nixos-full` |
 | `nixpi-bootstrap-mode` | Bootstrap | `checks.x86_64-linux.nixos-full` |
 | `nixpi-post-setup-lockdown` | Post-setup | `checks.x86_64-linux.nixos-full` |
 | `nixpi-broker` | Broker | `checks.x86_64-linux.nixos-full` |
+| `nixpi-install-wizard` | Install wizard flow | `checks.x86_64-linux.nixos-destructive` |
+| `nixpi-installer-smoke` | Installer smoke lane | `checks.x86_64-linux.nixos-destructive` |
+| `nixpi-update` | Update flow | `checks.x86_64-linux.nixos-full` |
+| `nixpi-options-validation` | Option assertions | `checks.x86_64-linux.nixos-full` |
 
 ### Test Helpers
 
@@ -64,7 +77,6 @@ From `vitest.config.ts`:
 
 | Area | Lines | Functions | Branches | Statements |
 |------|-------|-----------|----------|------------|
-| `core/daemon/` | 85% | 80% | 75% | 85% |
 | `core/lib/` | 72% | 77% | 57% | 69% |
 | `core/pi/extensions/` | 60% | 60% | 50% | 60% |
 
@@ -83,7 +95,7 @@ Runs the Vitest suites, coverage, and the NixOS smoke lane.
 
 ### By Suite
 ```bash
-npm run test:unit          # lib, extensions, daemon
+npm run test:unit          # lib, extensions, chat-server
 npm run test:integration   # integration/
 npm run test:e2e          # e2e/
 ```

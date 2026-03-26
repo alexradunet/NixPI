@@ -20,8 +20,8 @@ This layer defines NixPI's current competency inventory.
 
 ### Communication Channels
 
-- Matrix via nixpi-daemon — always-on systemd user service that listens for Matrix messages from a self-hosted Continuwuity homeserver and routes them to per-room Pi sessions.
-- Bridges (WhatsApp, Telegram, Signal) connect external messengers to Matrix rooms.
+- Local web chat on the machine itself is the primary interactive surface.
+- Terminal sessions remain available for direct local interaction.
 
 ### Service Management
 
@@ -42,7 +42,7 @@ This layer defines NixPI's current competency inventory.
 
 ## Known Limitations
 
-- Matrix (via Continuwuity homeserver + nixpi-daemon) is the current messaging channel.
+- NixPI is currently optimized for local terminal and local web-chat interaction.
 
 ## Tool Preferences
 

@@ -50,7 +50,7 @@ Do not let root files become secondary architecture documents. If a detail is on
 
 **Outbound Dependencies**:
 - Peer dependencies: `@mariozechner/pi-ai`, `@mariozechner/pi-coding-agent`
-- Runtime: `matrix-js-sdk`, `@sinclair/typebox`, `js-yaml`
+- Runtime: `@mariozechner/pi-web-ui`, `@sinclair/typebox`, `js-yaml`
 
 ---
 
@@ -108,7 +108,6 @@ Do not let root files become secondary architecture documents. If a detail is on
 
 | Area | Lines | Functions | Branches | Statements |
 |------|-------|-----------|----------|------------|
-| `core/daemon/` | 85% | 80% | 75% | 85% |
 | `core/lib/` | 72% | 77% | 57% | 69% |
 | `core/pi/extensions/` | 60% | 60% | 50% | 60% |
 
