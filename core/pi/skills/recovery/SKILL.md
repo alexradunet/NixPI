@@ -7,20 +7,20 @@ description: Troubleshooting and recovery procedures for common NixPI system iss
 
 Use these procedures when diagnosing and recovering from common system issues. Always start with `system_health` for an overview before diving into specific playbooks.
 
-## Matrix Homeserver Issues
+## Local Chat Runtime Issues
 
-**Symptoms**: Messages not delivered, Pi not responding in Matrix rooms.
+**Symptoms**: The local chat UI is unavailable, or Pi is not responding in the on-box chat runtime.
 
 1. Check system health: `system_health`
-2. Check Matrix service: `systemctl status continuwuity`
-3. Check logs: `journalctl -u continuwuity -n 100`
+2. Check the local chat service: `systemctl status nixpi-chat.service`
+3. Check logs: `journalctl -u nixpi-chat.service -n 100`
 4. Common causes:
-   - Server not running: `sudo systemctl restart continuwuity`
-   - Database corruption: check `/var/lib/continuwuity/` for issues
-   - Port conflict: verify nothing else is on port 6167
-5. If Pi is not responding to messages:
-   - Check Pi agent is running and `nixpi-daemon.service` is active
-   - Verify Pi's Matrix credentials at `~/.pi/matrix-credentials.json`
+   - Service not running: `sudo systemctl restart nixpi-chat.service`
+   - Runtime state mismatch: inspect the chat runtime working directory under `~/.pi/`
+   - Port conflict: verify nothing else is bound to the local chat port
+5. If Pi is not responding in the local runtime:
+   - Verify `~/.pi/` exists and is writable for the primary operator account
+   - Confirm the chat surface loads locally at `http://localhost:8080/`
 
 ## OS Update Failure
 

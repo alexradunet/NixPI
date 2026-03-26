@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# NetBird, Matrix, and service-surface phase helpers for setup-wizard.sh.
+# NetBird and built-in service phase helpers for setup-wizard.sh.
 
 print_service_access_summary() {
 	local _installed_services="$1" mesh_ip="$2" mesh_fqdn="$3"

@@ -8,8 +8,7 @@ let
   mkNode =
     { prefillEnv ? ''
         PREFILL_USERNAME=testuser
-        PREFILL_MATRIX_BOT_USER_ID=@testpi:matrix.org
-        PREFILL_MATRIX_BOT_ACCESS_TOKEN=test_token_123
+        PREFILL_PRIMARY_PASSWORD=testpass123
         NIXPI_BOOTSTRAP_REPO=${bootstrapRepoUrl}
       ''
     , hostName ? "nixpi-firstboot-test"
@@ -166,7 +165,6 @@ in
 
     nixpi.succeed("test -d " + home + "/.pi")
     nixpi.succeed("test -f " + home + "/.pi/settings.json")
-    nixpi.succeed("test -f " + home + "/.pi/matrix-credentials.json")
     nixpi.succeed("test ! -L " + home + "/.pi")
     nixpi.succeed("test \"$(stat -c %U " + home + "/.pi)\" = pi")
     nixpi.succeed("test -d /srv/nixpi/.git")
@@ -187,11 +185,6 @@ in
     nixpi.fail("nixos-rebuild build --impure --flake /etc/nixos#nixpi > /tmp/non-main-rebuild.log 2>&1")
     nixpi.succeed("grep -q 'Supported rebuilds require /srv/nixpi to be on main' /tmp/non-main-rebuild.log")
     nixpi.succeed("su - pi -c 'cd /srv/nixpi && git switch main'")
-
-    creds = json.loads(nixpi.succeed("cat " + home + "/.pi/matrix-credentials.json"))
-    assert creds["homeserver"] == "https://matrix.org", f"Unexpected homeserver: {creds.get('homeserver')}"
-    assert creds["botUserId"] == "@testpi:matrix.org", f"Unexpected botUserId: {creds.get('botUserId')}"
-    assert creds["botAccessToken"] == "test_token_123", f"Unexpected botAccessToken"
 
     nixpi.succeed(
         "su - pi -c '. ~/.bashrc; test \"$PI_CODING_AGENT_DIR\" = /home/pi/.pi; "

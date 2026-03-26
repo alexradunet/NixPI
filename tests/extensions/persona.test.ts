@@ -115,17 +115,17 @@ describe("persona session_start", () => {
 			),
 		);
 		fs.writeFileSync(
-			path.join(objectsDir, "matrix-recovery.md"),
+			path.join(objectsDir, "chat-runtime-recovery.md"),
 			stringifyFrontmatter(
 				{
 					type: "procedure",
-					slug: "matrix-recovery",
-					title: "Matrix Recovery",
-					summary: "Restart continuwuity.service, then verify recovery.",
+					slug: "chat-runtime-recovery",
+					title: "Chat Runtime Recovery",
+					summary: "Restart nixpi-chat.service, then verify local chat recovery.",
 					status: "active",
 					salience: 0.8,
 				},
-				"# Matrix Recovery\n",
+				"# Chat Runtime Recovery\n",
 			),
 		);
 		fs.writeFileSync(
@@ -156,7 +156,7 @@ describe("persona session_start", () => {
 		expect(result.systemPrompt).toContain("[WORKSPACE MEMORY DIGEST]");
 		expect(result.systemPrompt).toContain("preference/ts-style");
 		const procedureIndex = result.systemPrompt.indexOf("procedure/project-recovery");
-		const globalProcedureIndex = result.systemPrompt.indexOf("procedure/matrix-recovery");
+		const globalProcedureIndex = result.systemPrompt.indexOf("procedure/chat-runtime-recovery");
 		expect(procedureIndex).toBeGreaterThan(-1);
 		expect(globalProcedureIndex).toBeGreaterThan(-1);
 		expect(procedureIndex).toBeLessThan(globalProcedureIndex);

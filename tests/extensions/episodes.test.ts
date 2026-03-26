@@ -100,14 +100,14 @@ describe("episodes", () => {
 			"call-1",
 			{
 				title: "Recovery Procedure",
-				body: "Restart continuwuity.service, then verify the bridge recovers.",
+				body: "Restart nixpi-chat.service, then verify the local chat runtime recovers.",
 				kind: "resolution",
 				importance: "high",
 				tags: ["recovery", "procedure"],
 				promote_to: {
 					type: "procedure",
-					slug: "matrix-recovery",
-					title: "Matrix Recovery Procedure",
+					slug: "chat-runtime-recovery",
+					title: "Chat Runtime Recovery Procedure",
 					scope: "project",
 				},
 			},
@@ -119,7 +119,7 @@ describe("episodes", () => {
 		expect(result.content[0].text).toContain("created episode/");
 		expect(result.content[0].text).toContain("promoted episode/");
 
-		const objectPath = path.join(temp.nixPiDir, "Objects", "matrix-recovery.md");
+		const objectPath = path.join(temp.nixPiDir, "Objects", "chat-runtime-recovery.md");
 		expect(fs.existsSync(objectPath)).toBe(true);
 		const objectRaw = fs.readFileSync(objectPath, "utf-8");
 		expect(objectRaw).toContain("scope: project");

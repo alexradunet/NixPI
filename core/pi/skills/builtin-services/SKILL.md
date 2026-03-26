@@ -9,28 +9,23 @@ NixPI ships these services as part of the base NixOS system. They are not option
 
 ## Always Available
 
-- `NixPI Home` behind the canonical HTTPS gateway at `/`
-- `Element Web` behind the canonical HTTPS gateway at `/element/`
-- `Matrix` behind the canonical HTTPS gateway at `/_matrix/*`
+- `NixPI Chat` behind the canonical web entry point at `/`
 
 ## Operational Notes
 
-- These services are managed as declarative user systemd units
+- This service is managed as a declarative systemd unit
 - Use `systemd_control` for status, restart, and stop/start operations
-- They should be treated as stable base OS capabilities, not as optional service packages
+- It should be treated as a stable base OS capability, not as an optional service package
 
 ## Expected Unit Names
 
-- `nixpi-home`
-- `nixpi-element-web`
+- `nixpi-chat`
 
 ## URLs
 
 Preferred access is over NetBird:
 
 - `https://<netbird-host>/`
-- `https://<netbird-host>/element/`
-- `https://<netbird-host>`
 
 Localhost is recovery-only on the machine:
 

@@ -302,7 +302,7 @@ const fakeCtx = { hasUI: false } as never;
 // requireConfirmation
 // ---------------------------------------------------------------------------
 describe("requireConfirmation", () => {
-	it("returns Matrix confirmation instructions when no UI and requireUi is true", async () => {
+	it("returns local chat confirmation instructions when no UI and requireUi is true", async () => {
 		const result = await requireConfirmation(fakeCtx, "delete file");
 		expect(result).toMatch(
 			/^Confirmation required for "delete file"\. Reply here with "confirm [a-z0-9]+" to approve or "deny [a-z0-9]+" to cancel\.$/,

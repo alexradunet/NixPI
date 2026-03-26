@@ -6,13 +6,14 @@ This directory contains NixOS integration tests for the NixPI platform. These te
 
 - `config`: fast non-VM closure build for the default installed system
 - `nixos-smoke`: PR-oriented VM subset
-  - `smoke-matrix`
+  - `smoke-chat`
   - `smoke-firstboot`
+  - `smoke-install-wizard`
   - `smoke-security`
   - `smoke-broker`
+  - `smoke-desktop`
 - `nixos-full`: comprehensive VM lane
-  - existing happy-path tests: `boot`, `nixpi-matrix`, `nixpi-firstboot`, `nixpi-network`, `nixpi-daemon`, `nixpi-e2e`, `nixpi-home`, `nixpi-security`, `nixpi-modular-services`, `nixpi-matrix-bridge`, `nixpi-matrix-reply`
-  - new policy tests: `nixpi-bootstrap-mode`, `nixpi-post-setup-lockdown`, `nixpi-broker`
+  - registered tests: `nixpi-firstboot`, `nixpi-chat`, `nixpi-network`, `nixpi-e2e`, `nixpi-desktop`, `nixpi-rdp`, `nixpi-security`, `nixpi-modular-services`, `nixpi-bootstrap-mode`, `nixpi-post-setup-lockdown`, `nixpi-broker`, `nixpi-installer-smoke`, `nixpi-install-wizard`, `nixpi-update`, `nixpi-options-validation`
 - `nixos-destructive`: slower install/lockdown/broker cases intended for manual or scheduled runs
   - `nixpi-installer-smoke`
 
@@ -37,7 +38,7 @@ nix build .#checks.x86_64-linux.nixpi-installer-smoke --no-link -L
 
 ### Run a specific test
 ```bash
-nix build .#checks.x86_64-linux.nixpi-matrix --no-link -L
+nix build .#checks.x86_64-linux.nixpi-chat --no-link -L
 ```
 
 Equivalent `just` recipes:
@@ -51,7 +52,7 @@ just check-installer-smoke
 
 ### Interactive test driver
 ```bash
-$(nix-build -A checks.x86_64-linux.nixpi-matrix.driverInteractive)/bin/nixos-test-driver
+$(nix-build -A checks.x86_64-linux.nixpi-chat.driverInteractive)/bin/nixos-test-driver
 >>> nixpi.start()
 >>> nixpi.shell_interact()
 ```
@@ -62,19 +63,21 @@ $(nix-build -A checks.x86_64-linux.nixpi-matrix.driverInteractive)/bin/nixos-tes
 tests/nixos/
 ├── lib.nix              # Shared test helpers and module lists
 ├── default.nix          # Test suite entry point
-├── nixpi-bootstrap-mode.nix   # no-prefill bootstrap-state contract
-├── nixpi-broker.nix           # broker autonomy and privilege boundaries
+├── nixpi-bootstrap-mode.nix      # no-prefill bootstrap-state contract
+├── nixpi-broker.nix              # broker autonomy and privilege boundaries
+├── nixpi-chat.nix                # built-in local chat surface test
+├── nixpi-desktop.nix             # desktop profile test
+├── nixpi-e2e.nix                 # end-to-end integration test
+├── nixpi-firstboot.nix           # first-boot wizard test
+├── nixpi-install-wizard.nix      # installer wizard flow test
+├── nixpi-installer-smoke.nix     # live minimal manual installer smoke test
+├── nixpi-modular-services.nix    # system.services/configData regression
+├── nixpi-network.nix             # network/mesh test
+├── nixpi-options-validation.nix  # options validation test
 ├── nixpi-post-setup-lockdown.nix # steady-state post-setup security contract
-├── nixpi-matrix.nix           # Matrix homeserver test
-├── nixpi-firstboot.nix        # First-boot wizard test
-├── nixpi-network.nix          # Network/mesh test
-├── nixpi-daemon.nix           # Pi daemon test
-├── nixpi-e2e.nix              # End-to-end integration test
-├── nixpi-home.nix             # NixPI Home and built-in system services test
-├── nixpi-installer-smoke.nix  # live minimal manual installer smoke test
-├── nixpi-modular-services.nix # system.services/configData regression
-├── nixpi-matrix-bridge.nix    # multi-node Matrix daemon transport test
-├── nixpi-matrix-reply.nix     # booted daemon can receive and answer Matrix messages
+├── nixpi-rdp.nix                 # remote desktop profile test
+├── nixpi-security.nix            # security boundary test
+├── nixpi-update.nix              # update flow test
 └── README.md            # This file
 ```
 
@@ -138,14 +141,14 @@ When a test fails, you can:
 
 1. **Check the test log**: The `-L` flag shows full test output
    ```bash
-   nix build .#checks.x86_64-linux.nixpi-matrix -L
+   nix build .#checks.x86_64-linux.nixpi-chat -L
    ```
 
 2. **Run interactively**: Use the interactive driver to debug
    ```bash
-   $(nix-build -A checks.x86_64-linux.nixpi-matrix.driverInteractive)/bin/nixos-test-driver
+   $(nix-build -A checks.x86_64-linux.nixpi-chat.driverInteractive)/bin/nixos-test-driver
    >>> server.start()
-   >>> server.execute("systemctl status nixpi-matrix")
+   >>> server.execute("systemctl status nixpi-chat")
    >>> server.shell_interact()  # Get a shell
    ```
 

@@ -35,13 +35,13 @@
   mkPrefillActivation = {
     username,
     homeDir ? "/home/${username}",
-    matrixUsername ? "testuser",
-    matrixPassword ? "testpassword123",
+    prefillUsername ? "testuser",
+    prefillPassword ? "testpassword123",
   }: lib.stringAfter [ "users" ] ''
     mkdir -p ${homeDir}/.nixpi
     cat > ${homeDir}/.nixpi/prefill.env << 'EOF'
-PREFILL_USERNAME=${matrixUsername}
-PREFILL_MATRIX_PASSWORD=${matrixPassword}
+PREFILL_USERNAME=${prefillUsername}
+PREFILL_PRIMARY_PASSWORD=${prefillPassword}
 EOF
     chown -R ${username}:${username} ${homeDir}/.nixpi
     chmod 755 ${homeDir}/.nixpi

@@ -199,7 +199,7 @@ describe("handleSystemHealth", () => {
 		mockRun
 			.mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 1 }) // nixos-rebuild fails
 			.mockResolvedValueOnce({
-				stdout: JSON.stringify([{ Names: ["nixpi-element-web"], Status: "Up 1 hour" }]),
+				stdout: JSON.stringify([{ Names: ["nixpi-chat"], Status: "Up 1 hour" }]),
 				stderr: "",
 				exitCode: 0,
 			}) // podman ps
@@ -208,7 +208,7 @@ describe("handleSystemHealth", () => {
 			.mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 1 }) // free
 			.mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 1 }); // uptime
 		const result = await handleSystemHealth(undefined);
-		expect(result.content[0].text).toContain("nixpi-element-web");
+		expect(result.content[0].text).toContain("nixpi-chat");
 		expect(result.content[0].text).toContain("Up 1 hour");
 	});
 

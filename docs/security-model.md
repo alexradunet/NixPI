@@ -25,9 +25,7 @@ are accessible **only** to peers on the NetBird mesh:
 
 | Service | Port | Purpose |
 |---------|------|---------|
-| Home | 8080 | Minimal service directory with shareable access URLs |
-| Matrix | 6167 | Homeserver for messaging |
-| element-web | 8081 | Web Matrix client |
+| Chat | 8080 | Local web chat surface for Pi |
 
 ## What Happens If NetBird Is Absent
 
@@ -36,8 +34,8 @@ If NetBird is not running or not configured:
 1. The `wt0` interface does not exist
 2. The firewall rule `trustedInterfaces = ["wt0"]` provides **no protection**
 3. All NixPI services are exposed to the **local network**
-4. Any device on the same network can access the Matrix homeserver, interact
-   with Pi in Matrix rooms, and potentially trigger OS tools
+4. Any device on the same network can access the local web chat surface,
+   interact with Pi through the browser runtime, and potentially trigger OS tools
    (`nixos_update`, `systemd_control`) via prompt injection
 
 **This is a complete loss of the security perimeter.**

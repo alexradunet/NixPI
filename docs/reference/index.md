@@ -16,11 +16,11 @@ This section contains detailed reference documentation for NixPI:
 | Topic | Description |
 |-------|-------------|
 | [Service Architecture](./service-architecture) | Built-in web services |
-| [Daemon Architecture](./daemon-architecture) | Matrix room runtime |
+| [Daemon Architecture](./daemon-architecture) | Local chat/runtime session engine |
 | [Memory Model](./memory-model) | Storage and promotion rules |
 | [Security Model](./security-model) | Perimeter and threat model |
 | [Supply Chain](./supply-chain) | Dependency trust |
-| [Infrastructure](./infrastructure) | Matrix and NetBird |
+| [Infrastructure](./infrastructure) | Built-in services and NetBird |
 | [Fleet Workflow](./fleet-workflow) | Change proposal workflow |
 
 ## Related

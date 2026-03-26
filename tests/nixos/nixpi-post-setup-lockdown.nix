@@ -39,7 +39,7 @@
 EOF
         cat > ${homeDir}/.nixpi/prefill.env << 'EOF'
 PREFILL_USERNAME=steadyuser
-PREFILL_MATRIX_PASSWORD=steadypass123
+PREFILL_PRIMARY_PASSWORD=steadypass123
 EOF
         chown -R ${username}:${username} ${homeDir}/.nixpi
         chmod 755 ${homeDir}/.nixpi
@@ -75,8 +75,7 @@ EOF
     nixpi.succeed("su - pi -c 'setup-wizard.sh'")
     nixpi.wait_until_succeeds("test -f /home/pi/.nixpi/wizard-state/system-ready", timeout=180)
     nixpi.fail("test -f /home/pi/.nixpi/.setup-complete")
-    nixpi.wait_until_succeeds("curl -sf http://127.0.0.1:6167/_matrix/client/versions", timeout=60)
-    nixpi.wait_until_succeeds("curl -sf http://127.0.0.1:8080 | grep -q 'NixPI Home'", timeout=60)
+    nixpi.wait_until_succeeds("curl -sf http://127.0.0.1:8080/ | grep -qi '<html'", timeout=60)
 
     client.start()
     client.wait_for_unit("multi-user.target", timeout=120)
@@ -86,27 +85,15 @@ EOF
     client.succeed("! nc -z -w 2 nixpi-steady 22")
     nixpi.succeed("systemctl show -p ActiveState --value sshd.service | grep -Eq 'inactive|failed'")
 
-    # Registration is disabled once setup completes.
-    nixpi.succeed("""
-      test "$(
-        curl -s -o /tmp/post-setup-register.out -w '%{http_code}' -X POST http://127.0.0.1:6167/_matrix/client/v3/register \
-        -H 'Content-Type: application/json' \
-        -d '{"username":"blocked","password":"blockedpass123","inhibit_login":false}' \
-      )" != 200
-    """)
-
     # Local services remain available on loopback.
-    nixpi.succeed("curl -sf http://127.0.0.1:8080 | grep -q 'NixPI Home'")
-    nixpi.succeed("curl -sf http://127.0.0.1:8081/config.json | grep -q 'default_server_config'")
+    nixpi.succeed("curl -sf http://127.0.0.1:8080/ | grep -qi '<html'")
 
     # Bootstrap wrappers refuse to run after setup.
-    nixpi.fail("su - pi -c 'sudo -n /run/current-system/sw/bin/nixpi-bootstrap-read-matrix-secret >/tmp/secret.out 2>/tmp/secret.err'")
-    nixpi.succeed("grep -q 'bootstrap access is disabled after setup completes' /tmp/secret.err")
     nixpi.fail("su - pi -c 'sudo -n /run/current-system/sw/bin/nixpi-bootstrap-brokerctl status >/tmp/broker.out 2>/tmp/broker.err'")
     nixpi.succeed("grep -q 'bootstrap access is disabled after setup completes' /tmp/broker.err")
 
     # App ports are still blocked from an untrusted peer.
-    for port in [6167, 8080, 8081]:
+    for port in [8080]:
         client.succeed(f"! nc -z -w 2 nixpi-steady {port}")
 
     print("NixPI post-setup lockdown test passed!")
