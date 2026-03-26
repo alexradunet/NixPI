@@ -47,11 +47,11 @@ export class ChatSessionManager {
     this.opts = opts;
   }
 
-  async getOrCreate(sessionId: string): Promise<SessionEntry> {
+  async getOrCreate(sessionId: string): Promise<void> {
     const existing = this.sessions.get(sessionId);
     if (existing) {
       this.resetIdle(existing);
-      return existing;
+      return;
     }
 
     // Evict oldest session if at capacity.
@@ -94,7 +94,6 @@ export class ChatSessionManager {
     // Subscribe with a no-op to keep the session alive; real subscribers are per-turn.
     entry.unsubscribe = session.subscribe(() => {});
     this.sessions.set(sessionId, entry);
-    return entry;
   }
 
   /** Send a message and yield streaming events until the turn is done. */
@@ -102,7 +101,8 @@ export class ChatSessionManager {
     sessionId: string,
     text: string,
   ): AsyncGenerator<ChatEvent> {
-    const entry = await this.getOrCreate(sessionId);
+    await this.getOrCreate(sessionId);
+    const entry = this.sessions.get(sessionId)!;
     this.resetIdle(entry);
 
     const queue: ChatEvent[] = [];

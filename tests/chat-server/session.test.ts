@@ -55,8 +55,7 @@ describe("ChatSessionManager", () => {
       idleTimeoutMs: 5000,
       maxSessions: 4,
     });
-    const session = await manager.getOrCreate("test-id-1");
-    expect(session).toBeDefined();
+    await manager.getOrCreate("test-id-1");
     expect(createAgentSession).toHaveBeenCalledOnce();
   });
 
