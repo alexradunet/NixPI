@@ -9,7 +9,7 @@ import type { ExtensionContext } from "@mariozechner/pi-coding-agent";
 import { run } from "../../../lib/exec.js";
 import {
 	assertSupportedRebuildBranch,
-	getNixPiRepoDir,
+	getCanonicalRepoDir,
 	getSystemFlakeDir,
 	getUpdateStatusPath,
 } from "../../../lib/filesystem.js";
@@ -57,7 +57,7 @@ export async function handleNixosUpdate(
 			`System flake not found at ${flake}. Supported rebuilds use /etc/nixos with the canonical repo at /srv/nixpi; switch to main in /srv/nixpi and ensure ${flake}/flake.nix exists.`,
 		);
 	}
-	const repoDir = getNixPiRepoDir();
+	const repoDir = getCanonicalRepoDir();
 	const branchResult = await run("git", ["-C", repoDir, "branch", "--show-current"], signal);
 	if (branchResult.exitCode !== 0) {
 		return errorResult(`Failed to determine canonical repo branch at ${repoDir}: ${branchResult.stderr}`);

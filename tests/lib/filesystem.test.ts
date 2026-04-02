@@ -11,7 +11,6 @@ import {
 	getCanonicalRepoDir,
 	getDaemonStateDir,
 	getNixPiDir,
-	getNixPiRepoDir,
 	getNixPiStateDir,
 	getPiDir,
 	getPersonaDonePath,
@@ -24,7 +23,6 @@ import {
 	readPackageVersion,
 	resolvePackageDir,
 	safePath,
-	validateCanonicalRepo,
 } from "../../core/lib/filesystem.js";
 import {
 	getCanonicalRepoMetadataPath,
@@ -186,37 +184,23 @@ describe("canonical repo policy", () => {
 		expect(() => assertValidPrimaryUser("../escape")).toThrow(
 			"Invalid primary user for canonical repo path: ../escape",
 		);
-		expect(() => getCanonicalRepoDir("../escape")).toThrow(
-			"Invalid primary user for canonical repo path: ../escape",
-		);
 		expect(() => getCanonicalRepoMetadataPath("../escape")).toThrow(
 			"Invalid primary user for canonical repo path: ../escape",
 		);
 	});
 
 	it("builds the canonical repo dir at /srv/nixpi", () => {
-		expect(getCanonicalRepoDir("alex")).toBe("/srv/nixpi");
-	});
-
-	it("defaults the repo dir to /srv/nixpi", () => {
-		process.env.NIXPI_PRIMARY_USER = "alex";
-		expect(getNixPiRepoDir()).toBe("/srv/nixpi");
-	});
-
-	it("ignores NIXPI_REPO_DIR overrides and stays canonical", () => {
-		process.env.NIXPI_PRIMARY_USER = "alex";
-		process.env.NIXPI_REPO_DIR = "/tmp/pi-nixpi";
-		expect(getNixPiRepoDir()).toBe("/srv/nixpi");
+		expect(getCanonicalRepoDir()).toBe("/srv/nixpi");
 	});
 
 	it("builds the canonical repo metadata path under /etc/nixpi", () => {
 		expect(getCanonicalRepoMetadataPath("alex")).toBe("/etc/nixpi/canonical-repo.json");
 	});
 
-	it("lets validateCanonicalRepo enforce the canonical path policy", () => {
+	it("lets assertCanonicalRepo enforce the canonical path policy", () => {
 		process.env.NIXPI_PRIMARY_USER = "alex";
 		expect(() =>
-			validateCanonicalRepo({
+			assertCanonicalRepo({
 				path: "/tmp/pi-nixpi",
 			}),
 		).toThrow("Canonical repo path mismatch: expected /srv/nixpi, got /tmp/pi-nixpi");

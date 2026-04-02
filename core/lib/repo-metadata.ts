@@ -9,8 +9,8 @@ export interface CanonicalRepoMetadata {
 	branch: string;
 }
 
-function assertCanonicalMetadataPath(metadata: CanonicalRepoMetadata, primaryUser: string): CanonicalRepoMetadata {
-	const expectedPath = getCanonicalRepoDir(primaryUser);
+function assertCanonicalMetadataPath(metadata: CanonicalRepoMetadata, _primaryUser: string): CanonicalRepoMetadata {
+	const expectedPath = getCanonicalRepoDir();
 	if (metadata.path !== expectedPath) {
 		throw new Error(`Invalid canonical repo metadata path: expected ${expectedPath}, got ${metadata.path}`);
 	}

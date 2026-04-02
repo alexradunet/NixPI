@@ -239,4 +239,4 @@ async function init() {
   });
 }
 
-init();
+init().catch(err => console.error('Init failed:', err));
