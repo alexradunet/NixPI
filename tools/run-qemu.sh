@@ -5,7 +5,6 @@ set -euo pipefail
 
 DISK="${NIXPI_VM_DISK_PATH:-/tmp/nixpi-vm-disk.qcow2}"
 OUTPUT="${NIXPI_VM_OUTPUT:-result}"
-RUNNER="${OUTPUT}/bin/run-nixos-vm"
 LOG_FILE="${NIXPI_VM_LOG_PATH:-/tmp/nixpi-vm.log}"
 DISK_SIZE="${NIXPI_VM_DISK_SIZE:-80G}"
 MEMORY_MB="${NIXPI_VM_MEMORY_MB:-16384}"
@@ -14,6 +13,22 @@ MIN_DISK_BYTES=$((16 * 1024 * 1024 * 1024))
 HOST_REPO_PATH="${NIXPI_VM_HOST_REPO_PATH:-$PWD}"
 HOST_NIXPI_PATH="${NIXPI_VM_HOST_STATE_PATH:-$HOME/.nixpi}"
 PREFILL_SOURCE="${NIXPI_VM_PREFILL_SOURCE:-core/scripts/prefill.env}"
+
+resolve_runner() {
+    local preferred="${OUTPUT}/bin/run-nixos-vm"
+    if [[ -x "$preferred" ]]; then
+        printf '%s\n' "$preferred"
+        return 0
+    fi
+
+    local candidates=("${OUTPUT}"/bin/run-*-vm)
+    if [[ ${#candidates[@]} -eq 1 && -x "${candidates[0]}" ]]; then
+        printf '%s\n' "${candidates[0]}"
+        return 0
+    fi
+
+    return 1
+}
 
 host_port_busy() {
     local port="$1"
@@ -51,8 +66,8 @@ ensure_vm_disk() {
     fi
 }
 
-if [[ ! -x "$RUNNER" ]]; then
-    echo "Error: ${RUNNER} not found. Run 'just qcow2' first." >&2
+if ! RUNNER="$(resolve_runner)"; then
+    echo "Error: no VM runner found under ${OUTPUT}/bin. Run 'just qcow2' first." >&2
     exit 1
 fi
 
