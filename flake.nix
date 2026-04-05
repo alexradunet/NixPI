@@ -292,6 +292,9 @@
             grep -F 'PREFILL_FILE=""' "${installerHelper}/share/nixpi-installer/nixpi-installer.sh" >/dev/null
             grep -F 'HOSTNAME_VALUE="nixpi"' "${installerHelper}/share/nixpi-installer/nixpi-installer.sh" >/dev/null
             grep -F 'PRIMARY_USER_VALUE="human"' "${installerHelper}/share/nixpi-installer/nixpi-installer.sh" >/dev/null
+            grep -F 'validate_system_closure()' "${installerFrontendSource}" >/dev/null
+            grep -F -- '--system only supports the baked desktop closure:' "${installerFrontendSource}" >/dev/null
+            ! grep -F '. "$prefill_path"' "${installerFrontendSource}" >/dev/null
             ! grep -F 'Hostname [' "${installerHelper}/share/nixpi-installer/nixpi-installer.sh" >/dev/null
             ! grep -F 'Primary user [' "${installerHelper}/share/nixpi-installer/nixpi-installer.sh" >/dev/null
             ! grep -F -- '--hostname)' "${installerFrontendSource}" >/dev/null

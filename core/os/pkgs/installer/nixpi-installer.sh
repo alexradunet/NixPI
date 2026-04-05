@@ -27,9 +27,8 @@ Performs a destructive UEFI install with:
 - EFI system partition: 1 GiB
 - ext4 root partition: remainder (or remainder minus swap)
 
-The installer creates a minimal bootable NixPI base. The first-boot setup
-wizard handles WiFi, internet validation, and promotion into the full
-appliance profile using the canonical repo checkout at /srv/nixpi.
+The installer lays down the fixed NixPI appliance closure for the default
+human operator account and applies the chosen password inside the target root.
 EOF
 }
 
@@ -148,14 +147,39 @@ prompt_password() {
 
 load_prefill() {
   local prefill_path="$1"
+  local line key value
   [[ -n "$prefill_path" ]] || return 0
   if [[ ! -f "$prefill_path" ]]; then
     echo "Prefill file not found: $prefill_path" >&2
     exit 1
   fi
-  # shellcheck disable=SC1090
-  . "$prefill_path"
-  PRIMARY_PASSWORD_VALUE="${PRIMARY_PASSWORD_VALUE:-${PREFILL_PASSWORD:-${PREFILL_PRIMARY_PASSWORD:-}}}"
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    line="${line#"${line%%[![:space:]]*}"}"
+    [[ -z "$line" || "${line:0:1}" == "#" ]] && continue
+    key="${line%%=*}"
+    value="${line#*=}"
+    value="${value%\"}"
+    value="${value#\"}"
+    value="${value%\'}"
+    value="${value#\'}"
+    case "$key" in
+      PREFILL_PASSWORD|PREFILL_PRIMARY_PASSWORD)
+        if [[ -z "$PRIMARY_PASSWORD_VALUE" && -n "$value" ]]; then
+          PRIMARY_PASSWORD_VALUE="$value"
+        fi
+        ;;
+    esac
+  done < "$prefill_path"
+}
+
+validate_system_closure() {
+  if [[ -z "$SYSTEM_CLOSURE" ]]; then
+    return
+  fi
+  if [[ "$SYSTEM_CLOSURE" != "$DESKTOP_SYSTEM" ]]; then
+    echo "--system only supports the baked desktop closure: $DESKTOP_SYSTEM" >&2
+    exit 1
+  fi
 }
 
 validate_swap_size() {
@@ -370,6 +394,7 @@ main() {
   prompt_password
   choose_layout
   normalize_layout_inputs
+  validate_system_closure
   confirm_install
   run_install
 

@@ -166,6 +166,8 @@
         installer.succeed("test -f " + target_mount + "/etc/nixos/configuration.nix")
         installer.succeed("test -f " + target_mount + "/etc/nixos/hardware-configuration.nix")
         installer.succeed("test -f " + target_mount + "/etc/nixos/nixpi-install.nix")
+        installer.succeed("nix-instantiate --parse " + target_mount + "/etc/nixos/configuration.nix >/tmp/nixpi-installer-configuration.parse")
+        installer.succeed("nix-instantiate --parse " + target_mount + "/etc/nixos/nixpi-install.nix >/tmp/nixpi-installer-install.parse")
         installer.succeed("grep -q './hardware-configuration.nix' " + target_mount + "/etc/nixos/configuration.nix")
         installer.succeed("grep -q 'fileSystems\\.\"/\"' " + target_mount + "/etc/nixos/hardware-configuration.nix")
         installer.succeed("grep -q 'nixpi.primaryUser = \"human\";' " + target_mount + "/etc/nixos/nixpi-install.nix")
