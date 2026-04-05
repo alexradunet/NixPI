@@ -148,14 +148,20 @@
     ).strip()
     assert target_disk_device, "failed to resolve target disk device"
 
-    def run_install_case(name, layout_args, expect_swap):
+    def run_install_case(name, layout_args, expect_swap, use_prefill):
         installer.succeed("rm -f /tmp/nixpi-installer.log")
+        password_args = "--password installerpass123"
+        if use_prefill:
+            installer.succeed("printf 'PREFILL_PASSWORD=installerpass123\\n' > /tmp/nixpi-installer-prefill.env")
+            password_args = "--prefill /tmp/nixpi-installer-prefill.env"
         installer.succeed(
             "bash -lc "
             + shlex.quote(
                 "nixpi-installer --disk "
                 + target_disk_device
-                + " --password installerpass123 "
+                + " "
+                + password_args
+                + " "
                 + layout_args
                 + " --yes --system "
                 + shlex.quote("${self.nixosConfigurations.desktop.config.system.build.toplevel}")
@@ -212,7 +218,7 @@
         installer.fail("nixos-enter --root " + target_mount + " -c 'test -e /etc/nixos/flake.nix'")
         installer.fail("nixos-enter --root " + target_mount + " -c 'getent passwd agent'")
 
-    run_install_case("no-swap", "--layout no-swap", False)
-    run_install_case("swap", "--layout swap --swap-size 8GiB", True)
+    run_install_case("no-swap", "--layout no-swap", False, False)
+    run_install_case("swap", "--layout swap --swap-size 8GiB", True, True)
   '';
 }

@@ -16,6 +16,7 @@ PREFILL_SOURCE="${NIXPI_VM_PREFILL_SOURCE:-core/scripts/prefill.env}"
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 DEV_KEY_PATH="${NIXPI_VM_DEV_KEY_PATH:-${SCRIPT_DIR}/dev-key}"
 VM_UNIT="${NIXPI_VM_UNIT:-nixpi-vm}"
+VM_SSH_USER="${NIXPI_VM_SSH_USER:-human}"
 
 resolve_runner() {
     local preferred="${OUTPUT}/bin/run-nixos-vm"
@@ -45,7 +46,7 @@ ssh_ready() {
         -o ConnectTimeout=2 \
         -o StrictHostKeyChecking=no \
         -o UserKnownHostsFile=/dev/null \
-        -p 2222 pi@localhost true >/dev/null 2>&1
+        -p 2222 "${VM_SSH_USER}@localhost" true >/dev/null 2>&1
 }
 
 create_empty_filesystem_image() {
@@ -79,13 +80,8 @@ ensure_vm_disk() {
     fi
 }
 
-<<<<<<< HEAD
-if [[ ! -x "$RUNNER" ]]; then
-    echo "Error: ${RUNNER} not found. Run 'just qcow2' first." >&2
-=======
 if ! RUNNER="$(resolve_runner)"; then
     echo "Error: no VM runner found under ${OUTPUT}/bin. Run 'just qcow2' first." >&2
->>>>>>> refs/remotes/origin/main
     exit 1
 fi
 
@@ -119,11 +115,7 @@ done
 export QEMU_NET_OPTS
 QEMU_NET_OPTS="$(IFS=,; echo "${net_opts[*]}")"
 
-<<<<<<< HEAD
-if pgrep -f "[r]un-nixos-vm|[q]emu-system-x86_64.*${DISK}" >/dev/null; then
-=======
 if systemctl --user --quiet is-active "${VM_UNIT}.service" || pgrep -f "[r]un-nixos-vm|[q]emu-system-x86_64.*${DISK}" >/dev/null; then
->>>>>>> refs/remotes/origin/main
     echo "VM already running. Use 'just vm-ssh' to connect or 'just vm-stop' to stop."
     exit 1
 fi
@@ -132,13 +124,6 @@ echo "Starting VM in background..."
 echo "  - Log file: ${LOG_FILE}"
 echo "  - Connect:  just vm-ssh"
 echo "  - Stop:     just vm-stop"
-<<<<<<< HEAD
-nohup "$RUNNER" >"${LOG_FILE}" 2>&1 &
-
-echo "Waiting for VM to boot..."
-for i in {1..60}; do
-    if nc -z localhost 2222 2>/dev/null; then
-=======
 systemd-run --user --unit "${VM_UNIT}" --collect \
     --setenv=NIX_DISK_IMAGE="${NIX_DISK_IMAGE}" \
     --setenv=QEMU_OPTS="${QEMU_OPTS}" \
@@ -160,7 +145,6 @@ for i in {1..60}; do
             exit 0
         fi
     elif nc -z localhost 2222 2>/dev/null; then
->>>>>>> refs/remotes/origin/main
         echo "VM is ready! SSH available on port 2222"
         exit 0
     fi

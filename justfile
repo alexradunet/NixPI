@@ -56,6 +56,7 @@ vm-daemon: vm
 # SSH into the running VM
 vm-ssh:
     #!/usr/bin/env bash
+    ssh_user="${NIXPI_VM_SSH_USER:-human}"
     if ! pgrep -f "[q]emu-system-x86_64.*nixpi-vm-disk" > /dev/null; then
         echo "No VM running. Start with: just vm"
         exit 1
@@ -67,7 +68,7 @@ vm-ssh:
     ssh -i "$key_file" \
         -o StrictHostKeyChecking=no \
         -o UserKnownHostsFile=/dev/null \
-        -p 2222 pi@localhost
+        -p 2222 "${ssh_user}@localhost"
 
 # Show VM log (for vm-daemon)
 vm-logs:
