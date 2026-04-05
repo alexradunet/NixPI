@@ -25,18 +25,35 @@ let server: http.Server;
 let port: number;
 let tmpDir: string;
 
+function listFilesRecursive(dir: string): string[] {
+	return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+		const entryPath = path.join(dir, entry.name);
+		return entry.isDirectory() ? listFilesRecursive(entryPath) : [entryPath];
+	});
+}
+
+function getLatestMtimeMs(paths: readonly string[]): number {
+	return Math.max(...paths.map((file) => fs.statSync(file).mtimeMs));
+}
+
 beforeAll(async () => {
 	tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "nixpi-chat-server-test-"));
 	const distDir = new URL("../../core/chat-server/frontend/dist", import.meta.url).pathname;
 	const sourceDir = new URL("../../core/chat-server/frontend", import.meta.url).pathname;
-	const sourceIndex = path.join(sourceDir, "index.html");
 	const distIndex = path.join(distDir, "index.html");
+	if (!fs.existsSync(distIndex)) {
+		throw new Error(`Missing built frontend at ${distIndex}; run npm run build`);
+	}
+
+	const sourceFiles = listFilesRecursive(sourceDir).filter((file) => !file.startsWith(distDir));
+	const distFiles = listFilesRecursive(distDir);
+	if (getLatestMtimeMs(sourceFiles) > getLatestMtimeMs(distFiles)) {
+		throw new Error(`Frontend dist is stale at ${distDir}; run npm run build`);
+	}
+
 	server = createChatServer({
 		agentCwd: tmpDir,
-		staticDir:
-			fs.existsSync(distIndex) && fs.statSync(distIndex).mtimeMs >= fs.statSync(sourceIndex).mtimeMs
-				? distDir
-				: sourceDir,
+		staticDir: distDir,
 	});
 	await new Promise<void>((resolve) => {
 		server.listen(0, "127.0.0.1", () => {
@@ -102,9 +119,11 @@ describe("GET /", () => {
 		const res = await fetch(`http://127.0.0.1:${port}/`);
 		expect(res.status).toBe(200);
 		const html = await res.text();
-		expect(html).toContain("nixpi-shell");
-		expect(html).toContain("<iframe");
-		expect(html).toContain('src="/terminal/"');
+		expect(html).toContain('<div id="app"></div>');
+		expect(html).toContain('src="/assets/');
+		expect(html).not.toContain('<div id="nixpi-shell"');
+		expect(html).not.toContain("<iframe");
+		expect(html).not.toContain("<nixpi-chat");
 	});
 });
 
