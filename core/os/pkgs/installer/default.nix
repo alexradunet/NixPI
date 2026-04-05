@@ -1,4 +1,4 @@
-{ pkgs, makeWrapper, nixpiSource, piAgent, appPackage }:
+{ pkgs, makeWrapper, nixpiSource, piAgent, appPackage, setupApplyPackage }:
 
 let
   layoutsDir = ../../installer/layouts;
@@ -27,7 +27,11 @@ pkgs.stdenvNoCC.mkDerivation {
       --replace-fail "@firstbootModule@" "${nixpiSource}/core/os/modules/firstboot/default.nix" \
       --replace-fail "@networkModule@" "${nixpiSource}/core/os/modules/network.nix" \
       --replace-fail "@shellModule@" "${nixpiSource}/core/os/modules/shell.nix" \
-      --replace-fail "@updateModule@" "${nixpiSource}/core/os/modules/update.nix"
+      --replace-fail "@updateModule@" "${nixpiSource}/core/os/modules/update.nix" \
+      --replace-fail "@appModule@" "${nixpiSource}/core/os/modules/app.nix" \
+      --replace-fail "@serviceSurfaceModule@" "${nixpiSource}/core/os/modules/service-surface.nix" \
+      --replace-fail "@setupApplyModule@" "${nixpiSource}/core/os/modules/setup-apply.nix" \
+      --replace-fail "@setupApplyPackage@" "${setupApplyPackage}"
 
     substituteInPlace "$out/share/nixpi-installer/nixpi-installer.sh" \
       --replace-fail "@installModuleTemplate@" "$out/share/nixpi-installer/nixpi-install-module.nix.in" \

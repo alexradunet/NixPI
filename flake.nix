@@ -18,7 +18,7 @@
       lib = nixpkgs.lib;
       nixpiSource = lib.cleanSource ./.;
       installerHelper = pkgs.callPackage ./core/os/pkgs/installer {
-        inherit nixpiSource piAgent appPackage;
+        inherit nixpiSource piAgent appPackage setupApplyPackage;
       };
       setupApplyPackage = pkgs.callPackage ./core/os/pkgs/nixpi-setup-apply {};
       # pkgsUnfree is used only for boot nixosTest.  pkgs.testers.nixosTest
@@ -185,6 +185,9 @@
                   "${nixpiSource}/core/os/modules/network.nix"
                   "${nixpiSource}/core/os/modules/shell.nix"
                   "${nixpiSource}/core/os/modules/update.nix"
+                  "${nixpiSource}/core/os/modules/app.nix"
+                  "${nixpiSource}/core/os/modules/service-surface.nix"
+                  "${nixpiSource}/core/os/modules/setup-apply.nix"
                 ];
 
                 networking.hostName = hostName;

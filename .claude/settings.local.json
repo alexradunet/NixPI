@@ -57,7 +57,13 @@
       "Bash(npm install:*)",
       "mcp__lat__lat_search",
       "mcp__lat__lat_locate",
-      "mcp__lat__lat_check"
+      "mcp__lat__lat_check",
+      "Bash(curl -s --max-time 5 http://localhost:18080/)",
+      "Bash(curl:*)",
+      "Bash(nc -zv localhost 2222)",
+      "Bash(nc -zv localhost 18080)",
+      "Read(//nix/store/whn19js2ffrmqv9i1495drj3zdv777wb-nixos-nixpi-26.05.20260317.cda4854-x86_64-linux.iso/**)",
+      "Read(//home/alex/pi-bloom/**)"
     ]
   }
 }

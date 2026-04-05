@@ -6,6 +6,7 @@ in
   _module.args = {
     piAgent = @piAgent@;
     appPackage = @appPackage@;
+    setupApplyPackage = @setupApplyPackage@;
   };
 
   imports = [
@@ -13,6 +14,9 @@ in
     @networkModule@
     @shellModule@
     @updateModule@
+    @appModule@
+    @serviceSurfaceModule@
+    @setupApplyModule@
   ];
 
   nixpi.primaryUser = "@@username@@";
