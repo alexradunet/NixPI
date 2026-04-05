@@ -45,33 +45,32 @@ iso:
 vm-install-iso: iso
     NIXPI_INSTALL_VM_OVMF_CODE={{ ovmf }} NIXPI_INSTALL_VM_OVMF_VARS_TEMPLATE={{ ovmf_vars }} bash tools/run-installer-iso.sh
 
-# Run VM (fresh build from current codebase)
+# Run VM in background daemon mode (fresh build from current codebase)
+# Connect with: just vm-ssh  |  Stop with: just vm-stop
 vm: qcow2
-    tools/run-qemu.sh --mode gui
+    tools/run-qemu.sh
 
-# Run VM with existing qcow2 (no rebuild)
-vm-run:
-    tools/run-qemu.sh --mode gui --skip-setup
-
-# Run VM in the terminal over the serial console
-vm-headless: qcow2
-    tools/run-qemu.sh --mode headless
-
-# Run VM in background daemon mode (detached, no terminal attached)
-# Use this when you want to run the VM and still use your shell
-# Then connect with: just vm-ssh
-vm-daemon: qcow2
-    tools/run-qemu.sh --mode daemon
+# Legacy alias
+vm-daemon: vm
 
 # SSH into the running VM
 vm-ssh:
     #!/usr/bin/env bash
     if ! pgrep -f "[q]emu-system-x86_64.*nixpi-vm-disk" > /dev/null; then
-        echo "No VM running. Start with: just vm-daemon"
+        echo "No VM running. Start with: just vm"
         exit 1
     fi
-    echo "Connecting to VM..."
-    ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -p 2222 pi@localhost
+    key_copy="$(mktemp /tmp/nixpi-dev-key-XXXXXX)"
+    cleanup() {
+        rm -f "$key_copy"
+    }
+    trap cleanup EXIT
+    install -m 600 tools/dev-key "$key_copy"
+    echo "Connecting to VM using committed dev key..."
+    ssh -i "$key_copy" \
+        -o StrictHostKeyChecking=no \
+        -o UserKnownHostsFile=/dev/null \
+        -p 2222 pi@localhost
 
 # Show VM log (for vm-daemon)
 vm-logs:

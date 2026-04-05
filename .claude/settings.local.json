@@ -51,7 +51,10 @@
       "Bash(pkill -9 -f \"qemu-system-x86_64.*nixpi-install-vm\")",
       "Bash(ps -p 67477 -o pid,ppid,comm,args)",
       "Bash(xargs -r ps -p)",
-      "Bash(qemu-img resize:*)"
+      "Bash(qemu-img resize:*)",
+      "Bash(lat search:*)",
+      "Bash(lat locate:*)",
+      "Bash(npm install:*)"
     ]
   }
 }
