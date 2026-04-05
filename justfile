@@ -3,7 +3,6 @@
 system    := "x86_64-linux"
 flake     := "."
 host      := "desktop"
-vm_host   := "desktop-vm"
 output    := "result"
 ovmf      := "/usr/share/edk2/ovmf/OVMF_CODE.fd"
 ovmf_vars := "/usr/share/edk2/ovmf/OVMF_VARS.fd"
@@ -26,10 +25,6 @@ update:
 rollback:
     sudo nixos-rebuild switch --rollback
 
-# Build qcow2 VM image for testing (uses qemu module, not disk-image.nix)
-qcow2:
-    nix build {{ flake }}#nixosConfigurations.{{ vm_host }}.config.system.build.vm
-
 # Build the minimal NixPI installer ISO
 iso:
     nix build {{ flake }}#installerIso
@@ -42,23 +37,19 @@ iso:
 #   NIXPI_INSTALL_VM_MEMORY_MB=8192
 #   NIXPI_INSTALL_VM_CPUS=4
 #   NIXPI_INSTALL_VM_SSH_PORT=2222
+#   NIXPI_INSTALL_PREFILL_PATH=$PWD/prefill.env
 vm-install-iso: iso
     NIXPI_INSTALL_VM_OVMF_CODE={{ ovmf }} NIXPI_INSTALL_VM_OVMF_VARS_TEMPLATE={{ ovmf_vars }} bash tools/run-installer-iso.sh
 
-# Run VM in background daemon mode (fresh build from current codebase)
-# Connect with: just vm-ssh  |  Stop with: just vm-stop
-vm: qcow2
-    tools/run-qemu.sh
-
-# Legacy alias
-vm-daemon: vm
-
-# SSH into the running VM
+# SSH into the installer VM or freshly installed system
 vm-ssh:
     #!/usr/bin/env bash
-    ssh_user="${NIXPI_VM_SSH_USER:-human}"
-    if ! pgrep -f "[q]emu-system-x86_64.*nixpi-vm-disk" > /dev/null; then
-        echo "No VM running. Start with: just vm"
+    ssh_user="${NIXPI_INSTALL_VM_SSH_USER:-human}"
+    ssh_port="${NIXPI_INSTALL_VM_SSH_PORT:-2222}"
+    disk_path="${NIXPI_INSTALL_VM_DISK_PATH:-$HOME/nixpi-install-vm.qcow2}"
+    disk_name="$(basename "$disk_path")"
+    if ! pgrep -f "[q]emu-system-x86_64.*${disk_name}" > /dev/null; then
+        echo "No installer VM running. Start with: just vm-install-iso"
         exit 1
     fi
     key_file="$(mktemp)"
@@ -68,37 +59,7 @@ vm-ssh:
     ssh -i "$key_file" \
         -o StrictHostKeyChecking=no \
         -o UserKnownHostsFile=/dev/null \
-        -p 2222 "${ssh_user}@localhost"
-
-# Show VM log (for vm-daemon)
-vm-logs:
-    tail -f /tmp/nixpi-vm.log
-
-# Stop the running VM (graceful if possible, otherwise kill)
-vm-stop:
-    #!/usr/bin/env bash
-    if systemctl --user --quiet is-active nixpi-vm.service; then
-        echo "Stopping VM via user service..."
-        systemctl --user stop nixpi-vm.service
-        echo "VM stopped"
-        exit 0
-    fi
-    pid=$(pgrep -f "[q]emu-system-x86_64.*nixpi-vm-disk" || true)
-    if [ -z "$pid" ]; then
-        echo "No VM running"
-        exit 0
-    fi
-    echo "Stopping VM (PID: $pid)..."
-    kill "$pid" 2>/dev/null || true
-    sleep 2
-    if kill -0 "$pid" 2>/dev/null; then
-        echo "Force killing VM..."
-        kill -9 "$pid" 2>/dev/null || true
-    fi
-    echo "VM stopped"
-
-# Kill the running QEMU VM (legacy alias)
-vm-kill: vm-stop
+        -p "${ssh_port}" "${ssh_user}@localhost"
 
 # Remove build results and VM disk
 clean:
