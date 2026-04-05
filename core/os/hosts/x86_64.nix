@@ -20,7 +20,6 @@
   time.timeZone = config.nixpi.timezone;
   i18n.defaultLocale = "en_US.UTF-8";
   networking.networkmanager.enable = true;
-  services.xserver.xkb = { layout = config.nixpi.keyboard; variant = ""; };
   console.keyMap = config.nixpi.keyboard;
   networking.hostName = lib.mkDefault "nixpi";
   fileSystems."/" = lib.mkDefault {

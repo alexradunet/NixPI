@@ -46,6 +46,12 @@ in
       type = types.int;
       default = 4;
     };
+
+    applyScript = mkOption {
+      type = types.str;
+      default = "/run/current-system/sw/bin/nixpi-setup-apply";
+      description = "Path to the nixpi-setup-apply script callable by the wizard backend.";
+    };
   };
 
   config = {
@@ -65,6 +71,8 @@ in
         PI_DIR = toString config.nixpi-chat.agentStateDir;
         NIXPI_CHAT_IDLE_TIMEOUT = toString config.nixpi-chat.idleTimeoutSecs;
         NIXPI_CHAT_MAX_SESSIONS = toString config.nixpi-chat.maxSessions;
+        NIXPI_SETUP_APPLY_SCRIPT = config.nixpi-chat.applyScript;
+        NIXPI_PRIMARY_USER = config.nixpi-chat.primaryUser;
       } // lib.optionalAttrs (config.nixpi-chat.workspaceDir != "") {
         NIXPI_DIR = config.nixpi-chat.workspaceDir;
       };
@@ -72,7 +80,6 @@ in
         Environment = [
           "PATH=${lib.makeBinPath [ config.nixpi-chat.package pkgs.nodejs ]}:/run/current-system/sw/bin"
         ];
-        ExecStart = "${pkgs.nodejs}/bin/node ${config.nixpi-chat.nixpiShareDir}/dist/core/chat-server/index.js";
         User = config.nixpi-chat.primaryUser;
         Group = config.nixpi-chat.primaryUser;
         WorkingDirectory = toString config.nixpi-chat.agentStateDir;

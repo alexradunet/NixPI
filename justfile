@@ -60,14 +60,11 @@ vm-ssh:
         echo "No VM running. Start with: just vm"
         exit 1
     fi
-    key_copy="$(mktemp /tmp/nixpi-dev-key-XXXXXX)"
-    cleanup() {
-        rm -f "$key_copy"
-    }
-    trap cleanup EXIT
-    install -m 600 tools/dev-key "$key_copy"
+    key_file="$(mktemp)"
+    trap 'rm -f "$key_file"' EXIT
+    install -m 600 tools/dev-key "$key_file"
     echo "Connecting to VM using committed dev key..."
-    ssh -i "$key_copy" \
+    ssh -i "$key_file" \
         -o StrictHostKeyChecking=no \
         -o UserKnownHostsFile=/dev/null \
         -p 2222 pi@localhost
@@ -79,6 +76,12 @@ vm-logs:
 # Stop the running VM (graceful if possible, otherwise kill)
 vm-stop:
     #!/usr/bin/env bash
+    if systemctl --user --quiet is-active nixpi-vm.service; then
+        echo "Stopping VM via user service..."
+        systemctl --user stop nixpi-vm.service
+        echo "VM stopped"
+        exit 0
+    fi
     pid=$(pgrep -f "[q]emu-system-x86_64.*nixpi-vm-disk" || true)
     if [ -z "$pid" ]; then
         echo "No VM running"

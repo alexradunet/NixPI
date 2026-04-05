@@ -5,8 +5,28 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Pi</title>
     <script type="module" src="./app.ts"></script>
+    <style>
+      #nixpi-nav {
+        position: fixed;
+        top: 0.5rem;
+        right: 0.75rem;
+        z-index: 9999;
+      }
+      #nixpi-nav a {
+        background: #161b22;
+        border: 1px solid #30363d;
+        border-radius: 4px;
+        color: #8b949e;
+        font-family: ui-monospace, monospace;
+        font-size: 0.75rem;
+        padding: 0.25rem 0.6rem;
+        text-decoration: none;
+      }
+      #nixpi-nav a:hover { color: #e6edf3; border-color: #8b949e; }
+    </style>
   </head>
   <body>
+    <nav id="nixpi-nav"><a href="/terminal">Terminal</a></nav>
     <nixpi-chat></nixpi-chat>
   </body>
 </html>

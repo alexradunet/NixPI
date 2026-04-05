@@ -5,7 +5,6 @@ set -euo pipefail
 
 DISK="${NIXPI_VM_DISK_PATH:-/tmp/nixpi-vm-disk.qcow2}"
 OUTPUT="${NIXPI_VM_OUTPUT:-result}"
-RUNNER="${OUTPUT}/bin/run-nixos-vm"
 LOG_FILE="${NIXPI_VM_LOG_PATH:-/tmp/nixpi-vm.log}"
 DISK_SIZE="${NIXPI_VM_DISK_SIZE:-80G}"
 MEMORY_MB="${NIXPI_VM_MEMORY_MB:-16384}"
@@ -14,10 +13,39 @@ MIN_DISK_BYTES=$((16 * 1024 * 1024 * 1024))
 HOST_REPO_PATH="${NIXPI_VM_HOST_REPO_PATH:-$PWD}"
 HOST_NIXPI_PATH="${NIXPI_VM_HOST_STATE_PATH:-$HOME/.nixpi}"
 PREFILL_SOURCE="${NIXPI_VM_PREFILL_SOURCE:-core/scripts/prefill.env}"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+DEV_KEY_PATH="${NIXPI_VM_DEV_KEY_PATH:-${SCRIPT_DIR}/dev-key}"
+VM_UNIT="${NIXPI_VM_UNIT:-nixpi-vm}"
+
+resolve_runner() {
+    local preferred="${OUTPUT}/bin/run-nixos-vm"
+    if [[ -x "$preferred" ]]; then
+        readlink -f "$preferred"
+        return 0
+    fi
+
+    local candidates=("${OUTPUT}"/bin/run-*-vm)
+    if [[ ${#candidates[@]} -eq 1 && -x "${candidates[0]}" ]]; then
+        readlink -f "${candidates[0]}"
+        return 0
+    fi
+
+    return 1
+}
 
 host_port_busy() {
     local port="$1"
     ss -ltn "( sport = :${port} )" 2>/dev/null | tail -n +2 | grep -q .
+}
+
+ssh_ready() {
+    local key_path="$1"
+    ssh -i "$key_path" \
+        -o BatchMode=yes \
+        -o ConnectTimeout=2 \
+        -o StrictHostKeyChecking=no \
+        -o UserKnownHostsFile=/dev/null \
+        -p 2222 pi@localhost true >/dev/null 2>&1
 }
 
 create_empty_filesystem_image() {
@@ -51,8 +79,13 @@ ensure_vm_disk() {
     fi
 }
 
+<<<<<<< HEAD
 if [[ ! -x "$RUNNER" ]]; then
     echo "Error: ${RUNNER} not found. Run 'just qcow2' first." >&2
+=======
+if ! RUNNER="$(resolve_runner)"; then
+    echo "Error: no VM runner found under ${OUTPUT}/bin. Run 'just qcow2' first." >&2
+>>>>>>> refs/remotes/origin/main
     exit 1
 fi
 
@@ -86,7 +119,11 @@ done
 export QEMU_NET_OPTS
 QEMU_NET_OPTS="$(IFS=,; echo "${net_opts[*]}")"
 
+<<<<<<< HEAD
 if pgrep -f "[r]un-nixos-vm|[q]emu-system-x86_64.*${DISK}" >/dev/null; then
+=======
+if systemctl --user --quiet is-active "${VM_UNIT}.service" || pgrep -f "[r]un-nixos-vm|[q]emu-system-x86_64.*${DISK}" >/dev/null; then
+>>>>>>> refs/remotes/origin/main
     echo "VM already running. Use 'just vm-ssh' to connect or 'just vm-stop' to stop."
     exit 1
 fi
@@ -95,11 +132,35 @@ echo "Starting VM in background..."
 echo "  - Log file: ${LOG_FILE}"
 echo "  - Connect:  just vm-ssh"
 echo "  - Stop:     just vm-stop"
+<<<<<<< HEAD
 nohup "$RUNNER" >"${LOG_FILE}" 2>&1 &
 
 echo "Waiting for VM to boot..."
 for i in {1..60}; do
     if nc -z localhost 2222 2>/dev/null; then
+=======
+systemd-run --user --unit "${VM_UNIT}" --collect \
+    --setenv=NIX_DISK_IMAGE="${NIX_DISK_IMAGE}" \
+    --setenv=QEMU_OPTS="${QEMU_OPTS}" \
+    --setenv=QEMU_NET_OPTS="${QEMU_NET_OPTS}" \
+    /usr/bin/bash -lc 'exec "$1" </dev/null >"$2" 2>&1' bash "$RUNNER" "${LOG_FILE}" >/dev/null
+
+echo "Waiting for VM to boot..."
+temp_key=""
+if [[ -f "$DEV_KEY_PATH" ]]; then
+    temp_key="$(mktemp)"
+    trap 'rm -f "$temp_key"' EXIT
+    install -m 600 "$DEV_KEY_PATH" "$temp_key"
+fi
+
+for i in {1..60}; do
+    if [[ -n "$temp_key" ]]; then
+        if ssh_ready "$temp_key"; then
+            echo "VM is ready! SSH available on port 2222"
+            exit 0
+        fi
+    elif nc -z localhost 2222 2>/dev/null; then
+>>>>>>> refs/remotes/origin/main
         echo "VM is ready! SSH available on port 2222"
         exit 0
     fi
