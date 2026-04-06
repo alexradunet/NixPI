@@ -370,17 +370,15 @@
               | grep -F './core/os/hosts/vps.nix' >/dev/null
             smoke_block="$(sed -n '/nixos-smoke = mkCheckLane "nixos-smoke" \[/,/nixos-full = mkCheckLane "nixos-full" \[/p' ${./flake.nix})"
             printf '%s\n' "$smoke_block" | grep -F '{ name = "disko-layouts"; path = diskoLayoutsCheck; }' >/dev/null
-            printf '%s\n' "$smoke_block" | grep -F '{ name = "nixpi-vps-bootstrap"; path = nixosTests.nixpi-vps-bootstrap; }' >/dev/null
+            ! printf '%s\n' "$smoke_block" | grep -F '{ name = "nixpi-vps-bootstrap"; path = nixosTests.nixpi-vps-bootstrap; }' >/dev/null
             printf '%s\n' "$smoke_block" | grep -F '{ name = "nixpi-chat"; path = nixosTests.nixpi-chat; }' >/dev/null
             printf '%s\n' "$smoke_block" | grep -F '{ name = "nixpi-security"; path = nixosTests.nixpi-security; }' >/dev/null
             printf '%s\n' "$smoke_block" | grep -F '{ name = "nixpi-broker"; path = nixosTests.nixpi-broker; }' >/dev/null
             printf '%s\n' "$smoke_block" | grep -F '{ name = "nixpi-installer-smoke"; path = nixosTests.nixpi-installer-smoke; }' >/dev/null
-            vps_bootstrap_line="$(printf '%s\n' "$smoke_block" | grep -nF '{ name = "nixpi-vps-bootstrap"; path = nixosTests.nixpi-vps-bootstrap; }' | cut -d: -f1)"
             chat_line="$(printf '%s\n' "$smoke_block" | grep -nF '{ name = "nixpi-chat"; path = nixosTests.nixpi-chat; }' | cut -d: -f1)"
             security_line="$(printf '%s\n' "$smoke_block" | grep -nF '{ name = "nixpi-security"; path = nixosTests.nixpi-security; }' | cut -d: -f1)"
             broker_line="$(printf '%s\n' "$smoke_block" | grep -nF '{ name = "nixpi-broker"; path = nixosTests.nixpi-broker; }' | cut -d: -f1)"
             installer_smoke_line="$(printf '%s\n' "$smoke_block" | grep -nF '{ name = "nixpi-installer-smoke"; path = nixosTests.nixpi-installer-smoke; }' | cut -d: -f1)"
-            test "$vps_bootstrap_line" -lt "$chat_line"
             test "$chat_line" -lt "$security_line"
             test "$security_line" -lt "$broker_line"
             test "$broker_line" -lt "$installer_smoke_line"
@@ -412,7 +410,6 @@
 
           nixos-smoke = mkCheckLane "nixos-smoke" [
             { name = "disko-layouts"; path = diskoLayoutsCheck; }
-            { name = "nixpi-vps-bootstrap"; path = nixosTests.nixpi-vps-bootstrap; }
             { name = "nixpi-chat"; path = nixosTests.nixpi-chat; }
             { name = "nixpi-security"; path = nixosTests.nixpi-security; }
             { name = "nixpi-broker"; path = nixosTests.nixpi-broker; }
