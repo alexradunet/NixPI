@@ -19,6 +19,7 @@
       pkgs = nixpkgs.legacyPackages.${system};
       lib = nixpkgs.lib;
       bootstrapPackage = pkgs.callPackage ./core/os/pkgs/bootstrap { };
+      nixpiRebuildPackage = pkgs.callPackage ./core/os/pkgs/nixpi-rebuild { };
       setupApplyPackage = pkgs.callPackage ./core/os/pkgs/nixpi-setup-apply { };
       # pkgsUnfree is used only for boot nixosTest.  pkgs.testers.nixosTest
       # injects its own pkgs as nixpkgs.pkgs for test nodes, which means modules
@@ -45,6 +46,7 @@
         pi = piAgent;
         app = appPackage;
         nixpi-bootstrap-vps = bootstrapPackage;
+        nixpi-rebuild = nixpiRebuildPackage;
         nixpi-setup-apply = setupApplyPackage;
       };
 
@@ -118,8 +120,6 @@
           }
         ];
       };
-
-      nixosConfigurations.nixpi = self.nixosConfigurations.vps;
 
       # Raspberry Pi 4 target (aarch64-linux).
       # Build on native aarch64 hardware or with binfmt/QEMU:
@@ -263,6 +263,7 @@
             test -x "${bootstrapPackage}/bin/nixpi-bootstrap-vps"
             test -x "${bootstrapScriptSource}"
             test -x "${./core/scripts/nixpi-init-host-flake.sh}"
+            test -x "${./core/scripts/nixpi-rebuild.sh}"
             grep -F 'REPO_DIR="/srv/nixpi"' "${bootstrapScriptSource}" >/dev/null
             grep -F 'REPO_URL="''${NIXPI_REPO_URL:-https://github.com/alexradunet/nixpi.git}"' "${bootstrapScriptSource}" >/dev/null
             grep -F 'BRANCH="''${NIXPI_REPO_BRANCH:-main}"' "${bootstrapScriptSource}" >/dev/null
@@ -278,7 +279,10 @@
             grep -F 'run_as_root git -C "$REPO_DIR" reset --hard "origin/$BRANCH"' "${bootstrapScriptSource}" >/dev/null
             grep -F 'nixpi-init-host-flake.sh' "${bootstrapScriptSource}" >/dev/null
             grep -F 'nixos-rebuild switch --flake /etc/nixos --impure' "${bootstrapScriptSource}" >/dev/null
+            grep -F "Use 'nixpi-rebuild' to rebuild" "${bootstrapScriptSource}" >/dev/null
             ! grep -F 'nixos-rebuild switch --flake /srv/nixpi#nixpi' "${bootstrapScriptSource}" >/dev/null
+            grep -F 'nixos-rebuild switch --flake /etc/nixos --impure' "${./core/scripts/nixpi-rebuild.sh}" >/dev/null
+            grep -F '"$@"' "${./core/scripts/nixpi-rebuild.sh}" >/dev/null
             ! test -e ${./.}/tools/run-installer-iso.sh
             touch "$out"
           '';
@@ -324,6 +328,7 @@
             broker_line="$(printf '%s\n' "$smoke_block" | grep -nF 'name = "nixpi-broker";' | cut -d: -f1)"
             test "$chat_line" -lt "$security_line"
             test "$security_line" -lt "$broker_line"
+            grep -F 'enableRedistributableFirmware' ${./core/os/hosts/vps.nix} >/dev/null
             touch "$out"
           '';
 

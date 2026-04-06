@@ -26,6 +26,9 @@
   time.timeZone = config.nixpi.timezone;
   i18n.defaultLocale = "en_US.UTF-8";
   console.keyMap = config.nixpi.keyboard;
+  # Include redistributable GPU firmware for more reliable display bring-up on
+  # monitor-attached x86_64 hardware such as miniPCs.
+  hardware.enableRedistributableFirmware = lib.mkDefault true;
 
   fileSystems."/" = lib.mkDefault {
     device = "/dev/disk/by-label/nixos";

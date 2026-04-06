@@ -114,3 +114,4 @@ run_as_root env "NIXPI_NIXPKGS_FLAKE_URL=${NIXPI_NIXPKGS_FLAKE_URL:-}" bash "$RE
 
 log "Running nixos-rebuild switch --flake /etc/nixos --impure"
 run_as_root nixos-rebuild switch --flake /etc/nixos --impure
+log "Bootstrap complete. Use 'nixpi-rebuild' to rebuild or update your system."
