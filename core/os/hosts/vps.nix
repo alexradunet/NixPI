@@ -11,7 +11,8 @@
 
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
-  boot.kernelParams = [ "console=ttyS0,115200" ];
+  boot.kernelParams = [ "console=tty1" "console=ttyS0,115200" ];
+  systemd.services."getty@tty1".enable = lib.mkDefault true;
   systemd.services."serial-getty@ttyS0".enable = lib.mkDefault true;
 
   nixpi.primaryUser = lib.mkDefault "human";
