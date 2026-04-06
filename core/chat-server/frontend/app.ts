@@ -36,6 +36,19 @@ function createStorage(): AppStorage {
 	return new AppStorage(settings, providerKeys, sessions, undefined, backend);
 }
 
+function createAgentModel(): Model<unknown> {
+	return {
+		id: "nixpi",
+		name: "Pi",
+		api: "openai-completions",
+		provider: "nixpi",
+		baseUrl: "",
+		reasoning: false,
+		input: ["text"],
+		cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+	} as Model<unknown>;
+}
+
 function extractTextPart(content: unknown): string {
 	if (!Array.isArray(content)) {
 		return "";
@@ -261,63 +274,65 @@ function makeCustomStreamFn() {
 	};
 }
 
-// --------------------------------------------------------------------------
-// Create Agent with custom streamFn
-// --------------------------------------------------------------------------
-const agent = new Agent({
-	initialState: {
-		systemPrompt: "",
-		model: {
-			id: "nixpi",
-			name: "Pi",
-			api: "openai-completions",
-			provider: "nixpi",
-			baseUrl: "",
-			reasoning: false,
-			input: ["text"],
-			cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-		} as Model<unknown>,
-		thinkingLevel: "off",
-		messages: [],
-		tools: [],
-	},
-	streamFn: makeCustomStreamFn(),
-});
+function createAgent(): Agent {
+	return new Agent({
+		initialState: {
+			systemPrompt: "",
+			model: createAgentModel(),
+			thinkingLevel: "off",
+			messages: [],
+			tools: [],
+		},
+		streamFn: makeCustomStreamFn(),
+	});
+}
 
-// --------------------------------------------------------------------------
-// Mount ChatPanel
-// --------------------------------------------------------------------------
-async function init() {
+function requireAppRoot(): HTMLElement {
 	const appRoot = document.getElementById("app");
 	if (!appRoot) {
 		throw new Error("Missing #app root");
 	}
+	return appRoot;
+}
 
-	const shell = createShell();
-	appRoot.replaceChildren(shell);
+function replaceChatPlaceholder(shell: HTMLElement, chatPanel: HTMLElement): void {
+	const placeholder = shell.querySelector("nixpi-chat");
+	if (!placeholder) {
+		throw new Error("Missing chat placeholder");
+	}
+	placeholder.replaceWith(chatPanel);
+}
 
-	const chatPanel = new ChatPanel();
+function sizeChatPanel(chatPanel: HTMLElement): void {
+	Object.assign(chatPanel.style, {
+		display: "block",
+		width: "100%",
+		height: "100%",
+	});
+}
 
+async function configureChatPanel(chatPanel: ChatPanel, agent: Agent): Promise<void> {
 	await chatPanel.setAgent(agent, {
 		onApiKeyRequired: async (_provider: string) => {
 			// No API key needed — our backend handles auth
 			return true;
 		},
 	});
+}
 
-	// Replace the <nixpi-chat> placeholder with the ChatPanel element
-	const placeholder = shell.querySelector("nixpi-chat");
-	if (!placeholder) {
-		throw new Error("Missing chat placeholder");
-	}
-	placeholder.replaceWith(chatPanel);
+// --------------------------------------------------------------------------
+// Mount ChatPanel
+// --------------------------------------------------------------------------
+async function init() {
+	const appRoot = requireAppRoot();
+	const shell = createShell();
+	appRoot.replaceChildren(shell);
 
-	// Size the chat panel to its shell pane.
-	Object.assign(chatPanel.style, {
-		display: "block",
-		width: "100%",
-		height: "100%",
-	});
+	const agent = createAgent();
+	const chatPanel = new ChatPanel();
+	await configureChatPanel(chatPanel, agent);
+	replaceChatPlaceholder(shell, chatPanel);
+	sizeChatPanel(chatPanel);
 }
 
 init().catch((err) => console.error("Init failed:", err));
