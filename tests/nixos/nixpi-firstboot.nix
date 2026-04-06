@@ -12,6 +12,8 @@ let
     {
       imports = nixPiModulesNoShell ++ [
         ../../core/os/modules/firstboot
+        ../../core/os/modules/ttyd.nix
+        ../../core/os/modules/service-surface.nix
         mkTestFilesystems
       ];
       _module.args = { inherit piAgent appPackage setupApplyPackage; };
@@ -38,7 +40,7 @@ let
       environment.systemPackages = [ pkgs.curl pkgs.jq ];
       systemd.tmpfiles.rules = [ "d ${homeDir}/.nixpi 0755 ${username} ${username} -" ];
 
-      system.activationScripts.nixpi-prefill = lib.stringAfter [ "users" ] (
+      system.activationScripts.nixpi-bootstrap = lib.stringAfter [ "users" ] (
         ''
           mkdir -p ${homeDir}/.nixpi
           install -d -m 0755 /etc/nixos
@@ -70,23 +72,20 @@ in
     nixpi.wait_for_unit("multi-user.target", timeout=300)
     nixpi.wait_for_unit("network-online.target", timeout=60)
     nixpi.wait_for_unit("netbird.service", timeout=60)
-    nixpi.wait_until_succeeds("curl -sf http://127.0.0.1:8080/setup | grep -q 'NixPI Setup'", timeout=60)
-
-    apply_output = nixpi.succeed(
-        "curl -sS -X POST -H 'Content-Type: application/json' "
-        + "--data '{\"netbirdKey\":\"\"}' "
-        + "http://127.0.0.1:8080/api/setup/apply | tee /tmp/setup-apply.out"
+    nixpi.wait_for_unit("nixpi-chat.service", timeout=120)
+    nixpi.wait_for_unit("nixpi-ttyd.service", timeout=120)
+    nixpi.wait_for_unit("nginx.service", timeout=120)
+    nixpi.wait_until_succeeds("curl -sf http://127.0.0.1:8080/ | grep -qi '<html'", timeout=60)
+    nixpi.wait_until_succeeds(
+        "test \"$(curl -s -o /dev/null -w '%{http_code}' -X POST "
+        + "http://127.0.0.1:8080/chat -H 'Content-Type: application/json' -d '{}')\" = 400",
+        timeout=60,
     )
-    print(apply_output)
-    assert "SETUP_FAILED" not in apply_output, apply_output
+    nixpi.wait_until_succeeds("curl -sf http://127.0.0.1/terminal/ >/dev/null", timeout=60)
 
-    nixpi.succeed("test -f " + home + "/.nixpi/wizard-state/system-ready")
+    nixpi.succeed("test -d " + home + "/.nixpi")
+    nixpi.wait_until_succeeds("test ! -f " + home + "/.nixpi/wizard-state/system-ready", timeout=60)
     nixpi.fail("test -f " + home + "/.nixpi/.setup-complete")
-    nixpi.succeed("test -d " + home + "/.nixpi/wizard-state")
-
-    checkpoints = nixpi.succeed("ls " + home + "/.nixpi/wizard-state/ 2>/dev/null || true").strip().split('\n')
-    checkpoints = [c for c in checkpoints if c]
-    assert len(checkpoints) > 0, f"No checkpoints found in wizard-state. Found: {checkpoints}"
 
     nixpi.succeed("test -d " + home + "/.pi")
     nixpi.succeed("test -f " + home + "/.pi/settings.json")

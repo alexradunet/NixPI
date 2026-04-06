@@ -39,6 +39,9 @@ buildNpmPackage {
 
     mkdir -p $out/share/nixpi/core/chat-server/frontend
     cp -r core/chat-server/frontend/dist $out/share/nixpi/core/chat-server/frontend/
+    mkdir -p $out/share/nixpi/dist/core/chat-server/frontend
+    ln -sf $out/share/nixpi/core/chat-server/frontend/dist \
+      $out/share/nixpi/dist/core/chat-server/frontend/dist
 
     mkdir -p $out/bin
 

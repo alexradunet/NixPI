@@ -26,7 +26,7 @@ let
 
   tests = {
     nixpi-firstboot            = runTest ./nixpi-firstboot.nix;
-    nixpi-vps-bootstrap        = runTest ./nixpi-firstboot.nix;
+    nixpi-vps-bootstrap        = runTest ./nixpi-vps-bootstrap.nix;
     nixpi-chat                 = runTest ./nixpi-chat.nix;
     nixpi-network              = runTest ./nixpi-network.nix;
     nixpi-e2e                  = runTest ./nixpi-e2e.nix;

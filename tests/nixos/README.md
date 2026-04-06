@@ -6,13 +6,13 @@ This directory contains NixOS integration tests for the NixPI platform. These te
 
 - `config`: fast non-VM closure build for the default headless VPS system
 - `vps-topology`: fast flake-shape check for the canonical `vps` host profile
-- `nixos-smoke`: PR-oriented VM subset
+- `nixos-smoke`: PR-oriented headless VPS VM subset
   - `nixpi-vps-bootstrap`
   - `nixpi-chat`
   - `nixpi-security`
   - `nixpi-broker`
   - `nixpi-installer-smoke`
-- `nixos-full`: comprehensive VM lane
+- `nixos-full`: comprehensive headless VPS VM lane
   - registered tests: `nixpi-firstboot`, `nixpi-chat`, `nixpi-network`, `nixpi-e2e`, `nixpi-security`, `nixpi-modular-services`, `nixpi-bootstrap-mode`, `nixpi-post-setup-lockdown`, `nixpi-broker`, `nixpi-installer-smoke`, `nixpi-update`, `nixpi-options-validation`
 - `nixos-destructive`: slower install/lockdown/broker cases intended for manual or scheduled runs
   - `nixpi-installer-smoke`
@@ -39,6 +39,7 @@ nix build .#checks.x86_64-linux.nixpi-installer-smoke --no-link -L
 
 ### Run a specific test
 ```bash
+nix build .#checks.x86_64-linux.nixpi-vps-bootstrap --no-link -L
 nix build .#checks.x86_64-linux.nixpi-chat --no-link -L
 ```
 
@@ -68,7 +69,7 @@ tests/nixos/
 ├── nixpi-broker.nix              # broker autonomy and privilege boundaries
 ├── nixpi-chat.nix                # built-in local chat surface test
 ├── nixpi-e2e.nix                 # end-to-end integration test
-├── nixpi-firstboot.nix           # first-boot wizard test
+├── nixpi-firstboot.nix           # first-boot remote shell/chat readiness test
 ├── nixpi-installer-smoke.nix     # live minimal manual installer smoke test
 ├── nixpi-modular-services.nix    # system.services/configData regression
 ├── nixpi-network.nix             # network/mesh test
@@ -76,6 +77,7 @@ tests/nixos/
 ├── nixpi-post-setup-lockdown.nix # steady-state post-setup security contract
 ├── nixpi-security.nix            # security boundary test
 ├── nixpi-update.nix              # update flow test
+├── nixpi-vps-bootstrap.nix       # canonical headless VPS bootstrap smoke test
 └── README.md            # This file
 ```
 

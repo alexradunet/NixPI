@@ -110,7 +110,7 @@ in
             }
           ];
           locations."/terminal" = {
-            proxyPass = "http://127.0.0.1:7681";
+            proxyPass = "http://127.0.0.1:7681/";
             extraConfig = ''
               proxy_http_version 1.1;
               proxy_set_header Upgrade $http_upgrade;
@@ -143,7 +143,7 @@ in
           sslCertificate = tlsCertPath;
           sslCertificateKey = tlsKeyPath;
           locations."/terminal" = {
-            proxyPass = "http://127.0.0.1:7681";
+            proxyPass = "http://127.0.0.1:7681/";
             extraConfig = ''
               proxy_http_version 1.1;
               proxy_set_header Upgrade $http_upgrade;
