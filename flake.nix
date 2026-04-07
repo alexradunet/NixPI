@@ -63,7 +63,14 @@
         };
     in
     {
-      packages = forAllSystems mkPackages;
+      packages = forAllSystems (
+        system:
+        (mkPackages system)
+        // {
+          nixpi-bootstrap-fresh-install-harness =
+            self.checks.${system}.nixpi-bootstrap-fresh-install-external.driver;
+        }
+      );
 
       formatter = forAllSystems (system: (mkPkgs system).nixfmt-rfc-style);
 
@@ -288,8 +295,8 @@
             grep -F 'nixpi-init-system-flake.sh' "${bootstrapScriptSource}" >/dev/null
             grep -F 'nixos-rebuild switch --flake /etc/nixos#nixos' "${bootstrapScriptSource}" >/dev/null
             grep -F 'nixos-rebuild switch --flake /etc/nixos#nixos' "${./core/scripts/nixpi-rebuild.sh}" >/dev/null
-            ! grep -F -- '--impure' "${bootstrapScriptSource}" >/dev/null
-            ! grep -F -- '--impure' "${./core/scripts/nixpi-rebuild.sh}" >/dev/null
+            grep -F -- '--impure' "${bootstrapScriptSource}" >/dev/null
+            grep -F -- '--impure' "${./core/scripts/nixpi-rebuild.sh}" >/dev/null
             grep -F '"$@"' "${./core/scripts/nixpi-rebuild.sh}" >/dev/null
             grep -F "Use 'nixpi-rebuild' to rebuild" "${bootstrapScriptSource}" >/dev/null
             ! grep -F 'nixos-rebuild switch --flake /srv/nixpi#nixpi' "${bootstrapScriptSource}" >/dev/null
@@ -390,6 +397,10 @@
               path = nixosTests.nixpi-firstboot;
             }
             {
+              name = "nixpi-bootstrap-fresh-install";
+              path = nixosTests.nixpi-bootstrap-fresh-install;
+            }
+            {
               name = "nixpi-system-flake";
               path = nixosTests.nixpi-system-flake;
             }
@@ -439,6 +450,11 @@
           ];
         }
         // nixosTests; # Merge in the new test suite
+
+      apps.${system}.nixpi-bootstrap-fresh-install-harness = {
+        type = "app";
+        program = "${self.packages.${system}.nixpi-bootstrap-fresh-install-harness}/bin/nixos-test-driver";
+      };
 
       devShells = forAllSystems (
         system:

@@ -19,6 +19,11 @@ if [ ! -f "$NIXOS_DIR/configuration.nix" ]; then
   exit 1
 fi
 
+if [ ! -f "$NIXOS_DIR/hardware-configuration.nix" ]; then
+  echo "missing $NIXOS_DIR/hardware-configuration.nix; bootstrap expects standard generated NixOS hardware config" >&2
+  exit 1
+fi
+
 resolve_nixpkgs_flake_url() {
   if [ -n "$NIXPKGS_FLAKE_URL" ]; then
     printf '%s\n' "$NIXPKGS_FLAKE_URL"
@@ -83,6 +88,7 @@ if should_write_system_flake; then
         inherit system;
         modules = [
           ./configuration.nix
+          ./hardware-configuration.nix
           nixpi.nixosModules.nixpi
           {
             nixpkgs.hostPlatform = system;

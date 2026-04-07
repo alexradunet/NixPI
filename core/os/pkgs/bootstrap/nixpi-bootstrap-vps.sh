@@ -7,6 +7,16 @@ BRANCH="${NIXPI_REPO_BRANCH:-main}"
 HOSTNAME_VALUE="${NIXPI_HOSTNAME:-$(hostname -s)}"
 TIMEZONE_VALUE="${NIXPI_TIMEZONE:-UTC}"
 KEYBOARD_VALUE="${NIXPI_KEYBOARD:-us}"
+FLAKE_NIX_CONFIG='experimental-features = nix-command flakes'
+
+compose_nix_config() {
+  if [ -n "${NIX_CONFIG:-}" ]; then
+    printf '%s\n%s\n' "$FLAKE_NIX_CONFIG" "$NIX_CONFIG"
+    return 0
+  fi
+
+  printf '%s\n' "$FLAKE_NIX_CONFIG"
+}
 
 log() {
   printf '[nixpi-bootstrap-vps] %s\n' "$*"
@@ -83,6 +93,7 @@ resolve_primary_user() {
 }
 
 PRIMARY_USER_VALUE="$(resolve_primary_user)"
+COMBINED_NIX_CONFIG="$(compose_nix_config)"
 
 if [ ! -d "$REPO_DIR/.git" ]; then
   log "Cloning $REPO_URL#$BRANCH into $REPO_DIR"
@@ -96,16 +107,11 @@ run_as_root git -C "$REPO_DIR" fetch origin "$BRANCH"
 run_as_root git -C "$REPO_DIR" checkout "$BRANCH"
 run_as_root git -C "$REPO_DIR" reset --hard "origin/$BRANCH"
 
-# Ensure nix experimental features are enabled so nixos-rebuild can use flakes.
-# A fresh NixOS host has no experimental-features configured by default.
-NIXCONF=/etc/nix/nix.conf
-if ! run_as_root grep -q 'experimental-features' "$NIXCONF" 2>/dev/null; then
-  log "Enabling nix experimental features in $NIXCONF"
-  run_as_root sh -c "echo 'experimental-features = nix-command flakes' >> $NIXCONF"
-fi
-
 log "Initializing standard /etc/nixos flake"
-run_as_root env "NIXPI_NIXPKGS_FLAKE_URL=${NIXPI_NIXPKGS_FLAKE_URL:-}" bash "$REPO_DIR/core/scripts/nixpi-init-system-flake.sh" \
+run_as_root env \
+  "NIX_CONFIG=$COMBINED_NIX_CONFIG" \
+  "NIXPI_NIXPKGS_FLAKE_URL=${NIXPI_NIXPKGS_FLAKE_URL:-}" \
+  bash "$REPO_DIR/core/scripts/nixpi-init-system-flake.sh" \
   "$REPO_DIR" \
   "$HOSTNAME_VALUE" \
   "$PRIMARY_USER_VALUE" \
@@ -113,5 +119,5 @@ run_as_root env "NIXPI_NIXPKGS_FLAKE_URL=${NIXPI_NIXPKGS_FLAKE_URL:-}" bash "$RE
   "$KEYBOARD_VALUE"
 
 log "Running nixos-rebuild switch --flake /etc/nixos#nixos"
-run_as_root nixos-rebuild switch --flake /etc/nixos#nixos
+run_as_root env "NIX_CONFIG=$COMBINED_NIX_CONFIG" nixos-rebuild switch --flake /etc/nixos#nixos --impure
 log "Bootstrap complete. Use 'nixpi-rebuild' to rebuild or update your system."

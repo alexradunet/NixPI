@@ -11,7 +11,7 @@ This directory contains NixOS integration tests for the NixPI platform. These te
   - `nixpi-security`
   - `nixpi-broker`
 - `nixos-full`: comprehensive headless VPS VM lane
-  - registered tests: `nixpi-firstboot`, `nixpi-chat`, `nixpi-network`, `nixpi-e2e`, `nixpi-security`, `nixpi-modular-services`, `nixpi-post-setup-lockdown`, `nixpi-broker`, `nixpi-update`, `nixpi-options-validation`
+  - registered tests: `nixpi-firstboot`, `nixpi-bootstrap-fresh-install`, `nixpi-chat`, `nixpi-network`, `nixpi-e2e`, `nixpi-security`, `nixpi-modular-services`, `nixpi-post-setup-lockdown`, `nixpi-broker`, `nixpi-update`, `nixpi-options-validation`
 - `nixos-destructive`: slower install/lockdown/broker cases intended for manual or scheduled runs
   - `nixpi-post-setup-lockdown`
   - `nixpi-broker`
@@ -41,6 +41,15 @@ nix build .#checks.x86_64-linux.nixpi-vps-bootstrap --no-link -L
 nix build .#checks.x86_64-linux.nixpi-chat --no-link -L
 ```
 
+### Run the external fresh-install bootstrap harness
+```bash
+nix run .#nixpi-bootstrap-fresh-install-harness
+```
+
+This launches the NixOS test driver outside the Nix build sandbox so the host
+side can use its normal Nix daemon/store while the guest VM exercises the full
+bootstrap path on a pristine system.
+
 Common direct commands:
 ```bash
 nix --option substituters https://cache.nixos.org/ build .#checks.x86_64-linux.config --no-link
@@ -63,6 +72,8 @@ tests/nixos/
 ├── lib.nix              # Shared test helpers and module lists
 ├── default.nix          # Test suite entry point
 ├── nixpi-broker.nix              # broker autonomy and privilege boundaries
+├── nixpi-bootstrap-fresh-install.nix # fresh-install bootstrap contract on a pristine VM
+├── nixpi-bootstrap-fresh-install-external.nix # external harness for a real offline guest rebuild attempt
 ├── nixpi-chat.nix                # built-in local chat surface test
 ├── nixpi-e2e.nix                 # end-to-end integration test
 ├── nixpi-firstboot.nix           # first-boot remote shell/chat readiness test

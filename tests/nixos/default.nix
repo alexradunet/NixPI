@@ -14,6 +14,7 @@ let
       mkTestFilesystems
       mkManagedUserConfig
       ;
+    bootstrapPackage = self.packages.${pkgs.system}.nixpi-bootstrap-vps;
   };
 
   runTest =
@@ -27,6 +28,8 @@ let
     };
 
   tests = {
+    nixpi-bootstrap-fresh-install = runTest ./nixpi-bootstrap-fresh-install.nix;
+    nixpi-bootstrap-fresh-install-external = runTest ./nixpi-bootstrap-fresh-install-external.nix;
     nixpi-firstboot = runTest ./nixpi-firstboot.nix;
     nixpi-system-flake = runTest ./nixpi-system-flake.nix;
     nixpi-vps-bootstrap = runTest ./nixpi-vps-bootstrap.nix;
