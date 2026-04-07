@@ -30,10 +30,13 @@ Use these procedures when diagnosing and recovering from common system issues. A
 2. If booted into wrong generation: `nixos_update(action="rollback")` to revert
 3. If update failed: check the last update status file
 4. Common causes:
-   - Network interruption during build: retry `nixos_update(action="apply", source="remote")`
-   - Evaluation error: check flake source for Nix errors
+   - Network interruption during build: retry `sudo nixpi-rebuild-pull`
+   - Evaluation error: check `/etc/nixos/flake.nix` and the canonical checkout at `/srv/nixpi`
    - Disk full: check with `system_health`, run `nix-collect-garbage`
-5. After rollback: confirm with `nixos_update(action="status")`
+5. Canonical steady-state workflow:
+   - update `/srv/nixpi` with `sudo nixpi-rebuild-pull [branch-or-ref]`
+   - rebuild only with `sudo nixpi-rebuild` when the checkout is already current
+6. After rollback: confirm with `nixos_update(action="status")`
 
 ## Local Nix Proposal Failure
 

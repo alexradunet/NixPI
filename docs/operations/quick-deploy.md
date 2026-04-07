@@ -87,20 +87,16 @@ ip link show wg0
 
 Treat `/srv/nixpi` as the installed source of truth. Use it for edits, sync, and rebuilds.
 
-Apply local changes manually:
-
 ```bash
 cd /srv/nixpi
 sudo nixpi-rebuild
 ```
 
-Sync with the default remote and rebuild:
+To update the canonical checkout and rebuild in one command:
 
 ```bash
-cd /srv/nixpi
-git fetch origin
-git rebase origin/main
-sudo nixpi-rebuild
+sudo nixpi-rebuild-pull
+sudo nixpi-rebuild-pull main
 ```
 
 Roll back if needed:

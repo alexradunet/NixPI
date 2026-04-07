@@ -16,13 +16,18 @@ Run on a fresh NixOS-capable VPS:
 nix --extra-experimental-features 'nix-command flakes' run github:alexradunet/nixpi#nixpi-bootstrap-vps
 ```
 
-Then operate from `/srv/nixpi`:
+Then operate from the canonical checkout:
 
 ```bash
 cd /srv/nixpi
-git fetch origin
-git rebase origin/main
+git status
 sudo nixpi-rebuild
+```
+
+To update the canonical checkout and rebuild in one step:
+
+```bash
+sudo nixpi-rebuild-pull
 ```
 
 Rollback if needed:

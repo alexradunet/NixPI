@@ -62,7 +62,7 @@ function ensureSystemFlakeExists(flake: string): OsActionResult | null {
 	}
 
 	return errorResult(
-		`System flake not found at ${flake}. NixPI now rebuilds through the standard /etc/nixos flake. ` +
+		`System flake not found at ${flake}. NixPI rebuilds through the standard /etc/nixos flake, which should import the canonical checkout at /srv/nixpi. ` +
 			`Run bootstrap again or initialize /etc/nixos/flake.nix so it imports /srv/nixpi before applying updates.`,
 	);
 }
@@ -91,7 +91,7 @@ async function ensureCanonicalMainBranch(signal: AbortSignal | undefined): Promi
 		return {
 			branchOk: false,
 			errorResult: errorResult(
-				`${message}. switch to main in ${repoDir} before rebuilding from ${getSystemFlakeDir()}.`,
+				`${message}. switch to main in /srv/nixpi or run 'sudo nixpi-rebuild-pull main' before rebuilding from ${getSystemFlakeDir()}.`,
 			),
 		};
 	}

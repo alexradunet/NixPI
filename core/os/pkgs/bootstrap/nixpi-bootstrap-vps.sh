@@ -120,4 +120,4 @@ run_as_root env \
 
 log "Running nixos-rebuild switch --flake /etc/nixos#nixos"
 run_as_root env "NIX_CONFIG=$COMBINED_NIX_CONFIG" nixos-rebuild switch --flake /etc/nixos#nixos --impure
-log "Bootstrap complete. Use 'nixpi-rebuild' to rebuild or update your system."
+log "Bootstrap complete. /srv/nixpi is the canonical source checkout. Use 'nixpi-rebuild' to rebuild the current checkout or 'nixpi-rebuild-pull' to update and rebuild."

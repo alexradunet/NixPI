@@ -27,6 +27,9 @@ This layer defines NixPI's current competency inventory.
 
 - OS management: NixOS generation status, updates, rollback.
 - Service control: systemd unit management.
+- Canonical system source checkout: `/srv/nixpi`.
+- Canonical rebuild path: `sudo nixpi-rebuild`.
+- Canonical update-and-rebuild path: `sudo nixpi-rebuild-pull [branch-or-ref]`.
 
 ### Self-Evolution
 

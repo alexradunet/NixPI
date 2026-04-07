@@ -78,11 +78,17 @@ If WireGuard peers are not configured yet, finish that step before treating the 
 
 ```bash
 cd /srv/nixpi
-git status --short
+git status
 sudo nixpi-rebuild
 ```
 
 Expected result: the machine rebuilds from `/etc/nixos` while importing NixPI from `/srv/nixpi`, preserving the host's existing hardware and desktop configuration.
+
+To update the canonical checkout and rebuild in one step:
+
+```bash
+sudo nixpi-rebuild-pull
+```
 
 ## Operator Orientation
 
