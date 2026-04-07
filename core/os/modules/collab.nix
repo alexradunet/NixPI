@@ -1,7 +1,0 @@
-{ ... }:
-
-{
-  imports = [
-    ./service-surface.nix
-  ];
-}

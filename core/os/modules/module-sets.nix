@@ -16,22 +16,22 @@
     ./options.nix
     ./network.nix
     ./update.nix
-    ./runtime.nix
-    ./collab.nix
+    ./app.nix
+    ./broker.nix
+    ./service-surface.nix
     ./tooling.nix
     ./ttyd.nix
-    ./setup-apply.nix
   ];
 
   nixpi = [
     ./options.nix
     ./network.nix
     ./update.nix
-    ./runtime.nix
-    ./collab.nix
+    ./app.nix
+    ./broker.nix
+    ./service-surface.nix
     ./tooling.nix
     ./shell.nix
     ./ttyd.nix
-    ./setup-apply.nix
   ];
 }
