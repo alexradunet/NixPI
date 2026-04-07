@@ -1,10 +1,11 @@
-import { chmodSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
+import { chmodSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 const repoRoot = path.resolve(import.meta.dirname, "../..");
+const oldLabPath = [".omx", "qemu-lab"].join("/");
 
 function writeStubExecutable(binDir: string, name: string) {
 	const stubPath = path.join(binDir, name);
@@ -35,7 +36,7 @@ describe("QEMU lab path guards", () => {
 			expect(result.stderr).toContain(
 				`missing installer ISO: ${path.join(tempRepoRoot, "qemu-lab", "nixos-stable-installer.iso")}`,
 			);
-			expect(result.stderr).not.toContain(".omx/qemu-lab");
+			expect(result.stderr).not.toContain(oldLabPath);
 		} finally {
 			rmSync(tempRepoRoot, { recursive: true, force: true });
 			rmSync(stubBinDir, { recursive: true, force: true });
@@ -51,5 +52,16 @@ describe("QEMU lab path guards", () => {
 		expect(labReadme).toContain("qemu-lab/nixos-stable-installer.iso");
 		expect(labReadme).toContain("qemu-lab/disks/");
 		expect(labReadme).toContain("qemu-lab/logs/");
+	});
+
+	it("documents qemu-lab as the canonical operator-visible path", () => {
+		const qemuReadme = readFileSync(path.join(repoRoot, "tools/qemu/README.md"), "utf8");
+		const liveTesting = readFileSync(path.join(repoRoot, "docs/operations/live-testing.md"), "utf8");
+
+		expect(qemuReadme).toContain("lab root: `qemu-lab/`");
+		expect(qemuReadme).toContain("qemu-lab/nixos-stable-installer.iso");
+		expect(qemuReadme).not.toContain(oldLabPath);
+		expect(liveTesting).toContain("`qemu-lab/`");
+		expect(liveTesting).not.toContain(oldLabPath);
 	});
 });

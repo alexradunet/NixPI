@@ -48,7 +48,7 @@ nix run .#qemu-prepare-preinstalled-stable
 nix run .#qemu-preinstalled-stable
 ```
 
-These commands standardize the host-side QEMU environment only. Install, bootstrap, reboot, and service validation remain manual inside the guest. See `tools/qemu/README.md` for the exact disk paths and scratch-to-reusable image flow.
+These commands standardize the host-side QEMU environment only. Local runtime artifacts live under `qemu-lab/`. Install, bootstrap, reboot, and service validation remain manual inside the guest. See `tools/qemu/README.md` for the exact disk paths and scratch-to-reusable image flow.
 
 ### First Remote Validation
 
