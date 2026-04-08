@@ -428,6 +428,10 @@
               path = nixosTests.nixpi-runtime;
             }
             {
+              name = "nixpi-zellij";
+              path = nixosTests.nixpi-zellij;
+            }
+            {
               name = "nixpi-security";
               path = nixosTests.nixpi-security;
             }
