@@ -11,7 +11,6 @@ let
   primaryHome = "/home/${primaryUser}";
   stateDir = config.nixpi.stateDir;
   systemReadyFile = "${primaryHome}/.nixpi/wizard-state/system-ready";
-  cfg = config.nixpi.services;
   securityCfg = config.nixpi.security;
   wgCfg = config.nixpi.wireguard;
   sshAllowUsers =
@@ -19,10 +18,6 @@ let
       securityCfg.ssh.allowUsers
     else
       lib.optional (primaryUser != "") primaryUser;
-  bindsLocally =
-    cfg.bindAddress == "127.0.0.1" || cfg.bindAddress == "::1" || cfg.bindAddress == "localhost";
-  exposedPorts =
-    lib.optionals cfg.home.enable [ 80 ] ++ lib.optionals cfg.secureWeb.enable [ cfg.secureWeb.port ];
   wireguardPeers = map (
     peer:
     {
@@ -109,14 +104,6 @@ in
           message = "nixpi.security.trustedInterface must not be empty.";
         }
         {
-          assertion = cfg.bindAddress != "";
-          message = "nixpi.services.bindAddress must not be empty.";
-        }
-        {
-          assertion = lib.length (lib.unique exposedPorts) == lib.length exposedPorts;
-          message = "NixPI service ports must be unique across built-in services.";
-        }
-        {
           assertion = lib.all (peer: peer.dynamicEndpointRefreshSeconds == null) wgCfg.peers;
           message = ''
             nixpi.wireguard.peers.*.dynamicEndpointRefreshSeconds is not supported by the
@@ -160,9 +147,6 @@ in
       # These firewall rules are inert until WireGuard brings the interface up.
       # During first-boot setup, SSH access still relies on the physical interface,
       # which is opened separately via nixpi.security.ssh options.
-      networking.firewall.interfaces = lib.mkIf securityCfg.enforceServiceFirewall {
-        "${securityCfg.trustedInterface}".allowedTCPPorts = exposedPorts;
-      };
       networking.useDHCP = lib.mkDefault false;
       networking.networkmanager.enable = true;
       systemd.network = lib.mkIf wgCfg.enable {
@@ -250,11 +234,6 @@ in
         jq
         preferWifi
       ] ++ lib.optionals wgCfg.enable [ wireguard-tools ];
-      warnings = lib.optional (!securityCfg.enforceServiceFirewall && !bindsLocally) ''
-        NixPI's built-in service surface is bound to `${cfg.bindAddress}` without
-        the trusted-interface firewall restriction. Backend service ports may
-        be reachable on all network interfaces.
-      '';
     }
   ];
 }

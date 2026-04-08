@@ -1,109 +1,46 @@
 # Runtime Flows
 
-> How the terminal-first NixPI runtime boots, routes traffic, and enters Pi
+> End-to-end startup and operator-entry flow for the current NixPI runtime
 
-## Audience
-
-Operators and maintainers debugging the active NixPI runtime path.
-
-## Current Runtime Shape
-
-NixPI no longer uses a browser chat server as the primary product surface.
-
-The active runtime path is:
+## Active Runtime Path
 
 1. `nixpi-app-setup.service` prepares `~/.pi`
-2. `nixpi-ttyd.service` starts ttyd on `127.0.0.1:7681`
-3. `nginx` proxies `/` and `/terminal/` to ttyd
-4. ttyd launches `core/scripts/nixpi-terminal-bootstrap.sh`
-5. the bootstrap wrapper enters `pi`
+2. `sshd.service` and local login shells provide operator entry
+3. the operator runs `pi`
+4. Pi loads extensions, persona, and workspace state from the seeded runtime
 
 ## Boot and Service Startup Flow
 
 ```text
-systemd boot
-    ↓
 multi-user.target
-    ↓
+├─ sshd.service
 ├─ wireguard-wg0.service
 ├─ systemd-networkd.service
 ├─ nixpi-app-setup.service
-├─ nixpi-ttyd.service
-├─ nixpi-update.service
-└─ nginx.service
+└─ nixpi-update.service
 ```
 
-### Key Files
+## Key Files
 
 | File | Role |
 |------|------|
 | `core/os/modules/app.nix` | Pi runtime install and state-directory setup |
-| `core/os/modules/ttyd.nix` | ttyd service definition and environment wiring |
-| `core/os/modules/service-surface.nix` | nginx routing and TLS setup |
-| `core/scripts/nixpi-terminal-bootstrap.sh` | terminal bootstrap wrapper that enters Pi |
+| `core/os/modules/shell.nix` | Shell-facing environment wiring |
+| `core/pi/extensions/os/` | OS and update tooling exposed to Pi |
 
-## Browser Entry Flow
+## Important Runtime Properties
 
-```text
-Browser
-  ↓
-nginx (/ or /terminal/)
-  ↓
-ttyd
-  ↓
-nixpi-terminal-bootstrap
-  ↓
-pi
-```
-
-### Important Runtime Properties
-
-- `/` is the canonical browser entrypoint
-- `/terminal/` is an alias to the same ttyd-backed terminal surface
-- ttyd is transport, not product logic
+- SSH and local terminals are the supported interactive entrypoints
 - Pi owns the actual user experience
+- `~/.pi` is seeded before the operator starts work
+- `/srv/nixpi` remains the canonical editable checkout for rebuilds
 
-## Setup-vs-Normal Flow
-
-Pi behavior changes based on:
-
-- `~/.nixpi/wizard-state/system-ready` missing → setup mode
-- `~/.nixpi/wizard-state/system-ready` present → normal mode
-
-In setup mode, Pi should:
-
-1. guide `/login`
-2. guide `/model`
-3. walk through git identity setup, WireGuard, security configuration, and intro/tutorial
-4. write `system-ready` only when onboarding is complete
-
-## Transport Parity
-
-The same Pi workflow should be available from:
-
-- ttyd in the browser
-- SSH
-- local terminal / tty login
-
-The browser path should not have its own separate setup semantics.
-
-## Troubleshooting
-
-Useful checks:
+## Verification Commands
 
 ```bash
 systemctl status nixpi-app-setup.service
-systemctl status nixpi-ttyd.service
-systemctl status nginx.service
-journalctl -u nixpi-ttyd.service -n 100
-curl -I http://127.0.0.1/
-curl -I http://127.0.0.1/terminal/
+systemctl status sshd.service
+systemctl status wireguard-wg0.service
+command -v pi
+pi --help
 ```
-
-If the browser path fails, verify `pi` still works directly over SSH or a local shell. That distinguishes transport problems from Pi/runtime problems.
-
-## Related
-
-- [Service Architecture](../reference/service-architecture)
-- [Daemon Architecture](../reference/daemon-architecture)
-- [First Boot Setup](../operations/first-boot-setup)

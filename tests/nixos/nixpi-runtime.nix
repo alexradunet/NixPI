@@ -1,7 +1,7 @@
 { nixPiModulesNoShell, mkTestFilesystems, ... }:
 
 {
-  name = "nixpi-terminal";
+  name = "nixpi-runtime";
 
   nodes.nixpi =
     { pkgs, ... }:
@@ -15,7 +15,7 @@
 
       virtualisation.diskSize = 10240;
       virtualisation.memorySize = 2048;
-      networking.hostName = "nixpi-terminal-test";
+      networking.hostName = "nixpi-runtime-test";
       time.timeZone = "UTC";
       i18n.defaultLocale = "en_US.UTF-8";
       networking.networkmanager.enable = true;
@@ -40,18 +40,18 @@
 
     nixpi.start()
     nixpi.wait_for_unit("multi-user.target", timeout=300)
+    nixpi.wait_for_unit("nixpi-app-setup.service", timeout=60)
 
-    nixpi.wait_for_unit("nixpi-ttyd.service", timeout=60)
-    nixpi.succeed("test -f /etc/systemd/system/nixpi-ttyd.service")
     nixpi.succeed("test -d /usr/local/share/nixpi")
+    nixpi.succeed("test -d /home/pi/.pi")
+    nixpi.succeed("test -f /home/pi/.pi/settings.json")
+    nixpi.succeed("test ! -L /home/pi/.pi")
+    nixpi.succeed('test "$(stat -c %U /home/pi/.pi)" = pi')
+    nixpi.succeed("su - pi -c 'test \"$PI_CODING_AGENT_DIR\" = /home/pi/.pi; pi --help | grep -q \"AI coding assistant\"'")
 
-    exec_start = nixpi.succeed("systemctl show -p ExecStart --value nixpi-ttyd.service")
-    assert "ttyd" in exec_start and "nixpi-terminal-bootstrap" in exec_start, \
-        "Unexpected ExecStart: " + exec_start
+    nixpi.fail("systemctl status nixpi-ttyd.service >/dev/null 2>&1")
+    nixpi.fail("systemctl status nginx.service >/dev/null 2>&1")
 
-    nixpi.wait_until_succeeds("curl -sf http://127.0.0.1/ >/dev/null", timeout=60)
-    nixpi.wait_until_succeeds("curl -sf http://127.0.0.1/terminal/ >/dev/null", timeout=60)
-
-    print("nixpi-terminal tests passed!")
+    print("nixpi-runtime tests passed!")
   '';
 }

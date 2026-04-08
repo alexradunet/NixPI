@@ -2,113 +2,34 @@
 
 > Security perimeter and threat model
 
-## Audience
-
-Operators deploying NixPI and template forkers who need to understand the security perimeter and threat model.
-
 ## Core Security Model
 
-**WireGuard is the load-bearing remote-access boundary.**
+NixPI no longer ships an HTTP terminal surface. The supported operator paths are:
 
-NixPI is designed as a NixOS-based personal AI-first OS where the primary operator path is a native WireGuard interface. The interface is now backed by `systemd-networkd`, while `wireguard-wg0.service` remains as a compatibility control surface. This is explicitly codified in the firewall configuration:
+- SSH for remote administration
+- local terminal login on monitor-attached hardware
+- optional WireGuard for a private management overlay
 
-```nix
-networking.firewall.interfaces.wg0.allowedTCPPorts = [ 80 443 ];
-```
+## Network Exposure
 
-The `wg0` interface is the WireGuard tunnel interface. Only WireGuard peers can reach the remote NixPI app surface. Everything behind the tunnel is relatively trusted.
+By default, the host keeps:
+
+- SSH reachable for the primary operator
+- the WireGuard UDP listen port reachable when WireGuard is enabled
+- no built-in HTTP/HTTPS Pi surface
 
 ## What WireGuard Protects
 
-When WireGuard is active and the `wg0` interface is up, the following services are accessible **only** to WireGuard peers:
-
-| Service | Port | Purpose |
-|---------|------|---------|
-| Pi terminal surface | `:80`, `:443` | Primary remote Pi entrypoint |
-| ttyd alias | `/terminal/` via nginx | Alias to the same operator shell |
-
-## What Happens If WireGuard Peers Are Missing
-
-If WireGuard is enabled but you have not configured any peers yet:
-
-1. The `wg0` interface may still exist locally, but no remote device can use it
-2. The app ports remain closed on untrusted interfaces when `nixpi.security.enforceServiceFirewall = true`
-3. The public exposure is limited to SSH and the WireGuard UDP listen port
-4. Remote browser access is unavailable until you add at least one trusted peer
-
-This is an availability problem, not a silent app exposure, as long as the interface-restricted firewall remains enabled.
+WireGuard remains the preferred private management network for operator devices and future trusted-service traffic. It is not required for the local shell runtime to function.
 
 ## Threat Actors Within Scope
 
-The security model addresses the following threats:
-
-1. **Compromised device on the WireGuard network** — A peer that has been compromised can attempt to interact with NixPI services or brute-force SSH.
-
-2. **Compromised service container** — A container running on the host (inside the mesh) that has been compromised can attempt to pivot to the host or manipulate NixPI state.
-
-3. **Template forker without WireGuard peers** — A user who deploys NixPI without configuring any WireGuard peers will not have the intended remote operator path and will fall back to SSH-only administration.
-
-## SSH Access
-
-By default:
-
-- Password authentication is disabled
-- Public key authentication is enabled
-- Root login is disabled
-- The installed desktop profile keeps SSH available after setup for remote administration and VM debugging
-- SSH logins are restricted to the primary operator account by default
-
-Recommended hardening after first boot:
-
-```bash
-# Add your SSH public key
-mkdir -p ~/.ssh
-chmod 700 ~/.ssh
-echo "ssh-ed25519 AAAAC3... your-key" >> ~/.ssh/authorized_keys
-chmod 600 ~/.ssh/authorized_keys
-
-# Then disable password login and keep only key-based SSH access
-```
+1. **Compromised SSH client or admin device**
+2. **Compromised device on the WireGuard network**
+3. **Template forker who deploys without verifying shell-access hardening**
 
 ## Agent Privilege Boundary
 
 - The primary operator account is the normal human and Pi runtime identity
 - Interactive Pi state lives in `~/.pi`, while service and secret state lives under `/var/lib/nixpi`
-- The human operator keeps full OS administration through their own account
-- During first boot (before `~/.nixpi/wizard-state/system-ready` exists), NixPI grants temporary passwordless sudo to the primary user via `/var/lib/nixpi/sudoers.d/nixpi-first-boot`
-- `nixpi-setup-apply` removes that temporary sudo grant when setup is marked complete
 - Privileged actions are routed through the root-owned `nixpi-broker` service
-
-Default autonomy:
-
-- `observe` can read state only
-- `maintain` can operate approved NixPI systemd units
-- `admin` is available only through temporary elevation
-
-Temporary elevation is managed with:
-
-```bash
-sudo nixpi-brokerctl grant-admin 30m
-sudo nixpi-brokerctl status
-sudo nixpi-brokerctl revoke-admin
-```
-
-After setup is complete, direct blanket passwordless sudo is removed. Privileged operations should go through normal `sudo` prompts or the broker service.
-
-## Pre-Deployment Checklist
-
-Before exposing a NixPI host to any network:
-
-- [ ] `wireguard-wg0.service` is active
-- [ ] `systemd-networkd.service` is active
-- [ ] The `wg0` interface exists (`ip link show wg0`)
-- [ ] `networkctl status wg0` shows the interface as managed by networkd
-- [ ] `wg show wg0` lists your expected peers
-- [ ] You have verified services are NOT accessible from non-WireGuard devices
-- [ ] SSH keys are provisioned (recommended)
-
-## Related
-
-- [First Boot Setup](../operations/first-boot-setup)
-- [Quick Deploy](../operations/quick-deploy)
-- [Supply Chain](./supply-chain)

@@ -180,10 +180,10 @@ describe("handleSystemdControl", () => {
 		expect(result.isError).toBe(true);
 	});
 
-	it("runs systemctl for nixpi-ttyd status", async () => {
+	it("runs systemctl for nixpi-update status", async () => {
 		mockRun.mockResolvedValueOnce({ stdout: "active", stderr: "", exitCode: 0 });
 		const ctx = createMockExtensionContext();
-		const result = await handleSystemdControl("nixpi-ttyd", "status", undefined, ctx as never);
+		const result = await handleSystemdControl("nixpi-update", "status", undefined, ctx as never);
 		expect(result.content[0].text).toContain("active");
 	});
 });
@@ -220,7 +220,7 @@ describe("handleSystemHealth", () => {
 		mockRun
 			.mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 1 }) // nixos-rebuild fails
 			.mockResolvedValueOnce({
-				stdout: JSON.stringify([{ Names: ["nixpi-ttyd"], Status: "Up 1 hour" }]),
+				stdout: JSON.stringify([{ Names: ["nixpi-runtime"], Status: "Up 1 hour" }]),
 				stderr: "",
 				exitCode: 0,
 			}) // podman ps
@@ -229,7 +229,7 @@ describe("handleSystemHealth", () => {
 			.mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 1 }) // free
 			.mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 1 }); // uptime
 		const result = await handleSystemHealth(undefined);
-		expect(result.content[0].text).toContain("nixpi-ttyd");
+		expect(result.content[0].text).toContain("nixpi-runtime");
 		expect(result.content[0].text).toContain("Up 1 hour");
 	});
 
@@ -314,7 +314,7 @@ describe("handleSystemdControl — mutating actions", () => {
 	it("runs start action on a valid nixpi service", async () => {
 		mockRun.mockResolvedValueOnce({ stdout: "started", stderr: "", exitCode: 0 });
 		const ctx = createMockExtensionContext();
-		const result = await handleSystemdControl("nixpi-ttyd", "start", undefined, ctx as never);
+		const result = await handleSystemdControl("nixpi-update", "start", undefined, ctx as never);
 		expect(result.isError).toBeFalsy();
 		expect(result.content[0].text).toContain("started");
 	});
@@ -322,20 +322,20 @@ describe("handleSystemdControl — mutating actions", () => {
 	it("runs stop action on a valid nixpi service", async () => {
 		mockRun.mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 0 });
 		const ctx = createMockExtensionContext();
-		const result = await handleSystemdControl("nixpi-ttyd", "stop", undefined, ctx as never);
+		const result = await handleSystemdControl("nixpi-update", "stop", undefined, ctx as never);
 		expect(result.isError).toBeFalsy();
 	});
 
 	it("runs restart action on a valid nixpi service", async () => {
 		mockRun.mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 0 });
 		const ctx = createMockExtensionContext();
-		const result = await handleSystemdControl("nixpi-ttyd", "restart", undefined, ctx as never);
+		const result = await handleSystemdControl("nixpi-update", "restart", undefined, ctx as never);
 		expect(result.isError).toBeFalsy();
 	});
 
 	it("returns error when user declines start confirmation", async () => {
 		const ctx = { hasUI: true, ui: { confirm: vi.fn().mockResolvedValue(false) } } as never;
-		const result = await handleSystemdControl("nixpi-ttyd", "start", undefined, ctx);
+		const result = await handleSystemdControl("nixpi-update", "start", undefined, ctx);
 		expect(result.isError).toBe(true);
 		expect(result.content[0].text).toContain("declined");
 	});
@@ -343,7 +343,7 @@ describe("handleSystemdControl — mutating actions", () => {
 	it("returns error on non-zero exit code", async () => {
 		mockRun.mockResolvedValueOnce({ stdout: "", stderr: "unit not found", exitCode: 5 });
 		const ctx = createMockExtensionContext();
-		const result = await handleSystemdControl("nixpi-ttyd", "start", undefined, ctx as never);
+		const result = await handleSystemdControl("nixpi-update", "start", undefined, ctx as never);
 		expect(result.isError).toBe(true);
 	});
 });

@@ -41,7 +41,7 @@ The bootstrap process prepares `/srv/nixpi`, initializes a standard flake-based 
 sudo nixos-rebuild switch --flake /etc/nixos#nixos
 ```
 
-The generated `/etc/nixos/flake.nix` follows the standard NixOS flake pattern more closely: it keeps the existing `/etc/nixos/configuration.nix`, layers NixPI on top, and exposes a single `#nixos` configuration. It follows the configured stable NixOS line by default. Today that means `nixos-25.11`, not `nixos-unstable` or a 26.x pre-release branch. If you need a different base explicitly, set `NIXPI_NIXPKGS_FLAKE_URL` before running bootstrap.
+The generated `/etc/nixos/flake.nix` follows the standard NixOS flake pattern more closely: it keeps the existing `/etc/nixos/configuration.nix`, layers NixPI on top, and exposes a single `#nixos` configuration. It follows the configured stable NixOS line by default. Today that means `nixos-25.11`.
 
 On a monitor-attached mini PC, the installed system also keeps a local `tty1` login prompt after reboot, so local recovery remains available if remote access is unavailable.
 
@@ -59,14 +59,13 @@ sudo nixpi-rebuild
 Check core services:
 
 ```bash
-systemctl status nixpi-ttyd.service
-systemctl status nginx.service
+systemctl status nixpi-app-setup.service
+systemctl status sshd.service
 systemctl status wireguard-wg0.service
 networkctl status wg0
 ```
 
-`wireguard-wg0.service` remains the operator-facing compatibility unit, but the
-interface is now backed by native `systemd-networkd` configuration.
+`wireguard-wg0.service` remains the operator-facing compatibility unit, but the interface is backed by native `systemd-networkd` configuration.
 
 Rollback if needed:
 

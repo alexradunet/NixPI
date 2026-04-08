@@ -7,18 +7,16 @@ description: Troubleshooting and recovery procedures for common NixPI system iss
 
 Use these procedures when diagnosing and recovering from common system issues. Always start with `system_health` for an overview before diving into specific playbooks.
 
-## Pi Terminal Surface Issues
+## Pi Runtime Access Issues
 
-**Symptoms**: The ttyd/browser terminal is unavailable, or Pi is not responding in the terminal-first runtime.
+**Symptoms**: The SSH or local terminal access is unavailable, or Pi is not responding in the shell-first runtime.
 
 1. Check system health: `system_health`
-2. Check the terminal service: `systemctl status nixpi-ttyd.service`
-3. Check logs: `journalctl -u nixpi-ttyd.service -n 100`
-4. Common causes:
-   - Service not running: `sudo systemctl restart nixpi-ttyd.service`
-   - Runtime state mismatch: inspect `~/.pi/` and verify the primary operator account can read/write it
-   - Proxy issue: verify nginx is healthy and `http://localhost/` reaches ttyd
-5. If Pi itself is not responding:
+2. Check the Pi runtime setup unit: `systemctl status nixpi-app-setup.service`
+3. Common causes:
+   - Runtime setup incomplete: inspect `~/.pi/` and verify the primary operator account can read/write it
+   - Shell access unavailable: verify SSH and local login for the primary operator account
+4. If Pi itself is not responding:
    - Verify `pi` runs directly from SSH or a local shell
    - Confirm `~/.pi/` exists and is writable for the primary operator account
 

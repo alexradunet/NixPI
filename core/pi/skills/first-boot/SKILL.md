@@ -9,7 +9,7 @@ description: Pi-guided first boot and onboarding for a terminal-first NixPI mach
 
 This skill applies while `~/.nixpi/wizard-state/system-ready` does **not** exist.
 
-The browser surface is ttyd, not a separate chat app. The same setup should also work from SSH or a local terminal.
+The primary surface is the shell runtime. The same setup should work from SSH or a local terminal.
 
 ## How This Works
 
@@ -32,6 +32,6 @@ The browser surface is ttyd, not a separate chat app. The same setup should also
 
 - **Pi leads the setup** — this is a Pi-native onboarding flow
 - **One step at a time** — never dump the whole checklist at once
-- **Terminal first** — all instructions should make sense in ttyd, SSH, or a local shell
+- **Terminal first** — all instructions should make sense in SSH or a local shell
 - **Verification over assumption** — check commands and system state before advancing
 - **Setup takes priority** until the completion marker exists

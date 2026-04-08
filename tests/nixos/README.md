@@ -8,11 +8,11 @@ This directory contains NixOS integration tests for the NixPI platform. These te
 - `config-stable-bootstrap`: fast non-VM closure build for the documented stable bootstrap target
 - `vps-topology`: fast flake-shape check for the canonical `vps` host profile
 - `nixos-smoke`: PR-oriented headless VPS VM subset
-  - `nixpi-terminal`
+  - `nixpi-runtime`
   - `nixpi-security`
   - `nixpi-broker`
 - `nixos-full`: comprehensive headless VPS VM lane
-  - registered tests: `nixpi-firstboot`, `nixpi-bootstrap-fresh-install`, `nixpi-terminal`, `nixpi-network`, `nixpi-e2e`, `nixpi-security`, `nixpi-modular-services`, `nixpi-post-setup-lockdown`, `nixpi-broker`, `nixpi-update`, `nixpi-options-validation`
+  - registered tests: `nixpi-firstboot`, `nixpi-bootstrap-fresh-install`, `nixpi-runtime`, `nixpi-network`, `nixpi-e2e`, `nixpi-security`, `nixpi-modular-services`, `nixpi-post-setup-lockdown`, `nixpi-broker`, `nixpi-update`, `nixpi-options-validation`
 - `nixos-destructive`: slower install/lockdown/broker cases intended for manual or scheduled runs
   - `nixpi-post-setup-lockdown`
   - `nixpi-broker`
@@ -41,7 +41,7 @@ nix build .#checks.x86_64-linux.nixos-destructive --no-link -L
 ```bash
 nix build .#checks.x86_64-linux.nixpi-vps-bootstrap --no-link -L
 nix build .#checks.x86_64-linux.nixpi-bootstrap-fresh-install-stable --no-link -L
-nix build .#checks.x86_64-linux.nixpi-terminal --no-link -L
+nix build .#checks.x86_64-linux.nixpi-runtime --no-link -L
 ```
 
 ### Run the external fresh-install bootstrap harness
@@ -63,7 +63,7 @@ nix --option substituters https://cache.nixos.org/ --max-jobs 1 build .#checks.x
 
 ### Interactive test driver
 ```bash
-$(nix-build -A checks.x86_64-linux.nixpi-terminal.driverInteractive)/bin/nixos-test-driver
+$(nix-build -A checks.x86_64-linux.nixpi-runtime.driverInteractive)/bin/nixos-test-driver
 >>> nixpi.start()
 >>> nixpi.shell_interact()
 ```
@@ -78,7 +78,7 @@ tests/nixos/
 ├── nixpi-bootstrap-fresh-install.nix # fresh-install bootstrap contract on a pristine VM
 ├── nixpi-bootstrap-fresh-install-stable.nix # stable-default bootstrap contract on a pristine VM
 ├── nixpi-bootstrap-fresh-install-external.nix # external harness for a real offline guest rebuild attempt
-├── nixpi-chat.nix                # built-in Pi terminal surface test
+├── nixpi-runtime.nix             # shell-first Pi runtime smoke test
 ├── nixpi-e2e.nix                 # end-to-end integration test
 ├── nixpi-firstboot.nix           # first-boot remote shell/chat readiness test
 ├── nixpi-modular-services.nix    # system.services/configData regression
@@ -154,14 +154,14 @@ When a test fails, you can:
 
 1. **Check the test log**: The `-L` flag shows full test output
    ```bash
-   nix build .#checks.x86_64-linux.nixpi-terminal -L
+   nix build .#checks.x86_64-linux.nixpi-runtime -L
    ```
 
 2. **Run interactively**: Use the interactive driver to debug
    ```bash
-   $(nix-build -A checks.x86_64-linux.nixpi-terminal.driverInteractive)/bin/nixos-test-driver
+   $(nix-build -A checks.x86_64-linux.nixpi-runtime.driverInteractive)/bin/nixos-test-driver
    >>> server.start()
-   >>> server.execute("systemctl status nixpi-ttyd")
+   >>> server.execute("systemctl status nixpi-app-setup")
    >>> server.shell_interact()  # Get a shell
    ```
 

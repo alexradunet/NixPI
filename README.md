@@ -4,7 +4,7 @@ NixPI is a VPS-first, headless AI companion OS built on NixOS.
 
 It combines:
 - a canonical system checkout at `/srv/nixpi`
-- a browser-accessible Pi terminal surface backed by ttyd
+- a shell-first Pi runtime for SSH and local terminals
 - host automation through NixOS and systemd
 - Pi runtime + extensions in one deployable system
 
@@ -43,7 +43,6 @@ sudo nixos-rebuild switch --rollback
 - Operations: https://alexradunet.github.io/NixPI/operations/
 - Architecture: https://alexradunet.github.io/NixPI/architecture/
 - Reference: https://alexradunet.github.io/NixPI/reference/
-- Manual QEMU lab: `tools/qemu/README.md`
 - Internal notes (non-public): `internal/`
 
 Run docs locally:

@@ -225,14 +225,12 @@ in
     machine.wait_until_succeeds("test -f /tmp/bootstrap.exit", timeout=300)
     machine.succeed("test \"$(cat /tmp/bootstrap.exit)\" = 0")
 
-    machine.wait_for_unit("nixpi-ttyd.service", timeout=180)
-    machine.wait_for_unit("nixpi-ttyd.service", timeout=180)
-    machine.wait_for_unit("nginx.service", timeout=180)
+    machine.wait_for_unit("nixpi-app-setup.service", timeout=180)
     machine.succeed("command -v nixpi-rebuild")
     machine.succeed("test -d " + home + "/.pi")
     machine.succeed("test ! -L " + home + "/.pi")
-    machine.wait_until_succeeds("curl -sf http://127.0.0.1/ >/dev/null", timeout=60)
-    machine.wait_until_succeeds("curl -sf http://127.0.0.1/ >/dev/null", timeout=60)
+    machine.fail("systemctl status nixpi-ttyd.service >/dev/null 2>&1")
+    machine.fail("systemctl status nginx.service >/dev/null 2>&1")
     machine.succeed("grep -q \"Bootstrap complete.\" /tmp/bootstrap.out")
 
     print("nixpi-bootstrap-fresh-install-external test passed!")

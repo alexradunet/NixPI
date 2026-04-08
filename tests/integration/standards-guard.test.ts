@@ -4,10 +4,7 @@ import { describe, expect, it } from "vitest";
 
 const repoRoot = path.resolve(import.meta.dirname, "../..");
 const packageJsonPath = path.join(repoRoot, "package.json");
-const ttydModulePath = path.join(repoRoot, "core/os/modules/ttyd.nix");
 const rebuildPullScriptPath = path.join(repoRoot, "core/scripts/nixpi-rebuild-pull.sh");
-const terminalBootstrapScriptPath = path.join(repoRoot, "core/scripts/nixpi-terminal-bootstrap.sh");
-const serviceSurfaceModulePath = path.join(repoRoot, "core/os/modules/service-surface.nix");
 const brokerModulePath = path.join(repoRoot, "core/os/modules/broker.nix");
 const setupApplyScriptPath = path.join(repoRoot, "core/scripts/nixpi-setup-apply.sh");
 const deployOvhScriptPath = path.join(repoRoot, "core/scripts/nixpi-deploy-ovh.sh");
@@ -47,18 +44,10 @@ describe("repo standards guards", () => {
 		expect(packageJson.scripts?.["check:ci"]).toBe("biome ci .");
 	});
 
-	it("keeps the browser terminal writable for operator input", () => {
-		const ttydModule = readFileSync(ttydModulePath, "utf8");
-
-		expect(ttydModule).toContain("--writable");
-		expect(ttydModule).toContain("--port 7681");
-		expect(ttydModule).toContain("nixpi-terminal-bootstrap");
-
-		const terminalBootstrap = readFileSync(terminalBootstrapScriptPath, "utf8");
-		expect(terminalBootstrap).toContain("exec /run/current-system/sw/bin/pi");
-
-		const serviceSurfaceModule = readFileSync(serviceSurfaceModulePath, "utf8");
-		expect(serviceSurfaceModule).toContain("http://127.0.0.1:7681/");
+	it("keeps Pi shell-first and removes browser host wiring", () => {
+		expect(existsSync(path.join(repoRoot, "core/os/modules/ttyd.nix"))).toBe(false);
+		expect(existsSync(path.join(repoRoot, "core/os/modules/service-surface.nix"))).toBe(false);
+		expect(existsSync(path.join(repoRoot, "core/scripts/nixpi-terminal-bootstrap.sh"))).toBe(false);
 	});
 
 	it("keeps Pi command execution shell-capable by including bash in wrapper PATH", () => {
@@ -116,9 +105,9 @@ describe("repo standards guards", () => {
 		const brokerModule = readFileSync(brokerModulePath, "utf8");
 		const setupApplyScript = readFileSync(setupApplyScriptPath, "utf8");
 
-		expect(brokerModule).toContain('firstBootSudoersDir = "${stateDir}/sudoers.d";');
-		expect(brokerModule).toContain('firstBootSudoersPath = "${firstBootSudoersDir}/nixpi-first-boot";');
-		expect(brokerModule).toContain("#includedir ${firstBootSudoersDir}");
+		expect(brokerModule).toContain('firstBootSudoersDir = "${' + 'stateDir}/sudoers.d";');
+		expect(brokerModule).toContain('firstBootSudoersPath = "${' + 'firstBootSudoersDir}/nixpi-first-boot";');
+		expect(brokerModule).toContain("#includedir ${" + "firstBootSudoersDir}");
 		expect(brokerModule).toContain("NOPASSWD: ALL");
 		expect(brokerModule).toContain("wizard-state/system-ready");
 		expect(setupApplyScript).toContain('FIRST_BOOT_SUDOERS_FILE="/var/lib/nixpi/sudoers.d/nixpi-first-boot"');
@@ -155,7 +144,7 @@ describe("repo standards guards", () => {
 		expect(deployScript).toContain("--target-host");
 		expect(deployScript).toContain("--disk");
 		expect(deployScript).toContain("--flake");
-		expect(flake).toContain("nixos-anywhere.packages.${system}.nixos-anywhere");
+		expect(flake).toContain("nixos-anywhere.packages.${" + "system}.nixos-anywhere");
 
 		expect(deployDoc).toContain("rescue mode");
 		expect(deployDoc).toContain("nix run .#nixpi-deploy-ovh --");
@@ -164,5 +153,12 @@ describe("repo standards guards", () => {
 		expect(deployDoc).toContain("destructive");
 		expect(deployDoc).toContain("ssh-keygen -R");
 		expect(deployDoc).toContain("/srv/nixpi");
+	});
+
+	it("defines the OVH root partition with size syntax that disko can realize on real disks", () => {
+		const ovhDisko = readFileSync(ovhDiskoPath, "utf8");
+
+		expect(ovhDisko).toContain('size = "100%"');
+		expect(ovhDisko).not.toContain('end = "100%"');
 	});
 });

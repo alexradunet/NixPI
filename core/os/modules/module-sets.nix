@@ -18,9 +18,7 @@
     ./update.nix
     ./app.nix
     ./broker.nix
-    ./service-surface.nix
     ./tooling.nix
-    ./ttyd.nix
   ];
 
   nixpi = [
@@ -29,9 +27,7 @@
     ./update.nix
     ./app.nix
     ./broker.nix
-    ./service-surface.nix
     ./tooling.nix
     ./shell.nix
-    ./ttyd.nix
   ];
 }

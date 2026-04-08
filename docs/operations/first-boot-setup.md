@@ -17,42 +17,43 @@ Before this checklist, you should already have:
 
 ## What First Boot Means Now
 
-NixPI now expects the host to come up as a remote-first service platform.
+NixPI now comes up as a shell-first host runtime.
 
-A fresh system should come up with one remote operator surface:
+A fresh system should provide:
 
-- Pi in the browser terminal at `/`
-- an alias at `/terminal/`
-- Pi running directly as the primary terminal interface
-- system management still anchored in `/srv/nixpi`
+- SSH access for the primary operator
+- a local login shell on monitor-attached hardware
+- Pi runtime state under `~/.pi`
+- system management anchored in `/srv/nixpi`
 
 ## First-Boot Checklist
 
 ### 1. Verify the Base Services
 
 ```bash
-systemctl status nixpi-ttyd.service
-systemctl status nginx.service
+systemctl status nixpi-app-setup.service
+systemctl status sshd.service
 systemctl status wireguard-wg0.service
 systemctl status systemd-networkd.service
 ```
 
 Expected result: all four services are active or activatable without any desktop login step.
 
-### 2. Verify the Public Pi Surface
+### 2. Verify the Pi Runtime
 
-From the host itself:
+From SSH or a local terminal:
 
 ```bash
-# Public surface through nginx
-curl -I http://127.0.0.1/
-curl -I http://127.0.0.1/terminal/
+command -v pi
+pi --help
+ls -la ~/.pi
 ```
 
 Expected result:
 
-- the Pi terminal responds on `/`
-- `/terminal/` resolves to the same ttyd-backed terminal surface
+- the `pi` command is installed
+- `~/.pi/settings.json` exists
+- Pi is usable without any browser-only service layer
 
 ### 3. Verify WireGuard Before Normal Use
 
@@ -68,11 +69,9 @@ Expected result:
 
 - `wireguard-wg0.service` is active
 - `systemd-networkd.service` is active
-- `wg0` exists before you rely on the deployment as your secure operator path
+- `wg0` exists before you rely on the deployment as your preferred private operator path
 - `networkctl status wg0` shows the interface as networkd-managed
 - `wg show wg0` lists at least one peer once you have added your admin device
-
-If WireGuard peers are not configured yet, finish that step before treating the host as ready for routine remote access.
 
 ### 4. Verify the Canonical Repo Flow
 
@@ -82,13 +81,7 @@ git status
 sudo nixpi-rebuild
 ```
 
-Expected result: the machine rebuilds from `/etc/nixos` while importing NixPI from `/srv/nixpi`, preserving the host's existing hardware and desktop configuration.
-
-To update the canonical checkout and rebuild in one step:
-
-```bash
-sudo nixpi-rebuild-pull
-```
+Expected result: the machine rebuilds from `/etc/nixos` while importing NixPI from `/srv/nixpi`, preserving the host's existing hardware configuration.
 
 ## Operator Orientation
 
@@ -96,11 +89,9 @@ After first boot, keep these boundaries in mind:
 
 - `/srv/nixpi` is the canonical git working tree for sync, review, and rebuilds
 - `/etc/nixos` is the standard flake root used for system rebuilds
-- the browser Pi terminal is the default operator control plane
-- `/` exists for shell-first operation and recovery
+- SSH and local terminal sessions are the operator control plane
 - a connected monitor on x86_64 hardware lands on a local `tty1` login prompt after boot
 - direct passwordless `sudo` is temporary during setup and is removed by `nixpi-setup-apply`
-- Pi runs in SDK mode inside the app runtime rather than through a separate local-session story
 - system services remain inspectable with normal NixOS and systemd tooling
 
 ## Reference
@@ -109,21 +100,14 @@ After first boot, keep these boundaries in mind:
 
 | Service | Purpose |
 |------|---------|
-| `nixpi-ttyd.service` | Pi terminal surface |
-| `nginx.service` | HTTP/HTTPS entry point |
-| `wireguard-wg0.service` | Compatibility control unit for the WireGuard remote-access boundary |
+| `nixpi-app-setup.service` | Seeds the Pi runtime state |
+| `sshd.service` | Remote shell access |
+| `wireguard-wg0.service` | Compatibility control unit for the WireGuard management network |
 
 ### Current Behavior
 
 - the machine boots to a normal headless multi-user target
 - no desktop session is required to start operating NixPI
-- the primary user workflow is Pi in the terminal, reached from ttyd, SSH, or a local shell
+- the primary user workflow is Pi in the terminal, reached from SSH or a local shell
 - on monitor-attached x86_64 hardware, `tty1` remains available for local recovery
 - updates and rollbacks are run from `/srv/nixpi`
-- if the remote surface fails, service status and logs remain the first recovery tools, with the local monitor login prompt available as fallback on mini PCs
-
-## Related
-
-- [Quick Deploy](./quick-deploy)
-- [Install NixPI](../install)
-- [Live Testing](./live-testing)

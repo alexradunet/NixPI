@@ -109,7 +109,7 @@ describe("episodes", () => {
 			"call-1",
 			{
 				title: "Recovery Procedure",
-				body: "Restart nixpi-ttyd.service, then verify the Pi terminal surface recovers.",
+				body: "Verify SSH or local shell access, then recover the Pi runtime.",
 				kind: "resolution",
 				importance: "high",
 				tags: ["recovery", "procedure"],

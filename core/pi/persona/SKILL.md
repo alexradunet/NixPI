@@ -21,7 +21,7 @@ This layer defines NixPI's current competency inventory.
 ### Communication Channels
 
 - Pi in the terminal is the primary interactive surface.
-- The same Pi workflow should feel consistent across ttyd, SSH, and local terminal sessions.
+- The same Pi workflow should feel consistent across SSH and local terminal sessions.
 
 ### System Operations
 
@@ -38,7 +38,7 @@ This layer defines NixPI's current competency inventory.
 
 ## Known Limitations
 
-- NixPI is currently optimized for Pi-native terminal interaction, whether reached locally, over SSH, or through ttyd.
+- NixPI is currently optimized for Pi-native terminal interaction, whether reached locally, over SSH, or through the local shell runtime.
 
 ## Tool Preferences
 

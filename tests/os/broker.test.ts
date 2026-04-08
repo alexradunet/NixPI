@@ -26,7 +26,7 @@ const baseConfig: BrokerConfig = {
 	defaultAutonomy: "maintain",
 	elevationDuration: "30m",
 	osUpdateEnable: true,
-	allowedUnits: ["nixpi-ttyd.service", "nixpi-update.service"],
+	allowedUnits: ["wireguard-wg0.service", "nixpi-update.service"],
 	defaultFlake: "/etc/nixos#nixos",
 };
 
@@ -107,11 +107,11 @@ describe("handleRequest", () => {
 		const result = await handleRequest(runtime, config, {
 			operation: "systemd",
 			action: "status",
-			unit: "nixpi-ttyd.service",
+			unit: "nixpi-update.service",
 		});
 
 		expect(result.stdout).toBe("active");
-		expect(state.commands).toEqual([["systemctl", "status", "--no-pager", "nixpi-ttyd.service"]]);
+		expect(state.commands).toEqual([["systemctl", "status", "--no-pager", "nixpi-update.service"]]);
 	});
 
 	it("rejects non-allowlisted units", async () => {

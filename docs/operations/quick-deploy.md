@@ -1,37 +1,33 @@
 # Quick Deploy
 
-> Bootstrap NixPI onto a VPS, headless VM, or mini PC and operate it from the Pi terminal surface
+> Bootstrap NixPI onto a VPS, headless VM, or mini PC and operate it from the shell-first Pi runtime
 
 ## Audience
 
 Operators and maintainers deploying NixPI onto a NixOS-capable x86_64 VPS, headless VM, or mini PC.
 
-## Security Note: WireGuard Is the Remote-Access Boundary
+## Security Note: WireGuard Is the Preferred Private Management Network
 
-WireGuard is the network security boundary for NixPI services. The firewall trusts only the WireGuard interface (`wg0`) for app traffic, while SSH remains separately controlled.
-
-**Complete WireGuard peer setup and verify `wg0` is active before treating the deployment as ready for normal use.** See [Security Model](../reference/security-model) for the full threat model.
+WireGuard remains the preferred private network path for NixPI hosts. SSH stays available for administration, while WireGuard provides the trusted management overlay for host-to-device access.
 
 ## Canonical Deployment Path
 
-NixPI is bootstrap-first and remote-first. The standard public deployment flow is:
+NixPI is bootstrap-first and remote-first. The standard deployment flow is:
 
 1. provision a NixOS-capable x86_64 machine
 2. run the bootstrap command once
-3. open the browser Pi terminal
+3. connect over SSH (or use a local terminal)
 4. keep operating from the canonical checkout at `/srv/nixpi`
 
 ## Two Supported Deployment Paths
 
 ### Fresh OVH install
 
-For a brand-new OVH VPS that starts from rescue mode, use the dedicated
-[`nixos-anywhere` path](./ovh-rescue-deploy).
+For a brand-new OVH VPS that starts from rescue mode, use the dedicated [OVH Rescue Deploy](./ovh-rescue-deploy) path.
 
 ### Existing NixOS-capable machine
 
-For a VPS, headless VM, or mini PC that is already NixOS-capable and reachable
-over SSH, use the bootstrap workflow documented below.
+For a VPS, headless VM, or mini PC that is already NixOS-capable and reachable over SSH, use the bootstrap workflow documented below.
 
 ## 1. Provision a NixOS-Capable Machine
 
@@ -41,8 +37,6 @@ Bring up a fresh x86_64 VPS, headless VM, or mini PC with:
 - `sudo` privileges
 - outbound internet access
 - enough disk and RAM to complete a `nixos-rebuild switch`
-
-If you are evaluating changes locally, a headless NixOS VM is fine. If you are deploying to a mini PC, an attached monitor is useful as a local fallback, but the supported install path is still the same bootstrap command.
 
 ## 2. Run the Bootstrap Command
 
@@ -65,33 +59,26 @@ The bootstrap package:
 - initializes a standard flake-based `/etc/nixos`
 - runs `sudo nixos-rebuild switch --flake /etc/nixos#nixos`
 
-`/etc/nixos` remains the standard system layer for hardware, boot, filesystems, display, and desktop settings. `/srv/nixpi` provides the NixPI layer imported by that system flake, so rebuilds preserve machine-specific behavior instead of replacing it. The generated flake keeps the normal `configuration.nix` entrypoint and exposes a single `#nixos` target.
-
-The generated system flake also follows the configured stable NixOS line by default. Today that means `nixos-25.11`, which prevents bootstrap from silently jumping onto `nixos-unstable` or a 26.x pre-release line while NixPI is layered on top.
-
-On monitor-attached hardware, the resulting system keeps a `tty1` login prompt after reboot. The browser Pi terminal remains the primary operator surface; the monitor is a recovery path.
+On monitor-attached hardware, the resulting system keeps a `tty1` login prompt after reboot for local recovery.
 
 > Warning: rerunning the bootstrap command on a host with local commits in `/srv/nixpi` will reset that checkout to `origin/main`. Commit or export local work first.
 
-## 3. Connect to the Pi Terminal
+## 3. Connect to the Pi Runtime
 
-After the switch completes, NixPI runs as a remote-first service set. The default operator surface is the Pi terminal exposed through the browser:
+After the switch completes, connect through one of the supported shell paths:
 
-- `/` — primary Pi terminal surface
-- `/terminal/` — alias to the same ttyd session
+- SSH to the host
+- local `tty1` on monitor-attached hardware
 
-Preferred access is over WireGuard. In practice that means:
-
-1. add your admin device as a WireGuard peer
-2. confirm `wireguard-wg0.service` and `systemd-networkd.service` are active
-3. verify the `wg0` interface exists and is managed by networkd
-4. open the Pi terminal over the WireGuard-reachable host IP
+Preferred access is over WireGuard-backed SSH once you have configured peers.
 
 Useful checks:
 
 ```bash
+systemctl status sshd.service
 systemctl status wireguard-wg0.service
 systemctl status systemd-networkd.service
+systemctl status nixpi-app-setup.service
 networkctl status wg0
 wg show wg0
 ip link show wg0
@@ -119,23 +106,22 @@ Roll back if needed:
 sudo nixos-rebuild switch --rollback
 ```
 
-## 5. Validate the Headless Surface
+## 5. Validate the Shell Runtime
 
 Smoke-check the core services on a running host:
 
 ```bash
-systemctl status nixpi-ttyd.service
-systemctl status nginx.service
-
-# Public surface through nginx
-curl -I http://127.0.0.1/
-curl -I http://127.0.0.1/terminal/
+systemctl status nixpi-app-setup.service
+systemctl status sshd.service
+command -v pi
+su - <user> -c 'pi --help'
 ```
 
 Expected result:
 
-- `/` responds from the Pi terminal surface
-- `/terminal/` responds as an alias to the same ttyd session
+- the Pi runtime is seeded under `~/.pi`
+- `pi` runs from SSH or a local terminal
+- no browser-only host services are required
 
 For repo-side validation during development:
 
@@ -143,9 +129,3 @@ For repo-side validation during development:
 nix --option substituters https://cache.nixos.org/ build .#checks.x86_64-linux.config --no-link
 nix build .#checks.x86_64-linux.nixpi-vps-bootstrap --no-link -L
 ```
-
-## Related
-
-- [First Boot Setup](./first-boot-setup)
-- [Install NixPI](../install)
-- [Security Model](../reference/security-model)

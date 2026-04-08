@@ -128,7 +128,7 @@ describe("persona session_start", () => {
 					type: "procedure",
 					slug: "chat-runtime-recovery",
 					title: "Terminal Surface Recovery",
-					summary: "Restart nixpi-ttyd.service, then verify Pi terminal recovery.",
+					summary: "Verify SSH or local shell access, then recover the Pi runtime if needed.",
 					status: "active",
 					salience: 0.8,
 				},

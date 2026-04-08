@@ -270,7 +270,7 @@
         {
           exported-topology =
             assert builtins.hasAttr "aarch64-linux" self.packages;
-            assert builtins.hasAttr "nixpi-ttyd" generatedModuleSystem.config.systemd.services;
+            assert builtins.hasAttr "nixpi-app-setup" generatedModuleSystem.config.systemd.services;
             pkgs.runCommandLocal "exported-topology-check" { } ''
               touch "$out"
             '';
@@ -422,13 +422,13 @@
               | grep -F 'self.nixosModules.nixpi' >/dev/null
             smoke_block="$(sed -n '/nixos-smoke = mkCheckLane "nixos-smoke" \[/,/nixos-full = mkCheckLane "nixos-full" \[/p' ${./flake.nix})"
             ! printf '%s\n' "$smoke_block" | grep -F 'name = "nixpi-vps-bootstrap";' >/dev/null
-            printf '%s\n' "$smoke_block" | grep -F 'name = "nixpi-terminal";' >/dev/null
+            printf '%s\n' "$smoke_block" | grep -F 'name = "nixpi-runtime";' >/dev/null
             printf '%s\n' "$smoke_block" | grep -F 'name = "nixpi-security";' >/dev/null
             printf '%s\n' "$smoke_block" | grep -F 'name = "nixpi-broker";' >/dev/null
-            chat_line="$(printf '%s\n' "$smoke_block" | grep -nF 'name = "nixpi-terminal";' | cut -d: -f1)"
+            runtime_line="$(printf '%s\n' "$smoke_block" | grep -nF 'name = "nixpi-runtime";' | cut -d: -f1)"
             security_line="$(printf '%s\n' "$smoke_block" | grep -nF 'name = "nixpi-security";' | cut -d: -f1)"
             broker_line="$(printf '%s\n' "$smoke_block" | grep -nF 'name = "nixpi-broker";' | cut -d: -f1)"
-            test "$chat_line" -lt "$security_line"
+            test "$runtime_line" -lt "$security_line"
             test "$security_line" -lt "$broker_line"
             grep -F 'enableRedistributableFirmware' ${./core/os/hosts/vps.nix} >/dev/null
             touch "$out"
@@ -450,8 +450,8 @@
 
           nixos-smoke = mkCheckLane "nixos-smoke" [
             {
-              name = "nixpi-terminal";
-              path = nixosTests.nixpi-terminal;
+              name = "nixpi-runtime";
+              path = nixosTests.nixpi-runtime;
             }
             {
               name = "nixpi-security";

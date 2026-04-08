@@ -1,45 +1,34 @@
-# Daemon Architecture
+# Runtime Architecture
 
-> Detailed documentation of the NixPI terminal-first runtime
+> Detailed documentation of the current shell-first NixPI runtime
 
 ## Why The Runtime Exists
 
-NixPI now uses a simpler runtime model:
+NixPI uses a simpler runtime model:
 
-- nginx exposes ttyd at `/`
-- ttyd launches a dedicated NixPI terminal bootstrap wrapper
-- the wrapper drops the operator straight into `pi`
+- `nixpi-app-setup.service` seeds the Pi runtime state
+- SSH and local login shells provide operator entry
+- the operator runs `pi` directly
 
-This keeps the browser transport simple and lets Pi remain the actual interface.
+This keeps the runtime inspectable and avoids a separate browser transport layer.
 
 ## How The Runtime Works
 
-The active runtime path is built from:
-
 | File | Purpose |
 |------|---------|
-| `core/os/modules/ttyd.nix` | ttyd systemd service and environment wiring |
-| `core/scripts/nixpi-terminal-bootstrap.sh` | terminal bootstrap wrapper that enters `pi` |
-| `core/os/modules/service-surface.nix` | nginx routing of `/` and `/terminal/` to ttyd |
-| `core/os/modules/app.nix` | Pi runtime install and state-directory setup |
+| `core/os/modules/app.nix` | Pi runtime install and environment wiring |
+| `core/os/modules/shell.nix` | Shell integration and user-session support |
+| `core/os/pkgs/pi/default.nix` | Packaged Pi command |
 
 ## Runtime Behavior
 
 At startup:
 
 1. `nixpi-app-setup.service` ensures the Pi runtime state exists under `~/.pi`
-2. `nixpi-ttyd.service` starts ttyd on `127.0.0.1:7681`
-3. nginx proxies `/` and `/terminal/` to ttyd
-4. the terminal bootstrap wrapper enters `pi` in the user's NixPI workspace
+2. `sshd.service` and local terminals remain available for operator entry
+3. the operator runs `pi` in the user's NixPI workspace
 
-## Reference
+## Failure Behavior
 
-### Important Current Failure Behavior
-
-- ttyd startup is single-shot; systemd restart policy handles crashes
-- if the browser transport fails, the same Pi flow remains available from SSH or a local terminal
-
-## Related
-
-- [Service Architecture](./service-architecture)
-- [Architecture](../architecture/)
+- if SSH is unavailable, a local terminal remains the fallback on monitor-attached hardware
+- if Pi state is missing or inconsistent, inspect `~/.pi/` and rerun `pi`

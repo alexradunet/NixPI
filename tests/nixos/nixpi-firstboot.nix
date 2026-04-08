@@ -17,11 +17,7 @@ let
       homeDir = "/home/${username}";
     in
     {
-      imports = nixPiModulesNoShell ++ [
-        ../../core/os/modules/ttyd.nix
-        ../../core/os/modules/service-surface.nix
-        mkTestFilesystems
-      ];
+      imports = nixPiModulesNoShell ++ [ mkTestFilesystems ];
       nixpi.primaryUser = username;
 
       networking.hostName = hostName;
@@ -76,9 +72,7 @@ in
     nixpi.wait_for_unit("multi-user.target", timeout=300)
     nixpi.wait_for_unit("network-online.target", timeout=60)
     nixpi.wait_for_unit("wireguard-wg0.service", timeout=60)
-    nixpi.wait_for_unit("nixpi-ttyd.service", timeout=120)
-    nixpi.wait_for_unit("nginx.service", timeout=120)
-    nixpi.wait_until_succeeds("curl -sf http://127.0.0.1/ >/dev/null", timeout=60)
+    nixpi.wait_for_unit("nixpi-app-setup.service", timeout=120)
     nixpi.succeed("test -d " + home + "/.nixpi")
     nixpi.wait_until_succeeds("test ! -f " + home + "/.nixpi/wizard-state/system-ready", timeout=60)
     nixpi.fail("test -f " + home + "/.nixpi/.setup-complete")
@@ -100,7 +94,8 @@ in
     nixpi.fail("command -v nixpi-bootstrap-prepare-repo")
     nixpi.fail("command -v nixpi-bootstrap-nixos-rebuild-switch")
     nixpi.fail("command -v codex")
-    nixpi.succeed("systemctl is-enabled nixpi-ttyd.service")
+    nixpi.fail("systemctl status nixpi-ttyd.service >/dev/null 2>&1")
+    nixpi.fail("systemctl status nginx.service >/dev/null 2>&1")
 
     nixpi.succeed(
         "su - pi -c 'test \"$PI_CODING_AGENT_DIR\" = /home/pi/.pi; "

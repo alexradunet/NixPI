@@ -9,11 +9,11 @@ NixPI ships these services as part of the base NixOS system. They are not option
 
 ## Always Available
 
-- `NixPI Terminal` behind the canonical web entry point at `/`
+- `pi` installed as the primary operator runtime for SSH and local shell sessions
 
 ## Operational Notes
 
-- This surface is managed as a declarative systemd service plus nginx proxying
+- The runtime is prepared by the declarative `nixpi-app-setup.service` unit
 - WireGuard-backed access is provided by a `systemd-networkd`-managed `wg0` interface
 - `wireguard-wg0.service` remains the compatibility/operator-facing control unit
 - Use `systemd_control` for status, restart, and stop/start operations
@@ -21,14 +21,13 @@ NixPI ships these services as part of the base NixOS system. They are not option
 
 ## Expected Unit Names
 
-- `nixpi-ttyd`
+- `nixpi-app-setup`
+- `wireguard-wg0`
 
-## URLs
+## Access Paths
 
-Preferred access is over WireGuard:
+Preferred access is over WireGuard-backed SSH:
 
-- `https://<wireguard-host>/`
+- `ssh <user>@<wireguard-host>`
 
-Localhost remains valid on the machine itself:
-
-- `http://localhost/`
+A local login shell remains valid on the machine itself.
