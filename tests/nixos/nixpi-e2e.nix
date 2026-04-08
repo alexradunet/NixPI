@@ -84,7 +84,7 @@ in
 
     client.succeed("nc -z -w 2 pi 22")
 
-    services = ["wireguard-wg0", "NetworkManager"]
+    services = ["NetworkManager"]
     for svc in services:
         nixpi.succeed("systemctl is-active " + svc + ".service")
 
@@ -107,14 +107,15 @@ in
     assert "wheel" in groups, "User not in wheel group: " + groups
     assert "networkmanager" in groups, "User not in networkmanager group: " + groups
 
-    nixpi.succeed("systemctl is-active wireguard-wg0.service")
+    nixpi.fail("systemctl cat wireguard-wg0.service >/dev/null")
 
     for port in [80, 443]:
         client.succeed(f"! nc -z -w 2 pi {port}")
 
-    packages = ["git", "curl", "jq", "htop", "wg"]
+    packages = ["git", "curl", "jq", "htop"]
     for pkg in packages:
         nixpi.succeed("command -v " + pkg)
+    nixpi.fail("command -v wg")
 
     nixpi.fail("command -v codex")
     nixpi.succeed("sudo -u pi -- bash -lc 'command -v pi'")
@@ -128,7 +129,7 @@ in
     print("Verified:")
     print("  - Host mode is selected declaratively from NixOS config")
     print("  - SSH remains reachable on the LAN in steady-state")
-    print("  - App ports stay closed without wg0 access")
+    print("  - App ports stay closed without the old WireGuard path")
     print("  - All core services start correctly")
     print("  - Network connectivity between nodes")
     print("  - File system and user setup correct")

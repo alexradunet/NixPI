@@ -17,7 +17,7 @@
     allowedUnits = lib.mkOption {
       type = lib.types.listOf lib.types.str;
       default = [
-        "wireguard-wg0.service"
+        "tailscaled.service"
         "nixpi-update.service"
       ];
       description = ''

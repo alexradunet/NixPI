@@ -49,12 +49,12 @@
             ssh.passwordAuthentication = true;
           };
           headscale = {
-            enable = true;
             serverUrl = "https://headscale.example.test";
             policyFile = "/run/secrets/headscale-policy.hujson";
             settings = {
               dns = {
-                base_domain = "tailnet.example.test";
+                magic_dns = false;
+                override_local_dns = false;
               };
               log = {
                 level = "debug";
@@ -62,7 +62,6 @@
             };
           };
           tailnet = {
-            enable = true;
             loginServer = "https://headscale.example.test";
             authKeyFile = "/run/secrets/tailscale-auth-key";
             hostname = "nixpi-managed-node";
@@ -80,8 +79,8 @@
           "nixpi-tests/headscale-server-url".text = config.nixpi.headscale.serverUrl;
           "nixpi-tests/headscale-policy-file".text =
             config.nixpi.headscale.policyFile or "";
-          "nixpi-tests/headscale-base-domain".text =
-            config.nixpi.headscale.settings.dns.base_domain or "";
+          "nixpi-tests/headscale-log-level".text =
+            config.nixpi.headscale.settings.log.level or "";
           "nixpi-tests/tailnet-enable".text = if config.nixpi.tailnet.enable then "yes" else "no";
           "nixpi-tests/tailnet-login-server".text = config.nixpi.tailnet.loginServer;
           "nixpi-tests/tailnet-auth-key-file".text = config.nixpi.tailnet.authKeyFile;
@@ -103,11 +102,7 @@
     defaults.succeed("systemctl cat nixpi-broker.service >/dev/null")
     defaults.succeed("systemctl cat nixpi-update.timer >/dev/null")
 
-    broker_cfg = defaults.succeed(
-        "systemctl show nixpi-broker.service -p Environment --value"
-        " | grep -oP 'NIXPI_BROKER_CONFIG=\\K\\S+'"
-    ).strip()
-    defaults.succeed(f"grep -q maintain {broker_cfg}")
+    defaults.succeed("nixpi-brokerctl status | jq -r .defaultAutonomy | grep -qx maintain")
 
     defaults.succeed("systemctl is-active fail2ban")
     defaults.succeed("grep -qx 'no' /etc/nixpi-tests/ssh-password-auth")
@@ -120,17 +115,13 @@
 
     overrides.fail("systemctl is-active fail2ban")
     overrides.succeed("grep -qx 'yes' /etc/nixpi-tests/ssh-password-auth")
-    broker_cfg = overrides.succeed(
-        "systemctl show nixpi-broker.service -p Environment --value"
-        " | grep -oP 'NIXPI_BROKER_CONFIG=\\K\\S+'"
-    ).strip()
-    overrides.succeed(f"grep -q observe {broker_cfg}")
+    overrides.succeed("nixpi-brokerctl status | jq -r .defaultAutonomy | grep -qx observe")
 
-    overrides.succeed("grep -qx 'yes' /etc/nixpi-tests/headscale-enable")
+    overrides.succeed("grep -qx 'no' /etc/nixpi-tests/headscale-enable")
     overrides.succeed("grep -qx 'https://headscale.example.test' /etc/nixpi-tests/headscale-server-url")
     overrides.succeed("grep -qx '/run/secrets/headscale-policy.hujson' /etc/nixpi-tests/headscale-policy-file")
-    overrides.succeed("grep -qx 'tailnet.example.test' /etc/nixpi-tests/headscale-base-domain")
-    overrides.succeed("grep -qx 'yes' /etc/nixpi-tests/tailnet-enable")
+    overrides.succeed("grep -qx 'debug' /etc/nixpi-tests/headscale-log-level")
+    overrides.succeed("grep -qx 'no' /etc/nixpi-tests/tailnet-enable")
     overrides.succeed("grep -qx 'https://headscale.example.test' /etc/nixpi-tests/tailnet-login-server")
     overrides.succeed("grep -qx '/run/secrets/tailscale-auth-key' /etc/nixpi-tests/tailnet-auth-key-file")
     overrides.succeed("grep -qx 'nixpi-managed-node' /etc/nixpi-tests/tailnet-hostname")

@@ -10,28 +10,31 @@ let
   primaryUser = config.nixpi.primaryUser;
   securityCfg = config.nixpi.security;
   bootstrapCfg = config.nixpi.bootstrap;
-  wgCfg = config.nixpi.wireguard;
+  headscaleCfg = config.nixpi.headscale;
+  tailnetCfg = config.nixpi.tailnet;
   sshAllowUsers =
     if securityCfg.ssh.allowUsers != [ ] then
       securityCfg.ssh.allowUsers
     else
       lib.optional (primaryUser != "") primaryUser;
-  wireguardPeers = map (
-    peer:
+  headscaleSettings = lib.recursiveUpdate headscaleCfg.settings (
     {
-      inherit (peer) name publicKey;
-      allowedIPs = peer.allowedIPs;
+      server_url = headscaleCfg.serverUrl;
     }
-    // lib.optionalAttrs (peer.endpoint != null) { endpoint = peer.endpoint; }
-    // lib.optionalAttrs (peer.presharedKeyFile != null) { presharedKeyFile = peer.presharedKeyFile; }
-    // lib.optionalAttrs (peer.persistentKeepalive != null) { persistentKeepalive = peer.persistentKeepalive; }
-    // lib.optionalAttrs (peer.dynamicEndpointRefreshSeconds != null) {
-      dynamicEndpointRefreshSeconds = peer.dynamicEndpointRefreshSeconds;
+    // lib.optionalAttrs (headscaleCfg.policyFile != null) {
+      policy.path = headscaleCfg.policyFile;
     }
-  ) wgCfg.peers;
-  presharedKeyFiles = lib.filter (p: p != null) (map (peer: peer.presharedKeyFile) wgCfg.peers);
-  allKeyFiles = [ wgCfg.privateKeyFile ] ++ presharedKeyFiles;
-  wireguardSecretDirs = lib.unique (map builtins.dirOf allKeyFiles);
+  );
+  tailnetUpFlags =
+    [
+      "--login-server"
+      tailnetCfg.loginServer
+    ]
+    ++ lib.optionals (tailnetCfg.hostname != null) [
+      "--hostname"
+      tailnetCfg.hostname
+    ]
+    ++ tailnetCfg.extraUpFlags;
 in
 
 {
@@ -39,77 +42,74 @@ in
 
   config = {
     assertions = [
-        {
-          assertion = securityCfg.trustedInterface != "";
-          message = "nixpi.security.trustedInterface must not be empty.";
-        }
-      ];
+      {
+        assertion = securityCfg.trustedInterface != "";
+        message = "nixpi.security.trustedInterface must not be empty.";
+      }
+    ];
 
-      hardware.enableAllFirmware = true;
+    hardware.enableAllFirmware = true;
 
-      services.openssh = {
-        enable = bootstrapCfg.ssh.enable;
-        settings = {
-          AllowAgentForwarding = false;
-          AllowTcpForwarding = false;
-          ClientAliveCountMax = 2;
-          ClientAliveInterval = 300;
-          LoginGraceTime = 30;
-          MaxAuthTries = 3;
-          PasswordAuthentication = securityCfg.ssh.passwordAuthentication;
-          PubkeyAuthentication = "yes";
-          PermitRootLogin = "no";
-          X11Forwarding = false;
-        };
-        extraConfig = lib.optionalString (sshAllowUsers != [ ]) ''
-          AllowUsers ${lib.concatStringsSep " " sshAllowUsers}
-        '';
+    services.openssh = {
+      enable = bootstrapCfg.ssh.enable;
+      openFirewall = false;
+      settings = {
+        AllowAgentForwarding = false;
+        AllowTcpForwarding = false;
+        ClientAliveCountMax = 2;
+        ClientAliveInterval = 300;
+        LoginGraceTime = 30;
+        MaxAuthTries = 3;
+        PasswordAuthentication = securityCfg.ssh.passwordAuthentication;
+        PubkeyAuthentication = "yes";
+        PermitRootLogin = "no";
+        X11Forwarding = false;
       };
+      extraConfig = lib.optionalString (sshAllowUsers != [ ]) ''
+        AllowUsers ${lib.concatStringsSep " " sshAllowUsers}
+      '';
+    };
 
-      networking.firewall.enable = true;
-      networking.firewall.allowedTCPPorts = lib.optionals bootstrapCfg.ssh.enable [ 22 ];
-      networking.firewall.allowedUDPPorts = lib.optionals wgCfg.enable [ wgCfg.listenPort ];
-      networking.useDHCP = lib.mkDefault false;
-      networking.networkmanager.enable = true;
-      networking.wireguard.interfaces = lib.mkIf wgCfg.enable {
-        "${wgCfg.interface}" = {
-          ips = [ wgCfg.address ];
-          listenPort = wgCfg.listenPort;
-          privateKeyFile = wgCfg.privateKeyFile;
-          generatePrivateKeyFile = wgCfg.generatePrivateKeyFile;
-          peers = wireguardPeers;
+    networking.firewall.enable = true;
+    networking.firewall.allowedTCPPorts = lib.optionals bootstrapCfg.ssh.enable [ 22 ];
+    networking.useDHCP = lib.mkDefault false;
+    networking.networkmanager.enable = true;
+
+    services.headscale = lib.mkIf headscaleCfg.enable {
+      enable = true;
+      settings = headscaleSettings;
+    };
+
+    services.tailscale = lib.mkIf tailnetCfg.enable {
+      enable = true;
+      authKeyFile = tailnetCfg.authKeyFile;
+      extraUpFlags = tailnetUpFlags;
+      openFirewall = false;
+    };
+
+    services.fail2ban = lib.mkIf securityCfg.fail2ban.enable {
+      enable = true;
+      jails.sshd.settings = {
+        enabled = true;
+        backend = "systemd";
+        bantime = "1h";
+        findtime = "10m";
+        maxretry = 5;
+      };
+    };
+
+    systemd.tmpfiles.settings = {
+      nixpi-workspace = {
+        "${config.nixpi.agent.workspaceDir}".d = {
+          mode = "2775";
+          user = primaryUser;
+          group = primaryUser;
         };
       };
+    };
 
-      services.fail2ban = lib.mkIf securityCfg.fail2ban.enable {
-        enable = true;
-        jails.sshd.settings = {
-          enabled = true;
-          backend = "systemd";
-          bantime = "1h";
-          findtime = "10m";
-          maxretry = 5;
-        };
-      };
-
-      systemd.tmpfiles.settings = {
-        nixpi-workspace = {
-          "${config.nixpi.agent.workspaceDir}".d = {
-            mode = "2775";
-            user = primaryUser;
-            group = primaryUser;
-          };
-        };
-      } // lib.optionalAttrs wgCfg.enable {
-        nixpi-wireguard = lib.genAttrs wireguardSecretDirs (dir: {
-          d = {
-            mode = "0700";
-            user = "root";
-            group = "root";
-          };
-        });
-      };
-
-      environment.systemPackages = lib.optionals wgCfg.enable [ pkgs.wireguard-tools ];
+    environment.systemPackages =
+      lib.optionals headscaleCfg.enable [ pkgs.headscale ]
+      ++ lib.optionals tailnetCfg.enable [ pkgs.tailscale ];
   };
 }
