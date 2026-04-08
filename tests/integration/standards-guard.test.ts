@@ -153,4 +153,36 @@ describe("repo standards guards", () => {
 		expect(deployDoc).toContain("bootstrap password hash");
 		expect(deployDoc).toContain("initialHashedPassword");
 	});
+
+	it("keeps headless VPS deployment as the only supported install story", () => {
+		const flake = readFileSync(path.join(repoRoot, "flake.nix"), "utf8");
+		const readme = readFileSync(path.join(repoRoot, "README.md"), "utf8");
+		const installDoc = readFileSync(path.join(repoRoot, "docs/install.md"), "utf8");
+		const quickDeployDoc = readFileSync(path.join(repoRoot, "docs/operations/quick-deploy.md"), "utf8");
+		const liveTestingDoc = readFileSync(path.join(repoRoot, "docs/operations/live-testing.md"), "utf8");
+
+		expect(flake).not.toContain("nixpi-bootstrap-vps");
+		expect(flake).not.toContain("nixpi-bootstrap-fresh-install-harness");
+		expect(flake).not.toContain("qemu-installer");
+		expect(flake).not.toContain("qemu-preinstalled-stable");
+		expect(flake).not.toContain("qemu-prepare-preinstalled-stable");
+		expect(flake).not.toContain("qemu-clean");
+
+		expect(readme).toContain("nix run .#nixpi-deploy-ovh --");
+		expect(readme).not.toContain("nixpi-bootstrap-vps");
+
+		expect(installDoc).toContain("headless VPS");
+		expect(installDoc).toContain("nixos-anywhere");
+		expect(installDoc).not.toContain("Already NixOS-capable machine");
+		expect(installDoc).not.toContain("mini PC");
+		expect(installDoc).not.toContain("headless VM");
+
+		expect(quickDeployDoc).toContain("nixos-anywhere");
+		expect(quickDeployDoc).not.toContain("nixpi-bootstrap-vps");
+		expect(quickDeployDoc).not.toContain("mini PC");
+		expect(quickDeployDoc).not.toContain("headless VM");
+
+		expect(liveTestingDoc).not.toContain("qemu-lab");
+		expect(liveTestingDoc).not.toContain("nixpi-bootstrap-vps");
+	});
 });
