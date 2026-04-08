@@ -81,6 +81,10 @@ in
     export NIXPI_CONFIG_DIR="${stateDir}/services"
     export NIXPI_KEEP_SSH_AFTER_SETUP="${if config.nixpi.bootstrap.keepSshAfterSetup then "1" else "0"}"
     export PATH="/usr/local/share/nixpi/node_modules/.bin:$PATH"
+
+    if [ -t 0 ] && [ -t 1 ] && command -v nixpi-launch-terminal-ui >/dev/null 2>&1; then
+      nixpi-launch-terminal-ui || true
+    fi
   '';
 
   system.activationScripts.nixpi-shell-dotfiles = lib.stringAfter [ "users" ] ''

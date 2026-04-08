@@ -29,6 +29,8 @@ in
     install.enable = lib.mkDefault true;
     bootstrap.keepSshAfterSetup = lib.mkDefault true;
     security.ssh.passwordAuthentication = lib.mkDefault false;
+    terminal.interface = lib.mkDefault "zellij";
+    terminal.zellij.enable = lib.mkDefault true;
   };
 
   networking.hostName = lib.mkDefault "nixpi";
