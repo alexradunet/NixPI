@@ -111,7 +111,7 @@ describe("handleRequest", () => {
 		});
 
 		expect(result.stdout).toBe("active");
-		expect(state.commands).toEqual([["systemctl", "status", "--no-pager", "nixpi-update.service"]]);
+		expect(state.commands).toEqual([["systemctl", "show", "--no-pager", "nixos-upgrade.service"]]);
 	});
 
 	it("rejects non-allowlisted units", async () => {

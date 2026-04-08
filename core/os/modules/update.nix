@@ -1,15 +1,9 @@
 # core/os/modules/update.nix
 {
-  pkgs,
   lib,
   config,
   ...
 }:
-
-let
-  inherit (config.nixpi) primaryUser;
-  nixpiUpdate = pkgs.callPackage ../pkgs/nixpi-update { };
-in
 
 {
   nix.settings.experimental-features = [
@@ -28,27 +22,18 @@ in
     }
   ];
 
-  system.services.nixpi-update = {
-    process.argv = [ "${nixpiUpdate}/bin/nixpi-update" ];
-    systemd.service = {
-      description = "NixPI NixOS update";
-      after = [ "network-online.target" ];
-      wants = [ "network-online.target" ];
-      unitConfig = {
-        ConditionPathExists = "/etc/nixos/flake.nix";
-      };
-      serviceConfig = {
-        Type = "oneshot";
-        RemainAfterExit = false;
-        Restart = "no";
-        Environment = [
-          "PATH=/run/current-system/sw/bin:${lib.makeBinPath [ pkgs.nix ]}"
-          "NIXPI_PRIMARY_USER=${primaryUser}"
-          "NIXPI_SYSTEM_FLAKE_DIR=/etc/nixos"
-        ];
-      };
-    };
+  system.autoUpgrade = {
+    enable = true;
+    flake = "/etc/nixos#nixos";
+    flags = lib.mkAfter [ "--impure" ];
   };
+
+  systemd.services.nixos-upgrade = {
+    aliases = [ "nixpi-update.service" ];
+    unitConfig.ConditionPathExists = "/etc/nixos/flake.nix";
+  };
+
+  systemd.timers.nixos-upgrade.wantedBy = lib.mkForce [ ];
 
   systemd.timers.nixpi-update = {
     description = "NixPI update check timer";
@@ -58,6 +43,7 @@ in
       OnBootSec = config.nixpi.update.onBootSec;
       OnUnitActiveSec = config.nixpi.update.interval;
       Persistent = true;
+      Unit = "nixos-upgrade.service";
     };
   };
 }

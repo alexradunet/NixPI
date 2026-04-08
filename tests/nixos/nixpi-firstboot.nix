@@ -70,7 +70,7 @@ in
 
     nixpi.start()
     nixpi.wait_for_unit("multi-user.target", timeout=300)
-    nixpi.wait_for_unit("network-online.target", timeout=60)
+    nixpi.wait_until_succeeds("ip -4 addr show dev eth1 | grep -q 'inet '", timeout=60)
     nixpi.wait_for_unit("wireguard-wg0.service", timeout=60)
     nixpi.wait_for_unit("nixpi-app-setup.service", timeout=120)
     nixpi.succeed("test -d " + home + "/.nixpi")

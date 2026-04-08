@@ -6,6 +6,9 @@ import { promisify } from "node:util";
 
 const execFileAsync = promisify(execFile);
 const LEVELS = { observe: 0, maintain: 1, admin: 2 } as const;
+const SYSTEMD_UNIT_ALIASES: Record<string, string> = {
+	"nixpi-update.service": "nixos-upgrade.service",
+};
 
 export type AutonomyLevel = keyof typeof LEVELS;
 
@@ -105,6 +108,10 @@ async function ensureAllowedLevel(
 
 export class PermissionError extends Error {}
 
+function resolveSystemdUnit(unit: string): string {
+	return SYSTEMD_UNIT_ALIASES[unit] ?? unit;
+}
+
 async function handleSystemdRequest(
 	runtime: BrokerRuntime,
 	config: BrokerConfig,
@@ -115,14 +122,17 @@ async function handleSystemdRequest(
 	if (typeof unit !== "string" || !config.allowedUnits.includes(unit)) {
 		throw new PermissionError(`unit not allowed: ${unit}`);
 	}
+	const resolvedUnit = resolveSystemdUnit(unit);
 	if (action === "status") {
 		await ensureAllowedLevel(runtime, config, "observe");
-		return runtime.runCommand(["systemctl", "status", "--no-pager", unit]);
+		return runtime.runCommand(["systemctl", "show", "--no-pager", resolvedUnit]);
 	}
 	if (action === "start" || action === "stop" || action === "restart" || action === "enable-now") {
 		await ensureAllowedLevel(runtime, config, "maintain");
 		return runtime.runCommand(
-			action === "enable-now" ? ["systemctl", "enable", "--now", unit] : ["systemctl", action, unit],
+			action === "enable-now"
+				? ["systemctl", "enable", "--now", resolvedUnit]
+				: ["systemctl", action, resolvedUnit],
 		);
 	}
 	throw new Error(`unsupported systemd action: ${action}`);

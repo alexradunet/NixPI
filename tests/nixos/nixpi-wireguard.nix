@@ -75,7 +75,6 @@ in
           "C /run/wireguard/psk 0600 root root - /etc/wireguard/psk"
           "d ${homeDir}/.nixpi 0755 ${username} ${username} -"
         ];
-        systemd.services.nixpi-prefer-wifi.enable = lib.mkForce false;
 
         system.activationScripts.nixpi-wireguard-bootstrap = lib.stringAfter [ "users" ] ''
           mkdir -p ${homeDir}/.nixpi
@@ -153,14 +152,14 @@ in
 
     nixpi.start()
     nixpi.wait_for_unit("multi-user.target", timeout=300)
-    nixpi.wait_for_unit("systemd-networkd.service", timeout=120)
     nixpi.wait_for_unit("wireguard-wg0.service", timeout=120)
-    nixpi.succeed("test -f /etc/systemd/network/50-wg0.netdev")
-    nixpi.succeed("test -f /etc/systemd/network/50-wg0.network")
-    nixpi.succeed("grep -q '^Kind=wireguard$' /etc/systemd/network/50-wg0.netdev")
-    nixpi.succeed("grep -q '^Name=wg0$' /etc/systemd/network/50-wg0.netdev")
+    nixpi.fail("test -f /etc/systemd/network/50-wg0.netdev")
+    nixpi.fail("test -f /etc/systemd/network/50-wg0.network")
+    nixpi.fail("systemctl cat nixpi-prefer-wifi.service >/dev/null")
+    nixpi.succeed("ip -4 addr show dev wg0 | grep -q '10.77.0.1/24'")
+    nixpi.succeed("wg show wg0 | grep -q '${clientPublicKey}'")
     nixpi.succeed("systemctl stop wireguard-wg0.service")
-    nixpi.succeed("ip link delete wg0")
+    nixpi.fail("ip link show wg0 >/dev/null")
     nixpi.succeed("systemctl start wireguard-wg0.service")
     nixpi.wait_for_unit("wireguard-wg0.service", timeout=120)
     nixpi.succeed("systemctl is-active wireguard-wg0.service")

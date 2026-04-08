@@ -10,7 +10,7 @@ let
 in
 {
   options.nixpi.wireguard = {
-    enable = lib.mkEnableOption "native WireGuard hub interface for NixPI" // {
+    enable = lib.mkEnableOption "native NixOS WireGuard hub interface for NixPI" // {
       default = true;
     };
 
@@ -43,8 +43,8 @@ in
       default = "/var/lib/nixpi/wireguard/private.key";
       description = ''
         Runtime path to the WireGuard private key for the NixPI hub.
-        The native systemd-networkd backend will ensure this file is readable
-        by the `systemd-network` group.
+        The native NixOS WireGuard module reads this file directly when
+        starting the generated WireGuard systemd service.
       '';
     };
 

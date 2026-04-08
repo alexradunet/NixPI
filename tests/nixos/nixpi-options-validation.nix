@@ -27,7 +27,7 @@
       networking.hostName = "nixpi-overrides-test";
 
       nixpi = {
-        services.home.port = 9090;
+        agent.autonomy = "observe";
         security = {
           fail2ban.enable = false;
           ssh.passwordAuthentication = true;
@@ -44,8 +44,8 @@
     defaults.wait_for_unit("multi-user.target", timeout=300)
 
     defaults.succeed("id pi")
-
-    defaults.wait_until_succeeds("curl -skf https://localhost/ >/dev/null", timeout=60)
+    defaults.succeed("systemctl cat nixpi-broker.service >/dev/null")
+    defaults.succeed("systemctl cat nixpi-update.timer >/dev/null")
 
     broker_cfg = defaults.succeed(
         "systemctl show nixpi-broker.service -p Environment --value"
@@ -61,6 +61,11 @@
 
     overrides.fail("systemctl is-active fail2ban")
     overrides.succeed("sshd -T | grep -i 'passwordauthentication yes'")
+    broker_cfg = overrides.succeed(
+        "systemctl show nixpi-broker.service -p Environment --value"
+        " | grep -oP 'NIXPI_BROKER_CONFIG=\\K\\S+'"
+    ).strip()
+    overrides.succeed(f"grep -q observe {broker_cfg}")
 
     print("All nixpi-options-validation tests passed!")
   '';
