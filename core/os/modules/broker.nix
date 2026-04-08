@@ -24,7 +24,7 @@ let
       elevationDuration = config.nixpi.agent.elevation.duration;
       osUpdateEnable = config.nixpi.agent.osUpdate.enable;
       inherit (config.nixpi.agent) allowedUnits;
-      defaultFlake = "/etc/nixos#nixos";
+      defaultFlake = config.nixpi.flake;
     }
   );
 
@@ -34,6 +34,8 @@ let
     export NIXPI_BROKER_CONFIG=${brokerConfig}
     exec ${brokerProgram}/bin/nixpi-broker "$@"
   '';
+  # Must use the stable /run/current-system path for sudo rules — sudo canonicalizes
+  # symlinks, so a store path (which changes on rebuild) would invalidate the sudoers rule.
   brokerCtlCommand = "/run/current-system/sw/bin/nixpi-brokerctl";
 in
 {
@@ -88,7 +90,6 @@ in
         Restart = "always";
         RestartSec = 5;
         UMask = "0007";
-        Environment = [ "NIXPI_BROKER_CONFIG=${brokerConfig}" ];
       };
     };
 

@@ -29,20 +29,16 @@ let
       dynamicEndpointRefreshSeconds = peer.dynamicEndpointRefreshSeconds;
     }
   ) wgCfg.peers;
-  wireguardSecretDirs =
-    lib.unique (
-      map builtins.dirOf (
-        [ wgCfg.privateKeyFile ] ++ lib.filter (path: path != null) (map (peer: peer.presharedKeyFile) wgCfg.peers)
-      )
-    );
+  presharedKeyFiles = lib.filter (p: p != null) (map (peer: peer.presharedKeyFile) wgCfg.peers);
+  allKeyFiles = [ wgCfg.privateKeyFile ] ++ presharedKeyFiles;
+  wireguardSecretDirs = lib.unique (map builtins.dirOf allKeyFiles);
 in
 
 {
   imports = [ ./options.nix ];
 
-  config = lib.mkMerge [
-    {
-      assertions = [
+  config = {
+    assertions = [
         {
           assertion = securityCfg.trustedInterface != "";
           message = "nixpi.security.trustedInterface must not be empty.";
@@ -114,9 +110,6 @@ in
         });
       };
 
-      environment.systemPackages = with pkgs; [
-        jq
-      ] ++ lib.optionals wgCfg.enable [ wireguard-tools ];
-    }
-  ];
+      environment.systemPackages = lib.optionals wgCfg.enable [ pkgs.wireguard-tools ];
+  };
 }

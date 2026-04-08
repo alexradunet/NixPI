@@ -65,7 +65,14 @@
       "Read(//nix/store/whn19js2ffrmqv9i1495drj3zdv777wb-nixos-nixpi-26.05.20260317.cda4854-x86_64-linux.iso/**)",
       "Read(//home/alex/pi-bloom/**)",
       "Bash(ls -la /home/alex/pi-bloom/result*)",
-      "Bash(lat check:*)"
+      "Bash(lat check:*)",
+      "Bash(echo \"exit: $?\")",
+      "Bash(openssl passwd:*)",
+      "Skill(commit-commands:commit-push-pr)",
+      "Bash(find:*)",
+      "Bash(wc -l /home/alex/pi-bloom/core/os/modules/*.nix)",
+      "Bash(head -20 /home/alex/pi-bloom/core/os/modules/*.nix)",
+      "Bash(nix build:*)"
     ]
   }
 }

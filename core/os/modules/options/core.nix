@@ -38,5 +38,14 @@ in
         Set interactively by the first-boot setup wizard.
       '';
     };
+
+    flake = lib.mkOption {
+      type = lib.types.str;
+      default = "/etc/nixos#nixos";
+      description = ''
+        Flake URI for this NixPI system. Used by auto-upgrade and the broker's
+        default rebuild target.
+      '';
+    };
   };
 }

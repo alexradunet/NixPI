@@ -30,6 +30,15 @@ let
       shellPath = "${pkgs.bash}/bin/bash";
     }
   );
+  appSetupScript = pkgs.writeShellScript "nixpi-app-setup" ''
+    ${pkgs.systemd}/bin/systemd-tmpfiles --create --prefix=${agentStateDir} --prefix=${stateDir} --prefix=/usr/local/share/nixpi
+
+    if [ -e ${agentStateDir}/auth.json ]; then
+      ln -sfn ../auth.json ${agentStateDir}/agent/auth.json
+    else
+      rm -f ${agentStateDir}/agent/auth.json
+    fi
+  '';
 in
 
 {
@@ -82,15 +91,7 @@ in
       Type = "oneshot";
       RemainAfterExit = true;
       User = "root";
-      ExecStart = "${pkgs.writeShellScript "nixpi-app-setup" ''
-        ${pkgs.systemd}/bin/systemd-tmpfiles --create --prefix=${agentStateDir} --prefix=${stateDir} --prefix=/usr/local/share/nixpi
-
-        if [ -e ${agentStateDir}/auth.json ]; then
-          ln -sfn ../auth.json ${agentStateDir}/agent/auth.json
-        else
-          rm -f ${agentStateDir}/agent/auth.json
-        fi
-      ''}";
+      ExecStart = "${appSetupScript}";
     };
   };
 
