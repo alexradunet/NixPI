@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 
 const repoRoot = path.resolve(import.meta.dirname, "../..");
 const packageJsonPath = path.join(repoRoot, "package.json");
+const readmePath = path.join(repoRoot, "README.md");
 const rebuildPullScriptPath = path.join(repoRoot, "core/scripts/nixpi-rebuild-pull.sh");
 const brokerModulePath = path.join(repoRoot, "core/os/modules/broker.nix");
 const setupApplyScriptPath = path.join(repoRoot, "core/scripts/nixpi-setup-apply.sh");
@@ -15,6 +16,13 @@ const ovhDeployDocPath = path.join(repoRoot, "docs/operations/ovh-rescue-deploy.
 const selfEvolutionSkillPath = path.join(repoRoot, "core/pi/skills/self-evolution/SKILL.md");
 const appModulePath = path.join(repoRoot, "core/os/modules/app.nix");
 const piPackagePath = path.join(repoRoot, "core/os/pkgs/pi/default.nix");
+const terminalUiOptionPath = path.join(repoRoot, "core/os/modules/options/terminal-ui.nix");
+const terminalUiModulePath = path.join(repoRoot, "core/os/modules/terminal-ui.nix");
+const shellModulePath = path.join(repoRoot, "core/os/modules/shell.nix");
+const moduleSetsPath = path.join(repoRoot, "core/os/modules/module-sets.nix");
+const runtimeFlowsPath = path.join(repoRoot, "docs/architecture/runtime-flows.md");
+const daemonArchitecturePath = path.join(repoRoot, "docs/reference/daemon-architecture.md");
+const serviceArchitecturePath = path.join(repoRoot, "docs/reference/service-architecture.md");
 
 describe("repo standards guards", () => {
 	it("configures VitePress for GitHub Project Pages", () => {
@@ -176,4 +184,41 @@ describe("repo standards guards", () => {
 		expect(liveTestingDoc).toContain("nixpi-deploy-ovh");
 		expect(liveTestingDoc).toContain("/srv/nixpi");
 	});
+	it("wires a declarative Zellij terminal UI as the default operator interface", () => {
+		const terminalOptions = readFileSync(terminalUiOptionPath, "utf8");
+		const terminalModule = readFileSync(terminalUiModulePath, "utf8");
+		const shellModule = readFileSync(shellModulePath, "utf8");
+		const moduleSets = readFileSync(moduleSetsPath, "utf8");
+		const vpsHost = readFileSync(path.join(repoRoot, "core/os/hosts/vps.nix"), "utf8");
+		const readme = readFileSync(readmePath, "utf8");
+		const runtimeFlows = readFileSync(runtimeFlowsPath, "utf8");
+		const daemonArchitecture = readFileSync(daemonArchitecturePath, "utf8");
+		const serviceArchitecture = readFileSync(serviceArchitecturePath, "utf8");
+
+		expect(existsSync(terminalUiOptionPath)).toBe(true);
+		expect(existsSync(terminalUiModulePath)).toBe(true);
+		expect(terminalOptions).toContain("options.nixpi.terminal");
+		expect(terminalOptions).toContain('"plain-shell"');
+		expect(terminalOptions).toContain('"zellij"');
+		expect(terminalOptions).toContain('"nixpkgs"');
+
+		expect(terminalModule).toContain("nixpi-launch-terminal-ui");
+		expect(terminalModule).toContain("NIXPI_NO_ZELLIJ");
+		expect(terminalModule).toContain("config.kdl");
+		expect(terminalModule).toContain('pane command="pi"');
+		expect(terminalModule).toContain("attachExistingSession");
+
+		expect(shellModule).toContain("nixpi-launch-terminal-ui");
+		expect(moduleSets).toContain("./terminal-ui.nix");
+		expect(vpsHost).toContain('terminal.interface = lib.mkDefault "zellij";');
+		expect(vpsHost).toContain("terminal.zellij.enable = lib.mkDefault true;");
+
+		expect(readme).toContain("Zellij");
+		expect(readme).toContain("NIXPI_NO_ZELLIJ=1");
+		expect(runtimeFlows).toContain("Zellij");
+		expect(runtimeFlows).toContain("NIXPI_NO_ZELLIJ=1");
+		expect(daemonArchitecture).toContain("Zellij");
+		expect(serviceArchitecture).toContain("Zellij");
+	});
+
 });

@@ -337,6 +337,16 @@
             touch "$out"
           '';
 
+          terminal-ui-launcher = pkgs.runCommandLocal "terminal-ui-launcher-check" { } ''
+            launcher=${./core/os/modules/terminal-ui.nix}
+            test -f "$launcher"
+            grep -F 'nixpi-launch-terminal-ui' "$launcher" >/dev/null
+            grep -F 'NIXPI_NO_ZELLIJ' "$launcher" >/dev/null
+            grep -F 'pane command="pi"' "$launcher" >/dev/null
+            grep -F 'native-patched' "$launcher" >/dev/null
+            touch "$out"
+          '';
+
           system-flake-finalize = pkgs.runCommandLocal "system-flake-finalize-check" { } ''
             script=${./core/scripts/nixpi-install-finalize.sh}
             helper=${./core/scripts/nixpi-init-system-flake.sh}
