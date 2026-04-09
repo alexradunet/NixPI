@@ -88,7 +88,10 @@
       "Bash(nix-instantiate --parse tests/nixos/nixpi-post-setup-lockdown.nix)",
       "Bash(nix-instantiate --parse tests/nixos/nixpi-security.nix)",
       "Bash(nix-instantiate --parse tests/nixos/nixpi-system-flake.nix)",
-      "Skill(commit-commands:commit)"
+      "Skill(commit-commands:commit)",
+      "Bash(cat nixos_vps_provisioner/*.md)",
+      "Bash(sshpass:*)",
+      "Bash(scp /home/alex/pi-bloom/core/scripts/nixpi-bootstrap-host.sh root@51.210.151.48:/tmp/nixpi-bootstrap-host.sh)"
     ]
   }
 }
