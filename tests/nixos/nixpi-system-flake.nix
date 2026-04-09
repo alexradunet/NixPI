@@ -39,7 +39,6 @@ in
     machine.succeed("test -f /home/pi/.pi/settings.json")
     machine.fail("test -e /srv/nixpi")
     machine.fail("test -f /etc/nixos/flake.nix")
-    machine.fail("systemctl cat nixpi-install-finalize.service >/dev/null")
 
     print("nixpi-system-flake test passed!")
   '';

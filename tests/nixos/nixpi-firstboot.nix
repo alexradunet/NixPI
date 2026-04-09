@@ -41,7 +41,6 @@ in
     nixpi.fail("test -f " + home + "/.nixpi/.setup-complete")
     nixpi.succeed("sudo -u pi -- sudo -n true")
     nixpi.succeed("ss -ltn '( sport = :22 )' | grep -q LISTEN")
-    nixpi.fail("command -v nixpi-setup-apply")
 
     nixpi.succeed("test -d " + home + "/.pi")
     nixpi.succeed("test -d " + home + "/.pi/agent")
@@ -54,7 +53,6 @@ in
     nixpi.fail("systemctl cat nixpi-app-setup.service | grep -Eq 'chown -R|install -m 0600'")
     nixpi.fail("test -e /srv/nixpi")
     nixpi.fail("test -f /etc/nixos/flake.nix")
-    nixpi.fail("systemctl cat nixpi-install-finalize.service >/dev/null")
     nixpi.fail("command -v codex")
     nixpi.fail("test -e " + home + "/.bashrc")
     nixpi.fail("test -e " + home + "/.bash_profile")

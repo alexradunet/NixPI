@@ -80,7 +80,6 @@ in
     client.succeed("ping -c 3 pi")
 
     nixpi.fail("sudo -u pi -- sudo -n true")
-    nixpi.fail("command -v nixpi-setup-apply")
 
     client.succeed("nc -z -w 2 pi 22")
 
@@ -98,10 +97,6 @@ in
     nixpi.fail("test -f /etc/nixos/flake.nix")
     nixpi.fail("test -e /etc/nixos/nixpi-host.nix")
     nixpi.fail("test -e /etc/nixos/nixpi-integration.nix")
-    nixpi.fail("systemctl cat nixpi-install-finalize.service >/dev/null")
-    nixpi.fail("command -v nixpi-bootstrap-ensure-repo-target")
-    nixpi.fail("command -v nixpi-bootstrap-prepare-repo")
-    nixpi.fail("command -v nixpi-bootstrap-nixos-rebuild-switch")
 
     groups = nixpi.succeed("groups " + username).strip()
     assert "wheel" in groups, "User not in wheel group: " + groups

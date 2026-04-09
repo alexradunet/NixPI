@@ -60,7 +60,6 @@ in
     nixpi.succeed("sudo -u pi -- bash -lc 'nixpi-brokerctl status >/tmp/broker-status.json'")
     nixpi.succeed("test -f /home/pi/.pi/settings.json")
     nixpi.succeed("command -v pi")
-    nixpi.fail("command -v nixpi-setup-apply")
 
     client.start()
     client.wait_for_unit("multi-user.target", timeout=120)

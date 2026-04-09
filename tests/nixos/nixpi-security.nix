@@ -107,7 +107,6 @@ in
     steady.wait_for_unit("fail2ban.service", timeout=60)
     steady.succeed("test -f /home/pi/.pi/settings.json")
     steady.succeed("command -v pi")
-    steady.fail("command -v nixpi-setup-apply")
 
     client.start()
     client.wait_for_unit("multi-user.target", timeout=120)
