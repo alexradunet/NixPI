@@ -1,6 +1,6 @@
 # First Boot Setup
 
-> Validating a fresh NixPI host after nixos-anywhere installation
+> Validating a fresh NixPI host after a plain base install
 
 ## Audience
 
@@ -10,9 +10,9 @@ Operators bringing up a fresh NixPI headless VPS.
 
 Before this checklist, you should already have:
 
-1. a completed `nixpi-deploy-ovh` install
-2. SSH access to the deployed host
-3. the expected host flake target available in the operator checkout you plan to use for rebuilds, if any
+1. a completed plain-base install such as `nixpi-deploy-ovh`
+2. SSH or console access to the installed machine
+3. the intended primary user, hostname, timezone, and keyboard values for bootstrap
 
 ## What First Boot Means Now
 
@@ -20,16 +20,33 @@ NixPI comes up as a shell-first host runtime with Zellij as the default interact
 
 A fresh system should provide:
 
-- SSH access for the primary operator
-- Zellij as the default interactive entrypoint on SSH and local tty sessions
-- Pi runtime availability from the deployed system
-- bootstrap versus steady-state mode from the deployed NixOS config
+- a plain base system that boots normally before NixPI is layered on
+- a bootstrap path that writes narrow `/etc/nixos` helper files
 - an installed `/etc/nixos` flake that remains authoritative for host convergence
-- a rebuild path that is explicit about which operator checkout, if any, you are using
+- a rebuild path that stays anchored to `/etc/nixos#nixos`
+- a Pi runtime that becomes available after bootstrap completes
 
 ## First-Boot Checklist
 
-### 1. Verify the Base Services
+### 1. Bootstrap NixPI on the machine
+
+The first post-install action is to run `nixpi-bootstrap-host` on the machine.
+
+```bash
+nix run github:alexradunet/nixpi#nixpi-bootstrap-host -- \
+  --primary-user alex \
+  --hostname bloom-eu-1 \
+  --timezone Europe/Bucharest \
+  --keyboard us
+```
+
+If `/etc/nixos/flake.nix` already exists, follow the printed manual integration guidance and rebuild the host explicitly:
+
+```bash
+sudo nixos-rebuild switch --flake /etc/nixos#nixos --impure
+```
+
+### 2. Verify the base services
 
 ```bash
 systemctl status nixpi-app-setup.service
@@ -40,7 +57,7 @@ systemctl status nixpi-update.timer
 
 Expected result: all four services are active or activatable.
 
-### 2. Verify the Runtime Entry Path
+### 3. Verify the runtime entry path
 
 From SSH:
 
@@ -58,7 +75,7 @@ Expected result:
 
 After the first successful login, the default operator-facing interface is Zellij. The generated layout opens Pi and a shell tab. If you need a plain shell for recovery, use `NIXPI_NO_ZELLIJ=1` before starting the login shell.
 
-### 3. Verify NetBird Bootstrap Before Normal Use
+### 4. Verify NetBird bootstrap before normal use
 
 ```bash
 systemctl status netbird-wt0.service
@@ -71,33 +88,24 @@ Expected result:
 - the host has enrolled into the managed NetBird network
 - `netbird-wt0 status` reports the local peer and connection state
 
-### 4. Optional: Verify the Operator Rebuild Path
+### 5. Verify the rebuild path
 
-First verify the standard rebuild path from the installed host flake:
+Steady-state rebuilds should use the installed host flake:
 
 ```bash
 sudo nixpi-rebuild
 ```
 
-If you maintain the conventional `/srv/nixpi` operator checkout, verify the sync helper too:
+Manual recovery or existing-flake integration also rebuilds through the same host-owned root:
 
 ```bash
-sudo nixpi-rebuild-pull [branch]
-```
-
-This helper is specifically for syncing a remote branch into the conventional `/srv/nixpi` operator checkout before rebuilding from it.
-
-If you maintain some other operator checkout for ongoing changes, verify that manual path-specific workflow separately. Use the path to that checkout, whether it lives outside `/srv/nixpi` or alongside it.
-
-```bash
-sudo nixos-rebuild switch --flake <checkout-path>#ovh-vps
+sudo nixos-rebuild switch --flake /etc/nixos#nixos --impure
 ```
 
 Expected result:
 
 - `sudo nixpi-rebuild` rebuilds from the installed host flake
-- `sudo nixpi-rebuild-pull [branch]` syncs a remote branch into `/srv/nixpi` and rebuilds from that operator checkout
-- manual `nixos-rebuild switch --flake <checkout-path>#ovh-vps` rebuilds from the explicitly selected checkout
+- manual host rebuilds still target `/etc/nixos#nixos`
 - the deployed system stays independent from any boot-time repo seeding
 
 ## Operator Orientation
@@ -106,10 +114,10 @@ After first boot, keep these boundaries in mind:
 
 - the deployed NixOS config owns bootstrap and steady-state behavior
 - the installed `/etc/nixos` flake remains authoritative for the running host
+- NixPI is layered into the host through generated helper files, not by replacing the machine root
 - user-home marker files are not the control path for transitioning host state
 - SSH sessions are the operator control plane, with Zellij as the default interactive UI
-- an operator checkout such as `/srv/nixpi` is a workspace for review, sync, and rebuilds, not a first-boot requirement
-- Shell behavior should already match the deployed NixOS configuration
+- shell behavior should already match the deployed NixOS configuration
 - system services remain inspectable with normal NixOS and systemd tooling
 
 ## Reference
@@ -127,4 +135,4 @@ After first boot, keep these boundaries in mind:
 - the machine boots to a normal headless multi-user target
 - no desktop session is required to start operating NixPI
 - the primary user workflow is Pi in the terminal, reached from SSH via Zellij by default
-- updates run through native NixOS/systemd paths, `sudo nixpi-rebuild` targets the installed host flake, and manual rebuilds can target the explicit operator checkout you chose
+- updates run through native NixOS/systemd paths, and `sudo nixpi-rebuild` targets the installed host flake

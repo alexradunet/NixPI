@@ -3,15 +3,20 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 const repoRoot = path.resolve(import.meta.dirname, "../..");
+const flakePath = path.join(repoRoot, "flake.nix");
 const packageJsonPath = path.join(repoRoot, "package.json");
-const deployOvhScriptPath = path.join(repoRoot, "core/scripts/nixpi-deploy-ovh.sh");
-const deployOvhTestPath = path.join(repoRoot, "tests/integration/nixpi-deploy-ovh.test.ts");
-const ovhCommonScriptPath = path.join(repoRoot, "core/scripts/nixpi-ovh-common.sh");
+const bootstrapHostScriptPath = path.join(repoRoot, "core/scripts/nixpi-bootstrap-host.sh");
+const bootstrapHostPackagePath = path.join(repoRoot, "core/os/pkgs/nixpi-bootstrap-host/default.nix");
+const rebuildPullScriptPath = path.join(repoRoot, "core/scripts/nixpi-rebuild-pull.sh");
+const rebuildPullPackagePath = path.join(repoRoot, "core/os/pkgs/nixpi-rebuild-pull/default.nix");
 const reinstallOvhScriptPath = path.join(repoRoot, "core/scripts/nixpi-reinstall-ovh.sh");
+const reinstallOvhPackagePath = path.join(repoRoot, "core/os/pkgs/nixpi-reinstall-ovh/default.nix");
+const ovhBaseHostPath = path.join(repoRoot, "core/os/hosts/ovh-base.nix");
+const ovhVpsHostPath = path.join(repoRoot, "core/os/hosts/ovh-vps.nix");
+const ovhBaseConfigTestPath = path.join(repoRoot, "tests/integration/ovh-base-config.test.ts");
+const bootstrapHostTestPath = path.join(repoRoot, "tests/integration/nixpi-bootstrap-host.test.ts");
+const ovhVpsConfigTestPath = path.join(repoRoot, "tests/integration/ovh-vps-config.test.ts");
 const reinstallOvhTestPath = path.join(repoRoot, "tests/integration/nixpi-reinstall-ovh.test.ts");
-const ovhHostPath = path.join(repoRoot, "core/os/hosts/ovh-vps.nix");
-const ovhDiskoPath = path.join(repoRoot, "core/os/disko/ovh-single-disk.nix");
-const ovhDeployDocPath = path.join(repoRoot, "docs/operations/ovh-rescue-deploy.md");
 const appModulePath = path.join(repoRoot, "core/os/modules/app.nix");
 const piPackagePath = path.join(repoRoot, "core/os/pkgs/pi/default.nix");
 const terminalUiOptionPath = path.join(repoRoot, "core/os/modules/options/terminal-ui.nix");
@@ -22,37 +27,125 @@ const runtimeFlowsPath = path.join(repoRoot, "docs/architecture/runtime-flows.md
 const daemonArchitecturePath = path.join(repoRoot, "docs/reference/daemon-architecture.md");
 const serviceArchitecturePath = path.join(repoRoot, "docs/reference/service-architecture.md");
 const personaSkillPath = path.join(repoRoot, "core/pi/persona/SKILL.md");
+const recoverySkillPath = path.join(repoRoot, "core/pi/skills/recovery/SKILL.md");
+const selfEvolutionSkillPath = path.join(repoRoot, "core/pi/skills/self-evolution/SKILL.md");
 const readmePath = path.join(repoRoot, "README.md");
 const installDocPath = path.join(repoRoot, "docs/install.md");
 const quickDeployDocPath = path.join(repoRoot, "docs/operations/quick-deploy.md");
+const ovhRescueDeployDocPath = path.join(repoRoot, "docs/operations/ovh-rescue-deploy.md");
 const firstBootDocPath = path.join(repoRoot, "docs/operations/first-boot-setup.md");
-const runtimeFlowsDocPath = path.join(repoRoot, "docs/architecture/runtime-flows.md");
 const liveTestingDocPath = path.join(repoRoot, "docs/operations/live-testing.md");
 const infrastructureDocPath = path.join(repoRoot, "docs/reference/infrastructure.md");
-const productionGuidancePaths = [
-	readmePath,
-	installDocPath,
-	quickDeployDocPath,
-	firstBootDocPath,
-	runtimeFlowsDocPath,
-	liveTestingDocPath,
-];
+const reinstallCommandPath = path.join(repoRoot, "reinstall-nixpi-command.txt");
 
-const readDocs = () =>
-	Object.fromEntries(productionGuidancePaths.map((filePath) => [filePath, readFileSync(filePath, "utf8")])) as Record<
-		string,
-		string
-	>;
+const readUtf8 = (filePath: string) => readFileSync(filePath, "utf8");
+const relativePath = (filePath: string) => path.relative(repoRoot, filePath);
+
+const hostOwnedBootstrapDocCases = [
+	{
+		label: relativePath(readmePath),
+		filePath: readmePath,
+		contains: [
+			"plain OVH-compatible NixOS base system",
+			"nixpi-bootstrap-host",
+			"`/etc/nixos` is the running host's source of truth",
+		],
+		absent: ["final host configuration installed directly by `nixos-anywhere`", "nixpi-rebuild-pull", "/srv/nixpi"],
+	},
+	{
+		label: relativePath(installDocPath),
+		filePath: installDocPath,
+		contains: ["install a plain NixOS base", "run `nixpi-bootstrap-host` on the machine"],
+		absent: ["final host configuration directly", "nixpi-rebuild-pull", "/srv/nixpi"],
+	},
+	{
+		label: relativePath(quickDeployDocPath),
+		filePath: quickDeployDocPath,
+		contains: ["install the `ovh-base` system", "bootstrap NixPI after first boot"],
+		absent: ["final `ovh-vps` host configuration directly", "nixpi-rebuild-pull", "/srv/nixpi"],
+	},
+	{
+		label: relativePath(ovhRescueDeployDocPath),
+		filePath: ovhRescueDeployDocPath,
+		contains: ["plain base system", "run `nixpi-bootstrap-host` on the machine"],
+		absent: ["nixpi-reinstall-ovh", "nixpi-rebuild-pull", "/srv/nixpi"],
+	},
+	{
+		label: relativePath(firstBootDocPath),
+		filePath: firstBootDocPath,
+		contains: ["run `nixpi-bootstrap-host`", "`/etc/nixos#nixos`"],
+		absent: ["nixpi-rebuild-pull", "<checkout-path>#ovh-vps", "/srv/nixpi"],
+	},
+	{
+		label: relativePath(runtimeFlowsPath),
+		filePath: runtimeFlowsPath,
+		contains: ["plain base system", "bootstrap writes narrow `/etc/nixos` helper files"],
+		absent: ["final host configuration directly", "nixpi-rebuild-pull", "/srv/nixpi"],
+	},
+	{
+		label: relativePath(liveTestingDocPath),
+		filePath: liveTestingDocPath,
+		contains: ["base install then bootstrap", "`nixpi-bootstrap-host` on the machine"],
+		absent: ["final `ovh-vps` host configuration directly", "nixpi-rebuild-pull", "/srv/nixpi"],
+	},
+	{
+		label: relativePath(infrastructureDocPath),
+		filePath: infrastructureDocPath,
+		contains: ["nixpi-bootstrap-host", "`/etc/nixos` is the running host's source of truth"],
+		absent: ["nixpi-rebuild-pull [branch]", "/srv/nixpi"],
+	},
+	{
+		label: relativePath(personaSkillPath),
+		filePath: personaSkillPath,
+		contains: [
+			"Canonical rebuild path: `sudo nixpi-rebuild`.",
+			"Canonical bootstrap path: `nix run github:alexradunet/nixpi#nixpi-bootstrap-host -- ...`.",
+		],
+		absent: ["nixpi-rebuild-pull", "/srv/nixpi"],
+	},
+	{
+		label: relativePath(recoverySkillPath),
+		filePath: recoverySkillPath,
+		contains: ["retry `sudo nixpi-rebuild`", "`sudo nixos-rebuild switch --flake /etc/nixos#nixos --impure`"],
+		absent: ["nixpi-rebuild-pull", "/srv/nixpi"],
+	},
+	{
+		label: relativePath(selfEvolutionSkillPath),
+		filePath: selfEvolutionSkillPath,
+		contains: [
+			"**Standard bootstrap command**: `nix run github:alexradunet/nixpi#nixpi-bootstrap-host -- ...`",
+			"**Canonical rebuild command**: `sudo nixpi-rebuild`",
+		],
+		absent: ["nixpi-rebuild-pull", "/srv/nixpi"],
+	},
+] as const;
+
+const legacyBootstrapTerms = [
+	"sudo nixpi-rebuild-pull [branch]",
+	"sudo nixpi-rebuild-pull [branch-or-ref]",
+	"nixpi-reinstall-ovh",
+	"conventional `/srv/nixpi` operator checkout",
+	"final `ovh-vps` host configuration directly",
+	"<checkout-path>#ovh-vps",
+	"/srv/nixpi",
+	"ovh-vps",
+] as const;
+
+const legacyFreeDocCases = hostOwnedBootstrapDocCases.map(({ label, filePath }) => ({
+	label,
+	filePath,
+	forbiddenTerms: legacyBootstrapTerms,
+}));
 
 describe("repo standards guards", () => {
 	it("configures VitePress for GitHub Project Pages", () => {
-		const vitePressConfig = readFileSync(path.join(repoRoot, "docs/.vitepress/config.ts"), "utf8");
+		const vitePressConfig = readUtf8(path.join(repoRoot, "docs/.vitepress/config.ts"));
 
 		expect(vitePressConfig).toContain('base: "/NixPI/"');
 	});
 
 	it("declares compatible Pi peer dependency ranges and CI checks", () => {
-		const packageJson = JSON.parse(readFileSync(packageJsonPath, "utf8")) as {
+		const packageJson = JSON.parse(readUtf8(packageJsonPath)) as {
 			peerDependencies?: Record<string, string>;
 			dependencies?: Record<string, string>;
 			devDependencies?: Record<string, string>;
@@ -68,8 +161,8 @@ describe("repo standards guards", () => {
 	});
 
 	it("keeps Pi command execution shell-capable by including bash in wrapper PATH", () => {
-		const piPackage = readFileSync(piPackagePath, "utf8");
-		const appModule = readFileSync(appModulePath, "utf8");
+		const piPackage = readUtf8(piPackagePath);
+		const appModule = readUtf8(appModulePath);
 		expect(piPackage).toContain("makeBinPath [ bash fd ripgrep ]");
 		expect(appModule).toContain("pkgs.bash");
 		expect(appModule).toContain("shellPath =");
@@ -78,251 +171,99 @@ describe("repo standards guards", () => {
 		expect(appModule).toContain("systemd-tmpfiles");
 	});
 
-	it("documents the declarative install target and separates rebuilds from repo semantics", () => {
-		const docs = readDocs();
-		const readme = docs[readmePath];
-		const installDoc = docs[installDocPath];
-		const quickDeployDoc = docs[quickDeployDocPath];
-		const firstBootDoc = docs[firstBootDocPath];
-		const runtimeFlowsDoc = docs[runtimeFlowsDocPath];
-		const liveTestingDoc = docs[liveTestingDocPath];
-		const infrastructureDoc = readFileSync(infrastructureDocPath, "utf8");
-		const personaSkill = readFileSync(personaSkillPath, "utf8");
+	it.each(hostOwnedBootstrapDocCases)("documents the host-owned bootstrap contract in $label", ({
+		filePath,
+		contains,
+		absent,
+	}) => {
+		const doc = readUtf8(filePath);
 
-		expect(readme).toContain("nixos-anywhere");
-		expect(readme).toContain("final host configuration");
-		expect(readme).toContain("optional operator checkout");
-		expect(readme).toContain("/srv/nixpi");
-		expect(readme).toContain("installed `/etc/nixos` flake is the running host's source of truth");
-		expect(readme).toContain("sudo nixpi-rebuild");
-		expect(readme).toContain("sudo nixpi-rebuild-pull");
-
-		expect(installDoc).toContain("final host configuration directly");
-		expect(installDoc).toContain("No first-boot repo clone or generated flake step");
-		expect(installDoc).toContain("Bootstrap and steady-state behavior belongs in NixOS config");
-		expect(installDoc).toContain("conventional operator checkout path");
-		expect(installDoc).toContain("installed `/etc/nixos` flake remains the source of truth");
-		expect(installDoc).toContain("sudo nixpi-rebuild");
-		expect(installDoc).toContain("sudo nixpi-rebuild-pull [branch]");
-
-		expect(quickDeployDoc).toContain("installs the final `ovh-vps` host configuration directly");
-		expect(quickDeployDoc).toContain("No first-boot repo clone or generated flake step is required");
-		expect(quickDeployDoc).toContain("repo checkout such as `/srv/nixpi` is optional");
-		expect(quickDeployDoc).toContain("sudo nixpi-rebuild");
-		expect(quickDeployDoc).toContain("sudo nixpi-rebuild-pull [branch]");
-		expect(quickDeployDoc).toContain("remote branch");
-		expect(quickDeployDoc).toContain("syncs the conventional `/srv/nixpi` checkout");
-
-		expect(firstBootDoc).toContain("bootstrap versus steady-state mode from the deployed NixOS config");
-		expect(firstBootDoc).toContain("Optional: Verify the Operator Rebuild Path");
-		expect(firstBootDoc).toContain("sudo nixpi-rebuild");
-		expect(firstBootDoc).toContain("sudo nixpi-rebuild-pull [branch]");
-		expect(firstBootDoc).toContain("remote branch");
-		expect(firstBootDoc).toContain("lives outside `/srv/nixpi` or alongside it");
-		expect(firstBootDoc).toContain("user-home marker files");
-		expect(firstBootDoc).toContain("Shell behavior should already match the deployed NixOS configuration");
-		expect(firstBootDoc).toContain("installed `/etc/nixos` flake remains authoritative");
-
-		expect(runtimeFlowsDoc).toContain("Install-Time Handoff");
-		expect(runtimeFlowsDoc).toContain("Runtime Entry Flow");
-		expect(runtimeFlowsDoc).toContain("No boot-time repo clone or generated host flake step");
-		expect(runtimeFlowsDoc).toContain("Bootstrap and steady-state are selected declaratively");
-		expect(runtimeFlowsDoc).toContain("operator checkout such as `/srv/nixpi` is optional");
-
-		expect(liveTestingDoc).toContain("optional operator checkout workflow");
-		expect(liveTestingDoc).toContain("final `ovh-vps` host configuration directly");
-		expect(liveTestingDoc).toContain("without first-boot repo seeding or runtime host-flake generation");
-		expect(liveTestingDoc).toContain("Optional operator checkouts such as `/srv/nixpi`");
-
-		expect(infrastructureDoc).toContain("installed `/etc/nixos` flake");
-		expect(infrastructureDoc).toContain("sudo nixpi-rebuild");
-		expect(infrastructureDoc).toContain("sudo nixpi-rebuild-pull [branch]");
-
-		expect(personaSkill).toContain("sudo nixpi-rebuild-pull [branch]");
-		expect(personaSkill).not.toContain("branch-or-ref");
+		for (const expectedText of contains) {
+			expect(doc).toContain(expectedText);
+		}
+		for (const unexpectedText of absent) {
+			expect(doc).not.toContain(unexpectedText);
+		}
 	});
 
-	it("keeps production guidance free of imperative first-boot convergence steps", () => {
-		const productionGuidance = Object.values(readDocs()).join("\n");
+	it.each(legacyFreeDocCases)("keeps $label free of legacy repo-owned bootstrap terms", ({
+		filePath,
+		forbiddenTerms,
+	}) => {
+		const doc = readUtf8(filePath);
 
-		expect(productionGuidance).not.toContain("let first boot seed `/srv/nixpi` and `/etc/nixos/flake.nix`");
-		expect(productionGuidance).not.toContain("a generated `/etc/nixos/flake.nix`");
-		expect(productionGuidance).not.toContain("system-ready");
-		expect(productionGuidance).not.toContain(".bashrc");
-		expect(productionGuidance).not.toContain(".bash_profile");
+		for (const forbiddenTerm of forbiddenTerms) {
+			expect(doc).not.toContain(forbiddenTerm);
+		}
 	});
 
-	it("keeps the OVH deployment lane wired into the repo", () => {
-		const flake = readFileSync(path.join(repoRoot, "flake.nix"), "utf8");
-		const installDoc = readFileSync(installDocPath, "utf8");
-		const quickDeployDoc = readFileSync(quickDeployDocPath, "utf8");
-		const readme = readFileSync(readmePath, "utf8");
+	it("keeps the example install artifact aligned with the host-owned bootstrap flow", () => {
+		const artifact = readUtf8(reinstallCommandPath);
+
+		expect(artifact).toContain("nix run .#nixpi-deploy-ovh --");
+		expect(artifact).toContain("nix run github:alexradunet/nixpi#nixpi-bootstrap-host --");
+		for (const forbiddenTerm of ["nixpi-reinstall-ovh", "nixpi-rebuild-pull", "/srv/nixpi"]) {
+			expect(artifact).not.toContain(forbiddenTerm);
+		}
+	});
+
+	it("keeps production guidance free of exact legacy first-boot convergence phrases", () => {
+		for (const filePath of [
+			readmePath,
+			installDocPath,
+			quickDeployDocPath,
+			ovhRescueDeployDocPath,
+			firstBootDocPath,
+			runtimeFlowsPath,
+			liveTestingDocPath,
+		]) {
+			const doc = readUtf8(filePath);
+
+			expect(doc).not.toContain("let first boot seed `/srv/nixpi` and `/etc/nixos/flake.nix`");
+			expect(doc).not.toContain("a generated `/etc/nixos/flake.nix`");
+		}
+	});
+
+	it("keeps only the host-owned bootstrap lane wired into the repo", () => {
+		const flake = readUtf8(flakePath);
 
 		expect(flake).toContain('disko.url = "github:nix-community/disko"');
 		expect(flake).toContain('nixos-anywhere.url = "github:nix-community/nixos-anywhere"');
-		expect(flake).toContain("ovh-vps = mkConfiguredStableSystem");
-		expect(flake).toContain("./core/os/hosts/ovh-vps.nix");
-		expect(flake).toContain("./core/os/disko/ovh-single-disk.nix");
-		expect(flake).toContain("nixpi-deploy-ovh");
-		expect(flake).toContain("nixpi-reinstall-ovh");
+		expect(flake).toContain("nixpi-bootstrap-host = pkgs.callPackage ./core/os/pkgs/nixpi-bootstrap-host { };");
+		expect(flake).toContain("ovh-base = mkConfiguredStableSystem");
+		expect(flake).toContain("./core/os/hosts/ovh-base.nix");
+		expect(flake).toContain(`program = "\${self.packages.\${system}.nixpi-bootstrap-host}/bin/nixpi-bootstrap-host"`);
 
-		expect(existsSync(ovhHostPath)).toBe(true);
-		expect(existsSync(ovhDiskoPath)).toBe(true);
-		expect(existsSync(deployOvhScriptPath)).toBe(true);
-		expect(existsSync(reinstallOvhScriptPath)).toBe(true);
-		expect(existsSync(ovhDeployDocPath)).toBe(true);
+		expect(existsSync(bootstrapHostScriptPath)).toBe(true);
+		expect(existsSync(bootstrapHostPackagePath)).toBe(true);
+		expect(existsSync(ovhBaseHostPath)).toBe(true);
+		expect(existsSync(bootstrapHostTestPath)).toBe(true);
+		expect(existsSync(ovhBaseConfigTestPath)).toBe(true);
 
-		expect(readme).toContain("nix run .#nixpi-deploy-ovh --");
-		expect(installDoc).toContain("OVH Rescue Deploy");
-		expect(quickDeployDoc).toContain("nixpi-deploy-ovh");
+		expect(flake).not.toContain("nixpi-rebuild-pull");
+		expect(flake).not.toContain("nixpi-reinstall-ovh");
+		expect(flake).not.toContain("ovh-vps = mkConfiguredStableSystem");
+		expect(existsSync(rebuildPullScriptPath)).toBe(false);
+		expect(existsSync(rebuildPullPackagePath)).toBe(false);
+		expect(existsSync(reinstallOvhScriptPath)).toBe(false);
+		expect(existsSync(reinstallOvhPackagePath)).toBe(false);
+		expect(existsSync(ovhVpsHostPath)).toBe(false);
+		expect(existsSync(reinstallOvhTestPath)).toBe(false);
+		expect(existsSync(ovhVpsConfigTestPath)).toBe(false);
 	});
 
-	it("documents an explicit destructive OVH deploy script contract", () => {
-		const flake = readFileSync(path.join(repoRoot, "flake.nix"), "utf8");
-		const deployScript = readFileSync(deployOvhScriptPath, "utf8");
-		const deployDoc = readFileSync(ovhDeployDocPath, "utf8");
-
-		expect(deployScript).toContain("Destructive fresh install for an OVH VPS in rescue mode.");
-		expect(deployScript).toContain("--target-host");
-		expect(deployScript).toContain("--disk");
-		expect(deployScript).toContain("--flake");
-		expect(flake).toContain("nixos-anywhere.packages.${" + "system}.nixos-anywhere");
-
-		expect(deployDoc).toContain("rescue mode");
-		expect(deployDoc).toContain("nix run .#nixpi-deploy-ovh --");
-		expect(deployDoc).toContain("--target-host");
-		expect(deployDoc).toContain("--disk");
-		expect(deployDoc).toContain("destructive");
-		expect(deployDoc).toContain("ssh-keygen -R");
-		expect(deployDoc).toContain("/srv/nixpi");
-	});
-
-	it("keeps deterministic regression tests for the OVH deploy wrapper", () => {
-		const deployScript = readFileSync(deployOvhScriptPath, "utf8");
-		const commonScript = readFileSync(ovhCommonScriptPath, "utf8");
-
-		expect(existsSync(deployOvhTestPath)).toBe(true);
-		expect(commonScript).toContain("build_deploy_flake()");
-		expect(deployScript).toContain("run_ovh_deploy");
-		expect(deployScript).toContain(`if [[ "\${BASH_SOURCE[0]}" == "$0" ]]; then`);
-	});
-
-	it("wires a first-class OVH reinstall wrapper into the repo", () => {
-		const flake = readFileSync(path.join(repoRoot, "flake.nix"), "utf8");
-
-		expect(existsSync(reinstallOvhScriptPath)).toBe(true);
-		expect(existsSync(reinstallOvhTestPath)).toBe(true);
-		expect(flake).toContain("nixpi-reinstall-ovh");
-		expect(flake).toContain('program = "${self.packages.${system}.nixpi-reinstall-ovh}/bin/nixpi-reinstall-ovh"');
-	});
-
-	it("defines the OVH root partition with size syntax that disko can realize on real disks", () => {
-		const ovhDisko = readFileSync(ovhDiskoPath, "utf8");
-
-		expect(ovhDisko).toContain('size = "100%"');
-		expect(ovhDisko).not.toContain('end = "100%"');
-	});
-
-	it("keeps the OVH disk layout bootable on BIOS and EFI firmware", () => {
-		const ovhDisko = readFileSync(ovhDiskoPath, "utf8");
-		const ovhHost = readFileSync(ovhHostPath, "utf8");
-
-		expect(ovhDisko).toContain('type = "EF02"');
-		expect(ovhDisko).toContain('type = "EF00"');
-		expect(ovhHost).toContain("efiInstallAsRemovable = true;");
-		expect(ovhHost).toContain('device = "nodev";');
-	});
-
-	it("supports a single bootstrap user with a hashed first-login password for OVH installs", () => {
-		const deployScript = readFileSync(deployOvhScriptPath, "utf8");
-		const commonScript = readFileSync(ovhCommonScriptPath, "utf8");
-		const deployDoc = readFileSync(ovhDeployDocPath, "utf8");
-		const ovhHost = readFileSync(ovhHostPath, "utf8");
-		const shellModule = readFileSync(shellModulePath, "utf8");
-
-		expect(deployScript).toContain("--bootstrap-user");
-		expect(deployScript).toContain("--bootstrap-password-hash");
-		expect(commonScript).toContain("nixpi.primaryUser = lib.mkForce");
-		expect(commonScript).toContain("initialHashedPassword");
-		expect(ovhHost).toContain("nixpi-expire-bootstrap-password");
-		expect(ovhHost).toContain("/bin/chage -d 0");
-		expect(shellModule).toContain("Refusing to change nixpi.primaryUser");
-		expect(shellModule).toContain("allowPrimaryUserChange");
-		expect(deployDoc).toContain("bootstrap user");
-		expect(deployDoc).toContain("bootstrap password hash");
-		expect(deployDoc).toContain("initialHashedPassword");
-		expect(deployDoc).toContain("forced to choose a new password");
-	});
-
-	it("documents the staged OVH kexec troubleshooting flow for disk renumbering", () => {
-		const deployDoc = readFileSync(ovhDeployDocPath, "utf8");
-		const quickDeployDoc = readFileSync(quickDeployDocPath, "utf8");
-		const liveTestingDoc = readFileSync(liveTestingDocPath, "utf8");
-
-		expect(deployDoc).toContain("device names can change after");
-		expect(deployDoc).toContain("--phases kexec");
-		expect(deployDoc).toContain("rescue passwords do not carry over");
-		expect(deployDoc).toContain("authorized_keys");
-		expect(deployDoc).toContain("/dev/disk/by-id");
-		expect(deployDoc).toContain("--phases disko,install,reboot");
-		expect(deployDoc).toContain("Booting from Hard Disk...");
-		expect(deployDoc).toContain("SeaBIOS");
-		expect(deployDoc).toContain("reinstall from the updated repo");
-		expect(deployDoc).toContain("switched back");
-		expect(deployDoc).toContain("normal disk boot");
-
-		expect(quickDeployDoc).toContain("No space left on device");
-		expect(quickDeployDoc).toContain("temporary installer");
-		expect(quickDeployDoc).toContain("/dev/disk/by-id");
-		expect(quickDeployDoc).toContain("Booting from Hard Disk...");
-		expect(quickDeployDoc).toContain("rescue environment");
-		expect(quickDeployDoc).toContain("password-authenticated SSH flow");
-		expect(quickDeployDoc).toContain("NetBird");
-
-		expect(liveTestingDoc).toContain("/dev/disk/by-id");
-		expect(liveTestingDoc).toContain("installer-side target disk ID");
-		expect(liveTestingDoc).toContain("hybrid BIOS+EFI");
-		expect(liveTestingDoc).toContain("normal disk boot");
-		expect(liveTestingDoc).toContain("NetBird");
-	});
-
-	it("keeps headless VPS deployment as the documented install story", () => {
-		const flake = readFileSync(path.join(repoRoot, "flake.nix"), "utf8");
-		const readme = readFileSync(readmePath, "utf8");
-		const installDoc = readFileSync(installDocPath, "utf8");
-		const quickDeployDoc = readFileSync(quickDeployDocPath, "utf8");
-		const liveTestingDoc = readFileSync(path.join(repoRoot, "docs/operations/live-testing.md"), "utf8");
-
-		expect(flake).toContain('nixos-anywhere.url = "github:nix-community/nixos-anywhere"');
-		expect(flake).toContain("ovh-vps = mkConfiguredStableSystem");
-		expect(flake).toContain("nixpi-deploy-ovh");
-
-		expect(readme).toContain("headless");
-		expect(readme).toContain("nixos-anywhere");
-		expect(readme).toContain("/srv/nixpi");
-
-		expect(installDoc).toContain("headless VPS");
-		expect(installDoc).toContain("nixos-anywhere");
-		expect(installDoc).toContain("OVH Rescue Deploy");
-
-		expect(quickDeployDoc).toContain("nixos-anywhere");
-		expect(quickDeployDoc).toContain("/srv/nixpi");
-
-		expect(liveTestingDoc).toContain("nixpi-deploy-ovh");
-		expect(liveTestingDoc).toContain("/srv/nixpi");
-	});
 	it("wires a declarative Zellij terminal UI as the default operator interface", () => {
 		expect(existsSync(terminalUiOptionPath)).toBe(true);
 		expect(existsSync(terminalUiModulePath)).toBe(true);
 
-		const terminalOptions = readFileSync(terminalUiOptionPath, "utf8");
-		const terminalModule = readFileSync(terminalUiModulePath, "utf8");
-		const shellModule = readFileSync(shellModulePath, "utf8");
-		const moduleSets = readFileSync(moduleSetsPath, "utf8");
-		const vpsHost = readFileSync(path.join(repoRoot, "core/os/hosts/vps.nix"), "utf8");
-		const runtimeFlows = readFileSync(runtimeFlowsPath, "utf8");
-		const daemonArchitecture = readFileSync(daemonArchitecturePath, "utf8");
-		const serviceArchitecture = readFileSync(serviceArchitecturePath, "utf8");
+		const terminalOptions = readUtf8(terminalUiOptionPath);
+		const terminalModule = readUtf8(terminalUiModulePath);
+		const shellModule = readUtf8(shellModulePath);
+		const moduleSets = readUtf8(moduleSetsPath);
+		const vpsHost = readUtf8(path.join(repoRoot, "core/os/hosts/vps.nix"));
+		const runtimeFlows = readUtf8(runtimeFlowsPath);
+		const daemonArchitecture = readUtf8(daemonArchitecturePath);
+		const serviceArchitecture = readUtf8(serviceArchitecturePath);
 
 		expect(terminalOptions).toContain("options.nixpi.terminal");
 		expect(terminalOptions).toContain('"plain-shell"');

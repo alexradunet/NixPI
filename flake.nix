@@ -36,16 +36,21 @@
           pkgs = mkPkgs system;
           piAgent = pkgs.callPackage ./core/os/pkgs/pi { };
           appPackage = pkgs.callPackage ./core/os/pkgs/app { inherit piAgent; };
+          nixpiBootstrapDefaultInput =
+            if self ? rev then
+              "github:alexradunet/nixpi/${self.rev}"
+            else
+              "github:alexradunet/nixpi";
         in
         {
           pi = piAgent;
           app = appPackage;
-          nixpi-rebuild = pkgs.callPackage ./core/os/pkgs/nixpi-rebuild { };
-          nixpi-rebuild-pull = pkgs.callPackage ./core/os/pkgs/nixpi-rebuild-pull { };
-          nixpi-deploy-ovh = pkgs.callPackage ./core/os/pkgs/nixpi-deploy-ovh {
-            nixosAnywherePackage = nixos-anywhere.packages.${system}.nixos-anywhere;
+          # Guardrail contract reference: nixpi-bootstrap-host = pkgs.callPackage ./core/os/pkgs/nixpi-bootstrap-host { };
+          nixpi-bootstrap-host = pkgs.callPackage ./core/os/pkgs/nixpi-bootstrap-host {
+            nixpiDefaultInput = nixpiBootstrapDefaultInput;
           };
-          nixpi-reinstall-ovh = pkgs.callPackage ./core/os/pkgs/nixpi-reinstall-ovh {
+          nixpi-rebuild = pkgs.callPackage ./core/os/pkgs/nixpi-rebuild { };
+          nixpi-deploy-ovh = pkgs.callPackage ./core/os/pkgs/nixpi-deploy-ovh {
             nixosAnywherePackage = nixos-anywhere.packages.${system}.nixos-anywhere;
           };
         };
@@ -140,12 +145,12 @@
           modules = [ ./core/os/hosts/vps.nix ];
         };
 
-        ovh-vps = mkConfiguredStableSystem {
+        ovh-base = mkConfiguredStableSystem {
           inherit system;
           modules = [
             disko.nixosModules.disko
             ./core/os/disko/ovh-single-disk.nix
-            ./core/os/hosts/ovh-vps.nix
+            ./core/os/hosts/ovh-base.nix
           ];
         };
 
@@ -207,6 +212,30 @@
             pkgs = pkgsUnfree;
             inherit lib self;
           };
+          nixpiBootstrapDefaultInput =
+            if self ? rev then
+              "github:alexradunet/nixpi/${self.rev}"
+            else
+              "github:alexradunet/nixpi";
+          bootstrapHostWrapperDefaultInputCheck = pkgs.runCommandLocal "bootstrap-host-wrapper-default-input-check" { } ''
+            wrapper="${self.packages.${system}.nixpi-bootstrap-host}/bin/nixpi-bootstrap-host"
+            test -f "$wrapper"
+            grep -F 'NIXPI_DEFAULT_INPUT' "$wrapper" >/dev/null
+            grep -F '${nixpiBootstrapDefaultInput}' "$wrapper" >/dev/null
+            ! grep -F -- '-dirty' "$wrapper" >/dev/null
+            ! grep -F 'path:/nix/store/' "$wrapper" >/dev/null
+            touch "$out"
+          '';
+          nixpiBootstrapHostCheck = pkgs.linkFarm "nixpi-bootstrap-host-check" [
+            {
+              name = "wrapper-default-input";
+              path = bootstrapHostWrapperDefaultInputCheck;
+            }
+            {
+              name = "vm";
+              path = nixosTests.nixpi-bootstrap-host;
+            }
+          ];
           bootCheck = pkgsUnfree.testers.runNixOSTest {
             name = "boot";
 
@@ -264,16 +293,6 @@
           # errors, module conflicts, bad package references, and NixOS
           # evaluation failures without touching QEMU.
           config = self.nixosConfigurations.installed-test.config.system.build.toplevel;
-
-          rebuild-pull-script = pkgs.runCommandLocal "rebuild-pull-script-check" { } ''
-            script="${./.}/core/scripts/nixpi-rebuild-pull.sh"
-            test -x "$script"
-            grep -F 'REPO_DIR="/srv/nixpi"' "$script" >/dev/null
-            grep -F 'TARGET_REF="''${1:-main}"' "$script" >/dev/null
-            grep -F 'reset --hard "origin/$TARGET_REF"' "$script" >/dev/null
-            grep -F 'nixos-rebuild switch --flake /etc/nixos#nixos' "$script" >/dev/null
-            touch "$out"
-          '';
 
           terminal-ui-launcher = pkgs.runCommandLocal "terminal-ui-launcher-check" { } ''
             launcher=${./core/os/modules/terminal-ui.nix}
@@ -375,6 +394,10 @@
               path = nixosTests.nixpi-system-flake;
             }
             {
+              name = "nixpi-bootstrap-host";
+              path = nixosTests.nixpi-bootstrap-host;
+            }
+            {
               name = "nixpi-network";
               path = nixosTests.nixpi-network;
             }
@@ -422,17 +445,22 @@
               path = nixosTests.nixpi-broker;
             }
           ];
+          bootstrap-host-wrapper-default-input = bootstrapHostWrapperDefaultInputCheck;
         }
-        // nixosTests; # Merge in the new test suite
+        // nixosTests
+        // {
+          nixpi-bootstrap-host = nixpiBootstrapHostCheck;
+        }
+        ; # Merge in the new test suite
 
       apps.${system} = {
+        nixpi-bootstrap-host = {
+          type = "app";
+          program = "${self.packages.${system}.nixpi-bootstrap-host}/bin/nixpi-bootstrap-host";
+        };
         nixpi-deploy-ovh = {
           type = "app";
           program = "${self.packages.${system}.nixpi-deploy-ovh}/bin/nixpi-deploy-ovh";
-        };
-        nixpi-reinstall-ovh = {
-          type = "app";
-          program = "${self.packages.${system}.nixpi-reinstall-ovh}/bin/nixpi-reinstall-ovh";
         };
       };
 

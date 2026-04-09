@@ -28,12 +28,13 @@ Use these procedures when diagnosing and recovering from common system issues. A
 2. If booted into wrong generation: `nixos_update(action="rollback")` to revert
 3. If update failed: check the last update status file
 4. Common causes:
-   - Network interruption during build: retry `sudo nixpi-rebuild-pull`
-   - Evaluation error: check `/etc/nixos/flake.nix`; if you use an operator checkout such as `/srv/nixpi`, confirm it still matches the intended repo state
+   - Network interruption during build: retry `sudo nixpi-rebuild`
+   - Evaluation error: inspect `/etc/nixos/flake.nix`, `/etc/nixos/nixpi-integration.nix`, and `/etc/nixos/nixpi-host.nix`
+   - Missing host-owned bootstrap integration: rerun `nix run github:alexradunet/nixpi#nixpi-bootstrap-host -- ...` or follow the manual integration guidance it printed for an existing flake host
    - Disk full: check with `system_health`, run `nix-collect-garbage`
 5. Steady-state workflows:
    - rebuild the installed host configuration with `sudo nixpi-rebuild`
-   - if you maintain the conventional `/srv/nixpi` operator checkout, sync it with `sudo nixpi-rebuild-pull [branch]`
+   - if you are integrating with a pre-existing host flake, rebuild explicitly with `sudo nixos-rebuild switch --flake /etc/nixos#nixos --impure`
 6. After rollback: confirm with `nixos_update(action="status")`
 
 ## Local Nix Proposal Failure
@@ -45,7 +46,7 @@ Use these procedures when diagnosing and recovering from common system issues. A
 3. Common causes:
    - Broken flake input: retry `nix_config_proposal(action="update_flake_lock")`
    - Invalid module import or option: inspect the changed files under `flake.nix` and `core/os/`
-   - Wrong repo path: confirm the intended local clone exists; the conventional on-host checkout is `/srv/nixpi`, but it is optional
+   - Wrong repo path: confirm the intended local clone exists; any checkout is only a review workspace, not the running system root
 4. Do not apply or publish until local validation passes and the diff is reviewed
 
 ## Disk Space Issues

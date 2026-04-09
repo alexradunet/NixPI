@@ -27,9 +27,10 @@ This layer defines NixPI's current competency inventory.
 
 - OS management: NixOS generation status, updates, rollback.
 - Service control: systemd unit management.
-- An operator checkout may exist for rebuild workflows (for example `/srv/nixpi`), but bootstrap should not assume one is already present.
+- NixPI is layered onto a host-owned `/etc/nixos` tree rather than treated as the machine root.
+- Canonical bootstrap path: `nix run github:alexradunet/nixpi#nixpi-bootstrap-host -- ...`.
 - Canonical rebuild path: `sudo nixpi-rebuild`.
-- Canonical update-and-rebuild path for the conventional `/srv/nixpi` operator checkout: `sudo nixpi-rebuild-pull [branch]`.
+- Running host source of truth: `/etc/nixos#nixos`.
 
 ### Self-Evolution
 

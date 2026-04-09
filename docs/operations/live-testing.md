@@ -8,37 +8,34 @@ Operators validating a fresh NixPI release on a headless x86_64 VPS.
 
 ## Why This Checklist Exists
 
-Use it to verify that the retained `nixos-anywhere` install path, the shell-first Pi runtime, and the optional operator checkout workflow still match the shipped docs.
+Use it to verify that the retained install path, the shell-first Pi runtime, and the host-owned bootstrap workflow still match the shipped docs.
 
 ## Canonical Install Validation
 
 1. Start from a fresh OVH VPS in rescue mode.
 2. Run `nix run .#nixpi-deploy-ovh -- ...`.
-3. Confirm `nixos-anywhere` installs the final `ovh-vps` host configuration directly and reaches the expected service state.
-4. Reboot once and confirm the same headless operator flow still works.
+3. Confirm `nixos-anywhere` installs the `ovh-base` base system.
+4. Reconnect and run `nixpi-bootstrap-host` on the machine.
+5. Reboot once and confirm the same headless operator flow still works.
 
-If the provider reorders disks after kexec, validate the temporary installer's
-`/dev/disk/by-id` mapping before the destructive `disko` phase and resume the
-install with the verified installer-side target disk ID.
+This is the supported base install then bootstrap flow.
 
-If KVM hangs at SeaBIOS `Booting from Hard Disk...` after an apparently
-successful install, fail the release check and confirm the deployed image was
-built from the hybrid BIOS+EFI OVH disk layout.
+If the provider reorders disks after kexec, validate the temporary installer's `/dev/disk/by-id` mapping before the destructive `disko` phase and resume the install with the verified installer-side target disk ID.
 
-If the machine reappears in the OVH rescue environment after reboot, fail the
-release check and verify the provider boot mode was switched back from rescue to
-normal disk boot.
+If KVM hangs at SeaBIOS `Booting from Hard Disk...` after an apparently successful install, fail the release check and confirm the deployed image was built from the hybrid BIOS+EFI OVH disk layout.
 
-Once the host joins NetBird, confirm the administrative path works through NetBird and that public SSH is only being kept for bootstrap fallback.
+If the machine reappears in the OVH rescue environment after reboot, fail the release check and verify the provider boot mode was switched back from rescue to normal disk boot.
+
+Once the host joins NetBird, confirm the administrative path works through NetBird and that public or rescue-mode SSH is only being kept as a bootstrap fallback.
 
 ## First Remote Validation
 
 1. Confirm `nixpi-app-setup.service`, `sshd.service`, `netbird-wt0.service`, and `nixpi-update.timer` reach their expected state.
 2. Confirm `pi` works from SSH.
 3. Confirm outbound networking works and the host enrolls into NetBird before treating it as ready for routine remote use.
-4. If you keep an operator checkout such as `/srv/nixpi`, confirm it remains usable for rebuilds after reboot.
+4. Confirm `sudo nixpi-rebuild` rebuilds the host-owned `/etc/nixos` tree.
 
-**Expected result:** the Pi runtime returns after reboot, the host remains operable without first-boot repo seeding or runtime host-flake generation, and no second install path is needed for recovery.
+**Expected result:** the Pi runtime returns after reboot, the host remains operable without repo-seeding or machine-root replacement, and no second install path is needed for recovery.
 
 ## Core Runtime
 
@@ -52,8 +49,9 @@ Once the host joins NetBird, confirm the administrative path works through NetBi
 ### Ship Gate
 
 - The `nixpi-deploy-ovh` install completes on a clean headless VPS.
-- No first boot step seeds `/srv/nixpi` or creates `/etc/nixos/flake.nix` at runtime as part of install convergence.
+- The base install is followed by `nixpi-bootstrap-host` on the machine.
+- No first boot step relies on repo seeding or a deleted direct-install wrapper.
 - The shell-first Pi runtime works from SSH.
 - One reboot cycle preserves the expected operator workflow.
-- Optional operator checkouts such as `/srv/nixpi` remain usable for rebuilds when present.
+- The installed `/etc/nixos` flake remains the steady-state source of truth.
 - Known risks for any optional packaged workloads are documented.

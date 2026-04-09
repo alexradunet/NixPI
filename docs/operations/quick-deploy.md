@@ -1,6 +1,6 @@
 # Quick Deploy
 
-> Install NixPI onto a headless VPS with nixos-anywhere and operate it from the shell-first runtime
+> Install a plain OVH base system with `nixos-anywhere`, then bootstrap NixPI onto the host-owned `/etc/nixos` tree
 
 ## Audience
 
@@ -8,9 +8,7 @@ Operators and maintainers deploying NixPI onto a headless x86_64 VPS.
 
 ## Security Note: NetBird Is The Preferred Private Management Network
 
-The managed NetBird network is the preferred private network path for NixPI hosts. A password-authenticated SSH flow stays available during bootstrap, while NetBird provides the trusted admin overlay for host access after enrollment.
-
-Once a host is enrolled, NixPI should prefer NetBird-only administrative access rather than public SSH. Bootstrap installs can still use public SSH temporarily until NetBird is verified.
+The managed NetBird network is the preferred private network path for NixPI hosts. Public or rescue-mode SSH may still be needed during day-0 installation, while NetBird provides the trusted admin overlay after bootstrap.
 
 ## Canonical Deployment Path
 
@@ -18,11 +16,11 @@ NixPI now has one deployment flow:
 
 1. Put the VPS into rescue mode.
 2. Run the `nixpi-deploy-ovh` wrapper.
-3. Let `nixos-anywhere` install the final `ovh-vps` host configuration directly.
-4. Validate the running host.
-5. Use an operator-managed checkout only when you want a workspace for ongoing changes.
+3. Let `nixos-anywhere` install the `ovh-base` system.
+4. Reconnect to the installed machine and bootstrap NixPI after first boot.
+5. Validate the running host and use `sudo nixpi-rebuild` for steady-state rebuilds.
 
-No first-boot repo clone or generated flake step is required.
+The machine converges from `/etc/nixos#nixos`; repo checkouts are not part of the supported install path.
 
 ## 1. Enter rescue mode
 
@@ -40,57 +38,40 @@ nix run .#nixpi-deploy-ovh -- \
   --disk /dev/sdX
 ```
 
-The install is destructive and installs the final `ovh-vps` host configuration directly.
+The install is destructive and installs the plain `ovh-base` system only.
 
-If you use a bootstrap password for the initial OVH login, expect the installed
-host to force a password change on the first successful login.
+If the install fails with `No space left on device` during closure upload, do not assume the VPS disk is too small. On some OVH rescue hosts the disk order changes after `nixos-anywhere` kexecs into its temporary installer. Follow the staged troubleshooting flow in [OVH Rescue Deploy](./ovh-rescue-deploy) to inspect `/dev/disk/by-id` inside the installer and rerun the remaining phases with the correct installer-side disk ID.
 
-If the install fails with `No space left on device` during closure upload, do
-not assume the VPS disk is too small. On some OVH rescue hosts the disk order
-changes after `nixos-anywhere` kexecs into its temporary installer. Follow the
-staged troubleshooting flow in [OVH Rescue Deploy](./ovh-rescue-deploy) to boot
-only the `kexec` phase, inspect `/dev/disk/by-id` inside the installer, and
-resume the remaining phases with the correct installer-side disk ID.
+If OVH KVM later stalls at SeaBIOS `Booting from Hard Disk...`, treat that as a boot-layout mismatch rather than a finished install. Reinstall from the updated repo so the current hybrid BIOS+EFI OVH disk layout is applied.
 
-If OVH KVM later stalls at SeaBIOS `Booting from Hard Disk...`, treat that as a
-boot-layout mismatch rather than a finished install. The current repo expects
-the hybrid BIOS+EFI OVH disk layout; reinstall from the updated repo if the
-failed run was created before that layout fix landed.
+## 3. Bootstrap NixPI after first boot
 
-## 3. Validate first boot
+If the machine appears to reboot correctly but KVM still shows the OVH rescue environment, confirm the OVH control panel has been switched back from rescue mode to normal disk boot before debugging the installed system itself.
 
-If the machine appears to reboot correctly but KVM still shows the OVH rescue
-environment, confirm the OVH control panel has been switched back from rescue
-mode to normal disk boot before debugging the installed system itself.
-
-Useful checks:
+After the base system boots, reconnect to the machine and run:
 
 ```bash
-systemctl status sshd.service
-systemctl status netbird-wt0.service
-systemctl status nixpi-update.timer
-systemctl status nixpi-app-setup.service
-netbird-wt0 status
+nix run github:alexradunet/nixpi#nixpi-bootstrap-host -- \
+  --primary-user alex \
+  --hostname bloom-eu-1 \
+  --timezone Europe/Bucharest \
+  --keyboard us
 ```
 
-## 4. Use the standard rebuild path, or sync an operator checkout when needed
+If `/etc/nixos/flake.nix` already exists, follow the printed manual integration instructions and rebuild `/etc/nixos#nixos` explicitly.
 
-The installed host flake stays authoritative for convergence:
+## 4. Use the standard rebuild path
+
+The installed `/etc/nixos#nixos` host flake stays authoritative for convergence:
 
 ```bash
 sudo nixpi-rebuild
 ```
 
-A repo checkout such as `/srv/nixpi` is optional. If you keep the conventional `/srv/nixpi` checkout for operator workflows, `sudo nixpi-rebuild-pull [branch]` syncs the conventional `/srv/nixpi` checkout to a remote branch and rebuilds from it:
+Manual recovery or existing-flake integration also rebuilds through the same host-owned root:
 
 ```bash
-sudo nixpi-rebuild-pull [branch]
-```
-
-You can still rebuild from any explicit checkout path when you want a manual, path-specific workflow:
-
-```bash
-sudo nixos-rebuild switch --flake <checkout-path>#ovh-vps
+sudo nixos-rebuild switch --flake /etc/nixos#nixos --impure
 ```
 
 Roll back if needed:
@@ -106,6 +87,8 @@ Smoke-check the core services on a running host:
 ```bash
 systemctl status nixpi-app-setup.service
 systemctl status sshd.service
+systemctl status netbird-wt0.service
+systemctl status nixpi-update.timer
 command -v pi
 su - <user> -c 'pi --help'
 ```

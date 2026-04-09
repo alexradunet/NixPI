@@ -2,7 +2,6 @@
 
 let
   nixpiRebuild = pkgs.callPackage ../pkgs/nixpi-rebuild { }; # rebuild the installed /etc/nixos host flake
-  nixpiRebuildPull = pkgs.callPackage ../pkgs/nixpi-rebuild-pull { }; # sync/rebuild the conventional /srv/nixpi operator checkout
 in
 {
   imports = [ ./options.nix ];
@@ -35,7 +34,6 @@ in
     biome
     typescript
     nixpiRebuild
-    nixpiRebuildPull
   ]
   ++ lib.optionals config.nixpi.tooling.qemu.enable [ qemu OVMF ]
   ++ lib.optionals config.nixpi.security.fail2ban.enable [ pkgs.fail2ban ];

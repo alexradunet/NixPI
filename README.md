@@ -3,16 +3,16 @@
 NixPI is a VPS-first, headless AI companion OS built on NixOS.
 
 It combines:
-- a final host configuration installed directly by `nixos-anywhere`
+- a plain OVH-compatible NixOS base system
+- a host-owned `/etc/nixos` system root
+- a shared `nixpi-bootstrap-host` integration path for already-installed NixOS systems
 - a Zellij-first operator runtime for SSH and local tty sessions
-- bootstrap and steady-state host behavior selected in NixOS config
-- an optional operator checkout such as `/srv/nixpi` for operator workflows
 
 By default, interactive operator sessions enter **Zellij** on both SSH and local tty logins. The default layout opens a Pi tab and a plain shell tab. For recovery or troubleshooting, skip auto-start with `NIXPI_NO_ZELLIJ=1` before starting a login shell.
 
 ## Quick start
 
-Install onto a fresh OVH VPS from rescue mode:
+Install a plain base system onto a fresh OVH VPS from rescue mode:
 
 ```bash
 nix run .#nixpi-deploy-ovh -- \
@@ -20,7 +20,17 @@ nix run .#nixpi-deploy-ovh -- \
   --disk /dev/sdX
 ```
 
-After install, validate the running host:
+After the machine boots, reconnect to the installed host and bootstrap NixPI on the machine:
+
+```bash
+nix run github:alexradunet/nixpi#nixpi-bootstrap-host -- \
+  --primary-user alex \
+  --hostname bloom-eu-1 \
+  --timezone Europe/Bucharest \
+  --keyboard us
+```
+
+Validate the running host:
 
 ```bash
 systemctl status sshd.service
@@ -29,19 +39,11 @@ systemctl status nixpi-app-setup.service
 netbird-wt0 status
 ```
 
-Operator rebuild path and repo semantics are separate:
+Steady-state host model:
 
-- the installed `/etc/nixos` flake is the running host's source of truth
-- `sudo nixpi-rebuild` rebuilds that installed host flake from anywhere
-- an optional operator checkout such as `/srv/nixpi` is a workspace, not part of install convergence
-
-Optional `/srv/nixpi` sync-and-rebuild helper:
-
-```bash
-sudo nixpi-rebuild-pull [branch]
-```
-
-The helper syncs a remote branch into the conventional `/srv/nixpi` operator checkout before rebuilding from that checkout.
+- `/etc/nixos` is the running host's source of truth
+- `sudo nixpi-rebuild` rebuilds the installed `/etc/nixos#nixos` host flake
+- NixPI is layered onto the host-owned system configuration rather than replacing the machine root
 
 Rollback if needed:
 

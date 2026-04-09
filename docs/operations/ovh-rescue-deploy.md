@@ -1,18 +1,16 @@
 # OVH Rescue Deploy
 
-> Fresh-install NixPI onto an OVH VPS from rescue mode using `nixos-anywhere`
+> Fresh-install a plain OVH base system from rescue mode, then bootstrap NixPI onto the machine
 
 ## Audience
 
-Operators provisioning a fresh OVH VPS that should boot directly into the NixPI
-system defined by this repo.
+Operators provisioning a fresh OVH VPS that should end up as a host-owned NixPI machine.
 
 ## Before you start
 
 This flow is **destructive**.
 
-It repartitions and reformats the selected target disk, replacing whatever is
-currently installed on the VPS.
+It repartitions and reformats the selected target disk, replacing whatever is currently installed on the VPS.
 
 Use it only for a fresh machine or a machine you intend to wipe.
 
@@ -22,6 +20,7 @@ Use it only for a fresh machine or a machine you intend to wipe.
 - rescue mode access from the OVHcloud control panel
 - a local machine with Nix and flakes enabled
 - this repo available locally
+- a plan for how you will reconnect to the installed base system after the reboot
 
 ## 1. Boot the VPS into rescue mode
 
@@ -31,11 +30,6 @@ In the OVHcloud control panel:
 2. switch the machine to rescue mode
 3. wait for the rescue SSH credentials
 4. note the VPS IP address
-
-OVH's current rescue-mode documentation:
-
-- https://help.ovhcloud.com/csm/en-vps-rescue?id=kb_article_view&sysparm_article=KB0047656
-- https://support.us.ovhcloud.com/hc/en-us/articles/360010553920-How-to-Recover-Your-VPS-in-Rescue-Mode
 
 ## 2. Verify the install disk explicitly
 
@@ -59,16 +53,14 @@ Common examples:
 - `/dev/vda`
 - `/dev/nvme0n1`
 
-For OVH and similar virtualized environments, also inspect the persistent disk
-IDs before you start:
+For OVH and similar virtualized environments, also inspect the persistent disk IDs before you start:
 
 ```bash
 ls -l /dev/disk/by-id
 fdisk -l
 ```
 
-This matters because the Linux device names can change after
-`nixos-anywhere` kexecs into its temporary NixOS installer.
+This matters because the Linux device names can change after `nixos-anywhere` kexecs into its temporary NixOS installer.
 
 ### Example from a successful OVH install
 
@@ -83,120 +75,49 @@ After kexec into the temporary NixOS installer, the disks were renumbered:
 - the small `2.9G` disk appeared as `/dev/sda`
 - the real `200G` target disk appeared as `/dev/sdb`
 
-Because of that renumbering, the final successful install used the installer
-environment's persistent path for the `200G` disk:
+Because of that renumbering, the final successful install used the installer's persistent path for the `200G` disk:
 
 ```bash
 /dev/disk/by-id/scsi-0QEMU_QEMU_HARDDISK_drive-scsi0-0-0-1
 ```
 
-## 3. Run the reinstall from this repo
+## 3. Install the plain base system from this repo
 
 From your local checkout of this repo:
 
 ```bash
-PASSWORD_HASH="$(python3 - <<'PY'
-import crypt
-print(crypt.crypt("change123#@!", crypt.mksalt(crypt.METHOD_SHA512)))
-PY
-)"
-
-cat > bootstrap-secrets.json <<EOF
-{
-  "bootstrapUser": "alex",
-  "bootstrapPasswordHash": "$PASSWORD_HASH",
-  "netbirdSetupKey": "PASTE_NETBIRD_SETUP_KEY_HERE"
-}
-EOF
-
-nix run .#nixpi-reinstall-ovh -- \
+nix run .#nixpi-deploy-ovh -- \
   --target-host root@SERVER_IP \
-  --disk /dev/sda \
-  --bootstrap-secrets-file ./bootstrap-secrets.json
+  --disk /dev/disk/by-id/PERSISTENT_TARGET_DISK_ID
 ```
 
 Optional hostname override:
 
 ```bash
-nix run .#nixpi-reinstall-ovh -- \
-  --target-host root@SERVER_IP \
-  --disk /dev/sda \
-  --hostname bloom-eu-1 \
-  --bootstrap-secrets-file ./bootstrap-secrets.json
-```
-
-The bootstrap secrets file must contain:
-
-```json
-{
-  "bootstrapUser": "alex",
-  "bootstrapPasswordHash": "$6$...",
-  "netbirdSetupKey": "..."
-}
-```
-
-That `bootstrapPasswordHash` value is the bootstrap password hash that feeds `initialHashedPassword` for the temporary first-login account.
-
-The OVH bootstrap profile now expires that temporary password after install, so the bootstrap user is forced to choose a new password on first successful login.
-
-What the wrapper does:
-
-- uses the repo's `ovh-vps` configuration as the base system
-- overrides the target disk explicitly for `disko`
-- reads one local bootstrap secrets file for the bootstrap user, password hash, and NetBird setup key
-- runs `nixos-anywhere` against the OVH rescue host
-
-### Recommended direct install path
-
-If you already know the correct target disk path for the current environment,
-run the full install directly:
-
-```bash
-nix run .#nixpi-reinstall-ovh -- \
-  --target-host root@SERVER_IP \
-  --disk /dev/disk/by-id/PERSISTENT_TARGET_DISK_ID \
-  --bootstrap-secrets-file ./bootstrap-secrets.json
-```
-
-### Lower-level compatibility wrapper
-
-If you need the old lower-level interface, `nixpi-deploy-ovh` still accepts:
-
-- `--bootstrap-user`
-- `--bootstrap-password-hash`
-- `--netbird-setup-key-file`
-
-`nixpi-reinstall-ovh` is the recommended operator-facing entry point for fresh OVH reinstalls because it keeps those inputs together in one local file.
-
-If you want a bootstrap user named `alex` with a known password hash and a separate NetBird key file:
-
-```bash
-PASSWORD_HASH="$(python3 - <<'PY'
-import crypt
-print(crypt.crypt("changeMe123#@!", crypt.mksalt(crypt.METHOD_SHA512)))
-PY
-)"
-
 nix run .#nixpi-deploy-ovh -- \
   --target-host root@SERVER_IP \
   --disk /dev/disk/by-id/PERSISTENT_TARGET_DISK_ID \
-  --bootstrap-user alex \
-  --bootstrap-password-hash "$PASSWORD_HASH" \
-  --netbird-setup-key-file ./netbird-setup-key
+  --hostname bloom-eu-1
 ```
+
+What the wrapper does:
+
+- uses the repo's `ovh-base` configuration as the base system
+- overrides the target disk explicitly for `disko`
+- runs `nixos-anywhere` against the OVH rescue host
+- leaves NixPI bootstrapping for after the machine reboots into the installed system
+
+`nixpi-deploy-ovh` no longer accepts bootstrap-user, password-hash, or NetBird setup arguments. Install the plain base system first, then run `nixpi-bootstrap-host` on the machine.
 
 ## 4. Troubleshooting: staged kexec debug when the disk changes after kexec
 
-If the install fails with `No space left on device` even though the VPS disk is
-large enough, stop and verify which disk the temporary NixOS installer is
-actually using.
+If the install fails with `No space left on device` even though the VPS disk is large enough, stop and verify which disk the temporary NixOS installer is actually using.
 
-This usually means the target disk was correct in the rescue system but mapped
-to a different device after kexec.
+This usually means the target disk was correct in the rescue system but mapped to a different device after kexec.
 
 ### 4.1 Boot only into the installer
 
-Use the wrapper's staged mode to run only the `kexec` phase:
+Use staged mode to run only the `kexec` phase:
 
 ```bash
 nix run .#nixpi-deploy-ovh -- \
@@ -207,11 +128,9 @@ nix run .#nixpi-deploy-ovh -- \
 
 ### 4.2 Important: rescue passwords do not carry over into the kexec installer
 
-The OVH rescue `root` password belongs only to the rescue OS. After kexec, you
-are in a different temporary NixOS installer, so that password no longer works.
+The OVH rescue `root` password belongs only to the rescue OS. After kexec, you are in a different temporary NixOS installer, so that password no longer works.
 
-If you want to SSH into the installer for debugging, add your local SSH public
-key to the rescue shell **before** running the `kexec` phase:
+If you want to SSH into the installer for debugging, add your local SSH public key to the rescue shell **before** running the `kexec` phase:
 
 ```bash
 cat ~/.ssh/id_ed25519.pub
@@ -223,98 +142,81 @@ Then, inside the OVH rescue shell:
 mkdir -p /root/.ssh && chmod 700 /root/.ssh && printf '%s\n' 'PASTE_YOUR_PUBLIC_KEY_HERE' >> /root/.ssh/authorized_keys && chmod 600 /root/.ssh/authorized_keys
 ```
 
-The kexec helper copies `root`'s `authorized_keys`, so you can then SSH into
-the temporary installer with your key.
+The kexec helper copies `root`'s `authorized_keys`, so you can then SSH into the temporary installer with your key.
 
 ### 4.3 Inspect the installer's disk mapping
 
-Once the box comes back after `--phases kexec`, inspect the disks inside the
-temporary NixOS installer:
+Once the box comes back after `--phases kexec`, inspect the disks inside the temporary NixOS installer:
 
 ```bash
 ssh root@SERVER_IP 'lsblk -o NAME,SIZE,TYPE,FSTYPE,MOUNTPOINTS; echo "---"; ls -l /dev/disk/by-id'
 ```
 
-Identify which `/dev/disk/by-id/...` path points to the real target disk in the
-installer environment.
+Identify which `/dev/disk/by-id/...` path points to the real target disk in the installer environment.
 
 ### 4.4 Resume the remaining phases with the installer's disk ID
 
-After identifying the correct disk path inside the temporary installer, rerun
-the wrapper with the remaining phases only:
+After identifying the correct disk path inside the temporary installer, rerun the wrapper with the remaining phases only:
 
 ```bash
-PASSWORD_HASH="$(python3 - <<'PY'
-import crypt
-print(crypt.crypt("changeMe123#@!", crypt.mksalt(crypt.METHOD_SHA512)))
-PY
-)"
-
 nix run .#nixpi-deploy-ovh -- \
   --target-host root@SERVER_IP \
   --disk /dev/disk/by-id/INSTALLER_TARGET_DISK_ID \
-  --bootstrap-user alex \
-  --bootstrap-password-hash "$PASSWORD_HASH" \
   --phases disko,install,reboot
 ```
 
-This was the successful recovery path for the live OVH run that initially
-failed with a misleading `No space left on device` error.
+This was the successful recovery path for the live OVH run that initially failed with a misleading `No space left on device` error.
 
 ### 4.5 If OVH KVM hangs at `Booting from Hard Disk...`
 
-If the install reports success but the OVH KVM stays at a SeaBIOS screen that
-ends with:
+If the install reports success but the OVH KVM stays at a SeaBIOS screen that ends with:
 
 ```text
 Booting from Hard Disk...
 ```
 
-then the machine did not reach the installed NixOS userspace. In our live OVH
-run, this happened because the earlier disk layout only created an EFI system
-partition, while the VPS firmware actually booted through SeaBIOS.
+then the machine did not reach the installed NixOS userspace. In our live OVH run, this happened because the earlier disk layout only created an EFI system partition, while the VPS firmware actually booted through SeaBIOS.
 
-The current `ovh-vps` layout in this repo now includes both:
+The current `ovh-base` layout in this repo includes both:
 
 - a BIOS boot partition (`EF02`) for GRUB on SeaBIOS
 - an EFI system partition (`EF00`) for removable EFI boot
 
-If your failed install was created **before** that hybrid BIOS+EFI fix, put the
-machine back into rescue mode and reinstall from the updated repo. A successful
-`nixos-anywhere` run is not enough if the installed disk layout does not match
-the provider's actual firmware mode.
-## 5. Reconnect after the reinstall
+If your failed install was created **before** that hybrid BIOS+EFI fix, put the machine back into rescue mode and reinstall from the updated repo. A successful `nixos-anywhere` run is not enough if the installed disk layout does not match the provider's actual firmware mode.
 
-After installation, the machine reboots into the installed NixOS system.
+## 5. Reconnect and bootstrap NixPI
 
-Because this is a reinstall, the SSH host key will change.
+After installation, the machine reboots into the installed base NixOS system.
 
-Before judging the reinstall, make sure the OVH control panel is switched back
-from **rescue mode** to the normal disk boot mode. If OVH is still configured to
-boot rescue mode, the machine can reboot successfully yet still land back in
-the rescue environment instead of the installed NixOS system.
+Because this is a reinstall, the SSH host key can change.
 
-Remove the old host key and reconnect:
+Before judging the result, make sure the OVH control panel is switched back from **rescue mode** to the normal disk boot mode. If OVH is still configured to boot rescue mode, the machine can reboot successfully yet still land back in the rescue environment instead of the installed system.
+
+Remove the old host key if needed and reconnect:
 
 ```bash
 ssh-keygen -R SERVER_IP
-ssh human@SERVER_IP
+ssh root@SERVER_IP
 ```
+
+Then bootstrap NixPI on the machine:
+
+```bash
+nix run github:alexradunet/nixpi#nixpi-bootstrap-host -- \
+  --primary-user alex \
+  --hostname bloom-eu-1 \
+  --timezone Europe/Bucharest \
+  --keyboard us
+```
+
+If `/etc/nixos/flake.nix` already exists, follow the printed manual integration steps and rebuild `/etc/nixos#nixos` explicitly.
 
 ## 6. Switch to routine operations
 
-After first login, the installed `/etc/nixos` flake is the authoritative host
-configuration.
+After bootstrap, the installed `/etc/nixos` flake is the authoritative host configuration.
 
 ```bash
 sudo nixpi-rebuild
-```
-
-If you keep the conventional `/srv/nixpi` operator checkout for repo-backed
-changes, you can still sync and rebuild through it:
-
-```bash
-sudo nixpi-rebuild-pull [branch]
 ```
 
 Rollback if needed:
@@ -326,12 +228,9 @@ sudo nixos-rebuild switch --rollback
 ## Notes
 
 - This OVH path is for **fresh provisioning**.
-- If the machine is already a NixOS-capable host and you only need to layer
-  NixPI onto it, use the existing bootstrap workflow instead.
+- If the machine is already an installed NixOS host and you only need to layer NixPI onto it, skip rescue deploy and run `nixpi-bootstrap-host` directly on that machine.
 - The current first-class OVH path assumes a simple single-disk layout.
-- The install connection can use the OVH rescue root password via
-  `SSHPASS=...` and `--env-password`, but post-install login should use the
-  bootstrap user you configured.
+- NixPI is a layer on a host-owned `/etc/nixos`, not the machine root.
 
 ## Related
 

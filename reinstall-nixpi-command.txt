@@ -1,18 +1,11 @@
-PASSWORD_HASH="$(python3 - <<'PY'
-import crypt
-print(crypt.crypt("YOUR_PASSWORD_HERE", crypt.mksalt(crypt.METHOD_SHA512)))
-PY
-)"
-
-cat > bootstrap-secrets.json <<EOF
-{
-  "bootstrapUser": "alex",
-  "bootstrapPasswordHash": "$PASSWORD_HASH",
-  "netbirdSetupKey": "YOUR_NETBIRD_SETUP_KEY"
-}
-EOF
-
-nix run .#nixpi-reinstall-ovh -- \
+# Day-0 base install from a local checkout
+nix run .#nixpi-deploy-ovh -- \
   --target-host root@YOUR_SERVER_IP \
-  --disk /dev/disk/by-id/scsi-0QEMU_QEMU_HARDDISK_drive-scsi0-0-0-1 \
-  --bootstrap-secrets-file ./bootstrap-secrets.json
+  --disk /dev/disk/by-id/YOUR_TARGET_DISK_ID
+
+# Then, on the installed machine, layer NixPI onto the host-owned /etc/nixos tree
+nix run github:alexradunet/nixpi#nixpi-bootstrap-host -- \
+  --primary-user alex \
+  --hostname bloom-eu-1 \
+  --timezone Europe/Bucharest \
+  --keyboard us

@@ -4,8 +4,10 @@
 
 ## Install-Time Handoff
 
-1. `nixos-anywhere` installs the final host configuration directly.
-2. The first boot hands off to the normal NixOS boot path with no repo-seeding step.
+1. `nixos-anywhere` installs a plain base system.
+2. After first login, the operator runs `nixpi-bootstrap-host` on the machine.
+3. Bootstrap writes narrow `/etc/nixos` helper files and either generates a minimal host flake or prints exact manual integration instructions.
+4. The system rebuild target remains `/etc/nixos#nixos`.
 
 ## Runtime Entry Flow
 
@@ -39,10 +41,12 @@ multi-user.target
 - SSH and local terminals are the supported interactive entrypoints
 - Zellij is the default interactive terminal UI
 - Pi remains the main workflow inside the generated layout
-- No boot-time repo clone or generated host flake step is part of the intended runtime
-- Bootstrap and steady-state are selected declaratively rather than from user-home marker files
+- the machine starts from a plain base system before NixPI is layered on
+- bootstrap writes narrow `/etc/nixos` helper files
+- `/etc/nixos` is the only steady-state source of truth
+- bootstrap and steady-state are selected declaratively rather than from user-home marker files
 - shell behavior should come from NixOS modules rather than user-home mutation
-- an operator checkout such as `/srv/nixpi` is optional and separate from the deployed host configuration
+- repo checkouts are not part of the supported convergence path
 
 ## Default Terminal UI
 

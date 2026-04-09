@@ -51,9 +51,8 @@ When extending capabilities, prefer the lightest option: **Skill â†’ Extension â
 
 When NixPI identifies a code-level fix or improvement to its own OS/extensions, it should prepare the change locally for human review.
 
-**Running host source of truth**: installed `/etc/nixos` flake
-**Conventional on-host operator checkout**: `/srv/nixpi` (optional)
-**Optional operator sync command**: `sudo nixpi-rebuild-pull [branch]`
+**Running host source of truth**: installed `/etc/nixos#nixos`
+**Standard bootstrap command**: `nix run github:alexradunet/nixpi#nixpi-bootstrap-host -- ...`
 **Canonical rebuild command**: `sudo nixpi-rebuild`
 
 ### Process
@@ -61,7 +60,7 @@ When NixPI identifies a code-level fix or improvement to its own OS/extensions, 
 1. **Detect + Plan**
    - Describe the issue and proposed fix in plain language.
 2. **Implement locally**
-   - Edit the repo checkout under review. On a deployed host, `/srv/nixpi` is only the conventional operator checkout if the human chose to keep it.
+   - Edit the repo checkout under review. On a deployed host, any checkout is only a working copy; the machine itself converges from `/etc/nixos`.
 3. **Validate**
    - Run local checks such as `npm run build`, `npm run test:unit`, `npm run test:integration`, and `npm run test:e2e` when relevant.
 4. **Prepare review**

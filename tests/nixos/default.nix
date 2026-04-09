@@ -8,6 +8,7 @@ let
   testLib = import ./lib.nix { inherit pkgs lib self; };
 
   sharedArgs = {
+    inherit self;
     inherit (testLib)
       nixPiModules
       nixPiModulesNoShell
@@ -27,6 +28,7 @@ let
     };
 
   tests = {
+    nixpi-bootstrap-host = runTest ./nixpi-bootstrap-host.nix;
     nixpi-firstboot = runTest ./nixpi-firstboot.nix;
     nixpi-system-flake = runTest ./nixpi-system-flake.nix;
     nixpi-runtime = runTest ./nixpi-runtime.nix;

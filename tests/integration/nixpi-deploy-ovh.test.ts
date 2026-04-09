@@ -86,35 +86,34 @@ describe("nixpi-deploy-ovh.sh", () => {
 	it("exposes a sourceable pure flake builder for deterministic tests", async () => {
 		const result = await run(
 			"bash",
-			[
-				"-lc",
-				`source "${deployScriptPath}"; build_deploy_flake "path:${repoRoot}" "ovh-vps" "plan-host" "/dev/vda" "" ""`,
-			],
+			["-lc", `source "${deployScriptPath}"; build_deploy_flake "path:${repoRoot}" "ovh-base" "plan-host" "/dev/vda"`],
 			undefined,
 			repoRoot,
 		);
 
 		expect(result.exitCode).toBe(0);
 		expect(result.stdout).toContain(`inputs.nixpi.url = "path:${repoRoot}"`);
-		expect(result.stdout).toContain("nixosConfigurations.deploy = nixpi.nixosConfigurations.ovh-vps.extendModules");
+		expect(result.stdout).toContain("nixosConfigurations.deploy = nixpi.nixosConfigurations.ovh-base.extendModules");
 		expect(result.stdout).toContain('networking.hostName = lib.mkForce "plan-host";');
 		expect(result.stdout).toContain('disko.devices.disk.main.device = lib.mkForce "/dev/vda";');
+		expect(result.stdout).not.toContain("nixpi.primaryUser");
+		expect(result.stdout).not.toContain("initialHashedPassword");
+		expect(result.stdout).not.toContain("nixpi.netbird");
 	});
 
-	it("keeps bootstrap escaping inside the pure flake builder", async () => {
+	it("keeps the pure flake builder free of nixpi-specific bootstrap overrides", async () => {
 		const result = await run(
 			"bash",
-			[
-				"-lc",
-				`source "${deployScriptPath}"; build_deploy_flake "path:${repoRoot}" "ovh-vps" "plan-host" "/dev/vda" "human" '$6$abc"def'`,
-			],
+			["-lc", `source "${deployScriptPath}"; build_deploy_flake "path:${repoRoot}" "ovh-base" "plan-host" "/dev/vda"`],
 			undefined,
 			repoRoot,
 		);
 
 		expect(result.exitCode).toBe(0);
-		expect(result.stdout).toContain('nixpi.primaryUser = lib.mkForce "human";');
-		expect(result.stdout).toContain('users.users."human".initialHashedPassword = lib.mkForce "\\$6\\$abc\\"def";');
+		expect(result.stdout).not.toContain("nixpi.primaryUser");
+		expect(result.stdout).not.toContain("nixpi.security.ssh");
+		expect(result.stdout).not.toContain("initialHashedPassword");
+		expect(result.stdout).not.toContain("nixpi.netbird");
 	});
 
 	it("shows usage and exits non-zero when required arguments are missing", async () => {
@@ -136,8 +135,20 @@ describe("nixpi-deploy-ovh.sh", () => {
 		}
 	});
 
-	it("requires bootstrap user and password hash together", async () => {
-		const missingHash = await runDeploy([
+	it("rejects flake refs that do not target the ovh-base profile", async () => {
+		const result = await runDeploy(["--target-host", "root@198.51.100.10", "--disk", "/dev/sda", "--flake", ".#vps"]);
+
+		try {
+			expect(result.exitCode).toBe(1);
+			expect(result.stderr).toContain("Flake ref must target the ovh-base nixosConfigurations profile");
+			expect(result.readArgs()).toEqual([]);
+		} finally {
+			result.harness.cleanup();
+		}
+	});
+
+	it("rejects legacy nixpi-specific bootstrap arguments", async () => {
+		const result = await runDeploy([
 			"--target-host",
 			"root@198.51.100.10",
 			"--disk",
@@ -147,42 +158,27 @@ describe("nixpi-deploy-ovh.sh", () => {
 		]);
 
 		try {
-			expect(missingHash.exitCode).toBe(1);
-			expect(missingHash.stderr).toContain("--bootstrap-user requires --bootstrap-password-hash");
+			expect(result.exitCode).toBe(1);
+			expect(result.stderr).toContain("Usage: nixpi-deploy-ovh");
+			expect(result.stderr).toContain("Unsupported legacy option: --bootstrap-user");
+			expect(result.readArgs()).toEqual([]);
 		} finally {
-			missingHash.harness.cleanup();
-		}
-
-		const missingUser = await runDeploy([
-			"--target-host",
-			"root@198.51.100.10",
-			"--disk",
-			"/dev/sda",
-			"--bootstrap-password-hash",
-			"$6$hash",
-		]);
-
-		try {
-			expect(missingUser.exitCode).toBe(1);
-			expect(missingUser.stderr).toContain("--bootstrap-password-hash requires --bootstrap-user");
-		} finally {
-			missingUser.harness.cleanup();
+			result.harness.cleanup();
 		}
 	});
 
-	it("rejects missing NetBird setup-key files", async () => {
-		const result = await runDeploy([
-			"--target-host",
-			"root@198.51.100.10",
-			"--disk",
-			"/dev/sda",
-			"--netbird-setup-key-file",
-			"./does-not-exist",
-		]);
+	it.each([
+		"--bootstrap-user=alice",
+		"--bootstrap-password-hash=$6$hash",
+		"--netbird-setup-key-file=./netbird-key",
+	])("rejects legacy nixpi-specific bootstrap arguments passed as %s", async (legacyFlag) => {
+		const result = await runDeploy(["--target-host", "root@198.51.100.10", "--disk", "/dev/sda", legacyFlag]);
 
 		try {
 			expect(result.exitCode).toBe(1);
-			expect(result.stderr).toContain("--netbird-setup-key-file must point to an existing local file");
+			expect(result.stderr).toContain("Usage: nixpi-deploy-ovh");
+			expect(result.stderr).toContain(`Unsupported legacy option: ${legacyFlag.split("=")[0]}`);
+			expect(result.readArgs()).toEqual([]);
 		} finally {
 			result.harness.cleanup();
 		}
@@ -219,67 +215,13 @@ describe("nixpi-deploy-ovh.sh", () => {
 
 			const generatedFlake = result.readGeneratedFlake();
 			expect(generatedFlake).toContain(`inputs.nixpi.url = "path:${repoRoot}"`);
-			expect(generatedFlake).toContain("nixosConfigurations.deploy = nixpi.nixosConfigurations.ovh-vps.extendModules");
+			expect(generatedFlake).toContain("nixosConfigurations.deploy = nixpi.nixosConfigurations.ovh-base.extendModules");
 			expect(generatedFlake).toContain('networking.hostName = lib.mkForce "bloom-eu-1";');
 			expect(generatedFlake).toContain('disko.devices.disk.main.device = lib.mkForce "/dev/nvme0n1";');
+			expect(generatedFlake).not.toContain("nixpi.primaryUser");
+			expect(generatedFlake).not.toContain("initialHashedPassword");
+			expect(generatedFlake).not.toContain("nixpi.netbird");
 		} finally {
-			result.harness.cleanup();
-		}
-	});
-
-	it("injects the bootstrap login override into the generated flake", async () => {
-		const result = await runDeploy([
-			"--target-host",
-			"root@198.51.100.10",
-			"--disk",
-			"/dev/sda",
-			"--bootstrap-user",
-			"human",
-			"--bootstrap-password-hash",
-			'$6$abc"def',
-		]);
-
-		try {
-			expect(result.exitCode).toBe(0);
-
-			const generatedFlake = result.readGeneratedFlake();
-			expect(generatedFlake).toContain('nixpi.primaryUser = lib.mkForce "human";');
-			expect(generatedFlake).toContain("nixpi.security.ssh.passwordAuthentication = lib.mkForce true;");
-			expect(generatedFlake).toContain('nixpi.security.ssh.allowUsers = lib.mkForce [ "human" ];');
-			expect(generatedFlake).toContain('users.users."human".initialHashedPassword = lib.mkForce "\\$6\\$abc\\"def";');
-		} finally {
-			result.harness.cleanup();
-		}
-	});
-
-	it("injects NetBird bootstrap wiring without embedding the setup key value", async () => {
-		const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "nixpi-netbird-key-"));
-		const setupKeyPath = path.join(tempDir, "netbird-setup-key");
-		fs.writeFileSync(setupKeyPath, "ACTUAL-SETUP-KEY-VALUE");
-
-		const result = await runDeploy([
-			"--target-host",
-			"root@198.51.100.10",
-			"--disk",
-			"/dev/sda",
-			"--netbird-setup-key-file",
-			setupKeyPath,
-		]);
-
-		try {
-			expect(result.exitCode).toBe(0);
-
-			const args = result.readArgs();
-			expect(args).toContain("--extra-files");
-
-			const generatedFlake = result.readGeneratedFlake();
-			expect(generatedFlake).toContain("nixpi.netbird.enable = lib.mkForce true;");
-			expect(generatedFlake).toContain(
-				'nixpi.netbird.setupKeyFile = lib.mkForce "/var/lib/nixpi/bootstrap/netbird-setup-key";',
-			);
-			expect(generatedFlake).not.toContain("ACTUAL-SETUP-KEY-VALUE");
-		} finally {
-			fs.rmSync(tempDir, { recursive: true, force: true });
 			result.harness.cleanup();
 		}
 	});

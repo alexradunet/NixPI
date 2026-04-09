@@ -10,26 +10,22 @@ fi
 
 usage() {
   cat <<'EOF_USAGE'
-Usage: nixpi-deploy-ovh --target-host root@IP --disk /dev/sdX [--flake .#ovh-vps] [--hostname HOSTNAME] [--bootstrap-user USER --bootstrap-password-hash HASH] [--netbird-setup-key-file PATH] [extra nixos-anywhere args...]
+Usage: nixpi-deploy-ovh --target-host root@IP --disk /dev/sdX [--flake .#ovh-base] [--hostname HOSTNAME] [extra nixos-anywhere args...]
 
-Destructive fresh install for an OVH VPS in rescue mode.
+Destructive plain NixOS base install for an OVH VPS in rescue mode.
+Bootstrap NixPI afterward on the installed machine with nixpi-bootstrap-host.
 
 Examples:
   nix run .#nixpi-deploy-ovh -- --target-host root@198.51.100.10 --disk /dev/sda
   nix run .#nixpi-deploy-ovh -- --target-host root@198.51.100.10 --disk /dev/nvme0n1 --hostname bloom-eu-1
-  nix run .#nixpi-deploy-ovh -- --target-host root@198.51.100.10 --disk /dev/sda --bootstrap-user human --bootstrap-password-hash '$6$...'
-  nix run .#nixpi-deploy-ovh -- --target-host root@198.51.100.10 --disk /dev/sda --netbird-setup-key-file ./netbird-key
 EOF_USAGE
 }
 
 main() {
   local target_host=""
   local disk=""
-  local hostname="ovh-vps"
-  local flake_ref="${NIXPI_REPO_ROOT:-.}#ovh-vps"
-  local bootstrap_user=""
-  local bootstrap_password_hash=""
-  local netbird_setup_key_file=""
+  local hostname="ovh-base"
+  local flake_ref="${NIXPI_REPO_ROOT:-.}#ovh-base"
   local extra_args=()
 
   while [[ $# -gt 0 ]]; do
@@ -50,17 +46,10 @@ main() {
         hostname="${2:?missing hostname}"
         shift 2
         ;;
-      --bootstrap-user)
-        bootstrap_user="${2:?missing bootstrap user}"
-        shift 2
-        ;;
-      --bootstrap-password-hash)
-        bootstrap_password_hash="${2:?missing bootstrap password hash}"
-        shift 2
-        ;;
-      --netbird-setup-key-file)
-        netbird_setup_key_file="${2:?missing netbird setup key file}"
-        shift 2
+      --bootstrap-user|--bootstrap-user=*|--bootstrap-password-hash|--bootstrap-password-hash=*|--netbird-setup-key-file|--netbird-setup-key-file=*)
+        usage >&2
+        printf 'Unsupported legacy option: %s. Install the plain ovh-base system, then run nixpi-bootstrap-host after first boot.\n' "${1%%=*}" >&2
+        exit 1
         ;;
       --help|-h)
         usage
@@ -78,7 +67,7 @@ main() {
     exit 1
   fi
 
-  run_ovh_deploy "$target_host" "$disk" "$hostname" "$flake_ref" "$bootstrap_user" "$bootstrap_password_hash" "$netbird_setup_key_file" "${extra_args[@]}"
+  run_ovh_deploy "$target_host" "$disk" "$hostname" "$flake_ref" "${extra_args[@]}"
 }
 
 if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
