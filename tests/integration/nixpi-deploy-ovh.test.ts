@@ -170,6 +170,24 @@ describe("nixpi-deploy-ovh.sh", () => {
 		}
 	});
 
+	it("rejects missing NetBird setup-key files", async () => {
+		const result = await runDeploy([
+			"--target-host",
+			"root@198.51.100.10",
+			"--disk",
+			"/dev/sda",
+			"--netbird-setup-key-file",
+			"./does-not-exist",
+		]);
+
+		try {
+			expect(result.exitCode).toBe(1);
+			expect(result.stderr).toContain("--netbird-setup-key-file must point to an existing local file");
+		} finally {
+			result.harness.cleanup();
+		}
+	});
+
 	it("builds a temporary deploy flake and forwards deterministic nixos-anywhere arguments", async () => {
 		const result = await runDeploy([
 			"--target-host",
@@ -230,6 +248,36 @@ describe("nixpi-deploy-ovh.sh", () => {
 			expect(generatedFlake).toContain('nixpi.security.ssh.allowUsers = lib.mkForce [ "human" ];');
 			expect(generatedFlake).toContain('users.users."human".initialHashedPassword = lib.mkForce "\\$6\\$abc\\"def";');
 		} finally {
+			result.harness.cleanup();
+		}
+	});
+
+	it("injects NetBird bootstrap wiring without embedding the setup key value", async () => {
+		const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "nixpi-netbird-key-"));
+		const setupKeyPath = path.join(tempDir, "netbird-setup-key");
+		fs.writeFileSync(setupKeyPath, "ACTUAL-SETUP-KEY-VALUE");
+
+		const result = await runDeploy([
+			"--target-host",
+			"root@198.51.100.10",
+			"--disk",
+			"/dev/sda",
+			"--netbird-setup-key-file",
+			setupKeyPath,
+		]);
+
+		try {
+			expect(result.exitCode).toBe(0);
+
+			const args = result.readArgs();
+			expect(args).toContain("--extra-files");
+
+			const generatedFlake = result.readGeneratedFlake();
+			expect(generatedFlake).toContain("nixpi.netbird.enable = lib.mkForce true;");
+			expect(generatedFlake).toContain('nixpi.netbird.setupKeyFile = lib.mkForce "/var/lib/nixpi/bootstrap/netbird-setup-key";');
+			expect(generatedFlake).not.toContain("ACTUAL-SETUP-KEY-VALUE");
+		} finally {
+			fs.rmSync(tempDir, { recursive: true, force: true });
 			result.harness.cleanup();
 		}
 	});
