@@ -73,7 +73,22 @@
       "Bash(wc -l /home/alex/pi-bloom/core/os/modules/*.nix)",
       "Bash(head -20 /home/alex/pi-bloom/core/os/modules/*.nix)",
       "Bash(nix build:*)",
-      "Bash(npx biome:*)"
+      "Bash(npx biome:*)",
+      "Bash(sed -n '78,110p' tests/nixos/nixpi-e2e.nix)",
+      "Bash(sed -n '38,65p' tests/nixos/nixpi-firstboot.nix)",
+      "Bash(sed -n '58,68p' tests/nixos/nixpi-post-setup-lockdown.nix)",
+      "Bash(sed -n '105,115p' tests/nixos/nixpi-security.nix)",
+      "Bash(sed -n '37,46p' tests/nixos/nixpi-system-flake.nix)",
+      "Bash(sed -n '12,20p' docs/operations/live-testing.md)",
+      "Bash(sed -n '48,56p' docs/operations/live-testing.md)",
+      "Bash(sed -n '10,16p' docs/operations/first-boot-setup.md)",
+      "Bash(ovh-vps)",
+      "Bash(nix-instantiate --parse tests/nixos/nixpi-e2e.nix)",
+      "Bash(nix-instantiate --parse tests/nixos/nixpi-firstboot.nix)",
+      "Bash(nix-instantiate --parse tests/nixos/nixpi-post-setup-lockdown.nix)",
+      "Bash(nix-instantiate --parse tests/nixos/nixpi-security.nix)",
+      "Bash(nix-instantiate --parse tests/nixos/nixpi-system-flake.nix)",
+      "Skill(commit-commands:commit)"
     ]
   }
 }

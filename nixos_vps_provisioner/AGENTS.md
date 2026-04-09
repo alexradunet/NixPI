@@ -14,6 +14,8 @@ Automation begins at first SSH access, not at the web-panel step.
 6. Run the provisioner command for the selected preset.
 7. If kexec or disk remapping fails, fall back to staged `nixos-anywhere` phases.
 8. stop and ask for the human to perform OVH panel actions such as switching back from rescue mode to disk boot.
+9. After first boot, verify SSH connectivity and run a security check (sshd config, listening ports, firewall, authorized keys).
+10. Set a root password with `passwd root` to enable OVH KVM console access as an out-of-band fallback.
 
 ## Inputs
 

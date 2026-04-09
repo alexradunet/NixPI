@@ -150,15 +150,6 @@ write_generated_configuration() {
     "flakes"
   ];
 
-  services.openssh = {
-    enable = true;
-    settings = {
-      PasswordAuthentication = false;
-      PermitRootLogin = "prohibit-password";
-      PubkeyAuthentication = "yes";
-    };
-  };
-
   networking.firewall.allowedTCPPorts = [ 22 ];
 
   boot.loader = {
@@ -319,6 +310,15 @@ main() {
 	fi
 
 	mkdir -p "$etc_nixos_dir"
+
+	if [[ "$force_overwrite" == "true" ]]; then
+		rm -f \
+			"${etc_nixos_dir}/flake.nix" \
+			"${etc_nixos_dir}/flake.lock" \
+			"${etc_nixos_dir}/nixpi-host.nix" \
+			"${etc_nixos_dir}/nixpi-integration.nix"
+	fi
+
 	load_authorized_keys
 	ensure_host_tree_prerequisites
 

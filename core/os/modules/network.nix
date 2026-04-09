@@ -113,7 +113,7 @@ in
       }
     ];
 
-    hardware.enableAllFirmware = true;
+    hardware.enableRedistributableFirmware = lib.mkDefault true;
 
     services.openssh = {
       enable = publicSshEnabled;
