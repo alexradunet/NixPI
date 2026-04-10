@@ -1,12 +1,23 @@
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import os from "node:os";
 import path from "node:path";
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import {
+	appendEvent,
+	buildBacklinks,
+	buildRegistry,
+	buildWikiDigest,
+	handleWikiStatus,
+	readEvents,
+	rebuildAllMeta,
+	scanPages,
+} from "../../core/pi/extensions/wiki/actions-meta.js";
 import {
 	countWords,
 	dedupeSlug,
 	extractHeadings,
 	extractWikiLinks,
 	isProtectedPath,
-	isWikiPagePath,
 	makeSourceId,
 	normalizeWikiLink,
 	slugifyTitle,
@@ -262,5 +273,246 @@ describe("countWords", () => {
 
 	it("counts a single word as 1", () => {
 		expect(countWords("word")).toBe(1);
+	});
+});
+
+// ---------------------------------------------------------------------------
+// wiki meta
+// ---------------------------------------------------------------------------
+
+describe("wiki meta", () => {
+	let tmpDir: string;
+
+	beforeEach(() => {
+		tmpDir = mkdtempSync(path.join(os.tmpdir(), "wiki-test-"));
+		mkdirSync(path.join(tmpDir, "pages"), { recursive: true });
+	});
+
+	afterEach(() => {
+		rmSync(tmpDir, { recursive: true, force: true });
+	});
+
+	// -------------------------------------------------------------------------
+	// buildRegistry
+	// -------------------------------------------------------------------------
+
+	it("buildRegistry creates registry with correct title/type/tags from frontmatter", () => {
+		const content = `---
+title: My Concept
+type: concept
+tags:
+  - ai
+  - memory
+summary: A test concept page
+status: active
+---
+This is the body of my concept.
+`;
+		mkdirSync(path.join(tmpDir, "pages"), { recursive: true });
+		writeFileSync(path.join(tmpDir, "pages", "my-concept.md"), content, "utf-8");
+
+		const pages = scanPages(tmpDir);
+		expect(pages).toHaveLength(1);
+
+		const registry = buildRegistry(pages);
+		expect(registry.version).toBe(1);
+		expect(registry.pages).toHaveLength(1);
+
+		const entry = registry.pages[0];
+		expect(entry.title).toBe("My Concept");
+		expect(entry.type).toBe("concept");
+		expect(entry.tags).toEqual(["ai", "memory"]);
+		expect(entry.summary).toBe("A test concept page");
+		expect(entry.status).toBe("active");
+		expect(entry.path).toBe("pages/my-concept.md");
+	});
+
+	// -------------------------------------------------------------------------
+	// buildBacklinks
+	// -------------------------------------------------------------------------
+
+	it("buildBacklinks correctly computes inbound/outbound when A links to B", () => {
+		const pageA = `---
+title: Page A
+type: concept
+---
+See [[b]] for more.
+`;
+		const pageB = `---
+title: Page B
+type: concept
+---
+No links here.
+`;
+		writeFileSync(path.join(tmpDir, "pages", "a.md"), pageA, "utf-8");
+		writeFileSync(path.join(tmpDir, "pages", "b.md"), pageB, "utf-8");
+
+		const pages = scanPages(tmpDir);
+		const registry = buildRegistry(pages);
+		const backlinks = buildBacklinks(registry);
+
+		const aPath = "pages/a.md";
+		const bPath = "pages/b.md";
+
+		expect(backlinks.byPath[aPath].outbound).toContain(bPath);
+		expect(backlinks.byPath[aPath].inbound).toEqual([]);
+		expect(backlinks.byPath[bPath].inbound).toContain(aPath);
+		expect(backlinks.byPath[bPath].outbound).toEqual([]);
+	});
+
+	// -------------------------------------------------------------------------
+	// rebuildAllMeta
+	// -------------------------------------------------------------------------
+
+	it("rebuildAllMeta creates registry.json, backlinks.json, index.md, log.md in meta/", () => {
+		const content = `---
+title: Test Page
+type: concept
+status: active
+---
+Hello world.
+`;
+		writeFileSync(path.join(tmpDir, "pages", "test-page.md"), content, "utf-8");
+
+		rebuildAllMeta(tmpDir);
+
+		const metaDir = path.join(tmpDir, "meta");
+		expect(existsSync(path.join(metaDir, "registry.json"))).toBe(true);
+		expect(existsSync(path.join(metaDir, "backlinks.json"))).toBe(true);
+		expect(existsSync(path.join(metaDir, "index.md"))).toBe(true);
+		expect(existsSync(path.join(metaDir, "log.md"))).toBe(true);
+
+		const registry = JSON.parse(readFileSync(path.join(metaDir, "registry.json"), "utf-8"));
+		expect(registry.pages).toHaveLength(1);
+		expect(registry.pages[0].title).toBe("Test Page");
+
+		const indexContent = readFileSync(path.join(metaDir, "index.md"), "utf-8");
+		expect(indexContent).toContain("# Wiki Index");
+		expect(indexContent).toContain("Test Page");
+	});
+
+	// -------------------------------------------------------------------------
+	// appendEvent / readEvents
+	// -------------------------------------------------------------------------
+
+	it("appendEvent adds an event and readEvents returns it; second append gives 2 events", async () => {
+		const event1: Parameters<typeof appendEvent>[1] = {
+			ts: "2026-04-10T12:00:00Z",
+			kind: "capture",
+			title: "First Capture",
+			sourceIds: ["SRC-2026-04-10-001"],
+			pagePaths: ["pages/sources/SRC-2026-04-10-001.md"],
+		};
+		const event2: Parameters<typeof appendEvent>[1] = {
+			ts: "2026-04-10T13:00:00Z",
+			kind: "integrate",
+			title: "First Integration",
+		};
+
+		await appendEvent(tmpDir, event1);
+		const events1 = await readEvents(tmpDir);
+		expect(events1).toHaveLength(1);
+		expect(events1[0].kind).toBe("capture");
+		expect(events1[0].title).toBe("First Capture");
+
+		await appendEvent(tmpDir, event2);
+		const events2 = await readEvents(tmpDir);
+		expect(events2).toHaveLength(2);
+		expect(events2[1].kind).toBe("integrate");
+	});
+
+	// -------------------------------------------------------------------------
+	// handleWikiStatus
+	// -------------------------------------------------------------------------
+
+	it("handleWikiStatus returns 'Wiki not initialized.' when pages/ missing", () => {
+		rmSync(path.join(tmpDir, "pages"), { recursive: true, force: true });
+
+		const result = handleWikiStatus(tmpDir);
+		expect(result.isOk()).toBe(true);
+		if (result.isOk()) {
+			expect(result.value.text).toBe("Wiki not initialized.");
+			expect(result.value.details?.initialized).toBe(false);
+		}
+	});
+
+	it("handleWikiStatus returns correct counts when pages exist", () => {
+		const sourcePage = `---
+title: SRC-2026-04-10-001
+type: source
+status: captured
+---
+Raw content.
+`;
+		const conceptPage = `---
+title: My Concept
+type: concept
+status: active
+---
+Concept content.
+`;
+		mkdirSync(path.join(tmpDir, "pages", "sources"), { recursive: true });
+		writeFileSync(path.join(tmpDir, "pages", "sources", "SRC-2026-04-10-001.md"), sourcePage, "utf-8");
+		writeFileSync(path.join(tmpDir, "pages", "my-concept.md"), conceptPage, "utf-8");
+
+		const result = handleWikiStatus(tmpDir);
+		expect(result.isOk()).toBe(true);
+		if (result.isOk()) {
+			expect(result.value.text).toContain("Pages: 2 total");
+			expect(result.value.text).toContain("1 source");
+			expect(result.value.text).toContain("1 canonical");
+			expect(result.value.text).toContain("1 captured");
+			expect(result.value.details?.total).toBe(2);
+		}
+	});
+
+	// -------------------------------------------------------------------------
+	// buildWikiDigest
+	// -------------------------------------------------------------------------
+
+	it("buildWikiDigest returns empty string when meta/ missing", () => {
+		const result = buildWikiDigest(tmpDir);
+		expect(result).toBe("");
+	});
+
+	it("buildWikiDigest returns digest with active canonical pages", () => {
+		const activeConcept = `---
+title: Active Concept
+type: concept
+status: active
+summary: A great concept
+---
+${Array(100).fill("word").join(" ")}
+`;
+		const draftConcept = `---
+title: Draft Concept
+type: concept
+status: draft
+summary: Not yet ready
+---
+Short.
+`;
+		const sourcePage = `---
+title: SRC-001
+type: source
+status: active
+summary: A source
+---
+Some raw content here.
+`;
+		writeFileSync(path.join(tmpDir, "pages", "active-concept.md"), activeConcept, "utf-8");
+		writeFileSync(path.join(tmpDir, "pages", "draft-concept.md"), draftConcept, "utf-8");
+		mkdirSync(path.join(tmpDir, "pages", "sources"), { recursive: true });
+		writeFileSync(path.join(tmpDir, "pages", "sources", "SRC-001.md"), sourcePage, "utf-8");
+
+		rebuildAllMeta(tmpDir);
+
+		const digest = buildWikiDigest(tmpDir);
+		expect(digest).toContain("[WIKI MEMORY DIGEST]");
+		expect(digest).toContain("Active Concept (concept)");
+		expect(digest).toContain("A great concept");
+		// Draft and source pages should not appear
+		expect(digest).not.toContain("Draft Concept");
+		expect(digest).not.toContain("SRC-001");
 	});
 });
