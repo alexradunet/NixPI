@@ -4,6 +4,8 @@ import { describe, expect, it } from "vitest";
 
 const repoRoot = path.resolve(import.meta.dirname, "../..");
 const flakePath = path.join(repoRoot, "flake.nix");
+const nixPkgsPath = path.join(repoRoot, "nix/pkgs.nix");
+const nixHostsPath = path.join(repoRoot, "nix/hosts.nix");
 const packageJsonPath = path.join(repoRoot, "package.json");
 const bootstrapHostScriptPath = path.join(repoRoot, "core/scripts/nixpi-bootstrap-host.sh");
 const bootstrapHostPackagePath = path.join(repoRoot, "core/os/pkgs/nixpi-bootstrap-host/default.nix");
@@ -235,14 +237,16 @@ describe("repo standards guards", () => {
 
 	it("keeps only the host-owned bootstrap lane wired into the repo", () => {
 		const flake = readUtf8(flakePath);
+		const nixPkgs = readUtf8(nixPkgsPath);
+		const nixHosts = readUtf8(nixHostsPath);
 
 		expect(flake).toContain('disko.url = "github:nix-community/disko"');
 		expect(flake).toContain('nixos-anywhere.url = "github:nix-community/nixos-anywhere"');
-		expect(flake).toContain("nixpi-bootstrap-host = pkgs.callPackage ./core/os/pkgs/nixpi-bootstrap-host { };");
-		expect(flake).toContain("plain-host-deploy = pkgs.callPackage ./nixos_vps_provisioner/pkgs/plain-host-deploy");
-		expect(flake).toContain("ovh-vps-base = mkConfiguredStableSystem");
-		expect(flake).toContain("./nixos_vps_provisioner/presets/ovh-single-disk.nix");
-		expect(flake).toContain("./nixos_vps_provisioner/presets/ovh-vps-base.nix");
+		expect(nixPkgs).toContain("nixpi-bootstrap-host = pkgs.callPackage ../core/os/pkgs/nixpi-bootstrap-host { };");
+		expect(nixPkgs).toContain("plain-host-deploy = pkgs.callPackage ../nixos_vps_provisioner/pkgs/plain-host-deploy");
+		expect(nixHosts).toContain("ovh-vps-base = mkConfiguredStableSystem");
+		expect(nixHosts).toContain("../nixos_vps_provisioner/presets/ovh-single-disk.nix");
+		expect(nixHosts).toContain("../nixos_vps_provisioner/presets/ovh-vps-base.nix");
 		expect(flake).toContain(`program = "\${self.packages.\${system}.nixpi-bootstrap-host}/bin/nixpi-bootstrap-host"`);
 		expect(flake).toContain(`program = "\${self.packages.\${system}.plain-host-deploy}/bin/plain-host-deploy"`);
 
