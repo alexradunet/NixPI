@@ -17,7 +17,7 @@ let
       [ ];
   inherit (config.nixpi.agent) piDir workspaceDir;
   nodeBinDir = "${builtins.head config.nixpi.agent.packagePaths}/node_modules/.bin";
-  wrapperBinDir = "/run/current-system/sw/bin";
+  wrapperBinDir = "/run/wrappers/bin";
   primaryUserMarker = "${stateDir}/primary-user";
 in
 {
@@ -129,6 +129,7 @@ EOF_AUTHORIZED_KEYS
         export PATH="${wrapperBinDir}:${nodeBinDir}:$PATH"
       '';
       interactiveShellInit = ''
+        export PATH="${wrapperBinDir}:${nodeBinDir}:$PATH"
         if command -v chromium >/dev/null 2>&1; then
           export BROWSER="chromium"
         fi
