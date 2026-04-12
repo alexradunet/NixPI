@@ -50,10 +50,6 @@ export default function (pi: ExtensionAPI) {
 	let guardrails: ReturnType<typeof loadGuardrails> | undefined;
 	let restoredContext: ReturnType<typeof loadContext> | undefined;
 
-	pi.on("session_start", () => {
-		pi.setSessionName("Pi");
-	});
-
 	pi.on("before_agent_start", async (event, _ctx) => {
 		personaBlock ??= loadPersona();
 		let systemPrompt = `${personaBlock}\n\n${event.systemPrompt}`;

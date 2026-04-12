@@ -59,23 +59,21 @@ describe("persona registration", () => {
 		expect(api._registeredCommands).toHaveLength(0);
 	});
 
-	it("has session_start, before_agent_start, tool_call, and session_before_compact event handlers", () => {
+	it("has before_agent_start, tool_call, and session_before_compact event handlers", () => {
 		const events = [...api._eventHandlers.keys()];
-		expect(events).toContain("session_start");
 		expect(events).toContain("before_agent_start");
 		expect(events).toContain("tool_call");
 		expect(events).toContain("session_before_compact");
-		expect(events).toHaveLength(4);
+		expect(events).toHaveLength(3);
 	});
 });
 
 // ---------------------------------------------------------------------------
-// session_start sets session name
+// before_agent_start
 // ---------------------------------------------------------------------------
-describe("persona session_start", () => {
-	it("sets session name to 'Pi'", async () => {
-		await api.fireEvent("session_start");
-		expect(api._sessionName).toBe("Pi");
+describe("persona before_agent_start", () => {
+	it("does not force a static session name", async () => {
+		expect(api._sessionName).toBeNull();
 	});
 
 	it("injects system-setup guidance when bootstrap mode is enabled", async () => {
