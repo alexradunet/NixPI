@@ -45,6 +45,13 @@ nohup "$SIGNAL_CLI" \
   > "$LOG" 2>&1 &
 
 echo $! > "$PIDFILE"
-sleep 3
-curl -fsS http://127.0.0.1:8080/api/v1/check >/dev/null
-echo "signal daemon started (pid $(cat "$PIDFILE"))"
+for _ in $(seq 1 20); do
+  if curl -fsS http://127.0.0.1:8080/api/v1/check >/dev/null 2>&1; then
+    echo "signal daemon started (pid $(cat "$PIDFILE"))"
+    exit 0
+  fi
+  sleep 1
+done
+
+echo "signal daemon failed to become healthy; check $LOG" >&2
+exit 1

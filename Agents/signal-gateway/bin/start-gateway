@@ -21,7 +21,7 @@ if [ -f "$PIDFILE" ]; then
 fi
 
 cd "$BASE"
-nohup npm run dev -- "$CONFIG_PATH" > "$LOG" 2>&1 &
+nohup /run/current-system/sw/bin/node dist/main.js "$CONFIG_PATH" > "$LOG" 2>&1 &
 echo $! > "$PIDFILE"
 sleep 3
 if ! grep -q "Signal gateway started" "$LOG"; then
