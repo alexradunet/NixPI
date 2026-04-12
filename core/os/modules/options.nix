@@ -159,10 +159,45 @@ in
         default = [ ];
         description = "Phone numbers treated as gateway admins for built-in commands.";
       };
+      user = lib.mkOption {
+        type = lib.types.str;
+        default = "nixpi-signal";
+        description = "System account that runs the Signal gateway and native signal-cli daemon.";
+      };
+      group = lib.mkOption {
+        type = lib.types.str;
+        default = "nixpi-signal";
+        description = "Primary group for the Signal gateway system account.";
+      };
       stateDir = lib.mkOption {
         type = absolutePath;
         default = "${config.nixpi.stateDir}/signal-gateway";
         description = "Absolute path holding Signal gateway runtime state, including signal-cli data, SQLite DB, session files, and tmp logs.";
+      };
+      legacyStateDir = lib.mkOption {
+        type = absolutePath;
+        default = "/root/.local/state/nixpi-signal-gateway";
+        description = "Legacy runtime state path used as the source for one-time migration into the dedicated service-owned state directory.";
+      };
+      agentDir = lib.mkOption {
+        type = absolutePath;
+        default = "${config.nixpi.stateDir}/signal-gateway-pi";
+        description = "Service-owned Pi agent directory containing auth, settings, copied extensions, and local packages for the Signal gateway account.";
+      };
+      sourceAgentDir = lib.mkOption {
+        type = absolutePath;
+        default = config.nixpi.agent.piDir;
+        description = "Source Pi agent directory used to seed the Signal gateway service-owned agent home.";
+      };
+      workspaceDir = lib.mkOption {
+        type = absolutePath;
+        default = config.nixpi.agent.workspaceDir;
+        description = "Workspace path the Signal gateway user may access so Pi sessions can operate on the main NixPI workspace.";
+      };
+      homeTraversePath = lib.mkOption {
+        type = absolutePath;
+        default = "/home/${config.nixpi.primaryUser}";
+        description = "Parent home path that receives execute-only ACL access so the Signal gateway service user can reach the configured workspace directory.";
       };
       piCwd = lib.mkOption {
         type = lib.types.str;

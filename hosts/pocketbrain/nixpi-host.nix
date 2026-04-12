@@ -52,7 +52,6 @@
     account = "+40749599297";
     allowedNumbers = [ "+40724417990" ];
     adminNumbers = [ "+40724417990" ];
-    stateDir = "/root/.local/state/nixpi-signal-gateway";
     piCwd = "/home/alex";
   };
 
