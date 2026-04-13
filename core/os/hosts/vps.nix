@@ -3,15 +3,7 @@
 { lib, config, ... }:
 {
   imports = [
-    ../modules/options.nix
-    ../modules/network.nix
-    ../modules/update.nix
-    ../modules/app.nix
-    ../modules/pi-core.nix
-    ../modules/broker.nix
-    ../modules/tooling.nix
-    ../modules/gateway.nix
-    ../modules/shell.nix
+    ../modules
   ];
 
   system.stateVersion = "25.05";

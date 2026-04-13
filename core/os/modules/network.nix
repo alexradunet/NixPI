@@ -23,8 +23,6 @@ let
 in
 
 {
-  imports = [ ./options.nix ];
-
   config = {
     assertions = [
       {

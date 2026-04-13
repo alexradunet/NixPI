@@ -20,7 +20,7 @@ describe("repo standards shell runtime guards", () => {
 		const serviceArchitecture = readUtf8(serviceArchitecturePath);
 
 		expect(existsSync(shellModulePath)).toBe(true);
-		expect(vpsHost).toContain("../modules/shell.nix");
+		expect(vpsHost).toContain("../modules");
 		expect(vpsHost).toContain("bootstrap.enable = lib.mkDefault true;");
 		expect(readme).toContain("plain shell runtime");
 		expect(shellModule).toContain(`export PATH="\${wrapperBinDir}:\${nodeBinDir}:$PATH"`);

@@ -46,32 +46,29 @@
       formatter = forAllSystems (system: (mkPkgs system).nixfmt-rfc-style);
 
       nixosModules = {
-        # Single composable module exporting all NixPI feature modules.
-        # Use enable flags (nixpi.app.enable, nixpi.shell.enable, etc.) to
-        # activate only what a given configuration needs.
-        nixpi =
-          { ... }:
-          {
-            imports = [
-              ./core/os/modules/options.nix
-              ./core/os/modules/network.nix
-              ./core/os/modules/update.nix
-              ./core/os/modules/app.nix
-              ./core/os/modules/pi-core.nix
-              ./core/os/modules/broker.nix
-              ./core/os/modules/tooling.nix
-              ./core/os/modules/gateway.nix
-              ./core/os/modules/shell.nix
-            ];
-          };
+        # Dendritic NixOS module entrypoint: every non-entry Nix file under
+        # core/os/modules is imported automatically by core/os/modules/default.nix.
+        nixpi = import ./core/os/modules;
       };
 
       nixosConfigurations = import ./nix/hosts.nix {
-        inherit self nixpkgs nixpkgs-stable disko system;
+        inherit
+          self
+          nixpkgs
+          nixpkgs-stable
+          disko
+          system
+          ;
       };
 
       checks.${system} = import ./nix/checks.nix {
-        inherit self pkgs pkgsUnfree lib system;
+        inherit
+          self
+          pkgs
+          pkgsUnfree
+          lib
+          system
+          ;
       };
 
       apps.${system} = {
@@ -79,7 +76,8 @@
           type = "app";
           program = "${self.packages.${system}.nixpi-bootstrap-host}/bin/nixpi-bootstrap-host";
         };
-      } // lib.optionalAttrs (self.packages.${system} ? plain-host-deploy) {
+      }
+      // lib.optionalAttrs (self.packages.${system} ? plain-host-deploy) {
         plain-host-deploy = {
           type = "app";
           program = "${self.packages.${system}.plain-host-deploy}/bin/plain-host-deploy";

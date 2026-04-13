@@ -6,6 +6,7 @@
 }:
 
 let
+  serviceHardening = import ../lib/service-hardening.nix { inherit lib; };
   inherit (config.nixpi) primaryUser stateDir;
   socketDir = "/run/nixpi-broker";
   socketPath = "${socketDir}/broker.sock";
@@ -43,8 +44,6 @@ let
   brokerCtlCommand = "/run/current-system/sw/bin/nixpi-brokerctl";
 in
 {
-  imports = [ ./options.nix ];
-
   config = lib.mkIf config.nixpi.agent.broker.enable {
     assertions = [
       {
@@ -87,10 +86,11 @@ in
 
     systemd.services.nixpi-broker = {
       description = "NixPI privileged operations broker";
-      serviceConfig = {
+      serviceConfig = serviceHardening.root {
         ExecStart = "${brokerCtl}/bin/nixpi-brokerctl server";
         User = "root";
         Group = "root";
+        ProtectHome = true;
         Restart = "always";
         RestartSec = 5;
         UMask = "0007";

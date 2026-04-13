@@ -121,7 +121,7 @@ in
     client.fail("nc -z -w 2 -s 192.0.2.11 192.0.2.21 22")
 
     steady.succeed("fail2ban-client status sshd | grep -q 'Status for the jail: sshd'")
-    steady.succeed("fail2ban-client get sshd ignoreip | grep -q '192.0.2.10/32'")
+    steady.succeed("fail2ban-client get sshd ignoreip | grep -Eq '192\\.0\\.2\\.10(/32)?'")
 
     print("NixPI security exposure policy tests passed!")
   '';

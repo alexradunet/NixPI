@@ -24,6 +24,7 @@ Bootstrap versus steady-state behavior is selected declaratively via `nixpi.boot
   - `nixpi-broker`
   - `nixpi-update`
   - `nixpi-options-validation`
+  - `nixpi-service-hardening`
 - `nixos-destructive`: slower retained cases intended for manual or scheduled runs
   - `nixpi-post-setup-lockdown`
   - `nixpi-broker`
@@ -84,6 +85,7 @@ tests/nixos/
 ├── nixpi-post-setup-lockdown.nix # steady-state post-setup security contract
 ├── nixpi-runtime.nix           # shell-first Pi runtime smoke test
 ├── nixpi-security.nix          # security boundary test
+├── nixpi-service-hardening.nix # broker/pi-core/gateway hardening contract
 ├── nixpi-system-flake.nix      # retained name; now asserts no runtime /etc/nixos flake generation
 ├── nixpi-update.nix            # update flow test
 └── README.md                   # this file

@@ -51,6 +51,19 @@
 
     start_all()
 
+    broker_hardening_props = [
+        "NoNewPrivileges",
+        "PrivateTmp",
+        "PrivateDevices",
+        "LockPersonality",
+        "ProtectClock",
+        "ProtectControlGroups",
+        "ProtectKernelModules",
+        "ProtectKernelTunables",
+        "RestrictRealtime",
+        "RestrictSUIDSGID",
+    ]
+
     for machine, expected_group in [(maintain, "maintainer"), (observe, "observer")]:
         machine.wait_for_unit("multi-user.target", timeout=300)
         machine.wait_for_unit("nixpi-broker.socket", timeout=120)
@@ -58,6 +71,9 @@
         machine.succeed("systemctl show nixpi-broker.socket -p Listen --value | grep -F '/run/nixpi-broker/broker.sock'")
         machine.fail("systemctl is-active nixpi-broker.service")
         machine.succeed(f"stat -c '%U:%G %a' /run/nixpi-broker/broker.sock | grep -qx 'root:{expected_group} 660'")
+        for prop in broker_hardening_props:
+            machine.succeed(f"systemctl show nixpi-broker.service -p {prop} --value | grep -qx yes")
+        machine.succeed("systemctl show nixpi-broker.service -p ProtectHome --value | grep -qx yes")
 
     maintain_status = json.loads(succeed_as_user(maintain, "maintainer", "nixpi-brokerctl status"))
     assert maintain_status["defaultAutonomy"] == "maintain", maintain_status

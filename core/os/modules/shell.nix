@@ -21,8 +21,6 @@ let
   primaryUserMarker = "${stateDir}/primary-user";
 in
 {
-  imports = [ ./options.nix ];
-
   options.nixpi.shell.enable = lib.mkOption {
     type = lib.types.bool;
     default = true;
@@ -44,7 +42,7 @@ in
         marker=${lib.escapeShellArg primaryUserMarker}
         expected_user=${lib.escapeShellArg primaryUser}
 
-        install -d -m 0711 -o ${lib.escapeShellArg primaryUser} -g ${lib.escapeShellArg primaryUser} ${lib.escapeShellArg stateDir}
+        install -d -m 0755 -o root -g root ${lib.escapeShellArg stateDir}
 
         if [ ! -e "$marker" ]; then
           printf '%s\n' "$expected_user" > "$marker"
@@ -53,12 +51,16 @@ in
           current_user="$(cat "$marker")"
         fi
 
-        if [ -n "''${current_user:-}" ] && [ "$current_user" != "$expected_user" ] && [ "${if allowPrimaryUserChange then "1" else "0"}" = "1" ]; then
+        if [ -n "''${current_user:-}" ] && [ "$current_user" != "$expected_user" ] && [ "${
+          if allowPrimaryUserChange then "1" else "0"
+        }" = "1" ]; then
           printf '%s\n' "$expected_user" > "$marker"
           chmod 0600 "$marker"
         fi
 
-        if [ -n "''${current_user:-}" ] && [ "$current_user" != "$expected_user" ] && [ "${if allowPrimaryUserChange then "1" else "0"}" != "1" ]; then
+        if [ -n "''${current_user:-}" ] && [ "$current_user" != "$expected_user" ] && [ "${
+          if allowPrimaryUserChange then "1" else "0"
+        }" != "1" ]; then
           echo "Refusing to change nixpi.primaryUser from '$current_user' to '$expected_user'." >&2
           echo "Set nixpi.allowPrimaryUserChange = true for one rebuild if this migration is intentional." >&2
           false
@@ -66,22 +68,27 @@ in
       '';
     };
 
-    system.activationScripts."10-nixpi-primary-user-authorized-keys" = lib.mkIf (primaryAuthorizedKeys != [ ]) {
-      deps = [ "users" "groups" ];
-      supportsDryActivation = true;
-      text = ''
-        home_dir=${lib.escapeShellArg primaryHome}
-        ssh_dir="$home_dir/.ssh"
-        auth_keys="$ssh_dir/authorized_keys"
+    system.activationScripts."10-nixpi-primary-user-authorized-keys" =
+      lib.mkIf (primaryAuthorizedKeys != [ ])
+        {
+          deps = [
+            "users"
+            "groups"
+          ];
+          supportsDryActivation = true;
+          text = ''
+                    home_dir=${lib.escapeShellArg primaryHome}
+                    ssh_dir="$home_dir/.ssh"
+                    auth_keys="$ssh_dir/authorized_keys"
 
-        install -d -m 0700 -o ${lib.escapeShellArg primaryUser} -g ${lib.escapeShellArg primaryUser} "$ssh_dir"
-        cat >"$auth_keys" <<'EOF_AUTHORIZED_KEYS'
-${lib.concatStringsSep "\n" primaryAuthorizedKeys}
-EOF_AUTHORIZED_KEYS
-        chown ${lib.escapeShellArg primaryUser}:${lib.escapeShellArg primaryUser} "$auth_keys"
-        chmod 0600 "$auth_keys"
-      '';
-    };
+                    install -d -m 0700 -o ${lib.escapeShellArg primaryUser} -g ${lib.escapeShellArg primaryUser} "$ssh_dir"
+                    cat >"$auth_keys" <<'EOF_AUTHORIZED_KEYS'
+            ${lib.concatStringsSep "\n" primaryAuthorizedKeys}
+            EOF_AUTHORIZED_KEYS
+                    chown ${lib.escapeShellArg primaryUser}:${lib.escapeShellArg primaryUser} "$auth_keys"
+                    chmod 0600 "$auth_keys"
+          '';
+        };
 
     users.users.${primaryUser} = {
       isNormalUser = true;

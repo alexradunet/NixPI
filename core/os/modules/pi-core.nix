@@ -6,6 +6,7 @@
 }:
 
 let
+  serviceHardening = import ../lib/service-hardening.nix { inherit lib; };
   cfg = config.nixpi.piCore;
   corePackage = pkgs.callPackage ../pkgs/pi-core { };
   coreConfig = pkgs.writeText "nixpi-pi-core.json" (
@@ -34,6 +35,13 @@ let
       defaultModel = cfg.defaultModel;
     }
   );
+  readWritePaths = [
+    cfg.stateDir
+    cfg.sessionDir
+    cfg.agentDir
+    (builtins.dirOf cfg.socketPath)
+    cfg.workspaceDir
+  ];
   setupScript = pkgs.writeShellScript "nixpi-pi-core-setup" ''
     set -euo pipefail
 
@@ -105,8 +113,6 @@ let
   '';
 in
 {
-  imports = [ ./options.nix ];
-
   config = lib.mkIf cfg.enable {
     users.groups.${cfg.group} = { };
     users.users.${cfg.user} = {
@@ -151,7 +157,11 @@ in
       description = "NixPI Pi core setup and migration";
       wantedBy = [ "multi-user.target" ];
       before = [ "nixpi-pi-core.service" ];
-      after = [ "systemd-tmpfiles-setup.service" "systemd-tmpfiles-resetup.service" "nixpi-app-setup.service" ];
+      after = [
+        "systemd-tmpfiles-setup.service"
+        "systemd-tmpfiles-resetup.service"
+        "nixpi-app-setup.service"
+      ];
       wants = [ "systemd-tmpfiles-resetup.service" ];
       requires = [ "nixpi-app-setup.service" ];
       serviceConfig = {
@@ -161,21 +171,46 @@ in
         RemainAfterExit = true;
         ExecStart = setupScript;
       };
-      restartTriggers = [ coreConfig defaultPiSettings defaultAgentSettings ];
+      restartTriggers = [
+        coreConfig
+        defaultPiSettings
+        defaultAgentSettings
+      ];
     };
 
     systemd.services.nixpi-pi-core = {
       description = "NixPI Pi core";
       wantedBy = [ "multi-user.target" ];
-      after = [ "network-online.target" "nixpi-pi-core-setup.service" ];
-      wants = [ "network-online.target" "nixpi-pi-core-setup.service" ];
-      restartTriggers = [ coreConfig defaultPiSettings defaultAgentSettings ];
-      serviceConfig = {
+      after = [
+        "network-online.target"
+        "nixpi-pi-core-setup.service"
+      ];
+      wants = [
+        "network-online.target"
+        "nixpi-pi-core-setup.service"
+      ];
+      restartTriggers = [
+        coreConfig
+        defaultPiSettings
+        defaultAgentSettings
+      ];
+      serviceConfig = serviceHardening.nonRoot {
         Type = "simple";
         User = cfg.user;
         Group = cfg.group;
         WorkingDirectory = cfg.agentDir;
-        ExecStart = lib.escapeShellArgs [ "${corePackage}/bin/nixpi-pi-core" coreConfig ];
+        ExecStart = lib.escapeShellArgs [
+          "${corePackage}/bin/nixpi-pi-core"
+          coreConfig
+        ];
+        ProtectHome = false;
+        ProtectSystem = "strict";
+        ReadWritePaths = readWritePaths;
+        RestrictAddressFamilies = [
+          "AF_UNIX"
+          "AF_INET"
+          "AF_INET6"
+        ];
         Restart = "on-failure";
         RestartSec = 3;
         UMask = "0007";

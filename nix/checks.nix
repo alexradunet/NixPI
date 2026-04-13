@@ -1,24 +1,29 @@
 # nix/checks.nix — NixPI check sets: smoke, full, destructive, and topology guards
-{ self, pkgs, pkgsUnfree, lib, system }:
+{
+  self,
+  pkgs,
+  pkgsUnfree,
+  lib,
+  system,
+}:
 let
   nixosTests = import ../tests/nixos {
     pkgs = pkgsUnfree;
     inherit lib self;
   };
   nixpiBootstrapDefaultInput =
-    if self ? rev then
-      "github:alexradunet/nixpi/${self.rev}"
-    else
-      "github:alexradunet/nixpi";
-  bootstrapHostWrapperDefaultInputCheck = pkgs.runCommandLocal "bootstrap-host-wrapper-default-input-check" { } ''
-    wrapper="${self.packages.${system}.nixpi-bootstrap-host}/bin/nixpi-bootstrap-host"
-    test -f "$wrapper"
-    grep -F 'NIXPI_DEFAULT_INPUT' "$wrapper" >/dev/null
-    grep -F '${nixpiBootstrapDefaultInput}' "$wrapper" >/dev/null
-    ! grep -F -- '-dirty' "$wrapper" >/dev/null
-    ! grep -F 'path:/nix/store/' "$wrapper" >/dev/null
-    touch "$out"
-  '';
+    if self ? rev then "github:alexradunet/nixpi/${self.rev}" else "github:alexradunet/nixpi";
+  bootstrapHostWrapperDefaultInputCheck =
+    pkgs.runCommandLocal "bootstrap-host-wrapper-default-input-check" { }
+      ''
+        wrapper="${self.packages.${system}.nixpi-bootstrap-host}/bin/nixpi-bootstrap-host"
+        test -f "$wrapper"
+        grep -F 'NIXPI_DEFAULT_INPUT' "$wrapper" >/dev/null
+        grep -F '${nixpiBootstrapDefaultInput}' "$wrapper" >/dev/null
+        ! grep -F -- '-dirty' "$wrapper" >/dev/null
+        ! grep -F 'path:/nix/store/' "$wrapper" >/dev/null
+        touch "$out"
+      '';
   nixpiBootstrapHostCheck = pkgs.linkFarm "nixpi-bootstrap-host-check" [
     {
       name = "wrapper-default-input";
@@ -78,7 +83,8 @@ in
 {
   exported-topology =
     assert builtins.hasAttr "aarch64-linux" self.packages;
-    assert builtins.hasAttr "nixpi-app-setup" self.nixosConfigurations.installed-test.config.systemd.services;
+    assert builtins.hasAttr "nixpi-app-setup"
+      self.nixosConfigurations.installed-test.config.systemd.services;
     pkgs.runCommandLocal "exported-topology-check" { } ''
       touch "$out"
     '';
@@ -202,6 +208,10 @@ in
     {
       name = "nixpi-options-validation";
       path = nixosTests.nixpi-options-validation;
+    }
+    {
+      name = "nixpi-service-hardening";
+      path = nixosTests.nixpi-service-hardening;
     }
   ];
 

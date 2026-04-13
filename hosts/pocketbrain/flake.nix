@@ -5,7 +5,7 @@
 
   outputs = { nixpkgs, nixpi, ... }: {
     nixosConfigurations.nixos = nixpkgs.lib.nixosSystem {
-      system = builtins.currentSystem;
+      system = "x86_64-linux";
       specialArgs = { inherit nixpi; };
       modules = [
         ./configuration.nix

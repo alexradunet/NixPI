@@ -40,6 +40,7 @@ let
     nixpi-broker = runTest ./nixpi-broker.nix;
     nixpi-update = runTest ./nixpi-update.nix;
     nixpi-options-validation = runTest ./nixpi-options-validation.nix;
+    nixpi-service-hardening = runTest ./nixpi-service-hardening.nix;
   };
 
   smokeAliases = {
