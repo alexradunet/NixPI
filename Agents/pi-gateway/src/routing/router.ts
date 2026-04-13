@@ -1,6 +1,6 @@
 import type { InboundMessage } from "../models.js";
 import { Store } from "../store.js";
-import { PiAgentService } from "../pi/agent.js";
+import { PiCoreClient } from "../pi/client.js";
 import { Policy } from "./policy.js";
 import { chunkText, normalizeReply } from "./formatter.js";
 import { KeyedSerialQueue } from "./keyed-serial-queue.js";
@@ -10,7 +10,7 @@ export class Router {
 
   constructor(
     private readonly store: Store,
-    private readonly pi: PiAgentService,
+    private readonly pi: PiCoreClient,
     private readonly policy: Policy,
     private readonly maxReplyChars: number,
     private readonly maxReplyChunks: number,

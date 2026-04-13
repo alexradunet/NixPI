@@ -1,0 +1,19 @@
+{
+  "name": "nixpi-pi-core",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx src/main.ts ./pi-core.json",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/main.js ./pi-core.json"
+  },
+  "dependencies": {
+    "@mariozechner/pi-coding-agent": "*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.8.3"
+  }
+}

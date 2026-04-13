@@ -57,6 +57,7 @@
               ./core/os/modules/network.nix
               ./core/os/modules/update.nix
               ./core/os/modules/app.nix
+              ./core/os/modules/pi-core.nix
               ./core/os/modules/broker.nix
               ./core/os/modules/tooling.nix
               ./core/os/modules/gateway.nix

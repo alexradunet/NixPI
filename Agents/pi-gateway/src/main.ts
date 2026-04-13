@@ -1,5 +1,5 @@
 import { loadConfig } from "./config.js";
-import { PiAgentService } from "./pi/agent.js";
+import { PiCoreClient } from "./pi/client.js";
 import { Router } from "./routing/router.js";
 import { Policy } from "./routing/policy.js";
 import { SignalModule } from "./modules/signal/module.js";
@@ -20,7 +20,7 @@ async function main(): Promise<void> {
   }
 
   const store = new Store(config.gateway.dbPath);
-  const pi = new PiAgentService(config.pi.cwd, config.gateway.piSessionDir);
+  const pi = new PiCoreClient(config.piCore.url);
   const policy = new Policy();
   const router = new Router(
     store,
@@ -29,6 +29,9 @@ async function main(): Promise<void> {
     config.gateway.maxReplyChars,
     config.gateway.maxReplyChunks,
   );
+
+  await pi.healthCheck();
+  console.log("pi-core health check OK");
 
   for (const module of modules) {
     await module.healthCheck();

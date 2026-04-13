@@ -47,11 +47,15 @@
   networking.firewall.allowedUDPPorts = [ 51820 ];
   networking.firewall.interfaces.wg0.allowedTCPPorts = [ 22 ];
 
-  nixpi.gateway = {
+  nixpi.piCore = {
     enable = true;
     piCwd = "/home/alex";
     defaultProvider = "cortecs";
     defaultModel = "minimax-m2.5";
+  };
+
+  nixpi.gateway = {
+    enable = true;
     modules.signal = {
       enable = true;
       account = "+40749599297";

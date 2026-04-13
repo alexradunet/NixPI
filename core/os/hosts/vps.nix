@@ -7,6 +7,7 @@
     ../modules/network.nix
     ../modules/update.nix
     ../modules/app.nix
+    ../modules/pi-core.nix
     ../modules/broker.nix
     ../modules/tooling.nix
     ../modules/gateway.nix

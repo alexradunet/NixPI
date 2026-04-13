@@ -1,11 +1,10 @@
 gateway:
   dbPath: "/ABSOLUTE/PATH/TO/.local/state/nixpi-gateway/gateway.db"
-  piSessionDir: "/ABSOLUTE/PATH/TO/.local/state/nixpi-gateway/pi-sessions"
   maxReplyChars: 1400
   maxReplyChunks: 4
 
-pi:
-  cwd: "/ABSOLUTE/PATH/TO/WORKSPACE"
+piCore:
+  url: "http://127.0.0.1:4510"
 
 modules:
   signal:

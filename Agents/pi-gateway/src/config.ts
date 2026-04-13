@@ -13,12 +13,11 @@ export type SignalModuleConfig = {
 export type AppConfig = {
   gateway: {
     dbPath: string;
-    piSessionDir: string;
     maxReplyChars: number;
     maxReplyChunks: number;
   };
-  pi: {
-    cwd: string;
+  piCore: {
+    url: string;
   };
   modules: {
     signal?: SignalModuleConfig;

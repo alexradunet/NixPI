@@ -1,14 +1,14 @@
 # NixPI Pi Gateway
 
-A small TypeScript gateway framework that connects transport modules to Pi using the Pi SDK.
+A small TypeScript gateway framework that connects transport modules to Pi through the local `pi-core` service.
 
 Today the first module is Signal. Tomorrow it can be something less obsessed with QR codes.
 
 ## Architecture
 
+- `pi-core` is the always-on local Pi service boundary
 - `pi-gateway` is the generic channel ingress/egress layer
 - transport modules normalize inbound messages and deliver replies
-- Pi SDK provides persistent session handling per chat
 - `signal-cli` remains the native Signal transport daemon used by the Signal module
 
 ## Current module set
@@ -20,12 +20,11 @@ Today the first module is Signal. Tomorrow it can be something less obsessed wit
 ```yaml
 gateway:
   dbPath: /absolute/path/to/gateway.db
-  piSessionDir: /absolute/path/to/pi-sessions
   maxReplyChars: 1400
   maxReplyChunks: 4
 
-pi:
-  cwd: /absolute/path/to/workspace
+piCore:
+  url: http://127.0.0.1:4510
 
 modules:
   signal:
@@ -39,23 +38,8 @@ modules:
     directMessagesOnly: true
 ```
 
-## Development
-
-```bash
-cd /var/lib/nixpi/pi-nixpi/Agents/pi-gateway
-npm install
-npm run build
-npm run dev -- ./pi-gateway.example.yml
-```
-
 ## Runtime split
 
+- `nixpi-pi-core.service` owns Pi SDK prompting and sessions
 - `nixpi-gateway.service` runs the generic gateway core
 - `nixpi-signal-daemon.service` runs native `signal-cli` for the Signal module
-
-## Built-in chat commands
-
-- `help`
-- `reset`
-
-Everything else is forwarded to Pi.
