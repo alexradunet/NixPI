@@ -79,6 +79,19 @@ async function runScript(harness: ReturnType<typeof createHarness>, uid: number,
 }
 
 describe("nixpi-apply-local-repo.sh", () => {
+	it("prints usage for --help", async () => {
+		const harness = createHarness();
+		const result = await runScript(harness, 0, ["--help"]);
+
+		try {
+			expect(result.exitCode).toBe(0);
+			expect(result.stderr).toContain("usage: nixpi-apply-local-repo [repo-dir]");
+			expect(result.stderr).toContain("installed /etc/nixos host flake");
+		} finally {
+			harness.cleanup();
+		}
+	});
+
 	it("rebuilds the installed host flake with a local nixpi override when already root", async () => {
 		const harness = createHarness();
 		const result = await runScript(harness, 0);

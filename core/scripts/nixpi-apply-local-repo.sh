@@ -2,6 +2,7 @@
 set -euo pipefail
 
 script_name="$(basename "$0")"
+script_name="${script_name%.sh}"
 current_uid="${NIXPI_UID_OVERRIDE:-$(id -u)}"
 repo_dir="${1:-${NIXPI_LOCAL_REPO_DIR:-/var/lib/nixpi/pi-nixpi}}"
 system_flake_dir="${NIXPI_SYSTEM_FLAKE_DIR:-/etc/nixos}"
@@ -9,8 +10,18 @@ sudo_bin="${NIXPI_SUDO_BIN:-/run/wrappers/bin/sudo}"
 rebuild_bin="${NIXPI_REBUILD_BIN:-$(command -v nixpi-rebuild || true)}"
 
 usage() {
-	echo "usage: ${script_name} [repo-dir]" >&2
+	cat >&2 <<EOF
+usage: ${script_name} [repo-dir]
+
+Apply local NixPI repo state through the installed /etc/nixos host flake by overriding the nixpi input.
+Default repo-dir: /var/lib/nixpi/pi-nixpi
+EOF
 }
+
+if [[ $# -eq 1 && ( "$1" == "-h" || "$1" == "--help" ) ]]; then
+	usage
+	exit 0
+fi
 
 if [[ $# -gt 1 ]]; then
 	usage
