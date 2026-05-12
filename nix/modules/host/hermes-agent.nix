@@ -19,9 +19,10 @@ in
     settings = {
       model = {
         provider = "custom";
-        default = "hf:MiniMaxAI/MiniMax-M2.5";
+        default = "hf:zai-org/GLM-5.1";
         base_url = "https://api.synthetic.new/openai/v1";
         api_key = "\${SYNTHETIC_API_KEY}";
+        context_length = 196608;
       };
       toolsets = [ "all" ];
       terminal = {
