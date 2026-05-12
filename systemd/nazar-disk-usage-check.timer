@@ -1,0 +1,10 @@
+[Unit]
+Description=Run Nazar disk usage alert check hourly
+
+[Timer]
+OnCalendar=hourly
+Persistent=true
+RandomizedDelaySec=10m
+
+[Install]
+WantedBy=timers.target

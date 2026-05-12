@@ -1,0 +1,4 @@
+# SOPS configuration placeholder.
+# Add real age recipients before creating encrypted secrets under nix/sops/.
+# Do not commit plaintext secrets.
+creation_rules: []

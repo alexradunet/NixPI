@@ -1,0 +1,28 @@
+# Runtime/cache/editor state
+.pi/*
+!.pi/skills/
+!.pi/skills/**
+node_modules/
+.DS_Store
+*.swp
+*.tmp
+pi-session-*.html
+/context.md
+/research.md
+/progress.md
+/result
+/result-*
+/reference/ownloom-upstream/
+/raw/
+/audit/
+
+# Secrets/private material
+*.key
+*.pem.key
+id_rsa
+id_ed25519
+*_token*
+*token*
+*secret*
+*.env
+.env
