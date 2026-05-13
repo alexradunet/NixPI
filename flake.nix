@@ -166,7 +166,10 @@
       minecraftStandaloneModule =
         { ... }:
         {
-          imports = [ minecraftServiceModule ];
+          imports = [
+            ./nix/modules/services/minecraft-identity.nix
+            minecraftServiceModule
+          ];
 
           # Keep the standalone VM profile service-only: no Minecraft webapp.
           boot.loader.grub = {
@@ -203,7 +206,10 @@
       minecraftImageModule =
         { vm, ... }:
         {
-          imports = [ minecraftServiceModule ];
+          imports = [
+            ./nix/modules/services/minecraft-identity.nix
+            minecraftServiceModule
+          ];
 
           image = {
             baseName = "nixos-${vm.hostname}";
@@ -425,6 +431,7 @@
             ./nix/modules/common/nixpi.nix
             ./nix/modules/common/pi-agent.nix
             ./nix/modules/host/microvm-guest.nix
+            ./nix/modules/services/minecraft-identity.nix
             minecraftServiceModule
           ];
         };

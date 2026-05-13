@@ -1,6 +1,8 @@
 { pkgs, ... }:
 let
-  adminKeys = import ../../users/admin-keys.nix;
+  humanAdminKeys = import ../../users/admin-keys.nix;
+  nazarMicrovmAdminKeys = import ../../users/nazar-microvm-admin-keys.nix;
+  adminKeys = humanAdminKeys ++ nazarMicrovmAdminKeys;
   rootBreakGlassHashFile = "/var/lib/nazar/secrets/root-password-hash";
 in
 {
@@ -28,8 +30,19 @@ in
   security.sudo.wheelNeedsPassword = false;
 
   systemd.tmpfiles.rules = [
+    # Keep the VM admin home owned by alex even when child virtiofs mounts
+    # are created early. OpenSSH StrictModes checks the home directory before
+    # accepting declarative /etc/ssh/authorized_keys.d keys.
+    "d /home/alex 0750 alex users - -"
     "d /var/lib/nazar 0750 root root -"
     "d /var/lib/nazar/secrets 0700 root root -"
+  ];
+
+  assertions = [
+    {
+      assertion = nazarMicrovmAdminKeys != [ ];
+      message = "MicroVMs must trust at least one Nazar-host-only SSH key for one-way host -> VM administration.";
+    }
   ];
 
   # Optional console break-glass password. SSH password auth remains

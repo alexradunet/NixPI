@@ -22,6 +22,14 @@ let
       linkConfig.RequiredForOnline = "no";
     };
   };
+
+  vmHostEntry = _name: vm: {
+    name = vm.ip;
+    value = [
+      vm.hostname
+      "${vm.hostname}.${fleet.defaults.domain}"
+    ];
+  };
 in
 {
   networking = {
@@ -33,6 +41,9 @@ in
       "1.1.1.1"
       "9.9.9.9"
     ];
+
+    # Make host -> MicroVM SSH/deploy use the private routed VM addresses.
+    hosts = lib.mapAttrs' vmHostEntry fleet.vms;
   };
 
   systemd.network = {

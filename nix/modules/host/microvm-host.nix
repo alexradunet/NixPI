@@ -28,7 +28,10 @@ let
       ../services/forgejo.nix
       ../services/forgejo-bootstrap.nix
     ];
-    minecraft = [ inputs.minecraft.nixosModules.minecraft-service ];
+    minecraft = [
+      ../services/minecraft-identity.nix
+      inputs.minecraft.nixosModules.minecraft-service
+    ];
     ownloom = [ ../services/ownloom.nix ];
     dav-server = [ ../services/dav-server.nix ];
   };
@@ -48,13 +51,15 @@ let
     };
   };
 
-  guestShareTmpfiles = lib.concatMap (
-    vm:
-    map (
-      share:
-      "d ${share.source} ${share.mode or "0755"} ${share.owner or "root"} ${share.group or "root"} - -"
-    ) (vm.microvm.shares or [ ])
-  ) (lib.attrValues fleet.vms);
+  tmpfileForShare =
+    share:
+    "d ${share.source} ${share.mode or "0755"} ${share.owner or "root"} ${share.group or "root"} - -";
+  guestShareTmpfiles = lib.concatMap (vm: map tmpfileForShare (vm.microvm.shares or [ ])) (
+    lib.attrValues fleet.vms
+  );
+  sshHostKeyShareTmpfiles = map (vm: "d /persist/microvms/${vm.hostname}/ssh 0700 root root - -") (
+    lib.attrValues fleet.vms
+  );
 in
 {
   imports = [ inputs.microvm.nixosModules.host ];
@@ -76,7 +81,8 @@ in
     "d /persist/microvms 0755 root root - -"
     "d /persist/microvms-runtime 0775 microvm kvm - -"
   ]
-  ++ guestShareTmpfiles;
+  ++ guestShareTmpfiles
+  ++ sshHostKeyShareTmpfiles;
 
   environment.systemPackages = [
     pkgs.qemu_kvm

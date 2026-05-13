@@ -7,7 +7,9 @@
     # an alex-only, key-only break-glass path using the deliberately small
     # personal-device key set in nix/users/alex-public-ssh-keys.nix.
     # Root SSH is disabled; Hetzner Rescue is the final root/break-glass path.
-    openFirewall = true;
+    # Firewall opening is interface-scoped below so MicroVM tap links never get
+    # host SSH access.
+    openFirewall = false;
     settings = {
       PasswordAuthentication = false;
       KbdInteractiveAuthentication = false;
@@ -17,5 +19,8 @@
     };
   };
 
-  networking.firewall.allowedTCPPorts = [ 22 ];
+  networking.firewall.interfaces = {
+    enp0s31f6.allowedTCPPorts = [ 22 ];
+    wg0.allowedTCPPorts = [ 22 ];
+  };
 }

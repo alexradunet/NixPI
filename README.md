@@ -122,5 +122,6 @@ git ls-remote ssh://git@git.nazar.studio:10022/nazar/nazar.git
 - Add only client public keys and assigned `/32` WireGuard addresses to Nix.
 - Do not expose private services, including NixPi, publicly without an explicit hardening decision.
 - Treat WireGuard as the canonical daily access path.
+- Enforce one-way host management: `nazar` must be able to SSH to every MicroVM over its private VM hostname/IP, and MicroVMs must not be able to open new connections back to `nazar`.
 - Keep public SSH key-only and alex-only as break-glass until a separate migration decision and rescue drill.
 - Do not enable root SSH.

@@ -91,6 +91,11 @@
             source = "/persist/microvms/minecraft/state";
             mountPoint = "/var/lib/minecraft";
             proto = "virtiofs";
+            # Guest minecraft:minecraft is uid/gid 999. The VM-owned state root
+            # must be writable by the guest service, not root-owned on Nazar.
+            owner = "999";
+            group = "999";
+            mode = "0700";
           }
           {
             tag = "minecraft-repo";

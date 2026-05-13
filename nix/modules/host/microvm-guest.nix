@@ -17,6 +17,12 @@ let
       "group"
       "mode"
     ];
+  sshHostKeyShare = {
+    tag = "${vm.hostname}-ssh-host-keys";
+    source = "/persist/microvms/${vm.hostname}/ssh";
+    mountPoint = "/var/lib/nazar/ssh";
+    proto = "virtiofs";
+  };
 in
 {
   networking = {
@@ -78,6 +84,7 @@ in
         readOnly = true;
       }
     ]
+    ++ [ sshHostKeyShare ]
     ++ map guestShare (vm.microvm.shares or [ ]);
   };
 

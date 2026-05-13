@@ -1,11 +1,30 @@
-{ fleet, ... }:
+{ fleet, lib, ... }:
 let
   minecraft = fleet.vms.minecraft;
   mcPort = minecraft.minecraft.port or 25565;
   mcVoicePort = minecraft.minecraft.voiceChatPort or 24454;
+  microvmTapNames = map (vm: vm.microvm.tap) (lib.attrValues fleet.vms);
+  microvmTapSet = "{ ${lib.concatStringsSep ", " (map (tap: "\"${tap}\"") microvmTapNames)} }";
 in
 {
-  networking.nftables.enable = true;
+  networking.nftables = {
+    enable = true;
+    tables.nazar-microvm-host-guard = {
+      family = "inet";
+      content = ''
+        chain input {
+          type filter hook input priority -10; policy accept;
+
+          # Enforce one-way host management: Nazar may open connections to
+          # MicroVMs, but MicroVMs may not open new connections to Nazar.
+          # Replies to host-initiated SSH/deploy sessions remain allowed.
+          ct state established,related accept
+          iifname ${microvmTapSet} ip saddr 10.10.10.0/24 reject with icmp type admin-prohibited
+          iifname ${microvmTapSet} meta nfproto ipv6 reject with icmpv6 type admin-prohibited
+        }
+      '';
+    };
+  };
 
   networking.firewall = {
     enable = true;

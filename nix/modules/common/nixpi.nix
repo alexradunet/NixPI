@@ -33,4 +33,8 @@ in
     openFirewall = true;
     firewallAllowedSources = [ gateway ];
   };
+
+  # NixPi spawns `node` for its RPC/web worker path; keep that executable in
+  # the unit PATH in addition to the wrapped entrypoint's absolute Node path.
+  systemd.services.nixpi.path = [ pkgs.nodejs_22 ];
 }
