@@ -10,7 +10,8 @@ NixPi is the base web surface around Pi for Nazar and OwnLoom. It is intended to
 
 - on the `nazar` host for host-side development/operator work;
 - inside each Nazar MicroVM for VM-local Pi sessions;
-- behind WireGuard/private DNS only when deployed as infrastructure.
+- behind WireGuard/private DNS only when deployed as infrastructure;
+- behind a reverse-proxy subpath such as `/nixpi/` on an existing private service domain.
 
 It deliberately reuses Pi RPC instead of replacing Pi internals.
 
@@ -73,6 +74,10 @@ Browser ←→ WebSocket ←→ nixpi (Express) ←→ Pi (`pi --mode rpc`)
 ```
 
 NixPi keeps state in the normal Pi session directory for the configured `HOME` and `NIXPI_CWD`. It does not require browser-held provider secrets; Pi uses its local configuration.
+
+## Reverse proxy paths
+
+NixPi supports being served at the root of a private name, for example `http://nixpi.nazar.studio/`, or under `/nixpi/` on an existing private service domain, for example `http://git.nazar.studio/nixpi/`. When served under `/nixpi/`, configure the proxy to strip the prefix before forwarding to the NixPi service and preserve WebSocket upgrades.
 
 ## Development checks
 

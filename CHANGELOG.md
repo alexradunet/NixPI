@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented here.
 
+## [1.6.3] - 2026-05-13
+
+### Added
+- Support serving NixPi behind a `/nixpi/` reverse-proxy path, including relative bundled JS paths, WebSocket URL selection, and API requests.
+- Document the preferred Nazar routing model: `/nixpi/` on existing private service domains, with dedicated `nixpi*.nazar.studio` names as optional direct routes.
+
 ## [1.6.2] - 2026-05-13
 
 ### Changed

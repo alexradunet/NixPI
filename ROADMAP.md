@@ -4,14 +4,15 @@
 
 - [x] Rename package, CLI, docs, UI, and environment variables to `nixpi` / `NIXPI_*`.
 - [x] Add a Nix flake package and reusable NixOS service module.
-- [ ] Publish the rebranded repo to Forgejo as `nazar/nixpi`.
+- [x] Publish the rebranded repo to Forgejo as `nazar/nixpi`.
 
 ## v2 — Nazar fleet integration
 
-- [ ] Install and run NixPi on the `nazar` host.
-- [ ] Install and run NixPi in each MicroVM as the VM-local Pi web interface.
-- [ ] Expose all NixPi endpoints only over WireGuard/private DNS through host nginx.
-- [ ] Document validation, rollback, and authority boundaries in Nazar runbooks.
+- [x] Install and run NixPi on the `nazar` host.
+- [x] Install and run NixPi in each MicroVM as the VM-local Pi web interface.
+- [x] Expose NixPi through `/nixpi/` on existing WireGuard-private service domains.
+- [x] Keep dedicated `nixpi*.nazar.studio` private DNS routes for direct access.
+- [x] Document validation, rollback, and authority boundaries in Nazar runbooks.
 
 ## v3 — OwnLoom/base-agent integration
 
