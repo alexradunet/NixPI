@@ -1,6 +1,6 @@
 # DAV Server Proxmox VM
 
-Declarative NixOS VM profile for the private personal/user-data DAV tier.
+Declarative NixOS VM profile for the private personal info and data service.
 
 ```text
 Hostname: dav-server
@@ -29,7 +29,7 @@ State paths:
 ```
 
 Auth note: no plaintext credentials or password hashes are committed.
-nginx enforces Basic Auth for both `/files/` and `/radicale/` using `/var/lib/dav-server/secrets/dav-server-htpasswd` (provisioned outside git, `root:nginx`, `0640`). Radicale is bound to loopback and uses `http_x_remote_user` from nginx, with `owner_only` rights. For the ultra-simple initial setup, both human and VM 120 wiki-backend access use the `alex` WebDAV user; VM 120 reads its password from `/var/lib/ownloom/secrets/alex-webdav-password` (provisioned outside git). Current NetBird policy allows TCP/80 only from admin peers and from VM 120 (`ownloom`) to this VM; VM SSH remains through `nazar` and the NAT alias. Move these runtime secrets to encrypted sops-managed material and test restore/backups before migrating real personal data.
+nginx enforces Basic Auth for both `/files/` and `/radicale/` using `/var/lib/dav-server/secrets/dav-server-htpasswd` (provisioned outside git, `root:nginx`, `0640`). Radicale is bound to loopback and uses `http_x_remote_user` from nginx, with `owner_only` rights. Use the `alex` WebDAV user from trusted admin clients only, store the password in the password manager, and do not place DAV client passwords in unrelated VM state. Current private-network policy should allow TCP/80 only from trusted admin peers; VM SSH remains through `nazar` and the NAT alias. Move these runtime secrets to encrypted sops-managed material and test restore/backups before migrating real personal data.
 
 Personal wiki git backup:
 

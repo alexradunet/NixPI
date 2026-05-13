@@ -1,8 +1,8 @@
 # dav-server
 
-DAV Server VM code/config repository for Nazar.
+DAV Server VM code/config repository for Nazar's private personal info and data service.
 
-This repository owns VM 121's NixOS host/image modules, Radicale/WebDAV/git-snapshot service module, and canonical DAV Server runbook. The `/root/nazar` repository remains the fleet orchestrator and still owns VMID/IP/MAC/DNS/resources, NetBird/private DNS policy, deploy-rs apps, Forgejo infrastructure, and secrets policy.
+This repository owns VM 121's NixOS host/image modules, Radicale/WebDAV/git-snapshot service module, and canonical DAV Server runbook. The `/root/nazar` repository remains the fleet orchestrator and still owns VMID/IP/MAC/DNS/resources, private DNS policy, deploy-rs apps, Forgejo infrastructure, and secrets policy.
 
 ## Exports
 

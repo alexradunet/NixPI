@@ -1,6 +1,6 @@
 # DAV Server VM Runbook
 
-VM 121 (`dav-server`) is the approved private personal/user-data DAV VM.
+VM 121 (`dav-server`) is the private personal info and data service VM.
 
 ## Target
 
@@ -26,12 +26,7 @@ NetBird/private access is canonical. Do not add public DNS routes, public port
 forwards, or Proxmox host forwarding for this VM without a new explicit decision.
 Minecraft remains the only documented opt-in public-service exception.
 
-Direct DAV service access is allowed only by NetBird policy:
-
-```text
-admins-to-dav-server-dav: admins -> dav-server TCP/80
-ownloom-to-dav-server-dav: ownloom -> dav-server TCP/80
-```
+Direct DAV service access should be limited to trusted private-network admin peers. No application VM is currently granted direct DAV HTTP access.
 
 VM SSH administration remains through `netbird ssh root@nazar`, then `ssh alex@dav-server` over the private NAT bridge alias. Root VM SSH remains key-only for break-glass and current compatibility.
 
@@ -50,12 +45,9 @@ nginx protects both `/files/` and `/radicale/` with Basic Auth from:
 
 The file is provisioned outside git and should be `root:nginx` / `0640`.
 Radicale is bound to loopback and trusts nginx's `X-Remote-User` header via
-`auth.type = http_x_remote_user`, with `owner_only` rights. VM 120 uses the
-same `alex` WebDAV user for the ultra-simple initial setup and reads its password from:
-
-```text
-/var/lib/ownloom/secrets/alex-webdav-password
-```
+`auth.type = http_x_remote_user`, with `owner_only` rights. Use the `alex`
+WebDAV user from trusted admin clients only, store the password in the password
+manager, and do not place DAV client passwords in unrelated VM state.
 
 Current plaintext recovery copy on `nazar`, if still present after provisioning:
 
@@ -176,21 +168,21 @@ ssh alex@dav-server 'systemctl status dav-server-wiki-git-backup.timer --no-page
 ssh alex@dav-server 'sudo systemctl start dav-server-wiki-git-backup.service'
 ssh alex@dav-server 'sudo env GIT_SSH_COMMAND="ssh -i /var/lib/dav-server/secrets/dav-server-wiki-backup-ed25519 -o IdentitiesOnly=yes -o UserKnownHostsFile=/var/lib/dav-server/secrets/dav-server-wiki-backup-known_hosts" git ls-remote ssh://git@10.10.10.21:10022/nazar/personal-wiki-backup.git refs/heads/main'
 
-# From VM 120 (`ownloom`) or an admin peer in the NetBird admins group:
+# From a trusted private-network admin peer:
 getent hosts dav.nazar.studio
 curl -fsS http://dav.nazar.studio/ | head
 curl -sS -o /dev/null -w '%{http_code}\n' http://dav.nazar.studio/files/  # expected: 401 without credentials
 # Avoid echoing the password or putting it in process arguments.
+read -rsp 'DAV password: ' DAV_PASSWORD
+printf '\n'
 NETRC=$(mktemp)
-trap 'rm -f "$NETRC"' EXIT
+trap 'rm -f "$NETRC"; unset DAV_PASSWORD' EXIT
 chmod 600 "$NETRC"
-{
-  printf 'machine dav.nazar.studio login alex password '
-  sed -n '1p' /var/lib/ownloom/secrets/alex-webdav-password
-} > "$NETRC"
+printf 'machine dav.nazar.studio login alex password %s\n' "$DAV_PASSWORD" > "$NETRC"
 curl --netrc-file "$NETRC" \
   -fsS -X OPTIONS -i http://dav.nazar.studio/files/ | head
 rm -f "$NETRC"
+unset DAV_PASSWORD
 trap - EXIT
 
 # NAT fallback from Proxmox/private side using key-only root break-glass:
