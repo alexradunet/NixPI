@@ -47,6 +47,8 @@ let
   '';
 in
 {
+  imports = [ ./pi-default-packages.nix ];
+
   environment.systemPackages = [
     pi
     pkgs.nodejs

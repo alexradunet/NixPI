@@ -3,7 +3,12 @@ let
   pi = pkgs.callPackage ../../packages/pi { };
 in
 {
-  environment.systemPackages = [ pi ];
+  imports = [ ../common/pi-default-packages.nix ];
+
+  environment.systemPackages = [
+    pi
+    pkgs.nodejs
+  ];
 
   environment.sessionVariables = {
     PI_TELEMETRY = "0";

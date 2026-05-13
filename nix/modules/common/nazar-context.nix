@@ -405,6 +405,7 @@ let
     cp ${./nazar-context.nix} "$out/nix/modules/common/nazar-context.nix"
     cp ${./nixpi.nix} "$out/nix/modules/common/nixpi.nix"
     cp ${./pi-agent.nix} "$out/nix/modules/common/pi-agent.nix"
+    cp ${./pi-default-packages.nix} "$out/nix/modules/common/pi-default-packages.nix"
     mkdir -p "$out/nixpi-source"
     cp -R ${inputs.nixpi}/. "$out/nixpi-source/"
     chmod -R u+w "$out/nixpi-source"

@@ -22,5 +22,8 @@ in
 
   # NixPi spawns `node` for its RPC/web worker path; keep that executable in
   # the unit PATH in addition to the wrapped entrypoint's absolute Node path.
-  systemd.services.nixpi.path = [ pkgs.nodejs_22 ];
+  systemd.services.nixpi = {
+    path = [ pkgs.nodejs_22 ];
+    environment.NPM_CONFIG_PREFIX = "/home/alex/.pi/npm-global";
+  };
 }
