@@ -2,13 +2,13 @@
 {
   imports = [
     ./hardware-configuration.nix
-    ../../modules/laptop/nazar-socks.nix
+    ../../modules/laptop/nazar-sshuttle.nix
   ];
 
   networking.hostName = "alex-laptop";
   networking.networkmanager.enable = true;
 
-  nazar.access.sshSocks.enable = true;
+  nazar.access.sshuttle.enable = true;
 
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;

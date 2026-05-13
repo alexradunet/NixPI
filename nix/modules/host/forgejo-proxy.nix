@@ -6,17 +6,20 @@
 }:
 let
   exposure = import ../../fleet/exposure.nix;
-  wireguardIp = "10.44.0.1";
+  privateIp = "10.44.0.1";
   publicIp = "167.235.12.22";
   git = fleet.vms.git;
   microvmUnits = map (name: "microvm@${name}.service") (lib.attrNames fleet.vms);
 
-  isPublic = route: (route.access or "wireguard") == "public";
+  isPublic = route: (route.access or "private") == "public";
   isRouted = route: route.enable or false;
-  routeOnWireguard = route: isRouted route && lib.elem (route.access or "wireguard") [
-    "wireguard"
-    "public"
-  ];
+  routeOnPrivateAccess =
+    route:
+    isRouted route
+    && lib.elem (route.access or "private") [
+      "private"
+      "public"
+    ];
 
   proxyBase = {
     proxyWebsockets = true;
@@ -30,14 +33,11 @@ let
   normalizePath = path: if lib.hasSuffix "/" path then path else "${path}/";
   exactPath = path: lib.removeSuffix "/" (normalizePath path);
 
-  mkProxyLocation = route:
+  mkProxyLocation =
+    route:
     proxyBase
     // {
-      proxyPass =
-        if route.stripPrefix or false then
-          "${route.backend}/"
-        else
-          route.backend;
+      proxyPass = if route.stripPrefix or false then "${route.backend}/" else route.backend;
     }
     // lib.optionalAttrs (route.stripPrefix or false) {
       extraConfig = proxyBase.extraConfig + ''
@@ -45,7 +45,8 @@ let
       '';
     };
 
-  mkRouteLocations = route:
+  mkRouteLocations =
+    route:
     if route.path == "/" then
       { "/" = mkProxyLocation route; }
     else
@@ -54,17 +55,21 @@ let
       in
       {
         "= ${exactPath path}".return = "301 ${path}";
-        ${path} = mkProxyLocation (route // {
-          path = path;
-          stripPrefix = true;
-        });
+        ${path} = mkProxyLocation (
+          route
+          // {
+            path = path;
+            stripPrefix = true;
+          }
+        );
       };
 
   mkLocations = routes: lib.foldl' (acc: route: acc // mkRouteLocations route) { } routes;
 
   domainsFor = vm: [ vm.dns ] ++ (vm.aliases or [ ]);
 
-  serviceBackendFor = vm:
+  serviceBackendFor =
+    vm:
     if vm.service == "forgejo" then
       "http://${vm.ip}:${toString vm.webPort}"
     else if vm.service == "dav-server" then
@@ -72,25 +77,24 @@ let
     else
       null;
 
-  routesForVm = name: vm:
+  routesForVm =
+    name: vm:
     let
       vmExposure = exposure.vms.${name} or { };
       serviceBackend = serviceBackendFor vm;
-      serviceRoute = lib.optional (
-        (vmExposure.service.enable or false) && serviceBackend != null
-      ) {
+      serviceRoute = lib.optional ((vmExposure.service.enable or false) && serviceBackend != null) {
         name = "service";
         enable = true;
         path = "/";
         backend = serviceBackend;
-        access = vmExposure.service.access or "wireguard";
+        access = vmExposure.service.access or "private";
       };
       nixpiRoute = lib.optional (vmExposure.nixpi.enable or false) {
         name = "nixpi";
         enable = true;
         path = vmExposure.nixpi.path or "/nixpi/";
         backend = "http://${vm.ip}:${toString (vm.nixpi.port or 4815)}";
-        access = vmExposure.nixpi.access or "wireguard";
+        access = vmExposure.nixpi.access or "private";
         stripPrefix = true;
       };
       subagentRoute = lib.optional (vmExposure.subagent.enable or false) {
@@ -98,38 +102,41 @@ let
         enable = true;
         path = vmExposure.subagent.path or "/subagent/";
         backend = "http://${vm.ip}:${toString vmExposure.subagent.port}";
-        access = vmExposure.subagent.access or "wireguard";
+        access = vmExposure.subagent.access or "private";
         stripPrefix = true;
       };
     in
     serviceRoute ++ nixpiRoute ++ subagentRoute;
 
-  mkVhost = {
-    domain,
-    addr,
-    routes,
-  }: {
-    serverName = domain;
-    listen = [
-      {
-        inherit addr;
-        port = 80;
-      }
-    ];
-    locations = mkLocations routes;
-  };
+  mkVhost =
+    {
+      domain,
+      addr,
+      routes,
+    }:
+    {
+      serverName = domain;
+      listen = [
+        {
+          inherit addr;
+          port = 80;
+        }
+      ];
+      locations = mkLocations routes;
+    };
 
-  mkDomainVhosts = domain: routes:
+  mkDomainVhosts =
+    domain: routes:
     let
-      wireguardRoutes = lib.filter routeOnWireguard routes;
+      privateRoutes = lib.filter routeOnPrivateAccess routes;
       publicRoutes = lib.filter (route: isRouted route && isPublic route) routes;
     in
-    (lib.optional (wireguardRoutes != [ ]) {
-      name = "${domain}-wireguard";
+    (lib.optional (privateRoutes != [ ]) {
+      name = "${domain}-private";
       value = mkVhost {
         inherit domain;
-        addr = wireguardIp;
-        routes = wireguardRoutes;
+        addr = privateIp;
+        routes = privateRoutes;
       };
     })
     ++ (lib.optional (publicRoutes != [ ]) {
@@ -160,7 +167,7 @@ let
         enable = vmExposure.nixpi.enable or false;
         path = "/";
         backend = "http://${vm.ip}:${toString (vm.nixpi.port or 4815)}";
-        access = vmExposure.nixpi.access or "wireguard";
+        access = vmExposure.nixpi.access or "private";
       };
     in
     mkDomainVhosts vm.nixpi.dns [ route ]
@@ -171,13 +178,16 @@ let
     enable = exposure.host.nixpi.enable or false;
     path = "/";
     backend = "http://127.0.0.1:${toString (exposure.host.nixpi.port or 4815)}";
-    access = exposure.host.nixpi.access or "wireguard";
+    access = exposure.host.nixpi.access or "private";
   };
 
-  allRouteLists =
-    [ [ hostNixpiRoute ] ]
-    ++ (map (name: routesForVm name fleet.vms.${name}) (lib.attrNames fleet.vms));
-  publicHttpEnabled = lib.any (routes: lib.any (route: isRouted route && isPublic route) routes) allRouteLists;
+  allRouteLists = [
+    [ hostNixpiRoute ]
+  ]
+  ++ (map (name: routesForVm name fleet.vms.${name}) (lib.attrNames fleet.vms));
+  publicHttpEnabled = lib.any (
+    routes: lib.any (route: isRouted route && isPublic route) routes
+  ) allRouteLists;
 in
 {
   services.nginx = {
@@ -195,36 +205,31 @@ in
 
   systemd.services.nginx = {
     after = [
-      "wireguard-wg0.service"
+      "network-online.target"
       "nixpi.service"
-    ] ++ microvmUnits;
-    wants = [ "wireguard-wg0.service" ];
+    ]
+    ++ microvmUnits;
+    wants = [ "network-online.target" ];
   };
 
   systemd.services.git-ssh-proxy = {
     description = "Private Forgejo Git SSH proxy to the git MicroVM";
     after = [
       "network-online.target"
-      "wireguard-wg0.service"
       "microvm@git.service"
     ];
     wants = [
       "network-online.target"
-      "wireguard-wg0.service"
       "microvm@git.service"
     ];
     wantedBy = [ "multi-user.target" ];
     path = [ pkgs.socat ];
     serviceConfig = {
-      ExecStart = "${pkgs.socat}/bin/socat TCP-LISTEN:${toString git.sshPort},bind=${wireguardIp},reuseaddr,fork TCP:${git.ip}:${toString git.sshPort}";
+      ExecStart = "${pkgs.socat}/bin/socat TCP-LISTEN:${toString git.sshPort},bind=${privateIp},reuseaddr,fork TCP:${git.ip}:${toString git.sshPort}";
       Restart = "always";
       RestartSec = "5s";
     };
   };
 
   networking.firewall.allowedTCPPorts = lib.mkIf publicHttpEnabled [ 80 ];
-  networking.firewall.interfaces.wg0.allowedTCPPorts = [
-    80
-    git.sshPort
-  ];
 }

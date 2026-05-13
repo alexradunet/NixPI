@@ -32,9 +32,9 @@ in
     checkReversePath = "loose";
 
     # Public OpenSSH stays open in nix/modules/host/ssh.nix as a hardened
-    # alex-only, key-only break-glass path. Public WireGuard is opened in
-    # nix/modules/host/wireguard.nix. All application services stay private to
-    # wg0 except the approved Minecraft game/voice DNAT below.
+    # alex-only, key-only sshuttle control endpoint. All application services
+    # stay private on the host-local private address except the approved
+    # Minecraft game/voice DNAT below.
     allowedTCPPorts = [ ];
     allowedUDPPorts = [ ];
 

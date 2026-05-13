@@ -58,14 +58,12 @@
       pkgs = nixpkgs.legacyPackages.${system};
       pi = pkgs.callPackage ./nix/packages/pi { };
       fleet = import ./nix/fleet/vms.nix;
-      devices = import ./nix/fleet/devices.nix;
       mkNixosHost = import ./nix/lib/mk-nixos-host.nix {
         inherit
           inputs
           nixpkgs
           system
           fleet
-          devices
           ;
       };
 
@@ -311,7 +309,7 @@
         nazar = nixpkgs.lib.nixosSystem {
           inherit system;
           specialArgs = {
-            inherit inputs fleet devices;
+            inherit inputs fleet;
           };
           modules = [
             disko.nixosModules.disko
@@ -323,7 +321,7 @@
         alex-laptop = nixpkgs.lib.nixosSystem {
           inherit system;
           specialArgs = {
-            inherit inputs fleet devices;
+            inherit inputs fleet;
           };
           modules = [ ./nix/hosts/alex-laptop ];
         };

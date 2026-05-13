@@ -209,7 +209,7 @@ in
     }
     {
       assertion = httpPort == 80;
-      message = "DAV server currently expects HTTP port 80 behind private WireGuard/Nazar routing.";
+      message = "DAV server currently expects HTTP port 80 behind private Nazar routing.";
     }
   ];
 

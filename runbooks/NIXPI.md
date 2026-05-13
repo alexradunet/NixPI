@@ -4,12 +4,11 @@ NixPi is the private browser interface for Pi Coding Agent in Nazar. It reuses P
 
 ## Exposure model
 
-NixPi is an operator surface: it can drive Pi as `alex` in the configured working directory. Keep it WireGuard-private only.
+NixPi is an operator surface: it can drive Pi as `alex` in the configured working directory. Keep it private behind sshuttle only.
 
 Primary per-service paths:
 
 - Git VM UI: `http://git.nazar.studio/nixpi/` -> `10.10.10.21:4815`
-- Minecraft VM UI: `http://balaur.eu/nixpi/` and `http://balaur.nazar.studio/nixpi/` -> `10.10.10.30:4815` over WireGuard DNS
 - DAV Server VM UI: `http://dav.nazar.studio/nixpi/` -> `10.10.10.41:4815`
 
 Dedicated private names are also available:
@@ -19,7 +18,7 @@ Dedicated private names are also available:
 - Minecraft VM UI: `http://nixpi-minecraft.nazar.studio/` -> `10.10.10.30:4815`
 - DAV Server VM UI: `http://nixpi-dav-server.nazar.studio/` -> `10.10.10.41:4815`
 
-All private service domains and dedicated NixPi names resolve to `10.44.0.1` through WireGuard dnsmasq and are proxied by host nginx. Do not add public DNS for `nixpi*.nazar.studio` names.
+All private service domains and dedicated NixPi names resolve to `10.44.0.1` through declarative laptop `/etc/hosts` entries and are proxied by host nginx. Public Minecraft game names (`balaur.eu`, `balaur.nazar.studio`) deliberately remain public and are not mapped to `10.44.0.1`; use `nixpi-minecraft.nazar.studio` for Minecraft VM operations. Do not add public DNS for `nixpi*.nazar.studio` names.
 
 ## Declarative exposure switch
 
@@ -27,10 +26,10 @@ HTTP route policy lives in `nix/fleet/exposure.nix`.
 
 Each route has an `access` value:
 
-- `"wireguard"` — route is served only on host nginx's WireGuard listener (`10.44.0.1:80`).
+- `"private"` — route is served only on host nginx's sshuttle-routed private listener (`10.44.0.1:80`).
 - `"public"` — route is also served on the host public IPv4 listener and opens public TCP/80.
 
-Current routes are WireGuard-only. To intentionally publish a future route such as `/subagent/`, enable it and set its access explicitly, for example:
+Current routes are private-only. To intentionally publish a future route such as `/subagent/`, enable it and set its access explicitly, for example:
 
 ```nix
 vms.git.subagent = {
@@ -90,16 +89,18 @@ nix run .#deploy-dav-server
 On the host:
 
 ```bash
-systemctl is-active nixpi nginx wireguard-wg0 dnsmasq
+systemctl is-active nixpi nginx git-ssh-proxy
 curl -I http://127.0.0.1:4815/
+curl -I --resolve nixpi.nazar.studio:80:10.44.0.1 http://nixpi.nazar.studio/
 ```
 
-From a WireGuard client:
+From a configured sshuttle laptop:
 
 ```bash
-dig @10.44.0.1 nixpi.nazar.studio +short
+systemctl status nazar-sshuttle
+getent hosts nixpi.nazar.studio
 curl -I http://git.nazar.studio/nixpi/
-curl -I http://balaur.nazar.studio/nixpi/
+curl -I http://nixpi-minecraft.nazar.studio/
 curl -I http://nixpi.nazar.studio/
 ```
 

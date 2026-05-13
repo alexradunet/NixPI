@@ -3,7 +3,6 @@
   nixpkgs,
   system,
   fleet,
-  devices ? { },
 }:
 {
   name,
@@ -17,7 +16,6 @@ nixpkgs.lib.nixosSystem {
     inherit
       inputs
       fleet
-      devices
       vm
       ;
   };

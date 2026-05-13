@@ -11,39 +11,37 @@ Declarative NixOS + MicroVM configuration for the Hetzner host `nazar`.
 | Public IPv6 | `2a01:4f8:262:1b01::2/64` |
 | Main NIC | `enp0s31f6` |
 | MicroVM network | `10.10.10.0/24`, host gateway `10.10.10.1` |
-| WireGuard | `wg0`, `10.44.0.1/24`, UDP `51820` |
+| Private service address | `10.44.0.1/32` on host-local dummy interface `nazar-private` |
 
-Canonical daily administration and private service access is through WireGuard. Public SSH to `alex@167.235.12.22` remains enabled only as a key-only break-glass path. Root SSH is disabled.
+Canonical private administration and private service access is through `sshuttle` over hardened public SSH to `alex@167.235.12.22`. Root SSH is disabled.
 
 ## Canonical access model
 
-Default posture: private by default, WireGuard first.
+Default posture: private by default, sshuttle first.
 
-Canonical paths:
+Canonical paths from a configured laptop:
 
-- Daily host SSH: `ssh alex@10.44.0.1` over WireGuard.
-- Private Git: `git.nazar.studio` over WireGuard DNS.
-- Private DAV Server: `dav.nazar.studio` over WireGuard DNS.
-- Private NixPi Pi web interfaces: `/nixpi/` on private service domains, plus `nixpi.nazar.studio` for the host and `nixpi-*.nazar.studio` direct VM routes over WireGuard DNS.
-- Public SSH: break-glass only, not the normal path.
-- Hetzner Rescue: final recovery path if both WireGuard and public SSH are unusable.
+- Private tunnel: `nazar-sshuttle.service`, using `sshuttle` over `nazar-sshuttle` SSH host alias.
+- Daily host SSH: `ssh alex@10.44.0.1` through sshuttle.
+- Private Git: `git.nazar.studio` through sshuttle and declarative `/etc/hosts` entries.
+- Private DAV Server: `dav.nazar.studio` through sshuttle and declarative `/etc/hosts` entries.
+- Private NixPi web interfaces: `/nixpi/` on private service domains, plus `nixpi.nazar.studio` for the host and `nixpi-*.nazar.studio` direct VM routes. Use `nixpi-minecraft.nazar.studio` for Minecraft VM operations so public game names remain public.
+- Hetzner Rescue: final recovery path if SSH is unusable.
 
 Publicly reachable services are limited to:
 
-- SSH `22/tcp` on `nazar` for break-glass host administration as `alex` only.
-- WireGuard `51820/udp` on `nazar`.
+- SSH `22/tcp` on `nazar` for the sshuttle control connection and key-only host administration as `alex` only.
 - Minecraft game traffic for `balaur.eu` and `balaur.nazar.studio`: `25565/tcp` and Simple Voice Chat `24454/udp` DNAT to the Minecraft MicroVM.
 
-Private WireGuard services:
+Private sshuttle services:
 
 - `git.nazar.studio` -> `10.44.0.1`, HTTP via host nginx to Forgejo and Git SSH via host socat on `10022/tcp`.
 - `dav.nazar.studio` -> `10.44.0.1`, HTTP via host nginx to the DAV Server MicroVM when it is running.
-- `/nixpi/` on each VM service domain/alias (`git.nazar.studio`, `balaur.eu`, `balaur.nazar.studio`, `dav.nazar.studio`), HTTP via host nginx to the matching VM-local NixPi service.
+- `/nixpi/` on private service domains (`git.nazar.studio`, `dav.nazar.studio`), HTTP via host nginx to the matching VM-local NixPi service.
 - `nixpi.nazar.studio` -> `10.44.0.1`, HTTP via host nginx to the host-local NixPi service.
 - `nixpi-git.nazar.studio`, `nixpi-minecraft.nazar.studio`, `nixpi-dav-server.nazar.studio` -> `10.44.0.1`, HTTP via host nginx to each VM-local NixPi service.
-- DNS for WireGuard clients is dnsmasq on `10.44.0.1`, bound to `wg0` only, forwarding other queries upstream.
 
-There is intentionally no public HTTP/TCP/80 DNAT to Minecraft and no public Forgejo or DAV exposure. WireGuard peers are network-trusted; sensitive services such as DAV still need service-level auth before broad client onboarding.
+There is intentionally no public HTTP/TCP/80 DNAT to Minecraft and no public Forgejo, DAV, or NixPi exposure.
 
 ## Repository layout
 
@@ -51,7 +49,8 @@ There is intentionally no public HTTP/TCP/80 DNAT to Minecraft and no public For
 flake.nix                 # fleet orchestrator, deploy-rs apps, VM image composition
 flake.lock                # pinned inputs
 nix/fleet/vms.nix         # VM inventory: IDs, IPs, DNS, sizing, service contracts
-nix/modules/host/         # host NixOS modules, including WireGuard/firewall/proxies
+nix/fleet/exposure.nix    # private/public HTTP exposure policy
+nix/modules/host/         # host NixOS modules, including private access/firewall/proxies
 nix/modules/common/       # reusable MicroVM guest baseline
 nix/modules/services/     # thin integration wrappers for external VM services
 runbooks/                 # operational runbooks
@@ -61,22 +60,22 @@ runbooks/                 # operational runbooks
 
 | Service | VM | Private/Public endpoint | Notes |
 |---|---|---|---|
-| Forgejo | `git` / `10.10.10.21` | `git.nazar.studio` on WireGuard (`10.44.0.1`) | HTTP `80`, Git SSH `10022` via host proxy; autostarted |
+| Forgejo | `git` / `10.10.10.21` | `git.nazar.studio` on sshuttle-routed `10.44.0.1` | HTTP `80`, Git SSH `10022` via host proxy; autostarted |
 | Minecraft | `minecraft` / `10.10.10.30` | `balaur.eu`, `balaur.nazar.studio`; public game `25565/tcp`, voice `24454/udp` | no public webapp |
-| DAV Server | `dav-server` / `10.10.10.41` | `dav.nazar.studio` on WireGuard (`10.44.0.1`) | WebDAV `/files/`, CalDAV/CardDAV `/radicale/`; autostarted |
-| NixPi | host + every MicroVM | `/nixpi/` on each private service domain/alias plus `nixpi*.nazar.studio` on WireGuard | private web interface for Pi RPC sessions; route exposure controlled by `nix/fleet/exposure.nix` |
+| DAV Server | `dav-server` / `10.10.10.41` | `dav.nazar.studio` on sshuttle-routed `10.44.0.1` | WebDAV `/files/`, CalDAV/CardDAV `/radicale/`; autostarted |
+| NixPi | host + every MicroVM | `/nixpi/` on each private service domain/alias plus `nixpi*.nazar.studio` | private web interface for Pi RPC sessions; route exposure controlled by `nix/fleet/exposure.nix` |
 
 ## DNS intent
 
-Public DNS should publish only names that are intentionally public, currently the Minecraft game names `balaur.eu` and `balaur.nazar.studio` pointing at `167.235.12.22`. WireGuard dnsmasq overrides private HTTP/operator routes to `10.44.0.1`, including `balaur.eu`/`balaur.nazar.studio` for `/nixpi/`. Private service names such as `git.nazar.studio`, `dav.nazar.studio`, and all `nixpi*.nazar.studio` names should not have public A/AAAA records.
+Private service names are not public DNS records. Configured laptops receive declarative `/etc/hosts` entries mapping private service names to `10.44.0.1`, then sshuttle routes that address over SSH. Public DNS should publish only names that are intentionally public, currently the Minecraft game names `balaur.eu` and `balaur.nazar.studio` pointing at `167.235.12.22`. Those public game names are deliberately excluded from the private `/etc/hosts` mapping.
 
 ## Fleet orchestration
 
 Day-2 production VM changes are deployed by `/root/nazar` on the host, using `deploy-rs` over the private VM aliases as `alex` with sudo to the root system profile.
 
 ```bash
-ssh alex@10.44.0.1  # canonical, over WireGuard
-# or, for break-glass only: ssh alex@167.235.12.22
+ssh alex@10.44.0.1  # canonical, through sshuttle from a configured laptop
+# or direct control endpoint when needed: ssh alex@167.235.12.22
 cd /root/nazar
 nix flake check --no-build
 nix run .#deploy-git
@@ -94,28 +93,27 @@ git status --short --branch
 nix fmt
 nix flake check --no-build
 sudo nix --accept-flake-config build .#nixosConfigurations.nazar.config.system.build.toplevel --print-build-logs
-systemctl is-active sshd wireguard-wg0 dnsmasq nginx git-ssh-proxy nixpi microvm@git
-sudo wg show wg0
+systemctl is-active sshd systemd-networkd nginx git-ssh-proxy nixpi microvm@git
+ip addr show nazar-private
 ```
 
-From a configured WireGuard client:
+From a configured sshuttle laptop:
 
 ```bash
-dig @10.44.0.1 git.nazar.studio +short
-dig @10.44.0.1 dav.nazar.studio +short
-dig @10.44.0.1 nixpi.nazar.studio +short
+systemctl status nazar-sshuttle
+getent hosts git.nazar.studio dav.nazar.studio nixpi.nazar.studio
 curl -I http://git.nazar.studio/
 curl -I http://git.nazar.studio/nixpi/
-curl -I http://balaur.nazar.studio/nixpi/
+curl -I http://nixpi-minecraft.nazar.studio/
 git ls-remote ssh://git@git.nazar.studio:10022/nazar/nazar.git
 ```
 
 ## Constraints
 
-- Do not commit secrets or WireGuard private keys.
-- Add only client public keys and assigned `/32` WireGuard addresses to Nix.
+- Do not commit secrets or private SSH keys.
+- Add only trusted client public SSH keys to `nix/users/alex-public-ssh-keys.nix`.
 - Do not expose private services, including NixPi, publicly without an explicit hardening decision.
-- Treat WireGuard as the canonical daily access path.
+- Treat sshuttle over OpenSSH as the canonical private access path.
 - Enforce one-way host management: `nazar` must be able to SSH to every MicroVM over its private VM hostname/IP, and MicroVMs must not be able to open new connections back to `nazar`.
-- Keep public SSH key-only and alex-only as break-glass until a separate migration decision and rescue drill.
+- Keep public SSH key-only and alex-only because it is the sshuttle control endpoint.
 - Do not enable root SSH.
