@@ -14,10 +14,10 @@
 - [x] Keep dedicated `nixpi*.nazar.studio` private DNS routes for direct access.
 - [x] Document validation, rollback, and authority boundaries in Nazar runbooks.
 
-## v3 — OwnLoom/base-agent integration
+## v3 — Personal workflow/base-agent integration
 
-- [ ] Use NixPi as the shared Pi operator surface for OwnLoom development and personal workflows.
-- [ ] Add optional OwnLoom-aware context shortcuts without changing the underlying Pi RPC contract.
+- [ ] Use NixPi as the shared Pi operator surface for Nazar development and personal workflows.
+- [ ] Add optional personal-workflow context shortcuts without changing the underlying Pi RPC contract.
 - [ ] Keep autonomous host/fleet changes behind explicit human review.
 
 ## v4 — Future agent core

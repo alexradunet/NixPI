@@ -34,7 +34,6 @@ Primary per-service routes should use `/nixpi/` on every VM service domain/alias
 
 - `git.nazar.studio/nixpi/` -> `git` VM NixPi
 - `balaur.eu/nixpi/` and `balaur.nazar.studio/nixpi/` -> `minecraft` VM NixPi over WireGuard DNS
-- `ownloom.nazar.studio/nixpi/` -> `ownloom` VM NixPi
 - `dav.nazar.studio/nixpi/` -> `dav-server` VM NixPi
 
 Dedicated private names can also be kept for direct access:
@@ -42,7 +41,6 @@ Dedicated private names can also be kept for direct access:
 - `nixpi.nazar.studio` -> host `nazar`
 - `nixpi-git.nazar.studio` -> `git` VM
 - `nixpi-minecraft.nazar.studio` -> `minecraft` VM
-- `nixpi-ownloom.nazar.studio` -> `ownloom` VM
 - `nixpi-dav-server.nazar.studio` -> `dav-server` VM
 
 All dedicated records should resolve to `10.44.0.1` from dnsmasq on WireGuard and should not exist in public DNS. Service domains that also have public DNS, such as `balaur.eu`, can be overridden by WireGuard dnsmasq for private HTTP/operator paths.
@@ -63,7 +61,6 @@ From `/root/nazar` after the input is locked:
 nix flake check --no-build
 nix run .#deploy-git
 nix run .#deploy-minecraft
-nix run .#deploy-ownloom
 nix run .#deploy-dav-server
 ```
 
@@ -73,9 +70,7 @@ From a WireGuard client:
 dig @10.44.0.1 nixpi.nazar.studio +short
 curl -I http://git.nazar.studio/nixpi/
 curl -I http://balaur.nazar.studio/nixpi/
-curl -I http://ownloom.nazar.studio/nixpi/
 curl -I http://nixpi.nazar.studio/
-curl -I http://nixpi-ownloom.nazar.studio/
 ```
 
 Inside a VM:

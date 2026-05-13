@@ -11,7 +11,7 @@ All notable changes to this project will be documented here.
 ## [1.6.2] - 2026-05-13
 
 ### Changed
-- Rebranded the project from `wgnr-pi` to `nixpi` for Nazar/OwnLoom use.
+- Rebranded the project from `wgnr-pi` to `nixpi` for Nazar use.
 - Renamed the CLI to `nixpi` and the macOS helper to `nixpi.sh`.
 - Renamed configuration variables to `NIXPI_*`.
 - Replaced public-facing UI and docs branding with NixPi/Nazar language.

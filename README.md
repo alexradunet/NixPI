@@ -6,7 +6,7 @@ Nazar's private web interface for [Pi Coding Agent](https://github.com/badlogic/
 
 ## Why this exists
 
-NixPi is the base web surface around Pi for Nazar and OwnLoom. It is intended to run:
+NixPi is the base web surface around Pi for Nazar and personal operator workflows. It is intended to run:
 
 - on the `nazar` host for host-side development/operator work;
 - inside each Nazar MicroVM for VM-local Pi sessions;
