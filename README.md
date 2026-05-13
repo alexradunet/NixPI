@@ -25,7 +25,7 @@ Canonical paths:
 - Private Git: `git.nazar.studio` over WireGuard DNS.
 - Private OwnLoom agent web app: `ownloom.nazar.studio` over WireGuard DNS.
 - Private DAV Server: `dav.nazar.studio` over WireGuard DNS.
-- Private NixPi Pi web interfaces: `nixpi.nazar.studio` plus per-VM `nixpi-*.nazar.studio` over WireGuard DNS.
+- Private NixPi Pi web interfaces: `/nixpi/` on private service domains, plus `nixpi.nazar.studio` for the host and `nixpi-*.nazar.studio` direct VM routes over WireGuard DNS.
 - Public SSH: break-glass only, not the normal path.
 - Hetzner Rescue: final recovery path if both WireGuard and public SSH are unusable.
 

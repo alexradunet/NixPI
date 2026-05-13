@@ -209,11 +209,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1778686440,
-        "narHash": "sha256-aFMYI6xTUn7Wkq4uTgsiT2FrR8nC15ce4otAR3AQrL8=",
+        "lastModified": 1778687036,
+        "narHash": "sha256-Kr5zVD++vDGc1ERIIdFfPt/+EyQmu5EZAKZvNVQg9Ek=",
         "ref": "refs/heads/main",
-        "rev": "5354fda535d970749a9a878fcc65303ec42458c8",
-        "revCount": 26,
+        "rev": "35978fd2b550e3098bd3f85263ed2e9e2544b5d4",
+        "revCount": 27,
         "type": "git",
         "url": "ssh://git@git.nazar.studio:10022/nazar/nixpi.git"
       },

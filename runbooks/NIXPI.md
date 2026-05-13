@@ -12,6 +12,8 @@ Primary per-service paths:
 - OwnLoom VM UI: `http://ownloom.nazar.studio/nixpi/` -> `10.10.10.40:4815`
 - DAV Server VM UI: `http://dav.nazar.studio/nixpi/` -> `10.10.10.41:4815`
 
+There is no public `/nixpi/` route on Minecraft game domains such as `balaur.eu`; use the dedicated private WireGuard name for the Minecraft VM.
+
 Dedicated private names are also available:
 
 - Host UI: `http://nixpi.nazar.studio/` -> host `127.0.0.1:4815`
