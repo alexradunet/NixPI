@@ -12,7 +12,7 @@ in
     # LSP servers for pi-lens (avoids broken auto-installer)
     pkgs.nixd                       # Nix
     pkgs.typescript-language-server  # TypeScript/JavaScript
-    pkgs.python3.pkgs.pyright       # Python
+    pkgs.pyright                    # Python
   ];
 
   environment.sessionVariables = {

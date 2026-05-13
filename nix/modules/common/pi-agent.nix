@@ -45,6 +45,25 @@ let
     echo "You may edit, test, commit, and push here; production deploys are handed off with: nazar-deploy-request"
     echo "Next: cd $repo_root && pi"
   '';
+  # Per-VM LSP servers. Override in fleet config with
+  #   vm.nixpi.lspServers = [ pkgs.gopls ];
+  # or add to the defaults below.
+  defaultLspServers = [
+    pkgs.nixd                       # Nix
+    pkgs.typescript-language-server  # TypeScript/JavaScript
+    pkgs.pyright                    # Python
+  ];
+
+  # Per-VM language runtimes + extra LSP servers.
+  # Keyed by hostname so each VM gets what its project needs.
+  vmExtraPackages =
+    {
+      minecraft = [
+        pkgs.jdk21                     # Java runtime
+        pkgs.jdt-language-server        # Java LSP
+      ];
+    }
+    .${vm.hostname} or [];
 in
 {
   imports = [ ./pi-default-packages.nix ];
@@ -53,12 +72,7 @@ in
     pi
     pkgs.nodejs
     bootstrap
-
-    # LSP servers for pi-lens (avoids broken auto-installer)
-    pkgs.nixd                       # Nix
-    pkgs.typescript-language-server  # TypeScript/JavaScript
-    pkgs.python3.pkgs.pyright       # Python
-  ];
+  ] ++ defaultLspServers ++ vmExtraPackages;
 
   environment.sessionVariables = {
     PI_TELEMETRY = "0";
