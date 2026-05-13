@@ -70,7 +70,6 @@
       startupOrder = 20;
       role = "private Git forge for the nazar infrastructure repository";
       nixpi = {
-        dns = "nixpi-git.nazar.studio";
         port = 4815;
         workingDirectory = "/home/alex/nazar";
       };
@@ -117,8 +116,8 @@
           }
         ];
       };
-      dns = "balaur.eu";
-      aliases = [ "balaur.nazar.studio" ];
+      dns = "mc.nazar.studio";
+      aliases = [ ];
       cores = 2;
       memoryMiB = 4096;
       balloonMiB = 1024;
@@ -127,7 +126,6 @@
       startupOrder = 30;
       role = "small PaperMC Minecraft server";
       nixpi = {
-        dns = "nixpi-minecraft.nazar.studio";
         port = 4815;
         workingDirectory = "/home/alex/minecraft";
       };
@@ -140,7 +138,7 @@
         paperHash = "sha256-t7lYFmSr+0cGgjx2+4qCheko1pB3DwOBPkqC40iaeOU=";
         jvmOpts = "-Xms1G -Xmx2500M";
         maxPlayers = 10;
-        motd = "Balaur Minecraft";
+        motd = "Nazar Minecraft";
         levelSeed = "298649991203052898";
         operatorPermissionLevel = 4;
         operators = [
@@ -252,7 +250,6 @@
       startupOrder = 41;
       role = "private personal DAV, CalDAV, CardDAV, WebDAV, and markdown wiki data VM";
       nixpi = {
-        dns = "nixpi-dav-server.nazar.studio";
         port = 4815;
         workingDirectory = "/home/alex/dav-server";
       };

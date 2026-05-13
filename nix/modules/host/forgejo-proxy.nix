@@ -9,6 +9,8 @@ let
   privateIp = "10.44.0.1";
   publicIp = "167.235.12.22";
   git = fleet.vms.git;
+  hostSite = exposure.host.site or { };
+  hostNixpi = exposure.host.nixpi or { };
   microvmUnits = map (name: "microvm@${name}.service") (lib.attrNames fleet.vms);
 
   isPublic = route: (route.access or "private") == "public";
@@ -45,17 +47,27 @@ let
       '';
     };
 
+  mkStaticLocation = route: {
+    root = toString route.root;
+    extraConfig = ''
+      index ${route.index or "index.html"};
+      try_files $uri $uri/ =404;
+    '';
+  };
+
+  mkLocation = route: if route ? root then mkStaticLocation route else mkProxyLocation route;
+
   mkRouteLocations =
     route:
     if route.path == "/" then
-      { "/" = mkProxyLocation route; }
+      { "/" = mkLocation route; }
     else
       let
         path = normalizePath route.path;
       in
       {
         "= ${exactPath path}".return = "301 ${path}";
-        ${path} = mkProxyLocation (
+        ${path} = mkLocation (
           route
           // {
             path = path;
@@ -157,32 +169,42 @@ let
     lib.concatMap (domain: mkDomainVhosts domain routes) (domainsFor vm)
   ) (lib.attrNames fleet.vms);
 
-  directNixpiRoutes = lib.concatMap (
-    name:
-    let
-      vm = fleet.vms.${name};
-      vmExposure = exposure.vms.${name} or { };
-      route = {
-        name = "nixpi-direct";
-        enable = vmExposure.nixpi.enable or false;
-        path = "/";
-        backend = "http://${vm.ip}:${toString (vm.nixpi.port or 4815)}";
-        access = vmExposure.nixpi.access or "private";
-      };
-    in
-    mkDomainVhosts vm.nixpi.dns [ route ]
-  ) (lib.attrNames fleet.vms);
-
-  hostNixpiRoute = {
-    name = "host-nixpi";
-    enable = exposure.host.nixpi.enable or false;
-    path = "/";
-    backend = "http://127.0.0.1:${toString (exposure.host.nixpi.port or 4815)}";
-    access = exposure.host.nixpi.access or "private";
+  hostSiteRoute = {
+    name = "host-site";
+    enable = hostSite.enable or false;
+    path = hostSite.path or "/";
+    root = hostSite.root or ../../../www/nazar-dashboard;
+    access = hostSite.access or "private";
   };
 
+  hostNixpiPathRoute = {
+    name = "host-nixpi-path";
+    enable = hostNixpi.enable or false;
+    path = hostNixpi.path or "/nixpi/";
+    backend = "http://127.0.0.1:${toString (hostNixpi.port or 4815)}";
+    access = hostNixpi.access or "private";
+    stripPrefix = true;
+  };
+
+  hostDomains = lib.unique (
+    (lib.optional (hostSite ? domain) hostSite.domain) ++ (hostNixpi.pathDomains or [ ])
+  );
+
+  routesForHostDomain =
+    domain:
+    (lib.optional ((hostSite.enable or false) && (hostSite.domain or null) == domain) hostSiteRoute)
+    ++ (lib.optional (
+      (hostNixpi.enable or false) && lib.elem domain (hostNixpi.pathDomains or [ ])
+    ) hostNixpiPathRoute);
+
+  hostDomainVhosts = lib.concatMap (
+    domain: mkDomainVhosts domain (routesForHostDomain domain)
+  ) hostDomains;
   allRouteLists = [
-    [ hostNixpiRoute ]
+    [
+      hostSiteRoute
+      hostNixpiPathRoute
+    ]
   ]
   ++ (map (name: routesForVm name fleet.vms.${name}) (lib.attrNames fleet.vms));
   publicHttpEnabled = lib.any (
@@ -196,11 +218,7 @@ in
     recommendedOptimisation = true;
     recommendedProxySettings = true;
 
-    virtualHosts = lib.listToAttrs (
-      vmDomainVhosts
-      ++ directNixpiRoutes
-      ++ (mkDomainVhosts exposure.host.nixpi.domain [ hostNixpiRoute ])
-    );
+    virtualHosts = lib.listToAttrs (hostDomainVhosts ++ vmDomainVhosts);
   };
 
   systemd.services.nginx = {

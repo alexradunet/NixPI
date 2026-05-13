@@ -8,7 +8,7 @@
 - State: `/persist/microvms/dav-server`
 - Guest data: `/var/lib/dav-server`, `/var/lib/radicale/collections`
 - Services: nginx WebDAV at `/files/`, Radicale CalDAV/CardDAV at `/radicale/`
-- NixPi: `dav.nazar.studio/nixpi/` and `nixpi-dav-server.nazar.studio` -> `10.10.10.41:4815` through host nginx and sshuttle
+- NixPi: `dav.nazar.studio/nixpi/` -> `10.10.10.41:4815` through host nginx and sshuttle
 - Exposure: private through the host nginx proxy; no public DNS or public port forward
 
 DAV Server uses the configured htpasswd file for nginx basic auth on `/files/` and `/radicale/`. The network path is still private, but service-level auth remains required before storing real personal data.
@@ -28,10 +28,9 @@ Validation from a configured sshuttle laptop:
 
 ```bash
 systemctl status nazar-sshuttle
-getent hosts dav.nazar.studio nixpi-dav-server.nazar.studio
+getent hosts dav.nazar.studio
 curl -I http://dav.nazar.studio/
 curl -I http://dav.nazar.studio/nixpi/
-curl -I http://nixpi-dav-server.nazar.studio/
 ```
 
 Do not expose DAV publicly without an explicit hardening pass covering auth, TLS, backups, logging, and rollback.

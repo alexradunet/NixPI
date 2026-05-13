@@ -23,23 +23,26 @@ Canonical paths from a configured laptop:
 
 - Private tunnel: `nazar-sshuttle.service`, using `sshuttle` over `nazar-sshuttle` SSH host alias.
 - Daily host SSH: `ssh alex@10.44.0.1` through sshuttle.
-- Private Git: `git.nazar.studio` through sshuttle and declarative `/etc/hosts` entries.
+- Public main page: `http://nazar.studio/`, served by host nginx.
+- Private host NixPi: `http://nazar.studio/nixpi/` through sshuttle.
 - Private DAV Server: `dav.nazar.studio` through sshuttle and declarative `/etc/hosts` entries.
-- Private NixPi web interfaces: `/nixpi/` on private service domains, plus `nixpi.nazar.studio` for the host and `nixpi-*.nazar.studio` direct VM routes. Use `nixpi-minecraft.nazar.studio` for Minecraft VM operations so public game names remain public.
+- Private per-service NixPi: `/nixpi/` on service domains such as `mc.nazar.studio` and `dav.nazar.studio`.
+- Private Git: `git.nazar.studio` through sshuttle; Git remains an infrastructure service managed from the Nazar repo and Pi/subagent workflows.
 - Hetzner Rescue: final recovery path if SSH is unusable.
 
 Publicly reachable services are limited to:
 
 - SSH `22/tcp` on `nazar` for the sshuttle control connection and key-only host administration as `alex` only.
-- Minecraft game traffic for `balaur.eu` and `balaur.nazar.studio`: `25565/tcp` and Simple Voice Chat `24454/udp` DNAT to the Minecraft MicroVM.
+- HTTP `80/tcp` for the simple static `nazar.studio` page only.
+- Minecraft game traffic for `mc.nazar.studio`: `25565/tcp` and Simple Voice Chat `24454/udp` DNAT to the Minecraft MicroVM.
 
 Private sshuttle services:
 
+- `nazar.studio/nixpi/` -> `10.44.0.1`, HTTP via host nginx to the host-local NixPi service.
 - `git.nazar.studio` -> `10.44.0.1`, HTTP via host nginx to Forgejo and Git SSH via host socat on `10022/tcp`.
+- `mc.nazar.studio/nixpi/` -> `10.44.0.1`, HTTP via host nginx to the Minecraft VM-local NixPi service.
 - `dav.nazar.studio` -> `10.44.0.1`, HTTP via host nginx to the DAV Server MicroVM when it is running.
-- `/nixpi/` on private service domains (`git.nazar.studio`, `dav.nazar.studio`), HTTP via host nginx to the matching VM-local NixPi service.
-- `nixpi.nazar.studio` -> `10.44.0.1`, HTTP via host nginx to the host-local NixPi service.
-- `nixpi-git.nazar.studio`, `nixpi-minecraft.nazar.studio`, `nixpi-dav-server.nazar.studio` -> `10.44.0.1`, HTTP via host nginx to each VM-local NixPi service.
+- `dav.nazar.studio/nixpi/` -> `10.44.0.1`, HTTP via host nginx to the DAV Server VM-local NixPi service.
 
 There is intentionally no public HTTP/TCP/80 DNAT to Minecraft and no public Forgejo, DAV, or NixPi exposure.
 
@@ -61,13 +64,13 @@ runbooks/                 # operational runbooks
 | Service | VM | Private/Public endpoint | Notes |
 |---|---|---|---|
 | Forgejo | `git` / `10.10.10.21` | `git.nazar.studio` on sshuttle-routed `10.44.0.1` | HTTP `80`, Git SSH `10022` via host proxy; autostarted |
-| Minecraft | `minecraft` / `10.10.10.30` | `balaur.eu`, `balaur.nazar.studio`; public game `25565/tcp`, voice `24454/udp` | no public webapp |
+| Minecraft | `minecraft` / `10.10.10.30` | `mc.nazar.studio`; public game `25565/tcp`, voice `24454/udp`; private `/nixpi/` | no public webapp |
 | DAV Server | `dav-server` / `10.10.10.41` | `dav.nazar.studio` on sshuttle-routed `10.44.0.1` | WebDAV `/files/`, CalDAV/CardDAV `/radicale/`; autostarted |
-| NixPi | host + every MicroVM | `/nixpi/` on each private service domain/alias plus `nixpi*.nazar.studio` | private web interface for Pi RPC sessions; route exposure controlled by `nix/fleet/exposure.nix` |
+| NixPi | host + every MicroVM | `/nixpi/` on the host and per-service domains | private web interface for Pi RPC sessions; route exposure controlled by `nix/fleet/exposure.nix` |
 
 ## DNS intent
 
-Private service names are not public DNS records. Configured laptops receive declarative `/etc/hosts` entries mapping private service names to `10.44.0.1`, then sshuttle routes that address over SSH. Public DNS should publish only names that are intentionally public, currently the Minecraft game names `balaur.eu` and `balaur.nazar.studio` pointing at `167.235.12.22`. Those public game names are deliberately excluded from the private `/etc/hosts` mapping.
+Configured laptops receive declarative `/etc/hosts` entries mapping private/operator hostnames to `10.44.0.1`, then sshuttle routes that address over SSH. Public DNS should publish only names that are intentionally public: `nazar.studio` for the static page and `mc.nazar.studio` for Minecraft, both pointing at `167.235.12.22`. NixPi remains private even when it shares a public service hostname; public nginx only serves the static `nazar.studio` page.
 
 ## Fleet orchestration
 
@@ -101,10 +104,11 @@ From a configured sshuttle laptop:
 
 ```bash
 systemctl status nazar-sshuttle
-getent hosts git.nazar.studio dav.nazar.studio nixpi.nazar.studio
-curl -I http://git.nazar.studio/
-curl -I http://git.nazar.studio/nixpi/
-curl -I http://nixpi-minecraft.nazar.studio/
+getent hosts nazar.studio mc.nazar.studio dav.nazar.studio git.nazar.studio
+curl -I http://nazar.studio/
+curl -I http://nazar.studio/nixpi/
+curl -I http://mc.nazar.studio/nixpi/
+curl -I http://dav.nazar.studio/nixpi/
 git ls-remote ssh://git@git.nazar.studio:10022/nazar/nazar.git
 ```
 

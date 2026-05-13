@@ -6,17 +6,23 @@
   # access = "public" additionally exposes the route on the host public IPv4
   # and opens TCP/80. Only use after an explicit hardening review.
 
-  # Keep public game names public on configured laptops. Private operator routes
-  # for the Minecraft VM use nixpi-minecraft.nazar.studio instead.
-  privateDomainExclusions = [
-    "balaur.eu"
-    "balaur.nazar.studio"
-  ];
+  # Domains listed here stay out of generated private /etc/hosts entries.
+  # Keep this empty so operator laptops can reach same-domain /nixpi/ routes
+  # through sshuttle on nazar.studio, mc.nazar.studio, and dav.nazar.studio.
+  privateDomainExclusions = [ ];
 
   host = {
+    site = {
+      enable = true;
+      domain = "nazar.studio";
+      root = ../../www/nazar-dashboard;
+      access = "public";
+    };
+
     nixpi = {
       enable = true;
-      domain = "nixpi.nazar.studio";
+      pathDomains = [ "nazar.studio" ];
+      path = "/nixpi/";
       port = 4815;
       access = "private";
     };

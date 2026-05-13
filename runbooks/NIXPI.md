@@ -8,17 +8,14 @@ NixPi is an operator surface: it can drive Pi as `alex` in the configured workin
 
 Primary per-service paths:
 
-- Git VM UI: `http://git.nazar.studio/nixpi/` -> `10.10.10.21:4815`
+- Host UI: `http://nazar.studio/nixpi/` -> host `127.0.0.1:4815`
+- Minecraft VM UI: `http://mc.nazar.studio/nixpi/` -> `10.10.10.30:4815`
 - DAV Server VM UI: `http://dav.nazar.studio/nixpi/` -> `10.10.10.41:4815`
+- Git VM UI: `http://git.nazar.studio/nixpi/` -> `10.10.10.21:4815`
 
-Dedicated private names are also available:
+NixPi is path-based only. There are no dedicated `nixpi*.nazar.studio` virtual hosts; use the `/nixpi/` path on the host or service domain.
 
-- Host UI: `http://nixpi.nazar.studio/` -> host `127.0.0.1:4815`
-- Git VM UI: `http://nixpi-git.nazar.studio/` -> `10.10.10.21:4815`
-- Minecraft VM UI: `http://nixpi-minecraft.nazar.studio/` -> `10.10.10.30:4815`
-- DAV Server VM UI: `http://nixpi-dav-server.nazar.studio/` -> `10.10.10.41:4815`
-
-All private service domains and dedicated NixPi names resolve to `10.44.0.1` through declarative laptop `/etc/hosts` entries and are proxied by host nginx. Public Minecraft game names (`balaur.eu`, `balaur.nazar.studio`) deliberately remain public and are not mapped to `10.44.0.1`; use `nixpi-minecraft.nazar.studio` for Minecraft VM operations. Do not add public DNS for `nixpi*.nazar.studio` names.
+Private/operator hostnames resolve to `10.44.0.1` through declarative laptop `/etc/hosts` entries and are proxied by host nginx. `nazar.studio` and `mc.nazar.studio` may also have public DNS, but their NixPi paths are only served on the private listener.
 
 ## Declarative exposure switch
 
@@ -29,7 +26,7 @@ Each route has an `access` value:
 - `"private"` — route is served only on host nginx's sshuttle-routed private listener (`10.44.0.1:80`).
 - `"public"` — route is also served on the host public IPv4 listener and opens public TCP/80.
 
-Current routes are private-only. To intentionally publish a future route such as `/subagent/`, enable it and set its access explicitly, for example:
+NixPi routes are private-only. The host static page is public; to intentionally publish a future route such as `/subagent/`, enable it and set its access explicitly, for example:
 
 ```nix
 vms.git.subagent = {
@@ -91,17 +88,18 @@ On the host:
 ```bash
 systemctl is-active nixpi nginx git-ssh-proxy
 curl -I http://127.0.0.1:4815/
-curl -I --resolve nixpi.nazar.studio:80:10.44.0.1 http://nixpi.nazar.studio/
+curl -I --resolve nazar.studio:80:10.44.0.1 http://nazar.studio/nixpi/
 ```
 
 From a configured sshuttle laptop:
 
 ```bash
 systemctl status nazar-sshuttle
-getent hosts nixpi.nazar.studio
+getent hosts nazar.studio mc.nazar.studio dav.nazar.studio git.nazar.studio
+curl -I http://nazar.studio/nixpi/
+curl -I http://mc.nazar.studio/nixpi/
+curl -I http://dav.nazar.studio/nixpi/
 curl -I http://git.nazar.studio/nixpi/
-curl -I http://nixpi-minecraft.nazar.studio/
-curl -I http://nixpi.nazar.studio/
 ```
 
 Inside each VM:

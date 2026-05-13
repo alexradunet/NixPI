@@ -12,6 +12,8 @@ let
     ];
 
   domainsFor = vm: [ vm.dns ] ++ (vm.aliases or [ ]);
+  hostSite = exposure.host.site or { };
+  hostNixpi = exposure.host.nixpi or { };
 
   vmHasPrivateRoute =
     name:
@@ -28,22 +30,13 @@ let
     name: if vmHasPrivateRoute name then domainsFor fleet.vms.${name} else [ ]
   ) (lib.attrNames fleet.vms);
 
-  privateNixpiDomains = lib.concatMap (
-    name:
-    let
-      vm = fleet.vms.${name};
-      vmExposure = exposure.vms.${name} or { };
-    in
-    lib.optional (isPrivateAccess (vmExposure.nixpi or { })) vm.nixpi.dns
-  ) (lib.attrNames fleet.vms);
+  hostSiteDomains = lib.optional (isPrivateAccess hostSite && hostSite ? domain) hostSite.domain;
 
-  hostNixpiDomains = lib.optional (isPrivateAccess (
-    exposure.host.nixpi or { }
-  )) exposure.host.nixpi.domain;
+  hostNixpiDomains = lib.optionals (isPrivateAccess hostNixpi) (hostNixpi.pathDomains or [ ]);
 
   privateDomainExclusions = exposure.privateDomainExclusions or [ ];
   privateDomains = lib.subtractLists privateDomainExclusions (
-    lib.unique (privateServiceDomains ++ privateNixpiDomains ++ hostNixpiDomains)
+    lib.unique (privateServiceDomains ++ hostSiteDomains ++ hostNixpiDomains)
   );
 in
 {

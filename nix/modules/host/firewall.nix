@@ -1,5 +1,11 @@
-{ fleet, lib, ... }:
+{
+  fleet,
+  lib,
+  pkgs,
+  ...
+}:
 let
+  privateIp = "10.44.0.1";
   minecraft = fleet.vms.minecraft;
   mcPort = minecraft.minecraft.port or 25565;
   mcVoicePort = minecraft.minecraft.voiceChatPort or 24454;
@@ -43,11 +49,30 @@ in
       ip saddr 10.10.10.0/24 accept
       ip daddr 10.10.10.0/24 ct state established,related accept
 
-      # Approved public Balaur exposure: Minecraft game traffic only. There is
+      # Approved public Minecraft exposure: game traffic only. There is
       # intentionally no public TCP/80 web DNAT to the Minecraft MicroVM.
       iifname "enp0s31f6" ip daddr ${minecraft.ip} tcp dport ${toString mcPort} accept
       iifname "enp0s31f6" ip daddr ${minecraft.ip} udp dport ${toString mcVoicePort} accept
     '';
+  };
+
+  systemd.services.minecraft-game-proxy = {
+    description = "Private Minecraft TCP proxy to the Minecraft MicroVM";
+    after = [
+      "network-online.target"
+      "microvm@minecraft.service"
+    ];
+    wants = [
+      "network-online.target"
+      "microvm@minecraft.service"
+    ];
+    wantedBy = [ "multi-user.target" ];
+    path = [ pkgs.socat ];
+    serviceConfig = {
+      ExecStart = "${pkgs.socat}/bin/socat TCP-LISTEN:${toString mcPort},bind=${privateIp},reuseaddr,fork TCP:${minecraft.ip}:${toString mcPort}";
+      Restart = "always";
+      RestartSec = "5s";
+    };
   };
 
   networking.nat = {

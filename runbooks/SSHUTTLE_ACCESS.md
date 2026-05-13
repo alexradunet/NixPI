@@ -51,7 +51,7 @@ If the private key has a different filename, override `nazar.access.sshuttle.key
 A fresh laptop may not yet have the declarative `/etc/hosts` entries needed to fetch this flake's private Forgejo inputs. For the first rebuild only, start a temporary sshuttle tunnel and temporary hosts entry from an existing checkout:
 
 ```bash
-sudo sh -c 'printf "10.44.0.1 git.nazar.studio nixpi.nazar.studio nixpi-git.nazar.studio nixpi-minecraft.nazar.studio nixpi-dav-server.nazar.studio dav.nazar.studio\n" >> /etc/hosts'
+sudo sh -c 'printf "10.44.0.1 nazar.studio mc.nazar.studio git.nazar.studio dav.nazar.studio\n" >> /etc/hosts'
 nix shell nixpkgs#sshuttle -c sudo sshuttle --method=auto \
   -e "ssh -i /home/alex/.ssh/id_ed25519 -o IdentitiesOnly=yes" \
   -r alex@167.235.12.22 \
@@ -66,7 +66,7 @@ Leave that command running in one terminal, run the normal rebuild in another, t
 ```bash
 sudo nixos-rebuild switch --flake .#alex-laptop
 systemctl status nazar-sshuttle
-getent hosts git.nazar.studio dav.nazar.studio nixpi.nazar.studio
+getent hosts nazar.studio mc.nazar.studio git.nazar.studio dav.nazar.studio
 ```
 
 The generated command is equivalent to:
@@ -80,11 +80,12 @@ sshuttle --method=auto -r nazar-sshuttle -x 167.235.12.22 10.44.0.1/32
 Use normal service URLs; no browser SOCKS configuration is required:
 
 ```bash
-curl -I http://git.nazar.studio/
+curl -I http://nazar.studio/
+curl -I http://nazar.studio/nixpi/
+curl -I http://mc.nazar.studio/nixpi/
 curl -I http://dav.nazar.studio/
-curl -I http://nixpi.nazar.studio/
+curl -I http://dav.nazar.studio/nixpi/
 curl -I http://git.nazar.studio/nixpi/
-curl -I http://nixpi-minecraft.nazar.studio/
 git ls-remote ssh://git@git.nazar.studio:10022/nazar/nazar.git
 ```
 
