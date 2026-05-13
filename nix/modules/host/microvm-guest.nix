@@ -8,6 +8,7 @@ let
   gateway = fleet.defaults.gateway;
   dnsServers = fleet.defaults.nameservers;
   serviceExtraTcpPorts = {
+    ownloom = [ (vm.ownloom.web.httpPort or 80) ];
     dav-server = [ (vm.davServer.httpPort or 80) ];
   };
 in

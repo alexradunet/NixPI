@@ -6,6 +6,7 @@
   networking.hosts."10.44.0.1" = [
     "git.nazar.studio"
     "dav.nazar.studio"
+    "ownloom.nazar.studio"
   ];
 
   networking.wireguard.interfaces.wg0 = {
@@ -49,6 +50,7 @@
       address = [
         "/git.nazar.studio/10.44.0.1"
         "/dav.nazar.studio/10.44.0.1"
+        "/ownloom.nazar.studio/10.44.0.1"
       ];
     };
   };

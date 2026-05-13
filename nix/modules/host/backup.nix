@@ -8,6 +8,7 @@ let
       /persist/repos
       /persist/microvms/git
       /persist/microvms/minecraft
+      /persist/microvms/ownloom
       /persist/microvms/dav-server
       /persist/secrets
 

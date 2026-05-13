@@ -23,6 +23,10 @@ let
       ../services/forgejo-bootstrap.nix
     ];
     minecraft = [ inputs.minecraft.nixosModules.minecraft-service ];
+    ownloom = [
+      ../common/nazar-context.nix
+      ../services/ownloom.nix
+    ];
     dav-server = [ ../services/dav-server.nix ];
   };
 
@@ -54,6 +58,8 @@ in
     autostart = [
       "git"
       "minecraft"
+      "dav-server"
+      "ownloom"
     ];
     vms = lib.mapAttrs mkMicrovm fleet.vms;
   };

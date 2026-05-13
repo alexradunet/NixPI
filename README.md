@@ -23,6 +23,7 @@ Canonical paths:
 
 - Daily host SSH: `ssh alex@10.44.0.1` over WireGuard.
 - Private Git: `git.nazar.studio` over WireGuard DNS.
+- Private OwnLoom agent web app: `ownloom.nazar.studio` over WireGuard DNS.
 - Private DAV Server: `dav.nazar.studio` over WireGuard DNS.
 - Public SSH: break-glass only, not the normal path.
 - Hetzner Rescue: final recovery path if both WireGuard and public SSH are unusable.
@@ -36,6 +37,7 @@ Publicly reachable services are limited to:
 Private WireGuard services:
 
 - `git.nazar.studio` -> `10.44.0.1`, HTTP via host nginx to Forgejo and Git SSH via host socat on `10022/tcp`.
+- `ownloom.nazar.studio` -> `10.44.0.1`, HTTP via host nginx to the OwnLoom MicroVM.
 - `dav.nazar.studio` -> `10.44.0.1`, HTTP via host nginx to the DAV Server MicroVM when it is running.
 - DNS for WireGuard clients is dnsmasq on `10.44.0.1`, bound to `wg0` only, forwarding other queries upstream.
 
@@ -59,11 +61,12 @@ runbooks/                 # operational runbooks
 |---|---|---|---|
 | Forgejo | `git` / `10.10.10.21` | `git.nazar.studio` on WireGuard (`10.44.0.1`) | HTTP `80`, Git SSH `10022` via host proxy; autostarted |
 | Minecraft | `minecraft` / `10.10.10.30` | `balaur.eu`, `balaur.nazar.studio`; public game `25565/tcp`, voice `24454/udp` | no public webapp |
-| DAV Server | `dav-server` / `10.10.10.41` | `dav.nazar.studio` on WireGuard (`10.44.0.1`) | WebDAV `/files/`, CalDAV/CardDAV `/radicale/`; start/deploy deliberately |
+| OwnLoom | `ownloom` / `10.10.10.40` | `ownloom.nazar.studio` on WireGuard (`10.44.0.1`) | private self-evolving agent web app; connected to DAV wiki scope `/files/wiki/ownloom/` |
+| DAV Server | `dav-server` / `10.10.10.41` | `dav.nazar.studio` on WireGuard (`10.44.0.1`) | WebDAV `/files/`, CalDAV/CardDAV `/radicale/`; autostarted for OwnLoom |
 
 ## DNS intent
 
-Public DNS should publish only names that are intentionally public, currently the Minecraft game names `balaur.eu` and `balaur.nazar.studio` pointing at `167.235.12.22`. Private service names such as `git.nazar.studio` and `dav.nazar.studio` should not have public A/AAAA records; WireGuard clients resolve them through dnsmasq on `10.44.0.1`.
+Public DNS should publish only names that are intentionally public, currently the Minecraft game names `balaur.eu` and `balaur.nazar.studio` pointing at `167.235.12.22`. Private service names such as `git.nazar.studio`, `ownloom.nazar.studio`, and `dav.nazar.studio` should not have public A/AAAA records; WireGuard clients resolve them through dnsmasq on `10.44.0.1`.
 
 ## Fleet orchestration
 
@@ -76,6 +79,7 @@ cd /root/nazar
 nix flake check --no-build
 nix run .#deploy-git
 nix run .#deploy-minecraft
+nix run .#deploy-ownloom
 nix run .#deploy-dav-server
 NAZAR_DEPLOY_ALL_CONFIRM=yes nix run .#deploy-all
 ```
@@ -97,6 +101,7 @@ From a configured WireGuard client:
 
 ```bash
 dig @10.44.0.1 git.nazar.studio +short
+dig @10.44.0.1 ownloom.nazar.studio +short
 dig @10.44.0.1 dav.nazar.studio +short
 curl -I http://git.nazar.studio/
 git ls-remote ssh://git@git.nazar.studio:10022/nazar/nazar.git

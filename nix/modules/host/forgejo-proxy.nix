@@ -1,6 +1,7 @@
 { fleet, pkgs, ... }:
 let
   git = fleet.vms.git;
+  ownloom = fleet.vms.ownloom;
   davServer = fleet.vms."dav-server";
   wireguardIp = "10.44.0.1";
 in
@@ -24,6 +25,19 @@ in
       };
     };
 
+    virtualHosts.${ownloom.dns} = {
+      listen = [
+        {
+          addr = wireguardIp;
+          port = 80;
+        }
+      ];
+      locations."/" = {
+        proxyPass = "http://${ownloom.ip}:${toString (ownloom.ownloom.web.httpPort or 80)}";
+        proxyWebsockets = true;
+      };
+    };
+
     virtualHosts.${davServer.dns} = {
       listen = [
         {
@@ -42,6 +56,7 @@ in
     after = [
       "wireguard-wg0.service"
       "microvm@git.service"
+      "microvm@ownloom.service"
       "microvm@dav-server.service"
     ];
     wants = [ "wireguard-wg0.service" ];
