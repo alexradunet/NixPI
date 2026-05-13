@@ -1,5 +1,5 @@
 {
-  description = "OwnLoom data VM module for Nazar";
+  description = "DAV server VM module for Nazar";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -12,12 +12,12 @@
     in
     {
       nixosModules = rec {
-        ownloom-data-service = ./nix/modules/ownloom-data.nix;
-        ownloom-data = ./nix/hosts/ownloom-data/default.nix;
-        ownloomData = ownloom-data;
-        ownloom-data-image = ./nix/hosts/ownloom-data/image.nix;
-        ownloom-data-disko = ./nix/hosts/ownloom-data/disko.nix;
-        default = ownloom-data;
+        dav-server-service = ./nix/modules/dav-server.nix;
+        dav-server = ./nix/hosts/dav-server/default.nix;
+        davServer = dav-server;
+        dav-server-image = ./nix/hosts/dav-server/image.nix;
+        dav-server-disko = ./nix/hosts/dav-server/disko.nix;
+        default = dav-server;
       };
 
       packages = forAllSystems (_system: { });
