@@ -2,13 +2,14 @@
   lib,
   buildNpmPackage,
   makeWrapper,
-  nodejs,
+  nodejs_22,
 }:
 
 let
   package = lib.importJSON ../../../package.json;
+  buildNpmPackage' = buildNpmPackage.override { nodejs = nodejs_22; };
 in
-buildNpmPackage {
+buildNpmPackage' {
   pname = "nixpi";
   inherit (package) version;
 
@@ -35,7 +36,7 @@ buildNpmPackage {
       $out/lib/nixpi/
 
     chmod +x $out/lib/nixpi/bin/nixpi.js
-    makeWrapper ${nodejs}/bin/node $out/bin/nixpi \
+    makeWrapper ${nodejs_22}/bin/node $out/bin/nixpi \
       --add-flags $out/lib/nixpi/bin/nixpi.js
 
     runHook postInstall
