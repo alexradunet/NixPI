@@ -1,0 +1,34 @@
+{
+  "name": "ownloom-ds",
+  "version": "1.0.0",
+  "description": "Digital Scoarță / Pixel Loom Dark — Lit-based design system for Ownloom",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "dev": "wds --config web-dev-server.config.js",
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "lit": "^3.1.3"
+  },
+  "devDependencies": {
+    "@web/dev-server": "^0.4.6",
+    "typescript": "^5.4.5"
+  },
+  "files": [
+    "dist",
+    "src/tokens/"
+  ],
+  "keywords": [
+    "design-system",
+    "lit",
+    "web-components",
+    "dark-mode",
+    "atomic-design"
+  ],
+  "author": "Nazar",
+  "license": "MIT"
+}

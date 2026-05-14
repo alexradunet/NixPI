@@ -1,0 +1,82 @@
+// SCSS Variables — Digital Scoarță Design System
+// Maps to CSS custom properties defined in design-tokens.css
+
+// ── Colors ────────────────────────────────────────────────
+$surface: #1a110f;
+$surface-dim: #1a110f;
+$surface-bright: #423733;
+$surface-container-lowest: #150c0a;
+$surface-container-low: #231916;
+$surface-container: #271d1a;
+$surface-container-high: #322824;
+$surface-container-highest: #3e322f;
+$surface-variant: #3e322f;
+$background: #1a110f;
+
+$on-surface: #f1dfd9;
+$on-surface-variant: #dcc1b8;
+$inverse-surface: #f1dfd9;
+$inverse-on-surface: #392e2b;
+$on-background: #f1dfd9;
+
+$outline: #a48b84;
+$outline-variant: #56423c;
+$surface-tint: #ffb59d;
+
+// Primary — Madder Red
+$primary: #ffb59d;
+$on-primary: #5d1800;
+$primary-container: #b85736;
+$on-primary-container: #fffaf9;
+$inverse-primary: #9d4323;
+
+// Secondary — Ochre
+$secondary: #e9c267;
+$on-secondary: #3f2e00;
+$secondary-container: #755800;
+$on-secondary-container: #f8d074;
+
+// Tertiary — Teal
+$tertiary: #76d5dc;
+$on-tertiary: #00363a;
+$tertiary-container: #008087;
+$on-tertiary-container: #ecfeff;
+
+// Error
+$error: #ffb4ab;
+$on-error: #690005;
+$error-container: #93000a;
+$on-error-container: #ffdad6;
+
+// Fixed tones
+$primary-fixed: #ffdbd0;
+$on-primary-fixed: #390b00;
+$primary-fixed-dim: #ffb59d;
+$secondary-fixed: #ffdf9b;
+$secondary-fixed-dim: #e9c267;
+$tertiary-fixed: #93f2f9;
+$tertiary-fixed-dim: #76d5dc;
+
+// ── Typography ────────────────────────────────────────────
+$font-headline: 'Newsreader', serif;
+$font-body: 'Work Sans', sans-serif;
+$font-label: 'JetBrains Mono', monospace;
+
+// ── Spacing ───────────────────────────────────────────────
+$s-base: 4px;
+$s-xs: 8px;
+$s-sm: 16px;
+$s-md: 24px;
+$s-lg: 40px;
+$s-xl: 64px;
+$s-gutter: 24px;
+$s-margin: 32px;
+
+// ── Border radius ─────────────────────────────────────────
+$r-xs: 2px;
+$r-sm: 2px;
+$r-default: 4px;
+$r-md: 6px;
+$r-lg: 8px;
+$r-xl: 12px;
+$r-full: 9999px;
