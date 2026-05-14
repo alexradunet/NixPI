@@ -1,18 +1,30 @@
 <!doctype html>
-<html class="dark" lang="en">
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title>Ownloom - Master Workbench</title>
+    <!-- Prevent flash of wrong theme: resolve before first paint -->
+    <script>
+      (function () {
+        var stored = localStorage.getItem("nixpi-theme");
+        var prefersDark = window.matchMedia(
+          "(prefers-color-scheme: dark)",
+        ).matches;
+        var mode = stored || (prefersDark ? "dark" : "light");
+        if (mode === "dark") document.documentElement.classList.add("dark");
+      })();
+    </script>
     <link
       rel="icon"
       href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='24' font-size='24' fill='%23ffb59d'>π</text></svg>"
     />
-    <meta name="theme-color" content="#1a110f" />
+    <meta name="theme-color" content="#1a110f" id="meta-theme-color" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta
       name="apple-mobile-web-app-status-bar-style"
       content="black-translucent"
+      id="meta-apple-status-bar"
     />
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <link
@@ -33,54 +45,59 @@
         theme: {
           extend: {
             colors: {
-              "surface-variant": "#3e322f",
-              surface: "#1a110f",
-              "on-secondary": "#3f2e00",
-              "primary-container": "#b85736",
-              error: "#ffb4ab",
-              "surface-dim": "#1a110f",
-              "on-secondary-container": "#f8d074",
-              "primary-fixed": "#ffdbd0",
-              primary: "#ffb59d",
-              "on-primary-fixed-variant": "#7e2c0e",
-              "surface-container-highest": "#3e322f",
-              "on-tertiary-container": "#ecfeff",
-              "on-tertiary": "#00363a",
-              "error-container": "#93000a",
-              "tertiary-container": "#008087",
-              "outline-variant": "#56423c",
-              "on-tertiary-fixed-variant": "#004f54",
-              "on-primary": "#5d1800",
-              "tertiary-fixed": "#93f2f9",
-              "inverse-surface": "#f1dfd9",
-              "on-secondary-fixed": "#251a00",
-              "primary-fixed-dim": "#ffb59d",
-              "on-background": "#f1dfd9",
-              tertiary: "#76d5dc",
-              "surface-bright": "#423733",
-              "secondary-fixed-dim": "#e9c267",
-              "on-primary-container": "#fffaf9",
-              "on-error-container": "#ffdad6",
-              "inverse-primary": "#9d4323",
-              "secondary-container": "#755800",
-              "on-secondary-fixed-variant": "#5b4300",
-              "inverse-on-surface": "#392e2b",
-              secondary: "#e9c267",
-              outline: "#a48b84",
-              "on-primary-fixed": "#390b00",
-              "on-surface-variant": "#dcc1b8",
-              "tertiary-fixed-dim": "#76d5dc",
-              "surface-container-high": "#322824",
-              background: "#1a110f",
-              "on-tertiary-fixed": "#002022",
-              "on-error": "#690005",
-              "secondary-fixed": "#ffdf9b",
-              "surface-container": "#271d1a",
-              "on-surface": "#f1dfd9",
-              "surface-tint": "#ffb59d",
-              "surface-container-low": "#231916",
-              "surface-container-lowest": "#150c0a",
-              "surface-stitch": "#56423c",
+              surface: "rgb(var(--tw-surface))",
+              "surface-dim": "rgb(var(--tw-surface-dim))",
+              "surface-bright": "rgb(var(--tw-surface-bright))",
+              "surface-variant": "rgb(var(--tw-surface-variant))",
+              "surface-container-lowest":
+                "rgb(var(--tw-surface-container-lowest))",
+              "surface-container-low": "rgb(var(--tw-surface-container-low))",
+              "surface-container": "rgb(var(--tw-surface-container))",
+              "surface-container-high": "rgb(var(--tw-surface-container-high))",
+              "surface-container-highest":
+                "rgb(var(--tw-surface-container-highest))",
+              "surface-tint": "rgb(var(--tw-surface-tint))",
+              "surface-stitch": "rgb(var(--tw-outline-variant))",
+              background: "rgb(var(--tw-background))",
+              "on-background": "rgb(var(--tw-on-background))",
+              "on-surface": "rgb(var(--tw-on-surface))",
+              "on-surface-variant": "rgb(var(--tw-on-surface-variant))",
+              "inverse-surface": "rgb(var(--tw-inverse-surface))",
+              "inverse-on-surface": "rgb(var(--tw-inverse-on-surface))",
+              outline: "rgb(var(--tw-outline))",
+              "outline-variant": "rgb(var(--tw-outline-variant))",
+              primary: "rgb(var(--tw-primary))",
+              "on-primary": "rgb(var(--tw-on-primary))",
+              "primary-container": "rgb(var(--tw-primary-container))",
+              "on-primary-container": "rgb(var(--tw-on-primary-container))",
+              "inverse-primary": "rgb(var(--tw-inverse-primary))",
+              "primary-fixed": "rgb(var(--tw-primary-fixed))",
+              "primary-fixed-dim": "rgb(var(--tw-primary-fixed-dim))",
+              "on-primary-fixed": "rgb(var(--tw-on-primary-fixed))",
+              "on-primary-fixed-variant":
+                "rgb(var(--tw-on-primary-fixed-variant))",
+              secondary: "rgb(var(--tw-secondary))",
+              "on-secondary": "rgb(var(--tw-on-secondary))",
+              "secondary-container": "rgb(var(--tw-secondary-container))",
+              "on-secondary-container": "rgb(var(--tw-on-secondary-container))",
+              "secondary-fixed": "rgb(var(--tw-secondary-fixed))",
+              "secondary-fixed-dim": "rgb(var(--tw-secondary-fixed-dim))",
+              "on-secondary-fixed": "rgb(var(--tw-on-secondary-fixed))",
+              "on-secondary-fixed-variant":
+                "rgb(var(--tw-on-secondary-fixed-variant))",
+              tertiary: "rgb(var(--tw-tertiary))",
+              "on-tertiary": "rgb(var(--tw-on-tertiary))",
+              "tertiary-container": "rgb(var(--tw-tertiary-container))",
+              "on-tertiary-container": "rgb(var(--tw-on-tertiary-container))",
+              "tertiary-fixed": "rgb(var(--tw-tertiary-fixed))",
+              "tertiary-fixed-dim": "rgb(var(--tw-tertiary-fixed-dim))",
+              "on-tertiary-fixed": "rgb(var(--tw-on-tertiary-fixed))",
+              "on-tertiary-fixed-variant":
+                "rgb(var(--tw-on-tertiary-fixed-variant))",
+              error: "rgb(var(--tw-error))",
+              "on-error": "rgb(var(--tw-on-error))",
+              "error-container": "rgb(var(--tw-error-container))",
+              "on-error-container": "rgb(var(--tw-on-error-container))",
             },
             borderRadius: {
               DEFAULT: "0.125rem",
@@ -145,7 +162,114 @@
         },
       };
     </script>
+    <!--
+      Bridge: --color-* hex tokens → --tw-* RGB channels for Tailwind.
+      This must run AFTER design-tokens.css is loaded (or use the inline :root vars).
+      We duplicate the token values here as inline <style> so Tailwind resolves
+      them at runtime via rgb(var(--tw-*)). The `.dark` block overrides them.
+    -->
     <style>
+      :root {
+        /* Convert hex tokens to space-separated RGB channels for Tailwind */
+        --tw-surface: 255 248 246;
+        --tw-surface-dim: 233 214 209;
+        --tw-surface-bright: 255 248 246;
+        --tw-surface-variant: 241 223 217;
+        --tw-surface-container-lowest: 255 255 255;
+        --tw-surface-container-low: 255 241 237;
+        --tw-surface-container: 253 234 228;
+        --tw-surface-container-high: 247 228 223;
+        --tw-surface-container-highest: 241 223 217;
+        --tw-surface-tint: 157 67 35;
+        --tw-background: 255 248 246;
+        --tw-on-background: 35 25 22;
+        --tw-on-surface: 35 25 22;
+        --tw-on-surface-variant: 86 66 60;
+        --tw-inverse-surface: 57 46 43;
+        --tw-inverse-on-surface: 255 237 232;
+        --tw-outline: 137 114 107;
+        --tw-outline-variant: 220 193 184;
+        --tw-primary: 152 63 32;
+        --tw-on-primary: 255 255 255;
+        --tw-primary-container: 184 87 54;
+        --tw-on-primary-container: 255 250 249;
+        --tw-inverse-primary: 255 181 157;
+        --tw-primary-fixed: 255 219 208;
+        --tw-primary-fixed-dim: 255 181 157;
+        --tw-on-primary-fixed: 57 11 0;
+        --tw-on-primary-fixed-variant: 126 44 14;
+        --tw-secondary: 119 90 3;
+        --tw-on-secondary: 255 255 255;
+        --tw-secondary-container: 254 213 120;
+        --tw-on-secondary-container: 120 91 4;
+        --tw-secondary-fixed: 255 223 155;
+        --tw-secondary-fixed-dim: 233 194 103;
+        --tw-on-secondary-fixed: 37 26 0;
+        --tw-on-secondary-fixed-variant: 91 67 0;
+        --tw-tertiary: 0 101 107;
+        --tw-on-tertiary: 255 255 255;
+        --tw-tertiary-container: 0 128 135;
+        --tw-on-tertiary-container: 236 254 255;
+        --tw-tertiary-fixed: 147 242 249;
+        --tw-tertiary-fixed-dim: 118 213 220;
+        --tw-on-tertiary-fixed: 0 32 34;
+        --tw-on-tertiary-fixed-variant: 0 79 84;
+        --tw-error: 186 26 26;
+        --tw-on-error: 255 255 255;
+        --tw-error-container: 255 218 214;
+        --tw-on-error-container: 147 0 10;
+      }
+
+      .dark {
+        --tw-surface: 26 17 15;
+        --tw-surface-dim: 26 17 15;
+        --tw-surface-bright: 66 55 51;
+        --tw-surface-variant: 62 50 47;
+        --tw-surface-container-lowest: 21 12 10;
+        --tw-surface-container-low: 35 25 22;
+        --tw-surface-container: 39 29 26;
+        --tw-surface-container-high: 50 40 36;
+        --tw-surface-container-highest: 62 50 47;
+        --tw-surface-tint: 255 181 157;
+        --tw-background: 26 17 15;
+        --tw-on-background: 241 223 217;
+        --tw-on-surface: 241 223 217;
+        --tw-on-surface-variant: 220 193 184;
+        --tw-inverse-surface: 241 223 217;
+        --tw-inverse-on-surface: 57 46 43;
+        --tw-outline: 164 139 132;
+        --tw-outline-variant: 86 66 60;
+        --tw-primary: 255 181 157;
+        --tw-on-primary: 93 24 0;
+        --tw-primary-container: 184 87 54;
+        --tw-on-primary-container: 255 250 249;
+        --tw-inverse-primary: 157 67 35;
+        --tw-primary-fixed: 255 219 208;
+        --tw-primary-fixed-dim: 255 181 157;
+        --tw-on-primary-fixed: 57 11 0;
+        --tw-on-primary-fixed-variant: 126 44 14;
+        --tw-secondary: 233 194 103;
+        --tw-on-secondary: 63 46 0;
+        --tw-secondary-container: 117 88 0;
+        --tw-on-secondary-container: 248 208 116;
+        --tw-secondary-fixed: 255 223 155;
+        --tw-secondary-fixed-dim: 233 194 103;
+        --tw-on-secondary-fixed: 37 26 0;
+        --tw-on-secondary-fixed-variant: 91 67 0;
+        --tw-tertiary: 118 213 220;
+        --tw-on-tertiary: 0 54 58;
+        --tw-tertiary-container: 0 128 135;
+        --tw-on-tertiary-container: 236 254 255;
+        --tw-tertiary-fixed: 147 242 249;
+        --tw-tertiary-fixed-dim: 118 213 220;
+        --tw-on-tertiary-fixed: 0 32 34;
+        --tw-on-tertiary-fixed-variant: 0 79 84;
+        --tw-error: 255 180 171;
+        --tw-on-error: 105 0 5;
+        --tw-error-container: 147 0 10;
+        --tw-on-error-container: 255 218 214;
+      }
+
       .pixel-divider-h {
         background-image: linear-gradient(
           to right,
@@ -224,7 +348,7 @@
         font-weight: 500;
       }
 
-      /* Custom scrollbar */
+      /* Custom scrollbar — adapts to theme */
       ::-webkit-scrollbar {
         width: 6px;
         height: 6px;
@@ -233,11 +357,11 @@
         background: transparent;
       }
       ::-webkit-scrollbar-thumb {
-        background: #56423c;
+        background: var(--color-outline-variant);
         border-radius: 3px;
       }
       ::-webkit-scrollbar-thumb:hover {
-        background: #a48b84;
+        background: var(--color-outline);
       }
 
       /* Markdown content in messages */
@@ -257,8 +381,8 @@
         margin: 12px 0 6px;
       }
       .msg-body pre {
-        background: #0d0807;
-        border: 1px solid #56423c;
+        background: var(--color-surface-container-lowest);
+        border: 1px solid var(--color-outline-variant);
         border-radius: 2px;
         overflow-x: auto;
         padding: 12px;
@@ -281,13 +405,13 @@
         margin: 4px 0;
       }
       .msg-body blockquote {
-        border-left: 2px solid #b85736;
+        border-left: 2px solid var(--color-primary-container);
         margin: 8px 0;
         padding-left: 12px;
-        color: #dcc1b8;
+        color: var(--color-on-surface-variant);
       }
       .msg-body a {
-        color: #ffb59d;
+        color: var(--color-primary);
         text-decoration: underline;
       }
       .msg-body table {
@@ -297,12 +421,12 @@
       }
       .msg-body th,
       .msg-body td {
-        border: 1px solid #56423c;
+        border: 1px solid var(--color-outline-variant);
         padding: 6px 10px;
         text-align: left;
       }
       .msg-body th {
-        background: #271d1a;
+        background: var(--color-surface-container);
       }
       .msg-body img {
         max-width: 100%;
@@ -320,22 +444,22 @@
         transition: all 0.15s;
       }
       .session-item:hover {
-        background: #271d1a;
+        background: var(--color-surface-container);
       }
       .session-item.active {
-        border-left: 2px solid #ffb59d;
+        border-left: 2px solid var(--color-primary);
         padding-left: 10px;
-        background: #271d1a;
+        background: var(--color-surface-container);
       }
       .session-meta {
-        color: #dcc1b8;
+        color: var(--color-on-surface-variant);
         font-size: 11px;
         font-family: "JetBrains Mono", monospace;
       }
 
       /* Thinking block */
       .msg-thinking {
-        border-left: 2px solid #755800;
+        border-left: 2px solid var(--color-secondary-container);
         padding-left: 12px;
         margin-top: 8px;
       }
@@ -343,14 +467,14 @@
       /* Tool call block */
       .tool-call {
         margin-top: 8px;
-        border: 1px solid #56423c;
+        border: 1px solid var(--color-outline-variant);
         border-radius: 4px;
-        background: #0d0807;
+        background: var(--color-surface-container-lowest);
       }
       .tool-call summary {
         padding: 8px 12px;
         cursor: pointer;
-        color: #76d5dc;
+        color: var(--color-tertiary);
       }
       .tool-call pre {
         margin: 0;
@@ -400,10 +524,10 @@
         background: rgba(0, 0, 0, 0.7);
       }
       dialog {
-        background: #1a110f;
-        border: 1px solid #56423c;
+        background: var(--color-surface);
+        border: 1px solid var(--color-outline-variant);
         border-radius: 8px;
-        color: #f1dfd9;
+        color: var(--color-on-surface);
         max-width: 90vw;
       }
 
@@ -418,7 +542,7 @@
         height: 64px;
         object-fit: cover;
         border-radius: 4px;
-        border: 1px solid #56423c;
+        border: 1px solid var(--color-outline-variant);
       }
       .image-preview button {
         position: absolute;
@@ -427,7 +551,7 @@
         width: 18px;
         height: 18px;
         border-radius: 50%;
-        background: #b85736;
+        background: var(--color-primary-container);
         color: #fff;
         border: none;
         font-size: 10px;
@@ -500,6 +624,16 @@
       </div>
 
       <div class="flex items-center gap-4">
+        <button
+          id="btn-theme-toggle"
+          onclick="toggleTheme()"
+          class="w-10 h-10 rounded-full hover:bg-surface-container-high transition-colors flex items-center justify-center text-on-surface-variant cursor-pointer active:scale-95"
+          title="Toggle light/night mode"
+        >
+          <span class="material-symbols-outlined" id="theme-icon"
+            >dark_mode</span
+          >
+        </button>
         <button
           id="btn-restart"
           onclick="restartPi()"
@@ -1097,6 +1231,67 @@
       let pendingImages = [];
       let pendingModelSwitchMsg = null;
       let userScrolledUp = false;
+
+      // ── Theme ───────────────────────────────────────────────────────────────
+      const THEME_KEY = "nixpi-theme";
+      const DARK = "dark";
+      const LIGHT = "light";
+
+      function getSystemPrefersDark() {
+        return window.matchMedia("(prefers-color-scheme: dark)").matches;
+      }
+
+      function resolveTheme() {
+        const stored = localStorage.getItem(THEME_KEY);
+        if (stored === DARK || stored === LIGHT) return stored;
+        return getSystemPrefersDark() ? DARK : LIGHT;
+      }
+
+      function applyTheme(mode) {
+        const html = document.documentElement;
+        if (mode === DARK) {
+          html.classList.add(DARK);
+        } else {
+          html.classList.remove(DARK);
+        }
+        // Update meta theme-color for mobile browsers
+        const meta = document.getElementById("meta-theme-color");
+        if (meta) {
+          meta.content = mode === DARK ? "#1a110f" : "#fff8f6";
+        }
+        // Update the icon
+        const icon = document.getElementById("theme-icon");
+        if (icon) {
+          icon.textContent = mode === DARK ? "dark_mode" : "light_mode";
+        }
+        // Update apple status bar
+        const appleBar = document.getElementById("meta-apple-status-bar");
+        if (appleBar) {
+          appleBar.content = mode === DARK ? "black-translucent" : "default";
+        }
+        localStorage.setItem(THEME_KEY, mode);
+      }
+
+      function toggleTheme() {
+        const current = document.documentElement.classList.contains(DARK)
+          ? DARK
+          : LIGHT;
+        const next = current === DARK ? LIGHT : DARK;
+        applyTheme(next);
+      }
+
+      // Initialize theme before first paint (inline in <head> would be ideal,
+      // but this is the earliest we can do it in this single-file setup).
+      applyTheme(resolveTheme());
+
+      // Listen for system preference changes (only when no explicit choice stored)
+      window
+        .matchMedia("(prefers-color-scheme: dark)")
+        .addEventListener("change", (e) => {
+          if (!localStorage.getItem(THEME_KEY)) {
+            applyTheme(e.matches ? DARK : LIGHT);
+          }
+        });
 
       // ── Sidebar ───────────────────────────────────────────────────────────────
       function toggleLeftSidebar() {
