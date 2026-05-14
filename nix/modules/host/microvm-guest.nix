@@ -58,15 +58,12 @@ in
   };
 
   microvm = {
-    hypervisor = "qemu";
+    hypervisor = "cloud-hypervisor";
     vcpu = vm.cores;
-    # microvm.nix warns that QEMU can hang at exactly 2048 MiB.
-    mem = if vm.memoryMiB == 2048 then 2304 else vm.memoryMiB;
-    # microvm.nix currently emits QEMU's obsolete/unsupported `-user` flag for
-    # this option with our pinned qemu (10.x). Keep this null so MicroVMs boot;
-    # the host unit and device permissions still isolate state under /persist.
+    mem = vm.memoryMiB;
     user = null;
     socket = "${vm.hostname}.sock";
+    vsock.cid = vm.vmid;
     interfaces = [
       {
         type = "tap";

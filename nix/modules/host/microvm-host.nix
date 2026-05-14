@@ -81,7 +81,7 @@ in
   ++ sshHostKeyShareTmpfiles;
 
   environment.systemPackages = [
-    pkgs.qemu_kvm
+    pkgs.cloud-hypervisor
     pkgs.virtiofsd
   ];
 

@@ -4,13 +4,13 @@ Declarative NixOS + MicroVM configuration for the Hetzner host `nazar`.
 
 ## Current host identity
 
-| Item | Value |
-|---|---|
-| Hostname | `nazar` |
-| Public IPv4 | `167.235.12.22` |
-| Public IPv6 | `2a01:4f8:262:1b01::2/64` |
-| Main NIC | `enp0s31f6` |
-| MicroVM network | `10.10.10.0/24`, host gateway `10.10.10.1` |
+| Item                    | Value                                                        |
+| ----------------------- | ------------------------------------------------------------ |
+| Hostname                | `nazar`                                                      |
+| Public IPv4             | `167.235.12.22`                                              |
+| Public IPv6             | `2a01:4f8:262:1b01::2/64`                                    |
+| Main NIC                | `enp0s31f6`                                                  |
+| MicroVM network         | `10.10.10.0/24`, host gateway `10.10.10.1`                   |
 | Private service address | `10.44.0.1/32` on host-local dummy interface `nazar-private` |
 
 Canonical private administration and private service access is through `sshuttle` over hardened public SSH to `alex@167.235.12.22`. Root SSH is disabled.
@@ -49,7 +49,7 @@ There is intentionally no public HTTP/TCP/80 DNAT to Minecraft and no public For
 ## Repository layout
 
 ```text
-flake.nix                 # fleet orchestrator, deploy-rs apps, VM image composition
+flake.nix                 # fleet orchestrator, deploy-rs apps, MicroVM composition
 flake.lock                # pinned inputs
 nix/fleet/vms.nix         # VM inventory: IDs, IPs, DNS, sizing, service contracts
 nix/fleet/exposure.nix    # private/public HTTP exposure policy
@@ -61,12 +61,12 @@ runbooks/                 # operational runbooks
 
 ## Active/declarative services
 
-| Service | VM | Private/Public endpoint | Notes |
-|---|---|---|---|
-| Forgejo | `git` / `10.10.10.21` | `git.nazar.studio` on sshuttle-routed `10.44.0.1` | HTTP `80`, Git SSH `10022` via host proxy; autostarted |
-| Minecraft | `minecraft` / `10.10.10.30` | `mc.nazar.studio`; public game `25565/tcp`, voice `24454/udp`; private `/nixpi/` | no public webapp |
-| DAV Server | `dav-server` / `10.10.10.41` | `dav.nazar.studio` on sshuttle-routed `10.44.0.1` | WebDAV `/files/`, CalDAV/CardDAV `/radicale/`; autostarted |
-| NixPi | host + every MicroVM | `/nixpi/` on the host and per-service domains | private web interface for Pi RPC sessions; route exposure controlled by `nix/fleet/exposure.nix` |
+| Service    | VM                           | Private/Public endpoint                                                          | Notes                                                                                            |
+| ---------- | ---------------------------- | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| Forgejo    | `git` / `10.10.10.21`        | `git.nazar.studio` on sshuttle-routed `10.44.0.1`                                | HTTP `80`, Git SSH `10022` via host proxy; autostarted                                           |
+| Minecraft  | `minecraft` / `10.10.10.30`  | `mc.nazar.studio`; public game `25565/tcp`, voice `24454/udp`; private `/nixpi/` | no public webapp                                                                                 |
+| DAV Server | `dav-server` / `10.10.10.41` | `dav.nazar.studio` on sshuttle-routed `10.44.0.1`                                | WebDAV `/files/`, CalDAV/CardDAV `/radicale/`; autostarted                                       |
+| NixPi      | host + every MicroVM         | `/nixpi/` on the host and per-service domains                                    | private web interface for Pi RPC sessions; route exposure controlled by `nix/fleet/exposure.nix` |
 
 ## DNS intent
 
@@ -87,7 +87,7 @@ nix run .#deploy-dav-server
 NAZAR_DEPLOY_ALL_CONFIRM=yes nix run .#deploy-all
 ```
 
-After each deploy, run the VM's service checks. These commands switch the NixOS system profile on existing guests; VM lifecycle actions remain separately gated.
+After each deploy, run the VM's service checks. These commands switch the NixOS system profile on existing MicroVM guests; lifecycle actions remain separately gated.
 
 ## Useful commands
 
@@ -118,6 +118,7 @@ git ls-remote ssh://git@git.nazar.studio:10022/nazar/nazar.git
 - Add only trusted client public SSH keys to `nix/users/alex-public-ssh-keys.nix`.
 - Do not expose private services, including NixPi, publicly without an explicit hardening decision.
 - Treat sshuttle over OpenSSH as the canonical private access path.
+- Canonical runtime is MicroVM only; do not add alternate VM targets.
 - Enforce one-way host management: `nazar` must be able to SSH to every MicroVM over its private VM hostname/IP, and MicroVMs must not be able to open new connections back to `nazar`.
 - Keep public SSH key-only and alex-only because it is the sshuttle control endpoint.
 - Do not enable root SSH.

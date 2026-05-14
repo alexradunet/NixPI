@@ -1,36 +1,56 @@
-# DAV Server VM Runbook
+# DAV Server MicroVM runbook
 
-`dav-server` is the private personal data VM for Nazar.
+Canonical runtime: Nazar MicroVM only. The DAV Server is managed as part of the declarative Nazar MicroVM fleet.
 
-- VM: `dav-server`
-- Private name: `dav.nazar.studio` -> `10.44.0.1` from declarative laptop `/etc/hosts`
-- VM NAT IP: `10.10.10.41`
-- State: `/persist/microvms/dav-server`
-- Guest data: `/var/lib/dav-server`, `/var/lib/radicale/collections`
-- Services: nginx WebDAV at `/files/`, Radicale CalDAV/CardDAV at `/radicale/`
-- NixPi: `dav.nazar.studio/nixpi/` -> `10.10.10.41:4815` through host nginx and sshuttle
-- Exposure: private through the host nginx proxy; no public DNS or public port forward
+## Identity
 
-DAV Server uses the configured htpasswd file for nginx basic auth on `/files/` and `/radicale/`. The network path is still private, but service-level auth remains required before storing real personal data.
+- Fleet entry: `nix/fleet/vms.nix` -> `vms.dav-server`
+- Hostname: `dav-server`
+- IP: `10.10.10.41`
+- DNS: `dav.nazar.studio`
+- Private access: sshuttle to `10.44.0.1`, then host nginx proxies to the MicroVM
 
-## Fresh-server policy
-
-Start this as a fresh `dav-server` state tree. Do not copy or bind-mount old `/persist/microvms/dav` or guest `/var/lib/dav` data into this VM unless a separate migration plan is explicitly approved. Provision new secrets under `/persist/microvms/dav-server` / `/var/lib/dav-server` and validate auth, backups, and restore before storing real personal data.
-
-Build/deploy:
+## Deploy
 
 ```bash
-nix build .#dav-server-qcow2
+cd /root/nazar
+nix flake check --no-build
 nix run .#deploy-dav-server
 ```
 
-Validation from a configured sshuttle laptop:
+For service-repo updates:
 
 ```bash
-systemctl status nazar-sshuttle
-getent hosts dav.nazar.studio
-curl -I http://dav.nazar.studio/
+nix flake lock --update-input dav-server
+nix flake check --no-build
+nix run .#deploy-dav-server
+```
+
+## Lifecycle
+
+```bash
+systemctl status microvm@dav-server
+systemctl restart microvm@dav-server
+journalctl -u microvm@dav-server -f
+```
+
+## Persistence
+
+Persistent shares are declared in `nix/fleet/vms.nix`:
+
+- `/persist/microvms/dav-server/data` -> `/var/lib/dav-server`
+- `/persist/microvms/dav-server/radicale` -> `/var/lib/radicale/collections`
+- `/persist/microvms/dav-server/ssh` -> guest SSH host keys
+
+## Checks
+
+```bash
+ssh alex@dav-server systemctl status nginx radicale --no-pager
+curl -I http://dav.nazar.studio/files/
+curl -I http://dav.nazar.studio/radicale/
 curl -I http://dav.nazar.studio/nixpi/
 ```
 
-Do not expose DAV publicly without an explicit hardening pass covering auth, TLS, backups, logging, and rollback.
+## Policy
+
+No alternate VM implementation is supported. Keep DAV Server lifecycle, networking, and persistence declarative in the Nazar MicroVM fleet.

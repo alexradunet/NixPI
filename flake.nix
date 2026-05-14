@@ -1,5 +1,5 @@
 {
-  description = "Nazar NixOS VM fleet";
+  description = "Nazar NixOS MicroVM fleet";
 
   nixConfig = {
     extra-substituters = [ "https://cache.numtide.com" ];
@@ -67,241 +67,48 @@
           ;
       };
 
-      commonVmModules = [
+      microvmGuestBaseModules = [
+        inputs.microvm.nixosModules.microvm
+        sops-nix.nixosModules.sops
         ./nix/modules/common/base.nix
         ./nix/modules/common/users.nix
         ./nix/modules/common/security.nix
-        ./nix/modules/common/networking.nix
         ./nix/modules/common/development.nix
         ./nix/modules/common/sops.nix
         ./nix/modules/common/nazar-context.nix
+        ./nix/modules/host/microvm-guest.nix
       ];
 
-      agentVmModules = [ ./nix/modules/common/pi-agent.nix ];
+      piAgentModule = ./nix/modules/common/pi-agent.nix;
 
-      forgejoServiceModules = [
-        ./nix/modules/services/forgejo.nix
-        ./nix/modules/services/forgejo-bootstrap.nix
-      ];
+      microvmServiceModules = {
+        git = [
+          ./nix/modules/services/forgejo.nix
+          ./nix/modules/services/forgejo-bootstrap.nix
+        ];
+        minecraft = [
+          ./nix/modules/services/minecraft-identity.nix
+          inputs.minecraft.nixosModules.minecraft-service
+        ];
+        dav-server = [ ./nix/modules/services/dav-server.nix ];
+      };
 
-      forgejoStandaloneModule =
-        { lib, ... }:
-        {
-          imports = forgejoServiceModules;
-
-          # VM 101 is deployed from the generated qcow2 image on a single legacy-BIOS
-          # VirtIO disk. Keep the normal rebuild/deploy target aligned with that
-          # installed shape so deploy-rs can switch it without expecting an EFI /boot.
-          boot.loader.systemd-boot.enable = lib.mkForce false;
-          boot.loader.efi.canTouchEfiVariables = lib.mkForce false;
-          boot.loader.grub = {
-            enable = true;
-            device = "/dev/vda";
-          };
-          boot.growPartition = true;
-          boot.kernelParams = [ "console=ttyS0" ];
-          boot.initrd.availableKernelModules = [
-            "virtio_pci"
-            "virtio_blk"
-            "virtio_scsi"
-            "sd_mod"
-            "sr_mod"
-          ];
-
-          fileSystems."/" = {
-            device = lib.mkForce "/dev/disk/by-label/nixos";
-            fsType = lib.mkForce "ext4";
-            options = lib.mkForce [
-              "x-systemd.growfs"
-              "x-initrd.mount"
-            ];
-          };
-
-          swapDevices = [ ];
-
-          system.stateVersion = "26.05";
-        };
-
-      forgejoImageModule =
-        { vm, ... }:
-        {
-          imports = forgejoServiceModules;
-
-          image = {
-            baseName = "nixos-${vm.hostname}";
-            format = "qcow2";
-            # Use legacy BIOS for the imported Proxmox qcow2 to avoid needing an EFI
-            # vars disk in the initial rebuild. Future VMs can choose OVMF explicitly.
-            efiSupport = false;
-          };
-
-          virtualisation.diskSize = 8192;
-
-          services.qemuGuest.enable = true;
-          services.fstrim.enable = true;
-
-          boot.growPartition = true;
-          boot.kernelParams = [ "console=ttyS0" ];
-          boot.initrd.availableKernelModules = [
-            "virtio_pci"
-            "virtio_blk"
-            "virtio_scsi"
-            "sd_mod"
-            "sr_mod"
-          ];
-
-          system.stateVersion = "26.05";
-        };
-
-      minecraftServiceModule = inputs.minecraft.nixosModules.minecraft-service;
-
-      minecraftStandaloneModule =
-        { ... }:
-        {
-          imports = [
-            ./nix/modules/services/minecraft-identity.nix
-            minecraftServiceModule
-          ];
-
-          # Keep the standalone VM profile service-only: no Minecraft webapp.
-          boot.loader.grub = {
-            enable = true;
-            device = "/dev/vda";
-          };
-          boot.growPartition = true;
-          boot.kernelParams = [ "console=ttyS0" ];
-          boot.initrd.availableKernelModules = [
-            "virtio_pci"
-            "virtio_blk"
-            "virtio_scsi"
-            "sd_mod"
-            "sr_mod"
-          ];
-
-          fileSystems."/" = {
-            device = "/dev/disk/by-label/nixos";
-            fsType = "ext4";
-            options = [
-              "x-systemd.growfs"
-              "x-initrd.mount"
-            ];
-          };
-
-          swapDevices = [ ];
-
-          services.qemuGuest.enable = true;
-          services.fstrim.enable = true;
-
-          system.stateVersion = "26.05";
-        };
-
-      minecraftImageModule =
-        { vm, ... }:
-        {
-          imports = [
-            ./nix/modules/services/minecraft-identity.nix
-            minecraftServiceModule
-          ];
-
-          image = {
-            baseName = "nixos-${vm.hostname}";
-            format = "qcow2";
-            efiSupport = false;
-          };
-
-          virtualisation.diskSize = 8192;
-
-          services.qemuGuest.enable = true;
-          services.fstrim.enable = true;
-
-          boot.growPartition = true;
-          boot.kernelParams = [ "console=ttyS0" ];
-          boot.initrd.availableKernelModules = [
-            "virtio_pci"
-            "virtio_blk"
-            "virtio_scsi"
-            "sd_mod"
-            "sr_mod"
-          ];
-
-          system.stateVersion = "26.05";
-        };
-
-      davServerImageModule =
-        { vm, ... }:
-        {
-          imports = [ ./nix/modules/services/dav-server.nix ];
-
-          image = {
-            baseName = "nixos-${vm.hostname}";
-            format = "qcow2";
-            efiSupport = false;
-          };
-
-          virtualisation.diskSize = 8192;
-
-          services.qemuGuest.enable = true;
-          services.fstrim.enable = true;
-
-          boot.growPartition = true;
-          boot.kernelParams = [ "console=ttyS0" ];
-          boot.initrd.availableKernelModules = [
-            "virtio_pci"
-            "virtio_blk"
-            "virtio_scsi"
-            "sd_mod"
-            "sr_mod"
-          ];
-
-          system.stateVersion = "26.05";
-        };
-
-      mkExternalVm =
-        {
-          name,
-          module,
-          includeQemuGuest ? false,
-          includeAgent ? true,
-        }:
+      mkMicrovmGuest = name:
         mkNixosHost {
           inherit name;
           vm = fleet.vms.${name};
-          modules = [
-            disko.nixosModules.disko
-            sops-nix.nixosModules.sops
-          ]
-          ++ commonVmModules
-          ++ nixpkgs.lib.optionals includeQemuGuest [ ./nix/modules/common/qemu-guest.nix ]
-          ++ nixpkgs.lib.optionals includeAgent agentVmModules
-          ++ [ module ];
-        };
-
-      mkExternalImage =
-        {
-          name,
-          module,
-          includeAgent ? true,
-        }:
-        mkNixosHost {
-          inherit name;
-          vm = fleet.vms.${name};
-          modules = [
-            "${nixpkgs}/nixos/modules/virtualisation/disk-image.nix"
-            sops-nix.nixosModules.sops
-          ]
-          ++ commonVmModules
-          ++ nixpkgs.lib.optionals includeAgent agentVmModules
-          ++ [ module ];
+          modules = microvmGuestBaseModules
+            ++ nixpkgs.lib.optional (fleet.vms.${name}.piAgent.enable or false) piAgentModule
+            ++ microvmServiceModules.${name};
         };
     in
     {
       nixosModules = {
         forgejo-service = ./nix/modules/services/forgejo.nix;
         forgejo-bootstrap = ./nix/modules/services/forgejo-bootstrap.nix;
-        forgejo = forgejoStandaloneModule;
-        forgejo-image = forgejoImageModule;
         dav-server-service = ./nix/modules/services/dav-server.nix;
-        dav-server-image = davServerImageModule;
+        microvm-guest = ./nix/modules/host/microvm-guest.nix;
+        microvm-host = ./nix/modules/host/microvm-host.nix;
       };
 
       nixosConfigurations = {
@@ -325,62 +132,17 @@
           modules = [ ./nix/hosts/alex-laptop ];
         };
 
-        git = mkExternalVm {
-          name = "git";
-          module = forgejoStandaloneModule;
-          includeQemuGuest = true;
-        };
-
-        gitImage = mkExternalImage {
-          name = "git";
-          module = forgejoImageModule;
-        };
-
-        minecraft = mkNixosHost {
-          name = "minecraft";
-          vm = fleet.vms.minecraft;
-          modules = [
-            inputs.microvm.nixosModules.microvm
-            sops-nix.nixosModules.sops
-            ./nix/modules/common/base.nix
-            ./nix/modules/common/users.nix
-            ./nix/modules/common/security.nix
-            ./nix/modules/common/development.nix
-            ./nix/modules/common/sops.nix
-            ./nix/modules/common/nazar-context.nix
-            ./nix/modules/common/pi-agent.nix
-            ./nix/modules/host/microvm-guest.nix
-            ./nix/modules/services/minecraft-identity.nix
-            minecraftServiceModule
-          ];
-        };
-
-        minecraftImage = mkExternalImage {
-          name = "minecraft";
-          module = minecraftImageModule;
-        };
-
-        "dav-server" = mkExternalVm {
-          name = "dav-server";
-          module = ./nix/modules/services/dav-server.nix;
-          includeQemuGuest = true;
-        };
-
-        "dav-server-image" = mkExternalImage {
-          name = "dav-server";
-          module = davServerImageModule;
-        };
+        git = mkMicrovmGuest "git";
+        minecraft = mkMicrovmGuest "minecraft";
+        "dav-server" = mkMicrovmGuest "dav-server";
       };
 
       packages.${system} = {
         inherit pi;
-        git-qcow2 = self.nixosConfigurations.gitImage.config.system.build.image;
-        minecraft-qcow2 = self.nixosConfigurations.minecraftImage.config.system.build.image;
-        dav-server-qcow2 = self.nixosConfigurations."dav-server-image".config.system.build.image;
       };
 
       deploy.nodes = nixpkgs.lib.mapAttrs (name: vm: {
-        # Deploy over private VM aliases.
+        # Deploy over private MicroVM aliases.
         # `alex` is the canonical VM admin user; deploy-rs escalates to the
         # root system profile through passwordless sudo declared in common users.
         hostname = vm.hostname;
@@ -405,14 +167,14 @@
                 exec ${deployBin} "$@" "${self.outPath}#${name}"
               ''
             );
-            meta.description = "Deploy the ${name} NixOS VM from nazar with deploy-rs";
+            meta.description = "Deploy the ${name} NixOS MicroVM from nazar with deploy-rs";
           };
         in
         {
           deploy = {
             type = "app";
             program = deployBin;
-            meta.description = "Run deploy-rs for the nazar NixOS VM fleet";
+            meta.description = "Run deploy-rs for the nazar NixOS MicroVM fleet";
           };
           deploy-git = mkDeployApp "git";
           deploy-minecraft = mkDeployApp "minecraft";
@@ -434,7 +196,7 @@
                 done
               ''
             );
-            meta.description = "Deploy all current NixOS VMs from nazar with deploy-rs";
+            meta.description = "Deploy all current NixOS MicroVMs from nazar with deploy-rs";
           };
         };
 

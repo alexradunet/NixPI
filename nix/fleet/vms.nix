@@ -3,7 +3,6 @@
     bridge = "nazar0";
     gateway = "10.10.10.1";
     prefixLength = 24;
-    interface = "ens18";
     nameservers = [
       "10.10.10.1"
       "1.1.1.1"

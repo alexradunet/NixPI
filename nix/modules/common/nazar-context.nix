@@ -37,10 +37,6 @@ let
   dnsAliasesText = if dnsAliases == [ ] then "" else lib.concatStringsSep ", " dnsAliases;
   dnsNamesText = if dnsNames == [ ] then "" else lib.concatStringsSep ", " dnsNames;
   includeCommonAgent = true;
-  includeQemuGuest = lib.elem vm.hostname [
-    "git"
-    "dav-server"
-  ];
   selfFlakeRoot = "/etc/nazar/self";
   selfSwitchFlake =
     if vm.hostname == "git" then "${repoRoot}#${vm.hostname}" else "${selfFlakeRoot}#${vm.hostname}";
@@ -393,7 +389,6 @@ let
     cp ${./base.nix} "$out/nix/modules/common/base.nix"
     cp ${./users.nix} "$out/nix/modules/common/users.nix"
     cp ${./security.nix} "$out/nix/modules/common/security.nix"
-    cp ${./networking.nix} "$out/nix/modules/common/networking.nix"
     cp ${./development.nix} "$out/nix/modules/common/development.nix"
     cp ${./sops.nix} "$out/nix/modules/common/sops.nix"
     cp ${./nazar-context.nix} "$out/nix/modules/common/nazar-context.nix"
@@ -403,7 +398,6 @@ let
     cp ${../../packages/pi/hashes.json} "$out/nix/packages/pi/hashes.json"
     cp ${../../packages/pi/package-lock.json} "$out/nix/packages/pi/package-lock.json"
     mkdir -p "$out/nix/modules/host"
-    cp ${./qemu-guest.nix} "$out/nix/modules/common/qemu-guest.nix"
     cp ${../host/microvm-guest.nix} "$out/nix/modules/host/microvm-guest.nix"
     cp ${../services/forgejo.nix} "$out/nix/modules/services/forgejo.nix"
     cp ${../services/forgejo-bootstrap.nix} "$out/nix/modules/services/forgejo-bootstrap.nix"
