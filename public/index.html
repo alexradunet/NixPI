@@ -1,1206 +1,2010 @@
-<!DOCTYPE html>
-<html lang="en" data-theme="dark">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>nixpi</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='24' font-size='24' fill='%236EA8DB'>π</text></svg>">
-<meta name="theme-color" content="#13171f">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="stylesheet" href="assets/pico.min.css">
-<script src="lib/marked.umd.js"></script>
-<script src="lib/purify.js"></script>
-</head>
-<body>
-<header class="container-fluid">
-  <nav aria-label="Main navigation">
-    <ul>
-      <li><button id="btn-sidebar-toggle" type="button" class="secondary" title="Toggle history">History</button></li>
-      <li><strong>π nixpi</strong></li>
-      <li><small id="status-dot" role="status" aria-busy="true">Connecting…</small></li>
-    </ul>
-    <ul>
-      <li><button id="model-badge" type="button" class="secondary" onclick="openModelPicker()" title="Switch model"><span id="model-name">grok-4</span></button></li>
-      <li><button id="thinking-badge" type="button" class="secondary" onclick="cycleThinking()" title="Click to cycle thinking level">🧠 <span id="thinking-level">—</span></button></li>
-      <li><button id="btn-clear" type="button" class="secondary" title="Clear chat (Ctrl+L)">Clear</button></li>
-      <li><button id="btn-help" type="button" class="secondary" title="Help (?)">Help</button></li>
-      <li><button id="btn-export" type="button" class="secondary" title="Export session">Export</button></li>
-      <li><button id="btn-abort" type="button" class="contrast" title="Stop (Escape)" disabled>Stop</button></li>
-    </ul>
-  </nav>
-</header>
+<!doctype html>
+<html class="dark" lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Ownloom - Master Workbench</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='24' font-size='24' fill='%23ffb59d'>π</text></svg>"
+    />
+    <meta name="theme-color" content="#1a110f" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+      rel="stylesheet"
+    />
+    <script src="lib/marked.umd.js"></script>
+    <script src="lib/purify.js"></script>
+    <link href="https://fonts.googleapis.com" rel="preconnect" />
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&amp;family=Newsreader:opsz,wght@6..72,500;6..72,600&amp;family=Work+Sans:wght@400&amp;display=swap"
+      rel="stylesheet"
+    />
+    <script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "surface-variant": "#3e322f",
+              surface: "#1a110f",
+              "on-secondary": "#3f2e00",
+              "primary-container": "#b85736",
+              error: "#ffb4ab",
+              "surface-dim": "#1a110f",
+              "on-secondary-container": "#f8d074",
+              "primary-fixed": "#ffdbd0",
+              primary: "#ffb59d",
+              "on-primary-fixed-variant": "#7e2c0e",
+              "surface-container-highest": "#3e322f",
+              "on-tertiary-container": "#ecfeff",
+              "on-tertiary": "#00363a",
+              "error-container": "#93000a",
+              "tertiary-container": "#008087",
+              "outline-variant": "#56423c",
+              "on-tertiary-fixed-variant": "#004f54",
+              "on-primary": "#5d1800",
+              "tertiary-fixed": "#93f2f9",
+              "inverse-surface": "#f1dfd9",
+              "on-secondary-fixed": "#251a00",
+              "primary-fixed-dim": "#ffb59d",
+              "on-background": "#f1dfd9",
+              tertiary: "#76d5dc",
+              "surface-bright": "#423733",
+              "secondary-fixed-dim": "#e9c267",
+              "on-primary-container": "#fffaf9",
+              "on-error-container": "#ffdad6",
+              "inverse-primary": "#9d4323",
+              "secondary-container": "#755800",
+              "on-secondary-fixed-variant": "#5b4300",
+              "inverse-on-surface": "#392e2b",
+              secondary: "#e9c267",
+              outline: "#a48b84",
+              "on-primary-fixed": "#390b00",
+              "on-surface-variant": "#dcc1b8",
+              "tertiary-fixed-dim": "#76d5dc",
+              "surface-container-high": "#322824",
+              background: "#1a110f",
+              "on-tertiary-fixed": "#002022",
+              "on-error": "#690005",
+              "secondary-fixed": "#ffdf9b",
+              "surface-container": "#271d1a",
+              "on-surface": "#f1dfd9",
+              "surface-tint": "#ffb59d",
+              "surface-container-low": "#231916",
+              "surface-container-lowest": "#150c0a",
+              "surface-stitch": "#56423c",
+            },
+            borderRadius: {
+              DEFAULT: "0.125rem",
+              lg: "0.25rem",
+              xl: "0.5rem",
+              "2xl": "0.75rem",
+              full: "9999px",
+            },
+            spacing: {
+              lg: "40px",
+              base: "4px",
+              xl: "64px",
+              sm: "16px",
+              gutter: "24px",
+              xs: "8px",
+              md: "24px",
+              margin: "32px",
+            },
+            fontFamily: {
+              "body-md": ['"Work Sans"', "sans-serif"],
+              "body-lg": ['"Work Sans"', "sans-serif"],
+              "label-md": ['"JetBrains Mono"', "monospace"],
+              "headline-lg-mobile": ['"Newsreader"', "serif"],
+              "headline-lg": ['"Newsreader"', "serif"],
+              "label-sm": ['"JetBrains Mono"', "monospace"],
+              "headline-md": ['"Newsreader"', "serif"],
+            },
+            fontSize: {
+              "body-md": ["16px", { lineHeight: "1.5", fontWeight: "400" }],
+              "body-lg": ["18px", { lineHeight: "1.6", fontWeight: "400" }],
+              "label-md": [
+                "14px",
+                {
+                  lineHeight: "1.4",
+                  letterSpacing: "0.05em",
+                  fontWeight: "500",
+                },
+              ],
+              "headline-lg-mobile": [
+                "32px",
+                { lineHeight: "1.2", fontWeight: "600" },
+              ],
+              "headline-lg": [
+                "40px",
+                {
+                  lineHeight: "1.2",
+                  letterSpacing: "-0.02em",
+                  fontWeight: "600",
+                },
+              ],
+              "label-sm": [
+                "12px",
+                {
+                  lineHeight: "1.4",
+                  letterSpacing: "0.02em",
+                  fontWeight: "500",
+                },
+              ],
+              "headline-md": ["28px", { lineHeight: "1.3", fontWeight: "500" }],
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      .pixel-divider-h {
+        background-image: linear-gradient(
+          to right,
+          theme("colors.outline-variant") 50%,
+          transparent 50%
+        );
+        background-size: 8px 1px;
+        background-repeat: repeat-x;
+        height: 1px;
+      }
+      .pixel-divider-v {
+        background-image: linear-gradient(
+          to bottom,
+          theme("colors.outline-variant") 50%,
+          transparent 50%
+        );
+        background-size: 1px 8px;
+        background-repeat: repeat-y;
+        width: 1px;
+      }
+      .corner-notch {
+        position: relative;
+      }
+      .corner-notch::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 4px;
+        height: 4px;
+        background-color: theme("colors.outline-variant");
+      }
+      .font-headline-lg {
+        font-family: "Newsreader", serif;
+        font-size: 40px;
+        line-height: 1.2;
+        font-weight: 600;
+        letter-spacing: -0.02em;
+      }
+      .font-headline-md {
+        font-family: "Newsreader", serif;
+        font-size: 28px;
+        line-height: 1.3;
+        font-weight: 500;
+      }
+      .font-headline-lg-mobile {
+        font-family: "Newsreader", serif;
+        font-size: 32px;
+        line-height: 1.2;
+        font-weight: 600;
+      }
+      .font-body-lg {
+        font-family: "Work Sans", sans-serif;
+        font-size: 18px;
+        line-height: 1.6;
+        font-weight: 400;
+      }
+      .font-body-md {
+        font-family: "Work Sans", sans-serif;
+        font-size: 16px;
+        line-height: 1.5;
+        font-weight: 400;
+      }
+      .font-label-md {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 14px;
+        line-height: 1.4;
+        letter-spacing: 0.05em;
+        font-weight: 500;
+      }
+      .font-label-sm {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 12px;
+        line-height: 1.4;
+        letter-spacing: 0.02em;
+        font-weight: 500;
+      }
 
-<dialog id="help-modal">
-  <article>
-    <header>
-      <button type="button" aria-label="Close" rel="prev" onclick="closeModal('help-modal')"></button>
-      <strong>Keyboard Shortcuts</strong>
-    </header>
-    <table>
-      <tbody>
-        <tr><td><kbd>Ctrl</kbd> + <kbd>N</kbd></td><td>New chat</td></tr>
-        <tr><td><kbd>Enter</kbd></td><td>Send message</td></tr>
-        <tr><td><kbd>Shift</kbd> + <kbd>Enter</kbd></td><td>New line</td></tr>
-        <tr><td><kbd>Escape</kbd></td><td>Abort / Close</td></tr>
-        <tr><td><kbd>Ctrl</kbd> + <kbd>R</kbd></td><td>Restart Pi connection</td></tr>
-        <tr><td><kbd>Ctrl</kbd> + <kbd>L</kbd></td><td>Clear chat</td></tr>
-        <tr><td><kbd>Ctrl</kbd> + <kbd>T</kbd></td><td>Toggle thinking</td></tr>
-        <tr><td><kbd>/</kbd></td><td>Slash commands</td></tr>
-        <tr><td><kbd>?</kbd></td><td>This help</td></tr>
-      </tbody>
-    </table>
-    <p><strong>Model selector</strong> — click the model button to switch models.</p>
-    <p><strong>Thinking level</strong> — click the 🧠 button to cycle off → minimal → low → medium → high.</p>
-    <p><strong>Images</strong> — paste an image or click Attach.</p>
-    <footer><button type="button" onclick="closeModal('help-modal')">Close</button></footer>
-  </article>
-</dialog>
+      /* Custom scrollbar */
+      ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #56423c;
+        border-radius: 3px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #a48b84;
+      }
 
-<dialog id="model-modal">
-  <article>
-    <header>
-      <button type="button" aria-label="Close" rel="prev" onclick="closeModal('model-modal')"></button>
-      <strong>Switch Model</strong>
-    </header>
-    <input id="model-search" type="search" placeholder="Search models…" oninput="filterModels(this.value)">
-    <div id="model-list"></div>
-  </article>
-</dialog>
+      /* Markdown content in messages */
+      .msg-body h1 {
+        font-family: "Newsreader", serif;
+        font-size: 24px;
+        margin: 16px 0 8px;
+      }
+      .msg-body h2 {
+        font-family: "Newsreader", serif;
+        font-size: 20px;
+        margin: 14px 0 7px;
+      }
+      .msg-body h3 {
+        font-family: "Newsreader", serif;
+        font-size: 18px;
+        margin: 12px 0 6px;
+      }
+      .msg-body pre {
+        background: #0d0807;
+        border: 1px solid #56423c;
+        border-radius: 2px;
+        overflow-x: auto;
+        padding: 12px;
+      }
+      .msg-body code {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 13px;
+      }
+      .msg-body p {
+        margin: 0 0 12px 0;
+      }
+      .msg-body p:last-child {
+        margin-bottom: 0;
+      }
+      .msg-body ul {
+        margin: 8px 0;
+        padding-left: 20px;
+      }
+      .msg-body li {
+        margin: 4px 0;
+      }
+      .msg-body blockquote {
+        border-left: 2px solid #b85736;
+        margin: 8px 0;
+        padding-left: 12px;
+        color: #dcc1b8;
+      }
+      .msg-body a {
+        color: #ffb59d;
+        text-decoration: underline;
+      }
+      .msg-body table {
+        border-collapse: collapse;
+        width: 100%;
+        margin: 8px 0;
+      }
+      .msg-body th,
+      .msg-body td {
+        border: 1px solid #56423c;
+        padding: 6px 10px;
+        text-align: left;
+      }
+      .msg-body th {
+        background: #271d1a;
+      }
+      .msg-body img {
+        max-width: 100%;
+        border-radius: 4px;
+      }
 
-<main class="container">
-  <aside id="sidebar">
-    <article>
-      <header>
-        <button id="btn-new-chat" type="button">
-          <span id="new-chat-label">New chat</span>
+      /* Session list items */
+      .session-item {
+        padding: 8px 12px;
+        border-radius: 4px;
+        cursor: pointer;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: all 0.15s;
+      }
+      .session-item:hover {
+        background: #271d1a;
+      }
+      .session-item.active {
+        border-left: 2px solid #ffb59d;
+        padding-left: 10px;
+        background: #271d1a;
+      }
+      .session-meta {
+        color: #dcc1b8;
+        font-size: 11px;
+        font-family: "JetBrains Mono", monospace;
+      }
+
+      /* Thinking block */
+      .msg-thinking {
+        border-left: 2px solid #755800;
+        padding-left: 12px;
+        margin-top: 8px;
+      }
+
+      /* Tool call block */
+      .tool-call {
+        margin-top: 8px;
+        border: 1px solid #56423c;
+        border-radius: 4px;
+        background: #0d0807;
+      }
+      .tool-call summary {
+        padding: 8px 12px;
+        cursor: pointer;
+        color: #76d5dc;
+      }
+      .tool-call pre {
+        margin: 0;
+        padding: 8px 12px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 12px;
+      }
+
+      /* Animations */
+      @keyframes pulse-glow {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.5;
+        }
+      }
+      .animate-pulse-glow {
+        animation: pulse-glow 2s ease-in-out infinite;
+      }
+
+      /* Mobile sidebar */
+      @media (max-width: 1024px) {
+        #sidebar-left {
+          position: absolute;
+          left: 0;
+          top: 0;
+          bottom: 0;
+          z-index: 50;
+          transform: translateX(-100%);
+          transition: transform 0.3s;
+        }
+        #sidebar-left.open {
+          transform: translateX(0);
+        }
+        #sidebar-right {
+          display: none;
+        }
+        #sidebar-overlay {
+          display: block;
+        }
+      }
+
+      /* Modal backdrop */
+      ::backdrop {
+        background: rgba(0, 0, 0, 0.7);
+      }
+      dialog {
+        background: #1a110f;
+        border: 1px solid #56423c;
+        border-radius: 8px;
+        color: #f1dfd9;
+        max-width: 90vw;
+      }
+
+      /* Image previews */
+      .image-preview {
+        position: relative;
+        display: inline-block;
+        margin: 4px;
+      }
+      .image-preview img {
+        width: 64px;
+        height: 64px;
+        object-fit: cover;
+        border-radius: 4px;
+        border: 1px solid #56423c;
+      }
+      .image-preview button {
+        position: absolute;
+        top: -6px;
+        right: -6px;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: #b85736;
+        color: #fff;
+        border: none;
+        font-size: 10px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+    </style>
+  </head>
+  <body
+    class="bg-background text-on-background font-body-md h-screen flex flex-col overflow-hidden"
+  >
+    <!-- Sidebar overlay for mobile -->
+    <div
+      id="sidebar-overlay"
+      class="fixed inset-0 bg-black/50 z-40"
+      style="display: none"
+      onclick="toggleLeftSidebar()"
+    ></div>
+
+    <!-- =========================================== -->
+    <!-- TOP APP BAR                                 -->
+    <!-- =========================================== -->
+    <header
+      class="w-full h-16 border-b border-outline-variant bg-surface flex items-center justify-between px-margin flex-shrink-0 z-20 relative"
+    >
+      <div
+        class="flex items-center gap-base cursor-pointer active:scale-95 transition-transform group"
+      >
+        <button
+          onclick="toggleLeftSidebar()"
+          class="lg:hidden mr-2 text-on-surface-variant hover:text-primary transition-colors"
+        >
+          <span class="material-symbols-outlined">menu</span>
         </button>
-      </header>
-      <section id="session-list"><p id="sessions-empty">No sessions yet. Send a message to start a new chat.</p></section>
-      <button id="archived-toggle" type="button" onclick="toggleArchived()" hidden>
-        <span id="archived-chevron">▸</span> Archived
-      </button>
-      <section id="archived-list"></section>
-    </article>
-  </aside>
-
-  <section id="content" aria-label="Chat">
-    <article id="pi-health-banner" hidden>
-      <p id="health-msg">⚠ Pi disconnected. Attempting to reconnect…</p>
-      <button type="button" onclick="location.reload()">Refresh page</button>
-    </article>
-
-    <section id="messages" aria-live="polite" aria-label="Messages"></section>
-    <p id="stats-bar" hidden></p>
-
-    <form id="input-area">
-      <div id="image-previews" aria-live="polite"></div>
-      <div id="cmd-palette" hidden></div>
-      <label for="input">Message</label>
-      <textarea id="input" placeholder="Ask NixPi anything… (type / for commands)" rows="4"></textarea>
-      <div id="input-buttons" role="group">
-        <button id="attach-btn" type="button" class="secondary" title="Attach image (or paste)">Attach</button>
-        <input id="attach-input" type="file" accept="image/*" multiple hidden>
-        <button id="mic-btn" type="button" class="secondary" title="Speech to text">Mic</button>
-        <button id="send-btn" type="button">Send</button>
+        <span class="material-symbols-outlined text-primary text-2xl"
+          >terminal</span
+        >
+        <h1
+          class="font-headline-md text-headline-md text-primary tracking-tight font-semibold"
+        >
+          Ownloom
+        </h1>
       </div>
-      <details id="mic-settings">
-        <summary>Mic silence</summary>
-        <button type="button" data-silence="0">Manual (press to stop)</button>
-        <button type="button" data-silence="500">Auto (0.5s silence)</button>
-        <button type="button" data-silence="750" aria-current="true">Auto (0.75s silence)</button>
-        <button type="button" data-silence="1500">Auto (1.5s silence)</button>
-        <button type="button" data-silence="3000">Auto (3s silence)</button>
-      </details>
-    </form>
-  </section>
-</main>
 
-<script>
-// ── App path helpers ──────────────────────────────────────────────────────
-const NIXPI_BASE_PATH = (() => {
-  const path = window.location.pathname;
-  return path === "/nixpi" || path.startsWith("/nixpi/") ? "/nixpi" : "";
-})();
-function appUrl(path) { return `${NIXPI_BASE_PATH}${path}`; }
-
-// ── Markdown setup ────────────────────────────────────────────────────────
-marked.setOptions({ breaks: true, gfm: true });
-function md(text) {
-  if (!text) return "";
-  let raw = marked.parse(String(text));
-  if (typeof DOMPurify !== "undefined")
-    raw = DOMPurify.sanitize(raw, { USE_PROFILES: { html: true } });
-  // Force all links to open in new tab
-  raw = raw.replace(/<a\s+/g, '<a target="_blank" rel="noopener noreferrer" ');
-  return raw;
-}
-function esc(s) {
-  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
-}
-
-// ── DOM refs ──────────────────────────────────────────────────────────────
-const $ = s => document.querySelector(s);
-const msgs = $("#messages");
-const input = $("#input");
-const sendBtn = $("#send-btn");
-const abortBtn = $("#btn-abort");
-const statusLabel = $("#status-dot");
-const sessionList = $("#session-list");
-const cmdPalette = $("#cmd-palette");
-const sidebarEl = $("#sidebar");
-const statsBar = $("#stats-bar");
-const imagePreviews = $("#image-previews");
-
-function setStatus(text, busy = false) {
-  if (!statusLabel) return;
-  statusLabel.textContent = text;
-  statusLabel.setAttribute("aria-busy", busy ? "true" : "false");
-}
-
-// ── State ─────────────────────────────────────────────────────────────────
-let ws = null, reconnectTimer = null;
-let streaming = false;
-let currentAssistantEl = null, currentThinkingEl = null, currentToolCalls = {};
-let thinkingHidden = false;
-let allCommands = [], filteredCmds = [], activeCmdIndex = -1;
-let currentSessionFile = null;
-let sidebarOpen = window.innerWidth > 768;
-
-let currentModel = null, currentThinkingLevel = null;
-let currentModelSupportsImages = true;
-let allModels = [];
-let pendingImages = [];
-let pendingModelSwitchMsg = null;
-
-// ── Markdown-based message helpers ────────────────────────────────────────
-let userScrolledUp = false;
-let isRenaming = false;
-window.addEventListener('scroll', () => {
-  const doc = document.documentElement;
-  const atBottom = window.innerHeight + window.scrollY >= doc.scrollHeight - 100;
-  userScrolledUp = !atBottom;
-});
-
-function scrollBottom() {
-  if (!userScrolledUp) {
-    requestAnimationFrame(() => window.scrollTo({ top: document.documentElement.scrollHeight }));
-  }
-}
-
-function addMsg(type, content, isHtml = false) {
-  const div = document.createElement("article");
-  div.className = `msg ${type}`;
-  div.dataset.type = type;
-  if (type === "error") div.setAttribute("aria-invalid", "true");
-  if (isHtml) div.innerHTML = content;
-  else div.textContent = content;
-  msgs.appendChild(div);
-  scrollBottom();
-  return div;
-}
-
-function addUserMsg(text) {
-  const div = document.createElement("article");
-  div.className = "msg user";
-  div.innerHTML = `<header>You</header><div class="msg-body">${md(text)}</div>`;
-  // Show image thumbnails if any
-  if (pendingImages.length) {
-    const row = document.createElement("div");
-    for (const img of pendingImages) {
-      const i = document.createElement("img");
-      i.src = img.dataUrl;
-      i.width = 64;
-      i.height = 64;
-      i.alt = "Attached image";
-      row.appendChild(i);
-    }
-    div.appendChild(row);
-  }
-  msgs.appendChild(div);
-  scrollBottom();
-}
-
-function ensureAssistantMsg() {
-  if (!currentAssistantEl) {
-    currentAssistantEl = document.createElement("article");
-    currentAssistantEl.className = "msg assistant";
-    currentAssistantEl.innerHTML = `<header>π</header><div class="msg-body body"></div>`;
-    msgs.appendChild(currentAssistantEl);
-  }
-  return currentAssistantEl.querySelector(".body");
-}
-
-function ensureThinking() {
-  if (!currentThinkingEl) {
-    currentThinkingEl = document.createElement("article");
-    currentThinkingEl.className = "msg thinking";
-    currentThinkingEl.setAttribute("aria-busy", "true");
-    currentThinkingEl.innerHTML = `<header>thinking…</header><pre class="body"></pre>`;
-    msgs.appendChild(currentThinkingEl);
-    scrollBottom();
-  }
-  return currentThinkingEl.querySelector(".body");
-}
-
-// ── Sidebar ───────────────────────────────────────────────────────────────
-function applySidebarState() {
-  sidebarEl.hidden = !sidebarOpen;
-}
-function toggleSidebar() { sidebarOpen = !sidebarOpen; applySidebarState(); }
-applySidebarState();
-
-// ── Session management ────────────────────────────────────────────────────
-async function loadSessions() {
-  try {
-    const res = await fetch(appUrl("/api/sessions"));
-    const data = await res.json();
-    const active = data.currentFile || currentSessionFile;
-    if (data.currentFile) currentSessionFile = data.currentFile;
-    renderSessionList(data.sessions || [], active);
-    // Check if there are archived sessions to show the toggle
-    try {
-      const ar = await fetch(appUrl("/api/sessions/archived"));
-      const ad = await ar.json();
-      const toggle = document.getElementById("archived-toggle");
-      if (toggle) {
-        const hasArchived = Boolean(ad.sessions?.length);
-        toggle.hidden = !hasArchived;
-        toggle.dataset.visible = hasArchived ? "1" : "";
-      }
-      // Refresh list if it was open
-      if (archivedOpen && ad.sessions?.length) loadArchivedSessions();
-    } catch {}
-  } catch { sessionList.innerHTML = '<div id="sessions-empty">Could not load sessions</div>'; }
-}
-
-function formatRelTime(ts) {
-  const d = new Date(ts), now = new Date();
-  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const dayStart = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-  if (+dayStart >= +todayStart) return d.toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"});
-  if (+dayStart >= +todayStart - 86400000) return "Yesterday";
-  return d.toLocaleDateString([], {month:"short",day:"numeric"});
-}
-
-function groupByDate(sessions) {
-  const now = new Date(), todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const groups = [
-    {label:"Today",      items:[], threshold:+todayStart},
-    {label:"Yesterday",  items:[], threshold:+todayStart-86400000},
-    {label:"This Week",  items:[], threshold:+todayStart-7*86400000},
-    {label:"This Month", items:[], threshold:+todayStart-30*86400000},
-    {label:"Older",      items:[], threshold:0},
-  ];
-  for (const s of sessions) {
-    const t = +new Date(s.lastTimestamp);
-    for (const g of groups) { if (t >= g.threshold) { g.items.push(s); break; } }
-  }
-  return groups.filter(g => g.items.length > 0);
-}
-
-function renderSessionList(sessions, activeFile) {
-  if (!sessions.length) { sessionList.innerHTML = '<div id="sessions-empty">No sessions yet</div>'; return; }
-  const groups = groupByDate(sessions);
-  let html = "";
-  for (const g of groups) {
-    html += `<div class="session-group-label">${esc(g.label)}</div>`;
-    for (const s of g.items) {
-      const isActive = s.file === activeFile;
-      const time = formatRelTime(s.lastTimestamp);
-      const mc = s.messageCount ? ` · ${s.messageCount} msgs` : "";
-      html += `<div class="session-item${isActive?" active":""}" data-file="${esc(s.file)}" ${isActive ? 'aria-current="page"' : ''}>
-        <div class="session-info">
-          <div class="session-title">${esc(s.preview)}</div>
-          <div class="session-meta">${esc(time)}${esc(mc)}</div>
+      <div class="flex-1 max-w-lg mx-gutter hidden md:block">
+        <div class="relative group">
+          <span
+            class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant group-focus-within:text-primary transition-colors"
+            >search</span
+          >
+          <input
+            id="global-search"
+            class="w-full bg-surface-container border-b border-outline-variant focus:border-primary border-t-0 border-l-0 border-r-0 py-2 pl-10 pr-4 text-on-surface font-label-md outline-none transition-colors"
+            placeholder="Search sessions…"
+            type="text"
+          />
+          <div
+            class="absolute bottom-[-1px] left-0 w-full h-[1px] pixel-divider-h opacity-0 group-focus-within:opacity-100 transition-opacity"
+          ></div>
         </div>
-        <button class="session-menu-btn" title="Options" data-file="${esc(s.file)}">⋯</button>
-      </div>`;
-    }
-  }
-  sessionList.innerHTML = html;
-  sessionList.querySelectorAll(".session-item").forEach(item => {
-    item.addEventListener("click", () => {
-      if (item.dataset.file !== currentSessionFile) {
-        switchSession(item.dataset.file);
-      } else if (ws?.readyState === 1 && !streaming) {
-        // Same session — reload history in case it was lost
-        ws.send(JSON.stringify({type:"load_history"}));
+      </div>
+
+      <div class="flex items-center gap-4">
+        <button
+          id="btn-restart"
+          onclick="restartPi()"
+          class="w-10 h-10 rounded-full hover:bg-surface-container-high transition-colors flex items-center justify-center text-on-surface-variant cursor-pointer active:scale-95 relative"
+          title="Restart Pi"
+        >
+          <span class="material-symbols-outlined">sync</span>
+        </button>
+        <button
+          onclick="openModelPicker()"
+          class="w-10 h-10 rounded-full hover:bg-surface-container-high transition-colors flex items-center justify-center text-on-surface-variant cursor-pointer active:scale-95"
+          title="Switch model"
+        >
+          <span class="material-symbols-outlined">model_training</span>
+        </button>
+        <button
+          onclick="cycleThinking()"
+          class="w-10 h-10 rounded-full hover:bg-surface-container-high transition-colors flex items-center justify-center text-on-surface-variant cursor-pointer active:scale-95 relative"
+          title="Thinking level"
+        >
+          <span class="material-symbols-outlined">psychology</span>
+          <span
+            id="thinking-indicator"
+            class="absolute top-2 right-2 w-2 h-2 bg-primary-container rounded-full border border-surface hidden"
+          ></span>
+        </button>
+        <div
+          class="w-8 h-8 rounded-full border border-outline-variant overflow-hidden ml-2 flex items-center justify-center bg-surface-container-high cursor-pointer active:scale-95"
+        >
+          <span class="font-label-md text-primary text-xs">π</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Status bar -->
+    <div
+      id="pi-health-banner"
+      class="bg-error-container/10 border-b border-error-container px-margin py-2 hidden flex items-center justify-between"
+    >
+      <div class="flex items-center gap-2 text-error font-label-sm">
+        <span class="material-symbols-outlined text-sm">warning</span>
+        <span id="health-msg">Pi disconnected. Attempting to reconnect…</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <span id="status-dot" class="font-label-sm text-on-surface-variant"
+          >Connecting…</span
+        >
+        <button
+          onclick="location.reload()"
+          class="text-xs bg-surface-container border border-outline-variant text-on-surface-variant px-3 py-1 rounded hover:bg-surface-container-high font-label-sm"
+        >
+          Refresh
+        </button>
+      </div>
+    </div>
+
+    <!-- =========================================== -->
+    <!-- LAYOUT: Sidebar | Main | Right Panel       -->
+    <!-- =========================================== -->
+    <div class="flex flex-1 overflow-hidden relative">
+      <!-- Left SideNavBar (Sessions) -->
+      <nav
+        id="sidebar-left"
+        class="h-full w-64 border-r border-dashed border-outline-variant bg-surface-container-lowest flex flex-col py-md flex-shrink-0 z-10 transition-transform duration-300"
+      >
+        <div class="px-4 mb-4 flex items-center justify-between">
+          <h2 class="font-label-md text-label-md text-on-surface">Sessions</h2>
+          <button
+            onclick="newChat()"
+            class="text-primary hover:text-primary-fixed-dim transition-colors cursor-pointer active:scale-95"
+            title="New chat (Ctrl+N)"
+          >
+            <span class="material-symbols-outlined text-lg">add</span>
+          </button>
+        </div>
+        <div id="session-list" class="flex-1 overflow-y-auto px-4 space-y-1">
+          <p class="text-on-surface-variant font-label-sm text-xs">Loading…</p>
+        </div>
+        <div
+          class="mt-auto px-4 pt-4 border-t border-dashed border-outline-variant mx-4 space-y-1"
+        >
+          <button
+            onclick="openModal('help-modal')"
+            class="group cursor-pointer flex items-center gap-3 px-3 py-2 rounded text-on-surface-variant pl-2 hover:text-primary hover:bg-surface-container transition-all w-full text-left"
+          >
+            <span class="material-symbols-outlined text-lg">help</span>
+            <span class="font-label-md text-label-md">Help</span>
+          </button>
+          <button
+            onclick="exportSession()"
+            class="group cursor-pointer flex items-center gap-3 px-3 py-2 rounded text-on-surface-variant pl-2 hover:text-primary hover:bg-surface-container transition-all w-full text-left"
+          >
+            <span class="material-symbols-outlined text-lg">download</span>
+            <span class="font-label-md text-label-md">Export</span>
+          </button>
+        </div>
+      </nav>
+
+      <!-- Main Content Area (Chat & Canvas) -->
+      <main class="flex-1 flex flex-col bg-surface overflow-hidden relative">
+        <div
+          id="messages"
+          class="flex-1 overflow-y-auto p-margin flex flex-col gap-6 w-full"
+        >
+          <!-- Messages rendered here via JS -->
+        </div>
+        <!-- Spacer for floating input -->
+        <div class="h-40 flex-shrink-0"></div>
+
+        <!-- Chat Input Area -->
+        <div
+          class="absolute bottom-0 left-0 w-full p-6 bg-gradient-to-t from-surface via-surface/95 to-transparent pt-16 pointer-events-none"
+        >
+          <div class="max-w-3xl mx-auto relative pointer-events-auto">
+            <div
+              class="bg-surface-container border border-outline-variant rounded-lg p-2 flex flex-col focus-within:border-primary transition-colors shadow-lg shadow-black/40"
+            >
+              <div id="image-previews" class="flex flex-wrap gap-1 px-2"></div>
+              <textarea
+                id="input"
+                class="w-full bg-transparent border-none focus:ring-0 text-on-surface font-body-md resize-none h-16 p-2 outline-none"
+                placeholder="Direct the Atelier… (type / for commands)"
+                spellcheck="false"
+                rows="3"
+              ></textarea>
+              <div
+                class="flex items-center justify-between mt-2 px-2 pb-1 border-t border-dashed border-outline-variant pt-2"
+              >
+                <div class="flex gap-2 items-center">
+                  <button
+                    id="attach-btn"
+                    class="text-on-surface-variant hover:text-secondary transition-colors"
+                    title="Attach image"
+                  >
+                    <span class="material-symbols-outlined text-sm"
+                      >attach_file</span
+                    >
+                  </button>
+                  <input
+                    id="attach-input"
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    hidden
+                  />
+                  <button
+                    id="mic-btn"
+                    class="text-on-surface-variant hover:text-secondary transition-colors"
+                    title="Speech to text"
+                  >
+                    <span class="material-symbols-outlined text-sm">mic</span>
+                  </button>
+                  <span class="text-outline-variant text-xs font-label-sm"
+                    >Ctrl+Enter to send</span
+                  >
+                </div>
+                <div class="flex items-center gap-2">
+                  <button
+                    id="btn-abort"
+                    class="bg-error-container/20 border border-error-container text-error hover:bg-error-container/40 px-3 py-1.5 rounded font-label-md flex items-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled
+                  >
+                    <span class="material-symbols-outlined text-sm">stop</span>
+                    Stop
+                  </button>
+                  <button
+                    id="send-btn"
+                    class="bg-primary-container text-on-primary-container hover:bg-inverse-primary px-4 py-1.5 rounded font-label-md flex items-center gap-2 transition-colors disabled:opacity-50"
+                  >
+                    Send
+                    <span class="material-symbols-outlined text-sm">send</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <!-- Right SideNavBar (Telemetry / Context Panel) -->
+      <aside
+        id="sidebar-right"
+        class="h-full w-72 border-l border-dashed border-outline-variant bg-surface-container-low flex flex-col py-md flex-shrink-0 z-10"
+      >
+        <div class="px-4 mb-6 flex items-center justify-between">
+          <div>
+            <h2 class="font-label-md text-label-md text-on-surface mb-0.5">
+              Telemetry
+            </h2>
+            <p class="font-label-sm text-label-sm text-on-surface-variant">
+              v1.0.4-alpha
+            </p>
+          </div>
+          <div
+            class="w-8 h-8 rounded border border-outline-variant flex items-center justify-center bg-surface-container"
+          >
+            <span
+              id="telemetry-sensor"
+              class="material-symbols-outlined text-tertiary text-sm animate-pulse-glow"
+              >sensors</span
+            >
+          </div>
+        </div>
+
+        <div class="flex border-b border-outline-variant px-2 mb-4">
+          <button
+            class="px-3 py-1.5 font-label-sm text-tertiary-fixed-dim font-bold border-b-2 border-tertiary-fixed-dim"
+          >
+            Context
+          </button>
+          <button
+            class="px-3 py-1.5 font-label-sm text-on-surface-variant hover:bg-surface-container-highest transition-opacity duration-200"
+          >
+            Telemetry
+          </button>
+          <button
+            class="px-3 py-1.5 font-label-sm text-on-surface-variant hover:bg-surface-container-highest transition-opacity duration-200"
+          >
+            Status
+          </button>
+        </div>
+
+        <div class="flex-1 overflow-y-auto px-4 space-y-6">
+          <!-- Stats -->
+          <div>
+            <h4
+              class="font-label-sm text-on-surface-variant mb-2 uppercase tracking-wider flex items-center gap-2"
+            >
+              <span class="material-symbols-outlined text-[14px]">speed</span>
+              Session Stats
+            </h4>
+            <div
+              id="stats-panel"
+              class="bg-surface border border-outline-variant rounded p-3 space-y-2 hidden"
+            >
+              <div class="flex justify-between items-center">
+                <span class="font-label-sm text-on-surface-variant"
+                  >Tokens</span
+                >
+                <span class="font-label-md text-on-surface" id="stat-tokens"
+                  >—</span
+                >
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="font-label-sm text-on-surface-variant"
+                  >Messages</span
+                >
+                <span class="font-label-md text-on-surface" id="stat-msgs"
+                  >—</span
+                >
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="font-label-sm text-on-surface-variant"
+                  >Context</span
+                >
+                <span class="font-label-md text-on-surface" id="stat-ctx"
+                  >—</span
+                >
+              </div>
+            </div>
+          </div>
+
+          <!-- Active Nodes (dummy) -->
+          <div>
+            <h4
+              class="font-label-sm text-on-surface-variant mb-2 uppercase tracking-wider flex items-center gap-2"
+            >
+              <span class="material-symbols-outlined text-[14px]"
+                >account_tree</span
+              >
+              System
+            </h4>
+            <div
+              class="bg-surface border border-outline-variant rounded p-3 space-y-2"
+            >
+              <div class="flex justify-between items-center">
+                <span class="font-label-md text-on-surface">Pi RPC</span>
+                <span
+                  id="node-pi-status"
+                  class="text-[10px] uppercase font-bold text-tertiary"
+                  >Operational</span
+                >
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="font-label-md text-on-surface">WebSocket</span>
+                <span
+                  id="node-ws-status"
+                  class="text-[10px] uppercase font-bold text-tertiary"
+                  >Connected</span
+                >
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="font-label-md text-on-surface">Whisper</span>
+                <span
+                  id="node-whisper-status"
+                  class="text-[10px] uppercase font-bold text-secondary-fixed-dim"
+                  >Available</span
+                >
+              </div>
+            </div>
+          </div>
+
+          <!-- Event Log (real) -->
+          <div>
+            <h4
+              class="font-label-sm text-on-surface-variant mb-2 uppercase tracking-wider flex items-center gap-2"
+            >
+              <span class="material-symbols-outlined text-[14px]"
+                >terminal</span
+              >
+              Event Log
+            </h4>
+            <div
+              id="event-log"
+              class="bg-surface-container-lowest border border-outline-variant rounded p-3 h-48 overflow-y-auto font-label-sm text-[11px] leading-relaxed"
+            >
+              <div class="text-on-surface-variant">
+                [00:00:00] Initializing atelier…
+              </div>
+            </div>
+          </div>
+
+          <!-- System Metrics (dummy but responsive) -->
+          <div>
+            <h4
+              class="font-label-sm text-on-surface-variant mb-2 uppercase tracking-wider flex items-center gap-2"
+            >
+              <span class="material-symbols-outlined text-[14px]">memory</span>
+              Diagnostics
+            </h4>
+            <div class="space-y-4 pt-1">
+              <div>
+                <div
+                  class="flex justify-between font-label-sm text-[10px] mb-2 uppercase"
+                >
+                  <span class="text-on-surface-variant">Model Load</span>
+                  <span class="text-on-surface" id="diag-model">—</span>
+                </div>
+                <div class="h-[2px] bg-outline-variant w-full">
+                  <div
+                    id="diag-model-bar"
+                    class="h-full bg-on-surface w-[0%] transition-all duration-500"
+                  ></div>
+                </div>
+              </div>
+              <div>
+                <div
+                  class="flex justify-between font-label-sm text-[10px] mb-2 uppercase"
+                >
+                  <span class="text-on-surface-variant">Context Usage</span>
+                  <span class="text-on-surface" id="diag-ctx">—</span>
+                </div>
+                <div class="h-[2px] bg-outline-variant w-full">
+                  <div
+                    id="diag-ctx-bar"
+                    class="h-full bg-on-surface w-[0%] transition-all duration-500"
+                  ></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <!-- =========================================== -->
+    <!-- MODALS                                      -->
+    <!-- =========================================== -->
+    <dialog id="help-modal">
+      <article class="p-6 min-w-[400px]">
+        <header
+          class="flex items-center justify-between mb-4 pb-2 border-b border-outline-variant"
+        >
+          <strong class="font-headline-md text-xl text-primary"
+            >Keyboard Shortcuts</strong
+          >
+          <button
+            onclick="closeModal('help-modal')"
+            class="text-on-surface-variant hover:text-primary"
+          >
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        </header>
+        <div class="space-y-2 font-label-sm mb-4">
+          <div class="flex items-center">
+            <kbd
+              class="bg-surface-container px-2 py-1 rounded border border-outline-variant mr-2"
+              >Ctrl</kbd
+            ><kbd
+              class="bg-surface-container px-2 py-1 rounded border border-outline-variant mr-2"
+              >N</kbd
+            ><span>New chat</span>
+          </div>
+          <div class="flex items-center">
+            <kbd
+              class="bg-surface-container px-2 py-1 rounded border border-outline-variant mr-2"
+              >Ctrl</kbd
+            ><kbd
+              class="bg-surface-container px-2 py-1 rounded border border-outline-variant mr-2"
+              >Enter</kbd
+            ><span>Send message</span>
+          </div>
+          <div class="flex items-center">
+            <kbd
+              class="bg-surface-container px-2 py-1 rounded border border-outline-variant mr-2"
+              >Shift</kbd
+            ><kbd
+              class="bg-surface-container px-2 py-1 rounded border border-outline-variant mr-2"
+              >Enter</kbd
+            ><span>New line</span>
+          </div>
+          <div class="flex items-center">
+            <kbd
+              class="bg-surface-container px-2 py-1 rounded border border-outline-variant mr-2"
+              >Escape</kbd
+            ><span>Abort / Close</span>
+          </div>
+          <div class="flex items-center">
+            <kbd
+              class="bg-surface-container px-2 py-1 rounded border border-outline-variant mr-2"
+              >Ctrl</kbd
+            ><kbd
+              class="bg-surface-container px-2 py-1 rounded border border-outline-variant mr-2"
+              >R</kbd
+            ><span>Restart Pi connection</span>
+          </div>
+          <div class="flex items-center">
+            <kbd
+              class="bg-surface-container px-2 py-1 rounded border border-outline-variant mr-2"
+              >Ctrl</kbd
+            ><kbd
+              class="bg-surface-container px-2 py-1 rounded border border-outline-variant mr-2"
+              >L</kbd
+            ><span>Clear chat</span>
+          </div>
+          <div class="flex items-center">
+            <kbd
+              class="bg-surface-container px-2 py-1 rounded border border-outline-variant mr-2"
+              >Ctrl</kbd
+            ><kbd
+              class="bg-surface-container px-2 py-1 rounded border border-outline-variant mr-2"
+              >T</kbd
+            ><span>Toggle thinking</span>
+          </div>
+          <div class="flex items-center">
+            <kbd
+              class="bg-surface-container px-2 py-1 rounded border border-outline-variant mr-2"
+              >/</kbd
+            ><span>Slash commands</span>
+          </div>
+        </div>
+        <p class="font-body-md text-sm text-on-surface-variant mb-2">
+          💡 Paste an image directly into the chat to attach it.
+        </p>
+      </article>
+    </dialog>
+
+    <dialog id="model-modal">
+      <article class="p-6 min-w-[450px] max-w-[90vw]">
+        <header
+          class="flex items-center justify-between mb-4 pb-2 border-b border-outline-variant"
+        >
+          <strong class="font-headline-md text-xl text-primary"
+            >Switch Model</strong
+          >
+          <button
+            onclick="closeModal('model-modal')"
+            class="text-on-surface-variant hover:text-primary"
+          >
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        </header>
+        <input
+          id="model-search"
+          class="w-full bg-surface-container border-b border-outline-variant focus:border-primary text-on-surface px-3 py-2 mb-4 outline-none font-label-md"
+          placeholder="Search models…"
+          oninput="filterModels(this.value)"
+        />
+        <div id="model-list" class="max-h-[400px] overflow-y-auto"></div>
+      </article>
+    </dialog>
+
+    <!-- =========================================== -->
+    <!-- SCRIPTS                                     -->
+    <!-- =========================================== -->
+    <script>
+      // ── App path helpers ──────────────────────────────────────────────────────
+      const NIXPI_BASE_PATH = (() => {
+        const path = window.location.pathname;
+        return path === "/nixpi" || path.startsWith("/nixpi/") ? "/nixpi" : "";
+      })();
+      function appUrl(path) {
+        return `${NIXPI_BASE_PATH}${path}`;
       }
-      if (window.innerWidth <= 768) { sidebarOpen = false; applySidebarState(); }
-    });
-    item.addEventListener("dblclick", e => { e.stopPropagation(); startRename(item); });
-  });
-  sessionList.querySelectorAll(".session-menu-btn").forEach(btn => {
-    btn.addEventListener("click", e => {
-      e.stopPropagation();
-      openSessionMenu(btn, btn.dataset.file, btn.dataset.file === currentSessionFile);
-    });
-  });
-  // Auto-scroll to active session after render
-  scrollToActiveSession();
-}
 
-function switchSession(sessionPath) {
-  if (!ws || ws.readyState !== 1) return;
-  ws.send(JSON.stringify({type:"switch_session", sessionPath}));
-}
+      // ── Markdown setup ────────────────────────────────────────────────────────
+      function md(text) {
+        if (!text) return "";
+        // Use marked + DOMPurify if available, otherwise fallback to simple parser
+        let raw =
+          typeof marked !== "undefined"
+            ? marked.parse(String(text), { breaks: true, gfm: true })
+            : simpleMd(String(text));
+        if (typeof DOMPurify !== "undefined")
+          raw = DOMPurify.sanitize(raw, { USE_PROFILES: { html: true } });
+        // Force all links to open in new tab
+        raw = raw.replace(
+          /<a\s+/g,
+          '<a target="_blank" rel="noopener noreferrer" ',
+        );
+        return raw;
 
-function startRename(item) {
-  isRenaming = true;
-  const titleEl = item.querySelector(".session-title");
-  const oldText = titleEl.textContent;
-  const inp = document.createElement("input");
-  inp.className = "session-rename-input";
-  inp.value = oldText === "New session" ? "" : oldText;
-  titleEl.replaceWith(inp); inp.focus(); inp.select();
-  const save = () => {
-    const name = inp.value.trim();
-    isRenaming = false;
-    const div = document.createElement("div"); div.className = "session-title"; div.textContent = name || oldText; inp.replaceWith(div);
-    if (name && name !== oldText && item.dataset.file === currentSessionFile && ws?.readyState === 1) {
-      ws.send(JSON.stringify({type:"set_session_name", name})); setTimeout(loadSessions, 600);
-    }
-  };
-  const cancel = () => { isRenaming = false; const div = document.createElement("div"); div.className = "session-title"; div.textContent = oldText; inp.replaceWith(div); };
-  inp.addEventListener("blur", save);
-  inp.addEventListener("keydown", e => { if (e.key==="Enter"){e.preventDefault();save();} if(e.key==="Escape"){inp.removeEventListener("blur",save);cancel();} });
-}
-
-// ── Session menu (archive/delete) ─────────────────────────────────────────
-let _dropdownEl = null;
-function openSessionMenu(anchor, file, isActive) {
-  closeSessionMenu();
-  const el = document.createElement("dialog");
-  el.id = "session-actions";
-  el.innerHTML = `
-    <article>
-      <header><strong>Session actions</strong></header>
-      <p><small>${esc(file)}</small></p>
-      <footer>
-        <button type="button" data-action="rename">Rename</button>
-        <button type="button" data-action="archive" class="secondary">Archive</button>
-        <button type="button" data-action="delete" class="contrast">Delete</button>
-        <button type="button" data-action="cancel" class="secondary">Cancel</button>
-      </footer>
-    </article>`;
-  document.body.appendChild(el);
-  _dropdownEl = el;
-  el.querySelector('[data-action=rename]').addEventListener('click', e => { e.stopPropagation(); closeSessionMenu(); const item = sessionList.querySelector(`.session-item[data-file="${CSS.escape(file)}"]`); if (item) startRename(item); });
-  el.querySelector('[data-action=archive]').addEventListener('click', e => { e.stopPropagation(); closeSessionMenu(); doArchiveSession(file, isActive); });
-  el.querySelector('[data-action=delete]').addEventListener('click', e => { e.stopPropagation(); showDeleteConfirm(el, file, isActive); });
-  el.querySelector('[data-action=cancel]').addEventListener('click', e => { e.stopPropagation(); closeSessionMenu(); });
-  el.addEventListener('click', e => { if (e.target === el) closeSessionMenu(); });
-  el.addEventListener('cancel', e => { e.preventDefault(); closeSessionMenu(); });
-  if (el.showModal) el.showModal(); else el.setAttribute("open", "");
-}
-function showDeleteConfirm(el, file, isActive) {
-  el.innerHTML = `<article><header><strong>Delete this chat?</strong></header><p>This cannot be undone.</p><footer><button type="button" data-action="cancel" class="secondary">Cancel</button><button type="button" data-action="confirm" class="contrast">Delete</button></footer></article>`;
-  el.querySelector('[data-action=cancel]').addEventListener('click', e => { e.stopPropagation(); closeSessionMenu(); });
-  el.querySelector('[data-action=confirm]').addEventListener('click', e => { e.stopPropagation(); closeSessionMenu(); doDeleteSession(file, isActive); });
-}
-function closeSessionMenu() {
-  if (_dropdownEl) {
-    if (_dropdownEl.close && _dropdownEl.open) _dropdownEl.close();
-    _dropdownEl.remove();
-    _dropdownEl = null;
-  }
-}
-async function doArchiveSession(file, isActive) {
-  try {
-    const res = await fetch(appUrl("/api/sessions/archive"), {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({file})});
-    const data = await res.json();
-    if (data.ok) { addMsg("system", "Chat archived.", true); if (isActive && ws?.readyState===1) ws.send(JSON.stringify({type:"new_session"})); else loadSessions(); }
-    else addMsg("error", `⚠ Archive failed: ${esc(data.error||"Unknown")}`, true);
-  } catch(e) { addMsg("error", `⚠ ${esc(e.message)}`, true); }
-}
-async function doDeleteSession(file, isActive) {
-  try {
-    const res = await fetch(appUrl("/api/sessions"), {method:"DELETE",headers:{"Content-Type":"application/json"},body:JSON.stringify({file})});
-    const data = await res.json();
-    if (data.ok) { if (isActive && ws?.readyState===1) { msgs.innerHTML=""; ws.send(JSON.stringify({type:"new_session"})); } else loadSessions(); }
-    else addMsg("error", `⚠ Delete failed: ${esc(data.error||"Unknown")}`, true);
-  } catch(e) { addMsg("error", `⚠ ${esc(e.message)}`, true); }
-}
-
-// ── Model picker ──────────────────────────────────────────────────────────
-function openModelPicker() {
-  if (!allModels.length) { ws?.send(JSON.stringify({type:"get_models"})); }
-  document.getElementById("model-search").value = "";
-  filterModels("");
-  openModal("model-modal");
-  setTimeout(() => document.getElementById("model-search").focus(), 50);
-}
-function filterModels(q) {
-  q = q.toLowerCase();
-  const filtered = allModels.filter(m =>
-    !q || m.id.toLowerCase().includes(q) || m.provider.toLowerCase().includes(q) || (m.name||"").toLowerCase().includes(q)
-  );
-  const byProvider = {};
-  for (const m of filtered) {
-    if (!byProvider[m.provider]) byProvider[m.provider] = [];
-    byProvider[m.provider].push(m);
-  }
-  const container = document.getElementById("model-list");
-  const currentId = currentModel?.id;
-  let html = "";
-  for (const [provider, models] of Object.entries(byProvider)) {
-    html += `<h3>${esc(provider)}</h3><ul>`;
-    for (const m of models) {
-      const isCurrent = m.id === currentId;
-      const hasVision = Array.isArray(m.input) && m.input.includes("image");
-      html += `<li><button type="button" class="model-item" data-provider="${esc(m.provider)}" data-id="${esc(m.id)}" data-vision="${hasVision ? "true" : "false"}" ${isCurrent ? 'aria-current="true" disabled' : ''}>
-        <span class="model-item-name">${esc(m.name || m.id)}${hasVision ? " 📷" : ""}${isCurrent ? " ✓" : ""}</span>
-      </button></li>`;
-    }
-    html += `</ul>`;
-  }
-  if (!html) html = '<p>No models found</p>';
-  container.innerHTML = html;
-  container.querySelectorAll(".model-item:not([aria-current='true'])").forEach(item => {
-    item.addEventListener("click", () => {
-      ws?.send(JSON.stringify({type:"set_model", provider:item.dataset.provider, modelId:item.dataset.id}));
-      closeModal("model-modal");
-      // Track the notice so we can remove it when the switch confirms
-      if (pendingModelSwitchMsg) pendingModelSwitchMsg.remove();
-      const el = document.createElement("div"); el.className = "msg system";
-      el.textContent = `Switching to ${item.dataset.id}…`;
-      msgs.appendChild(el); scrollBottom();
-      pendingModelSwitchMsg = el;
-    });
-  });
-}
-function updateAttachBtn() {
-  const btn = document.getElementById("attach-btn");
-  if (!btn) return;
-  if (currentModelSupportsImages) {
-    btn.disabled = false;
-    btn.removeAttribute("aria-disabled");
-    btn.title = "Attach image (or paste)";
-  } else {
-    btn.disabled = true;
-    btn.setAttribute("aria-disabled", "true");
-    btn.title = `${currentModel?.name || "This model"} doesn't support images`;
-    pendingImages = []; imagePreviews.innerHTML = "";
-  }
-}
-// ── Thinking level ────────────────────────────────────────────────────────
-function cycleThinking() {
-  if (!ws || ws.readyState !== 1) return;
-  ws.send(JSON.stringify({type:"cycle_thinking_level"}));
-}
-function updateThinkingBadge(level) {
-  const el = document.getElementById("thinking-level");
-  if (el) el.textContent = level || "—";
-  const badge = document.getElementById("thinking-badge");
-  if (badge) badge.setAttribute("aria-label", `Thinking level: ${level || "default"}`);
-}
-
-// ── Stats bar ─────────────────────────────────────────────────────────────
-function updateStats(stats) {
-  if (!stats) return;
-  const tok = (stats.tokens?.total || 0).toLocaleString();
-  const cost = stats.cost ? `$${stats.cost.toFixed(4)}` : "";
-  const ctx = stats.contextUsage?.percent != null ? `ctx ${Math.round(stats.contextUsage.percent)}%` : "";
-  const msgs_count = stats.userMessages != null ? `${stats.userMessages + (stats.assistantMessages||0)} msgs` : "";
-  const parts = [tok ? `🔤 ${tok} tok` : "", cost, ctx, msgs_count].filter(Boolean);
-  statsBar.innerHTML = parts.map(p => `<span>${esc(p)}</span>`).join("·");
-  statsBar.hidden = parts.length === 0;
-}
-
-// ── Modal helpers ─────────────────────────────────────────────────────────
-function openModal(id) {
-  const el = document.getElementById(id);
-  if (!el || el.open) return;
-  if (el.showModal) el.showModal(); else el.setAttribute("open", "");
-}
-function closeModal(id) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  if (el.close && el.open) el.close(); else el.removeAttribute("open");
-}
-
-// ── Slash-command autocomplete ────────────────────────────────────────────
-function updateCmdPalette() {
-  const val = input.value;
-  if (!val.startsWith("/") || val.includes(" ") || !allCommands.length) { hideCmdPalette(); return; }
-  const query = val.slice(1).toLowerCase();
-  filteredCmds = allCommands.filter(c => c.name.toLowerCase().includes(query) || (c.description||"").toLowerCase().includes(query));
-  if (!filteredCmds.length) { hideCmdPalette(); return; }
-  activeCmdIndex = 0; renderCmdPalette();
-}
-function renderCmdPalette() {
-  if (!filteredCmds.length) { hideCmdPalette(); return; }
-  cmdPalette.hidden = false;
-  cmdPalette.innerHTML = filteredCmds.map((c,i) => {
-    return `<button type="button" class="cmd-item${i===activeCmdIndex?" active":""}" data-index="${i}" ${i===activeCmdIndex ? 'aria-current="true"' : ''}>
-      <code>/${esc(c.name)}</code>
-      <small>${esc(c.source)}</small>
-      ${esc(c.description||"")}
-    </button>`;
-  }).join("");
-  cmdPalette.querySelectorAll(".cmd-item").forEach(el => {
-    el.addEventListener("mousedown", e => { e.preventDefault(); selectCmd(parseInt(el.dataset.index)); });
-  });
-  const active = cmdPalette.querySelector(".cmd-item.active");
-  if (active) active.scrollIntoView({block:"nearest"});
-}
-function selectCmd(index) {
-  if (index < 0 || index >= filteredCmds.length) return;
-  input.value = "/" + filteredCmds[index].name + " ";
-  hideCmdPalette(); input.focus();
-}
-function hideCmdPalette() { cmdPalette.hidden = true; filteredCmds = []; activeCmdIndex = -1; }
-
-// ── Image attachment ──────────────────────────────────────────────────────
-function addImagePreview(dataUrl, mimeType) {
-  pendingImages.push({dataUrl, mimeType});
-  const wrap = document.createElement("figure");
-  const img = document.createElement("img");
-  img.src = dataUrl;
-  img.width = 64;
-  img.height = 64;
-  img.alt = "Attached image";
-  const btn = document.createElement("button");
-  btn.type = "button";
-  btn.textContent = "Remove image";
-  const idx = pendingImages.length - 1;
-  btn.onclick = () => { pendingImages.splice(idx, 1); wrap.remove(); };
-  wrap.appendChild(img); wrap.appendChild(btn); imagePreviews.appendChild(wrap);
-}
-function fileToDataUrl(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = e => resolve(e.target.result);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
-async function handleFiles(files) {
-  for (const file of files) {
-    if (!file.type.startsWith("image/")) continue;
-    const dataUrl = await fileToDataUrl(file);
-    addImagePreview(dataUrl, file.type);
-  }
-}
-
-// ── WebSocket ─────────────────────────────────────────────────────────────
-function connect() {
-  const proto = location.protocol === "https:" ? "wss:" : "ws:";
-  console.log("[WS] Connecting to", `${proto}//${location.host}${appUrl("/ws")}`);
-  ws = new WebSocket(`${proto}//${location.host}${appUrl("/ws")}`);
-  ws.onopen = () => {
-    console.log("[WS] Connected");
-    setStatus("Connected");
-    applyMode();
-    // Restore last known session from localStorage
-    const savedSession = localStorage.getItem("nixpi_session");
-    if (savedSession && !currentSessionFile) {
-      currentSessionFile = savedSession;
-    }
-    // Request current state and load history
-    ws.send(JSON.stringify({type:"get_models"}));
-    if (currentSessionFile) {
-      ws.send(JSON.stringify({type:"load_history"}));
-    }
-    loadSessions();
-  };
-  ws.onclose = (event) => {
-    console.log("[WS] Closed", event.code, event.reason);
-    setStatus("Disconnected");
-    clearTimeout(reconnectTimer);
-    reconnectTimer = setTimeout(connect, 2000);
-  };
-  ws.onerror = (err) => {
-    console.error("[WS] Error", err);
-    ws.close();
-  };
-  ws.onmessage = (e) => {
-    try {
-      const data = JSON.parse(e.data);
-      console.log("[WS] Received:", data.type || 'unknown', data);
-      handleEvent(data);
-    } catch (err) {
-      console.error("[WS] Parse error:", err, e.data);
-    }
-  };
-}
-
-function handleEvent(data) {
-  switch (data.type) {
-
-    case "status":
-      streaming = data.busy;
-      setStatus(data.busy ? "Busy" : "Connected", data.busy);
-      if (data.piConnected === false) {
-        setStatus("Disconnected");
-        showHealthBanner("⚠ Pi disconnected. Attempting to reconnect…");
-        abortBtn.disabled = true;
-        sendBtn.disabled = true;
-        sendBtn.textContent = "Disconnected";
-      } else {
-        hideHealthBanner();
-        abortBtn.disabled = !data.busy;
-        sendBtn.textContent = data.busy ? "Busy…" : "Send";
-        sendBtn.disabled = false; // Always allow sending (queues if busy)
+        function simpleMd(t) {
+          let r = t;
+          r = r.replace(
+            /```(\w*)\n([\s\S]*?)```/g,
+            "<pre><code>$2</code></pre>",
+          );
+          r = r.replace(/`([^`]+)`/g, "<code>$1</code>");
+          r = r.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+          r = r.replace(/\*([^*]+)\*/g, "<em>$1</em>");
+          r = r.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
+          r = r.replace(/^\s*[-*]\s+(.+)$/gm, "<li>$1</li>");
+          r = r.replace(/(<li>.*<\/li>\s*)+/g, "<ul>$&</ul>");
+          r = r.replace(/^>\s+(.+)$/gm, "<blockquote>$1</blockquote>");
+          const paragraphs = r.split(/\n\n+/);
+          return paragraphs
+            .map((p) => {
+              p = p.trim();
+              if (!p) return "";
+              if (p.startsWith("<")) return p;
+              return "<p>" + p.replace(/\n/g, "<br>") + "</p>";
+            })
+            .join("");
+        }
       }
-      if (data.aborted) { currentAssistantEl = null; currentThinkingEl = null; addMsg("system", "Aborted.", true); }
-      break;
-
-    case "pi_health":
-      if (data.connected) {
-        hideHealthBanner();
-        setStatus("Connected");
-        sendBtn.textContent = streaming ? "Busy…" : "Send";
-        sendBtn.disabled = false;
-      } else {
-        setStatus("Disconnected");
-        showHealthBanner("⚠ Pi disconnected. Attempting to reconnect…");
-        abortBtn.disabled = true;
-        sendBtn.disabled = true;
-        sendBtn.textContent = "Disconnected";
+      function esc(s) {
+        return String(s)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;");
       }
-      break;
 
-    case "error":
-      addMsg("error", `⚠ ${esc(data.message)}`, true);
-      break;
+      // ── DOM refs ──────────────────────────────────────────────────────────────
+      const $ = (s) => document.querySelector(s);
+      const msgs = $("#messages");
+      const input = $("#input");
+      const sendBtn = $("#send-btn");
+      const abortBtn = $("#btn-abort");
+      const statusLabel = $("#status-dot");
+      const sessionList = $("#session-list");
+      const imagePreviews = $("#image-previews");
+      const eventLog = $("#event-log");
+      const sidebarLeft = $("#sidebar-left");
+      const sidebarOverlay = $("#sidebar-overlay");
+      const diagModelBar = $("#diag-model-bar");
+      const diagCtxBar = $("#diag-ctx-bar");
+      const diagModelText = $("#diag-model");
+      const diagCtxText = $("#diag-ctx");
 
-    case "commands":
-      allCommands = data.commands || [];
-      break;
-
-    case "available_models":
-      allModels = data.models || [];
-      filterModels(document.getElementById("model-search")?.value || "");
-      break;
-
-    case "session_state":
-      if (data.sessionFile) {
-        currentSessionFile = data.sessionFile;
-        localStorage.setItem("nixpi_session", currentSessionFile);
+      function setStatus(text, busy = false) {
+        if (!statusLabel) return;
+        statusLabel.textContent = text;
       }
-      if (data.model) {
-        currentModel = data.model;
-        currentModelSupportsImages = Array.isArray(data.model.input) && data.model.input.includes("image");
-        const el = document.getElementById("model-name");
-        if (el) el.textContent = data.model.name || data.model.id;
-        if (pendingModelSwitchMsg) { pendingModelSwitchMsg.remove(); pendingModelSwitchMsg = null; }
-        updateAttachBtn();
+
+      function logEvent(msg) {
+        const time = new Date().toLocaleTimeString("en", {
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+        });
+        const div = document.createElement("div");
+        div.className = "text-on-surface";
+        div.textContent = `[${time}] ${msg}`;
+        eventLog.appendChild(div);
+        eventLog.scrollTop = eventLog.scrollHeight;
       }
-      if (data.thinkingLevel) {
-        currentThinkingLevel = data.thinkingLevel;
-        updateThinkingBadge(data.thinkingLevel);
+
+      // ── State ─────────────────────────────────────────────────────────────────
+      let ws = null,
+        reconnectTimer = null;
+      let streaming = false;
+      let currentAssistantEl = null,
+        currentThinkingEl = null,
+        currentToolCalls = {};
+      let allCommands = [],
+        filteredCmds = [],
+        activeCmdIndex = -1;
+      let currentSessionFile = null;
+      let sidebarOpen = false;
+      let currentModel = null,
+        currentThinkingLevel = null;
+      let currentModelSupportsImages = true;
+      let allModels = [];
+      let pendingImages = [];
+      let pendingModelSwitchMsg = null;
+      let userScrolledUp = false;
+
+      // ── Sidebar ───────────────────────────────────────────────────────────────
+      function toggleLeftSidebar() {
+        sidebarOpen = !sidebarOpen;
+        sidebarLeft.classList.toggle("open", sidebarOpen);
+        sidebarOverlay.style.display = sidebarOpen ? "block" : "none";
       }
-      // Highlight and scroll to active session in sidebar
-      document.querySelectorAll(".session-item").forEach(item => {
-        const isCurrent = item.dataset.file === currentSessionFile;
-        item.classList.toggle("active", isCurrent);
-        if (isCurrent) item.setAttribute("aria-current", "page");
-        else item.removeAttribute("aria-current");
+      function newChat() {
+        if (!ws || ws.readyState !== 1) return;
+        ws.send(JSON.stringify({ type: "new_session" }));
+        if (window.innerWidth <= 1024) toggleLeftSidebar();
+      }
+
+      // ── Scroll ─────────────────────────────────────────────────────────────────
+      window.addEventListener("scroll", () => {
+        const atBottom =
+          window.innerHeight + window.scrollY >=
+          document.documentElement.scrollHeight - 100;
+        userScrolledUp = !atBottom;
       });
-      scrollToActiveSession();
-      break;
-
-    case "model_state":
-      if (data.model) {
-        currentModel = data.model;
-        currentModelSupportsImages = Array.isArray(data.model.input) && data.model.input.includes("image");
-        const el = document.getElementById("model-name");
-        if (el) el.textContent = data.model.name || data.model.id;
-        if (pendingModelSwitchMsg) { pendingModelSwitchMsg.remove(); pendingModelSwitchMsg = null; }
-        updateAttachBtn();
+      function scrollBottom() {
+        if (!userScrolledUp) {
+          msgs.scrollTop = msgs.scrollHeight;
+        }
       }
-      if (data.thinkingLevel) {
-        currentThinkingLevel = data.thinkingLevel;
-        updateThinkingBadge(data.thinkingLevel);
+
+      // ── Message helpers ────────────────────────────────────────────────────────
+      function addMsg(type, content, isHtml = false) {
+        const wrapper = document.createElement("div");
+        wrapper.className = "flex gap-4";
+        wrapper.dataset.type = type;
+
+        if (type === "error") {
+          wrapper.innerHTML = `
+      <div class="w-8 h-8 rounded-full bg-error-container flex items-center justify-center border border-error flex-shrink-0">
+        <span class="material-symbols-outlined text-error text-sm">error</span>
+      </div>
+      <div class="flex-1">
+        <div class="text-error font-label-sm">${isHtml ? content : esc(content)}</div>
+      </div>`;
+        } else if (type === "system") {
+          wrapper.innerHTML = `
+      <div class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center border border-outline-variant flex-shrink-0">
+        <span class="material-symbols-outlined text-on-surface-variant text-sm">info</span>
+      </div>
+      <div class="flex-1">
+        <div class="text-on-surface-variant font-label-sm">${isHtml ? content : esc(content)}</div>
+      </div>`;
+        } else if (type === "user") {
+          wrapper.classList.add("flex-row-reverse");
+          let imgs = "";
+          if (pendingImages.length) {
+            imgs =
+              '<div class="flex gap-1 mt-2">' +
+              pendingImages
+                .map(
+                  (img) =>
+                    `<img src="${esc(img.dataUrl)}" class="w-16 h-16 object-cover rounded border border-outline-variant">`,
+                )
+                .join("") +
+              "</div>";
+          }
+          wrapper.innerHTML = `
+      <div class="w-8 h-8 rounded-full bg-primary-container flex items-center justify-center border border-primary flex-shrink-0">
+        <span class="font-label-md text-on-primary-container text-xs">OP</span>
+      </div>
+      <div class="flex-1 flex justify-end">
+        <div class="font-body-md text-on-surface bg-surface-container-high border border-outline-variant rounded-lg rounded-tr-none px-4 py-2 max-w-[80%]">
+          ${md(content)}${imgs}
+        </div>
+      </div>`;
+        } else if (type === "assistant") {
+          wrapper.innerHTML = `
+      <div class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center border border-outline-variant flex-shrink-0">
+        <span class="material-symbols-outlined text-primary text-sm">auto_awesome</span>
+      </div>
+      <div class="flex-1 space-y-2">
+        <div class="msg-body font-body-md text-on-surface">${isHtml ? content : md(content)}</div>
+      </div>`;
+        }
+        msgs.appendChild(wrapper);
+        scrollBottom();
+        return wrapper;
       }
-      break;
 
-    case "session_stats":
-      updateStats(data.stats);
-      break;
+      function addUserMsg(text) {
+        addMsg("user", text);
+      }
 
-    case "session_switched":
-      msgs.innerHTML = ""; currentAssistantEl = null; currentThinkingEl = null;
-      currentToolCalls = {}; streaming = false;
-      loadSessions();
-      break;
+      function ensureAssistantMsg() {
+        if (!currentAssistantEl) {
+          const wrapper = document.createElement("div");
+          wrapper.className = "flex gap-4";
+          wrapper.innerHTML = `
+      <div class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center border border-outline-variant flex-shrink-0">
+        <span class="material-symbols-outlined text-primary text-sm">auto_awesome</span>
+      </div>
+      <div class="flex-1 space-y-2">
+        <div class="msg-body font-body-md text-on-surface"></div>
+      </div>`;
+          msgs.appendChild(wrapper);
+          currentAssistantEl = wrapper;
+        }
+        return currentAssistantEl.querySelector(".msg-body");
+      }
 
-    case "session_reset":
-      msgs.innerHTML = ""; currentAssistantEl = null; currentThinkingEl = null; currentToolCalls = {};
-      statsBar.hidden = true;
-      setTimeout(loadSessions, 1200);
-      break;
+      function ensureThinking() {
+        if (!currentThinkingEl) {
+          const body = ensureAssistantMsg();
+          const thinking = document.createElement("div");
+          thinking.className = "msg-thinking";
+          thinking.innerHTML = `<div class="font-label-md text-label-md text-secondary mb-1">Thinking…</div><pre class="font-label-sm text-tertiary-fixed"></pre>`;
+          body.appendChild(thinking);
+          currentThinkingEl = thinking;
+          scrollBottom();
+        }
+        return currentThinkingEl.querySelector("pre");
+      }
 
-    case "history":
-      msgs.innerHTML = "";
-      if (data.messages?.length) {
-        for (const m of data.messages) {
-          if (m.role === "user") {
-            const c = m.content;
-            const text = typeof c === "string" ? c : (Array.isArray(c) ? c.filter(b=>b.type==="text").map(b=>b.text).join("\n") : "");
-            if (text) {
-              const div = document.createElement("article"); div.className = "msg user";
-              div.innerHTML = `<header>You</header><div class="msg-body">${md(text)}</div>`;
-              msgs.appendChild(div);
-            }
-          } else if (m.role === "assistant" && m.content) {
-            const text = m.content.filter(b=>b.type==="text").map(b=>b.text).join("\n");
-            if (text) {
-              const div = document.createElement("article"); div.className = "msg assistant";
-              div.innerHTML = `<header>π</header><div class="msg-body">${md(text)}</div>`;
-              msgs.appendChild(div);
+      // ── Session management ────────────────────────────────────────────────────
+      async function loadSessions() {
+        try {
+          const res = await fetch(appUrl("/api/sessions"));
+          const data = await res.json();
+          const active = data.currentFile || currentSessionFile;
+          if (data.currentFile) currentSessionFile = data.currentFile;
+          renderSessionList(data.sessions || [], active);
+        } catch {
+          sessionList.innerHTML =
+            '<p class="text-on-surface-variant font-label-sm text-xs">Could not load sessions</p>';
+        }
+      }
+
+      function formatRelTime(ts) {
+        const d = new Date(ts),
+          now = new Date();
+        const todayStart = new Date(
+          now.getFullYear(),
+          now.getMonth(),
+          now.getDate(),
+        );
+        const dayStart = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+        if (+dayStart >= +todayStart)
+          return d.toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          });
+        if (+dayStart >= +todayStart - 86400000) return "Yesterday";
+        return d.toLocaleDateString([], { month: "short", day: "numeric" });
+      }
+
+      function groupByDate(sessions) {
+        const now = new Date(),
+          todayStart = new Date(
+            now.getFullYear(),
+            now.getMonth(),
+            now.getDate(),
+          );
+        const groups = [
+          { label: "Today", items: [], threshold: +todayStart },
+          { label: "Yesterday", items: [], threshold: +todayStart - 86400000 },
+          {
+            label: "This Week",
+            items: [],
+            threshold: +todayStart - 7 * 86400000,
+          },
+          {
+            label: "This Month",
+            items: [],
+            threshold: +todayStart - 30 * 86400000,
+          },
+          { label: "Older", items: [], threshold: 0 },
+        ];
+        for (const s of sessions) {
+          const t = +new Date(s.lastTimestamp);
+          for (const g of groups) {
+            if (t >= g.threshold) {
+              g.items.push(s);
+              break;
             }
           }
         }
-        scrollBottom();
+        return groups.filter((g) => g.items.length > 0);
       }
-      loadSessions();
-      break;
 
-    case "agent_start":
-      currentAssistantEl = null; currentThinkingEl = null; currentToolCalls = {};
-      break;
-
-    case "agent_end":
-      currentAssistantEl = null; currentThinkingEl = null; streaming = false;
-      setTimeout(loadSessions, 800);
-      break;
-
-    case "message_start":
-      if (data.message?.role === "assistant") { currentAssistantEl = null; currentThinkingEl = null; }
-      break;
-
-    case "message_update": {
-      const evt = data.assistantMessageEvent;
-      if (!evt) break;
-      if (evt.type === "text_delta") {
-        const body = ensureAssistantMsg();
-        const text = (data.message?.content||[]).filter(c=>c.type==="text").map(c=>c.text).join("\n");
-        body.innerHTML = md(text || evt.delta || "");
-        scrollBottom();
-      } else if (evt.type === "thinking_delta") {
-        const body = ensureThinking();
-        const thinkText = (data.message?.content||[]).filter(c=>c.type==="thinking").map(c=>c.thinking).join("\n");
-        body.textContent = thinkText || evt.delta || "";
-        scrollBottom();
-      } else if (evt.type === "thinking_start") {
-        ensureThinking();
-      } else if (evt.type === "thinking_end") {
-        if (currentThinkingEl) { currentThinkingEl.remove(); currentThinkingEl = null; }
-      } else if (evt.type === "toolcall_start") {
-        const name = (data.message?.content||[]).find(c=>c.type==="toolCall")?.name || "…";
-        if (!currentToolCalls[evt.toolCallId]) {
-          const body = ensureAssistantMsg();
-          const tc = document.createElement("details");
-          tc.open = true; tc.className = "tool-call"; tc.dataset.id = evt.toolCallId;
-          tc.innerHTML = `<summary>${esc(name)}</summary>`;
-          body.appendChild(tc); currentToolCalls[evt.toolCallId] = tc; scrollBottom();
+      function renderSessionList(sessions, activeFile) {
+        if (!sessions.length) {
+          sessionList.innerHTML =
+            '<p class="text-on-surface-variant font-label-sm text-xs">No sessions yet</p>';
+          return;
         }
-      } else if (evt.type === "toolcall_end") {
-        const tc = currentToolCalls[evt.toolCallId];
-        if (tc && evt.toolCall) {
-          const args = evt.toolCall.arguments;
-          const preview = typeof args === "string" ? args.slice(0,200) : JSON.stringify(args).slice(0,200);
-          tc.innerHTML = `<summary>${esc(evt.toolCall.name)}</summary><pre>${esc(preview)}</pre>`;
+        const groups = groupByDate(sessions);
+        let html = "";
+        for (const g of groups) {
+          html += `<div class="font-label-sm text-on-surface-variant uppercase tracking-wider text-xs mb-1 mt-2">${esc(g.label)}</div>`;
+          for (const s of g.items) {
+            const isActive = s.file === activeFile;
+            const time = formatRelTime(s.lastTimestamp);
+            html += `<div class="session-item${isActive ? " active" : ""}" data-file="${esc(s.file)}" onclick="switchSession('${esc(s.file)}')">
+        <div class="overflow-hidden">
+          <div class="font-body-md text-sm truncate">${esc(s.preview)}</div>
+          <div class="session-meta">${esc(time)} · ${s.messageCount || 0} msgs</div>
+        </div>
+      </div>`;
+          }
+        }
+        sessionList.innerHTML = html;
+      }
+
+      function switchSession(sessionPath) {
+        if (!ws || ws.readyState !== 1) return;
+        ws.send(JSON.stringify({ type: "switch_session", sessionPath }));
+        if (window.innerWidth <= 1024) toggleLeftSidebar();
+      }
+
+      // ── Model picker ──────────────────────────────────────────────────────────
+      function openModelPicker() {
+        if (!allModels.length) {
+          ws?.send(JSON.stringify({ type: "get_models" }));
+        }
+        let val = document.getElementById("model-search")?.value || "";
+        filterModels(val);
+        openModal("model-modal");
+        setTimeout(() => document.getElementById("model-search")?.focus(), 50);
+      }
+      function filterModels(q) {
+        q = (q || "").toLowerCase();
+        const filtered = allModels.filter(
+          (m) =>
+            !q ||
+            m.id.toLowerCase().includes(q) ||
+            m.provider.toLowerCase().includes(q) ||
+            (m.name || "").toLowerCase().includes(q),
+        );
+        const byProvider = {};
+        for (const m of filtered) {
+          if (!byProvider[m.provider]) byProvider[m.provider] = [];
+          byProvider[m.provider].push(m);
+        }
+        const container = document.getElementById("model-list");
+        const currentId = currentModel?.id;
+        let html = "";
+        for (const [provider, models] of Object.entries(byProvider)) {
+          html += `<div class="font-label-sm text-secondary uppercase tracking-wider text-xs mb-2 mt-3">${esc(provider)}</div>`;
+          for (const m of models) {
+            const isCurrent = m.id === currentId;
+            const hasVision =
+              Array.isArray(m.input) && m.input.includes("image");
+            html += `<button type="button" class="w-full text-left px-3 py-2 rounded hover:bg-surface-container transition-colors ${isCurrent ? "text-primary opacity-50 cursor-not-allowed" : "text-on-surface"}" ${isCurrent ? "disabled" : ""} onclick="setModel('${esc(m.provider)}', '${esc(m.id)}')">
+        <span class="font-label-md text-sm">${esc(m.name || m.id)}${hasVision ? " 📷" : ""}${isCurrent ? " ✓" : ""}</span>
+      </button>`;
+          }
+        }
+        if (!html)
+          html =
+            '<p class="text-on-surface-variant text-sm p-2">No models found</p>';
+        container.innerHTML = html;
+      }
+      function setModel(provider, modelId) {
+        ws?.send(JSON.stringify({ type: "set_model", provider, modelId }));
+        closeModal("model-modal");
+        logEvent(`Switching model → ${modelId}`);
+      }
+      function cycleThinking() {
+        if (!ws || ws.readyState !== 1) return;
+        ws.send(JSON.stringify({ type: "cycle_thinking_level" }));
+      }
+
+      // ── Stats ─────────────────────────────────────────────────────────────────
+      function updateStats(stats) {
+        if (!stats) return;
+        const tok = stats.tokens?.total || 0;
+        const msgs_count =
+          (stats.userMessages || 0) + (stats.assistantMessages || 0);
+        const ctx =
+          stats.contextUsage?.percent != null
+            ? Math.round(stats.contextUsage.percent)
+            : 0;
+
+        $("#stats-panel").classList.remove("hidden");
+        $("#stat-tokens").textContent = tok.toLocaleString();
+        $("#stat-msgs").textContent = msgs_count;
+        $("#stat-ctx").textContent = ctx + "%";
+
+        diagModelText.textContent = currentModel?.name || "—";
+        diagCtxText.textContent = ctx + "%";
+        diagModelBar.style.width = Math.min(100, (tok / 10000) * 100) + "%";
+        diagCtxBar.style.width = Math.min(100, ctx) + "%";
+      }
+
+      // ── Modal helpers ─────────────────────────────────────────────────────────
+      function openModal(id) {
+        const el = document.getElementById(id);
+        if (!el || el.open) return;
+        if (el.showModal) el.showModal();
+        else el.setAttribute("open", "");
+      }
+      function closeModal(id) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        if (el.close && el.open) el.close();
+        else el.removeAttribute("open");
+      }
+
+      // ── Image attachment ──────────────────────────────────────────────────────
+      function addImagePreview(dataUrl, mimeType) {
+        pendingImages.push({ dataUrl, mimeType });
+        const wrap = document.createElement("div");
+        wrap.className = "image-preview";
+        wrap.innerHTML = `<img src="${dataUrl}" alt="Attached"><button onclick="this.parentElement.remove(); pendingImages = pendingImages.filter(i => i.dataUrl !== '${dataUrl}');">×</button>`;
+        imagePreviews.appendChild(wrap);
+      }
+      function fileToDataUrl(file) {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (e) => resolve(e.target.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+      }
+      async function handleFiles(files) {
+        for (const file of files) {
+          if (!file.type.startsWith("image/")) continue;
+          const dataUrl = await fileToDataUrl(file);
+          addImagePreview(dataUrl, file.type);
         }
       }
-      break;
-    }
 
-    case "message_end":
-      currentAssistantEl = null; currentThinkingEl = null;
-      break;
-
-    case "tool_execution_start": {
-      const body = ensureAssistantMsg();
-      const te = document.createElement("details"); te.className = "tool-call"; te.open = true;
-      te.innerHTML = `<summary>⚙ ${esc(data.toolName)} running…</summary>`;
-      body.appendChild(te); currentToolCalls[data.toolCallId] = te; scrollBottom();
-      break;
-    }
-
-    case "tool_execution_end": {
-      const te = currentToolCalls[data.toolCallId];
-      if (te) {
-        const result = data.result?.content?.[0]?.text || "done";
-        te.innerHTML = `<summary>⚙ ${esc(data.toolName)}</summary><pre>${esc(result.slice(0,300))}</pre>`;
-      }
-      break;
-    }
-
-    case "export_response":
-      if (data.session) {
-        const ts = new Date().toISOString().replace(/[:.]/g,"-").slice(0,19);
-        const blob = new Blob([JSON.stringify(data.session,null,2)],{type:"application/json"});
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a"); a.href=url; a.download=`nixpi-session-${ts}.json`; a.click();
-        URL.revokeObjectURL(url);
-        addMsg("system", "Session exported.", true);
-      }
-      break;
-  }
-}
-
-// ── Send ──────────────────────────────────────────────────────────────────
-function sendPrompt() {
-  const text = input.value.trim();
-  if (!text || !ws || ws.readyState !== 1) return;
-  hideCmdPalette();
-  userScrolledUp = false;  // user sent a message, they want to see the response
-
-  // Strip images if model doesn't support vision
-  if (pendingImages.length && !currentModelSupportsImages) {
-    addMsg("error", `⚠ ${esc(currentModel?.name || "This model")} doesn't support images — sending text only.`, true);
-    pendingImages = []; imagePreviews.innerHTML = "";
-  }
-
-  const payload = {type:"prompt", text};
-  if (pendingImages.length) {
-    payload.images = pendingImages.map(img => ({
-      type: "image",
-      data: img.dataUrl.split(",")[1],
-      mimeType: img.mimeType,
-    }));
-  }
-
-  input.value = "";
-  pendingImages = []; imagePreviews.innerHTML = "";
-
-  addUserMsg(text);
-  if (streaming) addMsg("system", "⏳ Queued — will follow current response", true);
-  ws.send(JSON.stringify(payload));
-}
-
-// ── Mode management ───────────────────────────────────────────────────────
-function applyMode() {
-  document.getElementById("session-list").hidden = false;
-  const archToggle = document.getElementById("archived-toggle");
-  if (archToggle) archToggle.hidden = archToggle.dataset.visible !== "1";
-  document.getElementById("new-chat-label").textContent = "New chat";
-  input.placeholder = "Ask NixPi anything… (type / for commands)";
-  sendBtn.disabled = streaming;
-  sendBtn.textContent = streaming ? "Busy…" : "Send";
-  abortBtn.disabled = !streaming;
-  document.getElementById("btn-export").hidden = false;
-  document.getElementById("model-badge").hidden = false;
-  document.getElementById("thinking-badge").hidden = false;
-  document.getElementById("btn-clear").hidden = false;
-  document.getElementById("input-area").hidden = false;
-  document.getElementById("messages").hidden = false;
-}
-// ── Archived sessions ───────────────────────────────────────────────────
-let archivedOpen = false;
-async function toggleArchived() {
-  archivedOpen = !archivedOpen;
-  const chevron = document.getElementById("archived-chevron");
-  const list = document.getElementById("archived-list");
-  if (chevron) chevron.textContent = archivedOpen ? "▾" : "▸";
-  if (!archivedOpen) { if (list) list.innerHTML = ""; return; }
-  await loadArchivedSessions();
-}
-async function loadArchivedSessions() {
-  const list = document.getElementById("archived-list");
-  if (!list) return;
-  list.innerHTML = '<p>Loading…</p>';
-  try {
-    const res = await fetch(appUrl("/api/sessions/archived"));
-    const data = await res.json();
-    if (!data.sessions.length) { list.innerHTML = '<p>No archived chats</p>'; return; }
-    list.innerHTML = data.sessions.map(s => `
-      <div class="archived-item">
-        <span class="archived-item-title" title="${esc(s.file)}">${esc(s.preview)}</span>
-        <button class="archived-restore" data-file="${esc(s.file)}">Restore</button>
-      </div>`).join("");
-    list.querySelectorAll(".archived-restore").forEach(btn => {
-      btn.addEventListener("click", async () => {
-        const file = btn.dataset.file;
-        const res = await fetch(appUrl("/api/sessions/restore"), {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({file})});
-        const d = await res.json();
-        if (d.ok) { await loadSessions(); await loadArchivedSessions(); }
-        else addMsg("error", `⚠ Restore failed: ${esc(d.error||"“unknown”")}`, true);
-      });
-    });
-  } catch(e) { list.innerHTML = `<p>${esc(e.message)}</p>`; }
-}
-
-// ── Toggle helpers ────────────────────────────────────────────────────────
-function toggleThinking() {
-  thinkingHidden = !thinkingHidden;
-  document.querySelectorAll(".msg.thinking").forEach(el => { el.hidden = thinkingHidden; });
-}
-
-// ── Pi health helpers ──────────────────────────────────────────────────────
-const healthBanner = () => document.getElementById("pi-health-banner");
-const healthMsg = () => document.getElementById("health-msg");
-function showHealthBanner(msg) {
-  const b = healthBanner(), m = healthMsg();
-  if (b) b.hidden = false;
-  if (m) m.textContent = msg;
-}
-function hideHealthBanner() {
-  const b = healthBanner();
-  if (b) b.hidden = true;
-}
-
-// ── Sidebar session helpers ──────────────────────────────────────────────
-function scrollToActiveSession() {
-  if (isRenaming) return;  // Don't interrupt rename
-  const active = sessionList.querySelector(".session-item.active");
-  if (active) {
-    active.scrollIntoView({block: "nearest", behavior: "smooth"});
-  }
-}
-
-// ── Event wiring ──────────────────────────────────────────────────────────
-sendBtn.addEventListener("click", sendPrompt);
-
-input.addEventListener("keydown", e => {
-  if (!cmdPalette.hidden && filteredCmds.length) {
-    if (e.key === "ArrowDown") { e.preventDefault(); activeCmdIndex = (activeCmdIndex+1)%filteredCmds.length; renderCmdPalette(); return; }
-    if (e.key === "ArrowUp")   { e.preventDefault(); activeCmdIndex = (activeCmdIndex-1+filteredCmds.length)%filteredCmds.length; renderCmdPalette(); return; }
-    if (e.key === "Tab" || (e.key === "Enter" && activeCmdIndex >= 0)) { e.preventDefault(); selectCmd(activeCmdIndex); return; }
-    if (e.key === "Escape") { e.preventDefault(); hideCmdPalette(); return; }
-  }
-  if (e.key === "Enter" && !e.shiftKey && !e.ctrlKey && !e.altKey) { e.preventDefault(); sendPrompt(); }
-});
-input.addEventListener("input", () => {
-  updateCmdPalette();
-});
-
-// Paste image into input
-input.addEventListener("paste", async e => {
-  const items = e.clipboardData?.items || [];
-  for (const item of items) {
-    if (item.type.startsWith("image/")) {
-      e.preventDefault();
-      const file = item.getAsFile();
-      if (file) await handleFiles([file]);
-    }
-  }
-});
-
-document.addEventListener("click", e => {
-  if (!input.contains(e.target) && !cmdPalette.contains(e.target)) hideCmdPalette();
-});
-
-abortBtn.addEventListener("click", () => {
-  if (!ws || ws.readyState !== 1) return;
-  ws.send(JSON.stringify({type:"abort"}));
-});
-
-
-$("#btn-clear").addEventListener("click", () => {
-  msgs.innerHTML = "";
-  currentAssistantEl = null; currentThinkingEl = null; currentToolCalls = {};
-  statsBar.hidden = true;
-  addMsg("system", "Chat cleared. Session history preserved.", true);
-});
-
-$("#btn-new-chat").addEventListener("click", () => {
-  if (!ws || ws.readyState !== 1) return;
-  ws.send(JSON.stringify({type:"new_session"}));
-});
-
-$("#btn-sidebar-toggle").addEventListener("click", toggleSidebar);
-
-$("#btn-help").addEventListener("click", () => openModal("help-modal"));
-document.querySelectorAll("dialog").forEach(m => m.addEventListener("click", e => { if (e.target === m) closeModal(m.id); }));
-
-$("#btn-export").addEventListener("click", () => {
-  if (!ws || ws.readyState !== 1) { addMsg("error", "Not connected.", true); return; }
-  ws.send(JSON.stringify({type:"export_request"}));
-});
-
-$("#attach-btn").addEventListener("click", () => { if (!currentModelSupportsImages) return; $("#attach-input").click(); });
-$("#attach-input").addEventListener("change", async e => {
-  await handleFiles(Array.from(e.target.files));
-  e.target.value = "";
-});
-
-document.addEventListener("keydown", e => {
-  if (e.key === "Escape") {
-    const openDialog = document.querySelector("dialog[open]");
-    if (openDialog) {
-      if (openDialog.id === "session-actions") closeSessionMenu();
-      else closeModal(openDialog.id);
-      return;
-    }
-    if (!cmdPalette.hidden) { hideCmdPalette(); return; }
-    if (streaming) { ws?.send(JSON.stringify({type:"abort"})); }
-    return;
-  }
-  if (document.activeElement === input) return;
-  if (e.key === "n" && e.ctrlKey) { e.preventDefault(); if (ws?.readyState===1) { ws.send(JSON.stringify({type:"new_session"})); } }
-  if (e.key === "t" && e.ctrlKey) { e.preventDefault(); toggleThinking(); }
-  if (e.key === "l" && e.ctrlKey) { e.preventDefault(); document.getElementById("btn-clear").click(); }
-  if (e.key === "?" && !e.ctrlKey && !e.altKey && document.activeElement.tagName !== 'TEXTAREA' && document.activeElement.tagName !== 'INPUT') {
-    openModal("help-modal");
-  }
-});
-
-window.addEventListener("resize", applySidebarState);
-
-// ── Boot ──────────────────────────────────────────────────────────────────
-connect();
-input.focus();
-
-// ── Microphone / Whisper STT ────────────────────────────────────────────
-const micBtn = $("#mic-btn");
-const micSettings = $("#mic-settings");
-let mediaRecorder = null;
-let audioChunks = [];
-let micRecording = false;
-let micSilenceMs = 750;  // default auto-stop after 0.75s silence
-let analyser = null;
-let audioContext = null;
-let silenceCheckInterval = null;
-
-// Hide mic if browser doesn't support it
-if (!(navigator.mediaDevices?.getUserMedia)) {
-  if (micBtn) micBtn.hidden = true;
-  if (micSettings) micSettings.hidden = true;
-}
-
-if (micBtn) {
-  // Right-click / long-press to open silence settings
-  micBtn.addEventListener("contextmenu", e => {
-    e.preventDefault();
-    micSettings.open = !micSettings.open;
-  });
-  let longPressTimer = null;
-  micBtn.addEventListener("touchstart", e => {
-    longPressTimer = setTimeout(() => {
-      e.preventDefault();
-      micSettings.open = !micSettings.open;
-    }, 500);
-  });
-  micBtn.addEventListener("touchend", () => clearTimeout(longPressTimer));
-  micBtn.addEventListener("touchmove", () => clearTimeout(longPressTimer));
-
-  // Close settings on outside click
-  document.addEventListener("click", e => {
-    if (!micSettings.contains(e.target) && e.target !== micBtn) {
-      micSettings.open = false;
-    }
-  });
-
-  // Settings button clicks
-  micSettings.querySelectorAll("button").forEach(btn => {
-    btn.addEventListener("click", e => {
-      e.stopPropagation();
-      micSilenceMs = parseInt(btn.dataset.silence);
-      micSettings.querySelectorAll("button").forEach(b => b.removeAttribute("aria-current"));
-      btn.setAttribute("aria-current", "true");
-      micSettings.open = false;
-    });
-  });
-}
-
-function startSilenceDetection(stream) {
-  if (micSilenceMs === 0) return;  // manual mode
-  try {
-    audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    const source = audioContext.createMediaStreamSource(stream);
-    analyser = audioContext.createAnalyser();
-    analyser.fftSize = 512;
-    source.connect(analyser);
-    const dataArray = new Uint8Array(analyser.frequencyBinCount);
-    let silenceStart = null;
-    const threshold = 15;
-    silenceCheckInterval = setInterval(() => {
-      analyser.getByteFrequencyData(dataArray);
-      const avg = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
-      if (avg < threshold) {
-        if (!silenceStart) silenceStart = Date.now();
-        if (Date.now() - silenceStart >= micSilenceMs) {
-          stopRecording();
+      // ── Export ────────────────────────────────────────────────────────────────
+      function exportSession() {
+        if (!ws || ws.readyState !== 1) {
+          logEvent("Not connected — cannot export");
+          return;
         }
-      } else {
-        silenceStart = null;
+        ws.send(JSON.stringify({ type: "export_request" }));
       }
-    }, 100);
-  } catch (e) {
-    console.warn("Silence detection unavailable:", e);
-  }
-}
 
-function stopSilenceDetection() {
-  if (silenceCheckInterval) { clearInterval(silenceCheckInterval); silenceCheckInterval = null; }
-  if (audioContext) { audioContext.close().catch(() => {}); audioContext = null; }
-  analyser = null;
-}
+      // ── Restart Pi ────────────────────────────────────────────────────────────
+      function restartPi() {
+        fetch(appUrl("/api/restart"), { method: "POST" })
+          .then(() => {
+            logEvent("Restarting Pi…");
+          })
+          .catch((e) => {
+            logEvent("Restart failed: " + e.message);
+          });
+      }
 
-function stopRecording() {
-  if (!micRecording) return;
-  micRecording = false;
-  stopSilenceDetection();
-  if (mediaRecorder && mediaRecorder.state === "recording") {
-    mediaRecorder.stop();
-  }
-  micBtn.setAttribute("aria-busy", "true");
-  micBtn.textContent = "Processing…";
-}
-
-if (micBtn) {
-  micBtn.addEventListener("click", async () => {
-    if (micSettings.open) {
-      micSettings.open = false;
-      return;
-    }
-
-    if (micRecording) {
-      stopRecording();
-    } else {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        audioChunks = [];
-        mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
-
-        mediaRecorder.ondataavailable = e => {
-          if (e.data.size > 0) audioChunks.push(e.data);
+      // ── WebSocket ─────────────────────────────────────────────────────────────
+      function connect() {
+        const proto = location.protocol === "https:" ? "wss:" : "ws:";
+        ws = new WebSocket(`${proto}//${location.host}${appUrl("/ws")}`);
+        ws.onopen = () => {
+          logEvent("WebSocket connected");
+          setStatus("Connected");
+          const savedSession = localStorage.getItem("nixpi_session");
+          if (savedSession && !currentSessionFile)
+            currentSessionFile = savedSession;
+          ws.send(JSON.stringify({ type: "get_models" }));
+          if (currentSessionFile)
+            ws.send(JSON.stringify({ type: "load_history" }));
+          loadSessions();
         };
+        ws.onclose = (event) => {
+          logEvent(`WebSocket closed (code ${event.code})`);
+          setStatus("Disconnected");
+          clearTimeout(reconnectTimer);
+          reconnectTimer = setTimeout(connect, 2000);
+        };
+        ws.onerror = (err) => {
+          ws.close();
+        };
+        ws.onmessage = (e) => {
+          try {
+            const data = JSON.parse(e.data);
+            handleEvent(data);
+          } catch (err) {}
+        };
+      }
 
-        mediaRecorder.onstop = async () => {
-          stream.getTracks().forEach(t => t.stop());
-          const blob = new Blob(audioChunks, { type: "audio/webm" });
-          if (blob.size < 1000) {
-            micBtn.removeAttribute("aria-busy");
-            micBtn.setAttribute("aria-pressed", "false");
-            micBtn.textContent = "Mic";
+      function handleEvent(data) {
+        switch (data.type) {
+          case "status":
+            streaming = data.busy;
+            setStatus(data.busy ? "Busy" : "Connected", data.busy);
+            if (data.piConnected === false) {
+              setStatus("Disconnected");
+              const banner = document.getElementById("pi-health-banner");
+              const msg = document.getElementById("health-msg");
+              if (banner) banner.classList.remove("hidden");
+              if (msg) msg.textContent = "⚠ Pi disconnected. Reconnecting…";
+              abortBtn.disabled = true;
+              sendBtn.disabled = true;
+              sendBtn.textContent = "Disconnected";
+              $("#node-pi-status").textContent = "Down";
+              $("#node-pi-status").className =
+                "text-[10px] uppercase font-bold text-error";
+            } else {
+              const banner = document.getElementById("pi-health-banner");
+              if (banner) banner.classList.add("hidden");
+              abortBtn.disabled = !data.busy;
+              sendBtn.textContent = data.busy ? "Busy…" : "Send";
+              sendBtn.disabled = false;
+              $("#node-pi-status").textContent = "Operational";
+              $("#node-pi-status").className =
+                "text-[10px] uppercase font-bold text-tertiary";
+            }
+            if (data.aborted) {
+              currentAssistantEl = null;
+              currentThinkingEl = null;
+              addMsg("system", "Aborted.", true);
+            }
+            break;
+
+          case "pi_health":
+            if (data.connected) {
+              document
+                .getElementById("pi-health-banner")
+                ?.classList.add("hidden");
+              setStatus("Connected");
+              sendBtn.textContent = streaming ? "Busy…" : "Send";
+              sendBtn.disabled = false;
+              $("#node-ws-status").textContent = "Connected";
+              $("#node-ws-status").className =
+                "text-[10px] uppercase font-bold text-tertiary";
+            } else {
+              setStatus("Disconnected");
+              document
+                .getElementById("pi-health-banner")
+                ?.classList.remove("hidden");
+              abortBtn.disabled = true;
+              sendBtn.disabled = true;
+              sendBtn.textContent = "Disconnected";
+              $("#node-ws-status").textContent = "Disconnected";
+              $("#node-ws-status").className =
+                "text-[10px] uppercase font-bold text-error";
+            }
+            break;
+
+          case "error":
+            addMsg("error", data.message || "Error");
+            logEvent(`Error: ${data.message}`);
+            break;
+
+          case "commands":
+            allCommands = data.commands || [];
+            break;
+
+          case "available_models":
+            allModels = data.models || [];
+            filterModels(document.getElementById("model-search")?.value || "");
+            break;
+
+          case "session_state":
+            if (data.sessionFile) {
+              currentSessionFile = data.sessionFile;
+              localStorage.setItem("nixpi_session", currentSessionFile);
+            }
+            if (data.model) {
+              currentModel = data.model;
+              currentModelSupportsImages =
+                Array.isArray(data.model.input) &&
+                data.model.input.includes("image");
+              logEvent(`Model: ${data.model.name || data.model.id}`);
+            }
+            if (data.thinkingLevel) {
+              currentThinkingLevel = data.thinkingLevel;
+              const ind = $("#thinking-indicator");
+              if (ind)
+                ind.classList.toggle(
+                  "hidden",
+                  !data.thinkingLevel || data.thinkingLevel === "none",
+                );
+            }
+            loadSessions();
+            break;
+
+          case "model_state":
+            if (data.model) {
+              currentModel = data.model;
+              currentModelSupportsImages =
+                Array.isArray(data.model.input) &&
+                data.model.input.includes("image");
+              logEvent(`Model: ${data.model.name || data.model.id}`);
+            }
+            if (data.thinkingLevel) {
+              currentThinkingLevel = data.thinkingLevel;
+              const ind = $("#thinking-indicator");
+              if (ind)
+                ind.classList.toggle(
+                  "hidden",
+                  !data.thinkingLevel || data.thinkingLevel === "none",
+                );
+            }
+            break;
+
+          case "session_stats":
+            updateStats(data.stats);
+            break;
+
+          case "session_switched":
+            msgs.innerHTML = "";
+            currentAssistantEl = null;
+            currentThinkingEl = null;
+            currentToolCalls = {};
+            streaming = false;
+            loadSessions();
+            logEvent("Session switched");
+            break;
+
+          case "session_reset":
+            msgs.innerHTML = "";
+            currentAssistantEl = null;
+            currentThinkingEl = null;
+            currentToolCalls = {};
+            setTimeout(loadSessions, 1200);
+            logEvent("New session started");
+            break;
+
+          case "history":
+            msgs.innerHTML = "";
+            if (data.messages?.length) {
+              for (const m of data.messages) {
+                if (m.role === "user") {
+                  const c = m.content;
+                  const text =
+                    typeof c === "string"
+                      ? c
+                      : Array.isArray(c)
+                        ? c
+                            .filter((b) => b.type === "text")
+                            .map((b) => b.text)
+                            .join("\n")
+                        : "";
+                  if (text) addMsg("user", text);
+                } else if (m.role === "assistant" && m.content) {
+                  const text = m.content
+                    .filter((b) => b.type === "text")
+                    .map((b) => b.text)
+                    .join("");
+                  if (text) addMsg("assistant", text, true);
+                }
+              }
+              scrollBottom();
+            }
+            loadSessions();
+            logEvent(`History loaded: ${(data.messages || []).length} msgs`);
+            break;
+
+          case "agent_start":
+            currentAssistantEl = null;
+            currentThinkingEl = null;
+            currentToolCalls = {};
+            logEvent("Agent started");
+            break;
+
+          case "agent_end":
+            currentAssistantEl = null;
+            currentThinkingEl = null;
+            streaming = false;
+            setTimeout(loadSessions, 800);
+            logEvent("Agent ended");
+            break;
+
+          case "message_start":
+            if (data.message?.role === "assistant") {
+              currentAssistantEl = null;
+              currentThinkingEl = null;
+            }
+            break;
+
+          case "message_update": {
+            const evt = data.assistantMessageEvent;
+            if (!evt) break;
+            if (evt.type === "text_delta") {
+              const body = ensureAssistantMsg();
+              const text = (data.message?.content || [])
+                .filter((c) => c.type === "text")
+                .map((c) => c.text)
+                .join("");
+              body.innerHTML = md(text);
+              scrollBottom();
+            } else if (evt.type === "thinking_delta") {
+              const body = ensureThinking();
+              const thinkText = (data.message?.content || [])
+                .filter((c) => c.type === "thinking")
+                .map((c) => c.thinking)
+                .join("\n");
+              body.textContent = thinkText || evt.delta || "";
+              scrollBottom();
+            } else if (evt.type === "thinking_start") {
+              ensureThinking();
+            } else if (evt.type === "thinking_end") {
+              if (currentThinkingEl) {
+                currentThinkingEl.remove();
+                currentThinkingEl = null;
+              }
+            } else if (evt.type === "toolcall_start") {
+              const name =
+                (data.message?.content || []).find((c) => c.type === "toolCall")
+                  ?.name || "…";
+              if (!currentToolCalls[evt.toolCallId]) {
+                const body = ensureAssistantMsg();
+                const tc = document.createElement("details");
+                tc.open = true;
+                tc.className = "tool-call";
+                tc.dataset.id = evt.toolCallId;
+                tc.innerHTML = `<summary>${esc(name)}</summary>`;
+                body.appendChild(tc);
+                currentToolCalls[evt.toolCallId] = tc;
+                scrollBottom();
+              }
+            } else if (evt.type === "toolcall_end") {
+              const tc = currentToolCalls[evt.toolCallId];
+              if (tc && evt.toolCall) {
+                const args = evt.toolCall.arguments;
+                const preview =
+                  typeof args === "string"
+                    ? args.slice(0, 200)
+                    : JSON.stringify(args).slice(0, 200);
+                tc.innerHTML = `<summary>${esc(evt.toolCall.name)}</summary><pre>${esc(preview)}</pre>`;
+              }
+            }
+            break;
+          }
+
+          case "message_end":
+            currentAssistantEl = null;
+            currentThinkingEl = null;
+            break;
+
+          case "tool_execution_start": {
+            const body = ensureAssistantMsg();
+            const te = document.createElement("details");
+            te.className = "tool-call";
+            te.open = true;
+            te.innerHTML = `<summary>⚙ ${esc(data.toolName)} running…</summary>`;
+            body.appendChild(te);
+            currentToolCalls[data.toolCallId] = te;
+            scrollBottom();
+            logEvent(`Tool: ${data.toolName} running`);
+            break;
+          }
+
+          case "tool_execution_end": {
+            const te = currentToolCalls[data.toolCallId];
+            if (te) {
+              const result = data.result?.content?.[0]?.text || "done";
+              te.innerHTML = `<summary>⚙ ${esc(data.toolName)}</summary><pre>${esc(result.slice(0, 300))}</pre>`;
+            }
+            logEvent(`Tool: ${data.toolName} done`);
+            break;
+          }
+
+          case "export_response":
+            if (data.session) {
+              const ts = new Date()
+                .toISOString()
+                .replace(/[:.]/g, "-")
+                .slice(0, 19);
+              const blob = new Blob([JSON.stringify(data.session, null, 2)], {
+                type: "application/json",
+              });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = `nixpi-session-${ts}.json`;
+              a.click();
+              URL.revokeObjectURL(url);
+              addMsg("system", "Session exported.", true);
+              logEvent("Session exported");
+            }
+            break;
+
+          default:
+            // Unknown events — log silently
+            break;
+        }
+      }
+
+      // ── Send ──────────────────────────────────────────────────────────────────
+      function sendPrompt() {
+        const text = input.value.trim();
+        if (!text || !ws || ws.readyState !== 1) return;
+
+        if (pendingImages.length && !currentModelSupportsImages) {
+          addMsg(
+            "error",
+            `${esc(currentModel?.name || "This model")} doesn't support images — sending text only.`,
+          );
+          pendingImages = [];
+          imagePreviews.innerHTML = "";
+        }
+
+        const payload = { type: "prompt", text };
+        if (pendingImages.length) {
+          payload.images = pendingImages.map((img) => ({
+            type: "image",
+            data: img.dataUrl.split(",")[1],
+            mimeType: img.mimeType,
+          }));
+        }
+
+        input.value = "";
+        pendingImages = [];
+        imagePreviews.innerHTML = "";
+
+        addUserMsg(text);
+        if (streaming) {
+          logEvent("Queued follow-up");
+        }
+        ws.send(JSON.stringify(payload));
+      }
+
+      // ── Event wiring ──────────────────────────────────────────────────────────
+      sendBtn.addEventListener("click", sendPrompt);
+
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && e.ctrlKey && !e.shiftKey) {
+          e.preventDefault();
+          sendPrompt();
+        }
+        if (e.key === "Enter" && !e.ctrlKey && !e.shiftKey && !e.altKey) {
+          e.preventDefault();
+          sendPrompt();
+        }
+      });
+
+      input.addEventListener("paste", async (e) => {
+        const items = e.clipboardData?.items || [];
+        for (const item of items) {
+          if (item.type.startsWith("image/")) {
+            e.preventDefault();
+            const file = item.getAsFile();
+            if (file) await handleFiles([file]);
+          }
+        }
+      });
+
+      abortBtn.addEventListener("click", () => {
+        if (!ws || ws.readyState !== 1) return;
+        ws.send(JSON.stringify({ type: "abort" }));
+      });
+
+      $("#attach-btn").addEventListener("click", () => {
+        if (!currentModelSupportsImages) return;
+        $("#attach-input").click();
+      });
+      $("#attach-input").addEventListener("change", async (e) => {
+        await handleFiles(Array.from(e.target.files));
+        e.target.value = "";
+      });
+
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") {
+          const openDialog = document.querySelector("dialog[open]");
+          if (openDialog) {
+            closeModal(openDialog.id);
             return;
           }
-          try {
-            const resp = await fetch(appUrl("/api/transcribe"), {
-              method: "POST",
-              headers: { "Content-Type": "audio/webm" },
-              body: blob,
-            });
-            const data = await resp.json();
-            if (data.text) {
-              input.value = input.value ? input.value + " " + data.text.trim() : data.text.trim();
-              updateCmdPalette();
-            }
-          } catch (e) {
-            console.error("Transcription failed:", e);
+          if (streaming) {
+            ws?.send(JSON.stringify({ type: "abort" }));
           }
-          micBtn.removeAttribute("aria-busy");
-          micBtn.setAttribute("aria-pressed", "false");
-          micBtn.textContent = "Mic";
-        };
+          return;
+        }
+        if (document.activeElement === input) return;
+        if (e.key === "n" && e.ctrlKey) {
+          e.preventDefault();
+          newChat();
+        }
+        if (e.key === "l" && e.ctrlKey) {
+          e.preventDefault();
+          msgs.innerHTML = "";
+          addMsg("system", "Chat cleared. Session history preserved.", true);
+        }
+        if (
+          e.key === "?" &&
+          !e.ctrlKey &&
+          !e.altKey &&
+          document.activeElement.tagName !== "TEXTAREA" &&
+          document.activeElement.tagName !== "INPUT"
+        ) {
+          openModal("help-modal");
+        }
+      });
 
-        mediaRecorder.start();
-        micRecording = true;
-        micBtn.setAttribute("aria-pressed", "true");
-        micBtn.textContent = "Recording…";
-        startSilenceDetection(stream);
-      } catch (e) {
-        console.error("Mic access denied:", e);
+      // Search sessions
+      $("#global-search").addEventListener("input", (e) => {
+        const q = e.target.value.toLowerCase();
+        document.querySelectorAll(".session-item").forEach((item) => {
+          const text = item.textContent.toLowerCase();
+          item.style.display = text.includes(q) ? "flex" : "none";
+        });
+      });
+
+      // ── Mic / Whisper ─────────────────────────────────────────────────────────
+      const micBtn = $("#mic-btn");
+      let mediaRecorder = null;
+      let audioChunks = [];
+      let micRecording = false;
+      let micSilenceMs = 750;
+      let analyser = null;
+      let audioContext = null;
+      let silenceCheckInterval = null;
+
+      if (!navigator.mediaDevices?.getUserMedia) {
+        if (micBtn) micBtn.style.display = "none";
       }
-    }
-  });
-}
-</script>
-</body>
+
+      function startSilenceDetection(stream) {
+        if (micSilenceMs === 0) return;
+        try {
+          audioContext = new (
+            window.AudioContext || window.webkitAudioContext
+          )();
+          const source = audioContext.createMediaStreamSource(stream);
+          analyser = audioContext.createAnalyser();
+          analyser.fftSize = 512;
+          source.connect(analyser);
+          const dataArray = new Uint8Array(analyser.frequencyBinCount);
+          let silenceStart = null;
+          const threshold = 15;
+          silenceCheckInterval = setInterval(() => {
+            analyser.getByteFrequencyData(dataArray);
+            const avg = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
+            if (avg < threshold) {
+              if (!silenceStart) silenceStart = Date.now();
+              if (Date.now() - silenceStart >= micSilenceMs) stopRecording();
+            } else {
+              silenceStart = null;
+            }
+          }, 100);
+        } catch (e) {}
+      }
+
+      function stopSilenceDetection() {
+        if (silenceCheckInterval) {
+          clearInterval(silenceCheckInterval);
+          silenceCheckInterval = null;
+        }
+        if (audioContext) {
+          audioContext.close().catch(() => {});
+          audioContext = null;
+        }
+        analyser = null;
+      }
+
+      function stopRecording() {
+        if (!micRecording) return;
+        micRecording = false;
+        stopSilenceDetection();
+        if (mediaRecorder && mediaRecorder.state === "recording")
+          mediaRecorder.stop();
+        micBtn.innerHTML =
+          '<span class="material-symbols-outlined text-sm">hourglass_top</span>';
+        micBtn.classList.add("text-primary");
+      }
+
+      if (micBtn) {
+        micBtn.addEventListener("click", async () => {
+          if (micRecording) {
+            stopRecording();
+          } else {
+            try {
+              const stream = await navigator.mediaDevices.getUserMedia({
+                audio: true,
+              });
+              audioChunks = [];
+              mediaRecorder = new MediaRecorder(stream, {
+                mimeType: "audio/webm",
+              });
+              mediaRecorder.ondataavailable = (e) => {
+                if (e.data.size > 0) audioChunks.push(e.data);
+              };
+              mediaRecorder.onstop = async () => {
+                stream.getTracks().forEach((t) => t.stop());
+                const blob = new Blob(audioChunks, { type: "audio/webm" });
+                if (blob.size < 1000) {
+                  micBtn.innerHTML =
+                    '<span class="material-symbols-outlined text-sm">mic</span>';
+                  micBtn.classList.remove("text-primary");
+                  return;
+                }
+                try {
+                  const resp = await fetch(appUrl("/api/transcribe"), {
+                    method: "POST",
+                    headers: { "Content-Type": "audio/webm" },
+                    body: blob,
+                  });
+                  const data = await resp.json();
+                  if (data.text) {
+                    input.value = input.value
+                      ? input.value + " " + data.text.trim()
+                      : data.text.trim();
+                  }
+                } catch (e) {}
+                micBtn.innerHTML =
+                  '<span class="material-symbols-outlined text-sm">mic</span>';
+                micBtn.classList.remove("text-primary");
+              };
+              mediaRecorder.start();
+              micRecording = true;
+              micBtn.innerHTML =
+                '<span class="material-symbols-outlined text-sm text-primary">mic</span>';
+              startSilenceDetection(stream);
+            } catch (e) {
+              logEvent("Mic access denied");
+            }
+          }
+        });
+      }
+
+      // ── Boot ──────────────────────────────────────────────────────────────────
+      connect();
+      input.focus();
+    </script>
+  </body>
 </html>
