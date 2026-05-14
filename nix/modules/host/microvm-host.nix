@@ -8,25 +8,36 @@
 let
   commonGuestModules = [
     inputs.microvm.nixosModules.microvm
-    ../common/base.nix
-    ../common/users.nix
-    ../common/security.nix
-    ../common/development.nix
-    ../common/nazar-context.nix
+    ../guest/base.nix
+    ../guest/users.nix
+    ../guest/security.nix
+    ../guest/development.nix
+    ../guest/nazar-context.nix
     ./microvm-guest.nix
   ];
 
   # Pi agent is now opt-in per VM via vm.piAgent.enable.
-  # Removed ../common/nixpi.nix — NixPi runs centrally on the host.
-  commonPiAgentModule = ../common/pi-agent.nix;
+  # Removed ../guest/nixpi.nix — NixPi runs centrally on the host.
+  commonPiAgentModule = ../guest/pi-agent.nix;
 
-  serviceModules = {
-    minecraft = [
-      ../services/minecraft-identity.nix
-      inputs.minecraft.nixosModules.minecraft-service
-    ];
-    dav-server = [ ../services/dav-server.nix ];
+  # Identity modules: small local overrides (UID/GID, tmpfs root) that complement
+  # the canonical service module from the upstream flake input.
+  identityModules = {
+    minecraft = ../services/minecraft-identity.nix;
+    dav-server = ../services/dav-server-identity.nix;
   };
+
+  # Flake input name for each service — used to resolve the canonical NixOS module.
+  flakeInputModule = {
+    minecraft = inputs.minecraft.nixosModules.minecraft-service;
+    dav-server = inputs.dav-server.nixosModules.dav-server-service;
+  };
+
+  # Derive serviceModules from fleet/vms.nix metadata.
+  serviceModules = lib.mapAttrs (name: vm: [
+    identityModules.${name}
+    flakeInputModule.${name}
+  ]) fleet.vms;
 
   hostMicrovmSshConfig = lib.concatStringsSep "\n" (
     lib.mapAttrsToList (_name: vm: ''

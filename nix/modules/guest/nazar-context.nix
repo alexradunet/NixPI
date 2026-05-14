@@ -12,18 +12,8 @@ let
       dav-server = "dav-server";
     }
     .${vm.hostname} or vm.hostname;
-  repoName =
-    {
-      minecraft = "minecraft";
-      dav-server = "dav-server";
-    }
-    .${vm.hostname} or vm.hostname;
-  serviceModuleName =
-    {
-      minecraft = "minecraft-service";
-      dav-server = "dav-server";
-    }
-    .${vm.hostname} or vm.hostname;
+  repoName = vm.repoName or vm.hostname;
+  serviceModuleName = vm.serviceModule or vm.service or vm.hostname;
   repoRoot = "/home/alex/${repoName}";
   switchApp = "switch-${vm.hostname}";
   serviceName = vm.service or vm.hostname;
@@ -319,22 +309,25 @@ let
           fleet = import ./nix/fleet/vms.nix;
           vm = fleet.vms."${vm.hostname}";
           commonVmModules = [
-            ./nix/modules/common/base.nix
-            ./nix/modules/common/users.nix
-            ./nix/modules/common/security.nix
-            ./nix/modules/common/development.nix
-            ./nix/modules/common/nazar-context.nix
+            ./nix/modules/guest/base.nix
+            ./nix/modules/guest/users.nix
+            ./nix/modules/guest/security.nix
+            ./nix/modules/guest/development.nix
+            ./nix/modules/guest/nazar-context.nix
           ];
-          agentVmModules = [ ./nix/modules/common/pi-agent.nix ];
+          agentVmModules = [ ./nix/modules/guest/pi-agent.nix ];
           microvmGuestModules = [
             inputs.microvm.nixosModules.microvm
             ./nix/modules/host/microvm-guest.nix
           ];
-          serviceModules =
-            if "${serviceModuleName}" == "dav-server" then
-              [ ./nix/modules/services/dav-server.nix ]
-            else
-              [ inputs."${repoInputName}".nixosModules."${serviceModuleName}" ];
+          identityModules = {
+            minecraft = ./nix/modules/services/minecraft-identity.nix;
+            dav-server = ./nix/modules/services/dav-server-identity.nix;
+          };
+          serviceModules = [
+            identityModules."${vm.hostname}"
+            inputs."${repoInputName}".nixosModules."${serviceModuleName}"
+          ];
         in
         {
           nixosConfigurations."${vm.hostname}" = nixpkgs.lib.nixosSystem {
@@ -356,24 +349,25 @@ let
   '';
   selfFlakeSource = pkgs.runCommand "nazar-vm-self-flake-source-${vm.hostname}" { } ''
     set -eu
-    mkdir -p "$out/nix/modules/common" "$out/nix/modules/services" "$out/nix/fleet" "$out/nix/users" "$out/nix/packages/pi"
+    mkdir -p "$out/nix/modules/guest" "$out/nix/modules/services" "$out/nix/fleet" "$out/nix/users" "$out/nix/packages/pi"
     cp ${selfFlake} "$out/flake.nix"
     cp ${../../../flake.lock} "$out/flake.lock"
     cp ${../../fleet/vms.nix} "$out/nix/fleet/vms.nix"
     cp ${../../users/admin-keys.nix} "$out/nix/users/admin-keys.nix"
-    cp ${./base.nix} "$out/nix/modules/common/base.nix"
-    cp ${./users.nix} "$out/nix/modules/common/users.nix"
-    cp ${./security.nix} "$out/nix/modules/common/security.nix"
-    cp ${./development.nix} "$out/nix/modules/common/development.nix"
-    cp ${./nazar-context.nix} "$out/nix/modules/common/nazar-context.nix"
-    cp ${./pi-agent.nix} "$out/nix/modules/common/pi-agent.nix"
-    cp ${./pi-default-packages.nix} "$out/nix/modules/common/pi-default-packages.nix"
+    cp ${./base.nix} "$out/nix/modules/guest/base.nix"
+    cp ${./users.nix} "$out/nix/modules/guest/users.nix"
+    cp ${./security.nix} "$out/nix/modules/guest/security.nix"
+    cp ${./development.nix} "$out/nix/modules/guest/development.nix"
+    cp ${./nazar-context.nix} "$out/nix/modules/guest/nazar-context.nix"
+    cp ${./pi-agent.nix} "$out/nix/modules/guest/pi-agent.nix"
+    cp ${./pi-default-packages.nix} "$out/nix/modules/guest/pi-default-packages.nix"
     cp ${../../packages/pi/default.nix} "$out/nix/packages/pi/default.nix"
     cp ${../../packages/pi/hashes.json} "$out/nix/packages/pi/hashes.json"
     cp ${../../packages/pi/package-lock.json} "$out/nix/packages/pi/package-lock.json"
     mkdir -p "$out/nix/modules/host"
     cp ${../host/microvm-guest.nix} "$out/nix/modules/host/microvm-guest.nix"
-    cp ${../services/dav-server.nix} "$out/nix/modules/services/dav-server.nix"
+    cp ${../services/dav-server-identity.nix} "$out/nix/modules/services/dav-server-identity.nix"
+    cp ${../services/minecraft-identity.nix} "$out/nix/modules/services/minecraft-identity.nix"
   '';
 in
 {

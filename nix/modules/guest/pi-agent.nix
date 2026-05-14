@@ -5,13 +5,7 @@
   ...
 }:
 let
-  repoName =
-    {
-      git = "nazar";
-      minecraft = "minecraft";
-      dav-server = "dav-server";
-    }
-    .${vm.hostname} or vm.hostname;
+  repoName = vm.repoName or vm.hostname;
   repoRoot = "/home/alex/${repoName}";
   bootstrap = pkgs.writeShellScriptBin "nazar-vm-repo-bootstrap" ''
     set -euo pipefail

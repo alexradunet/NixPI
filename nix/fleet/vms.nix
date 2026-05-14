@@ -35,6 +35,9 @@
       vmid = 110;
       hostname = "minecraft";
       service = "minecraft";
+      repoName = "minecraft";
+      serviceModule = "minecraft-service";
+      privateAccess = false;
       ip = "10.10.10.30";
       mac = "BC:24:11:0A:4B:10";
       microvm = {
@@ -159,6 +162,9 @@
       vmid = 121;
       hostname = "dav-server";
       service = "dav-server";
+      repoName = "dav-server";
+      serviceModule = "dav-server-service";
+      privateAccess = true;
       ip = "10.10.10.41";
       mac = "BC:24:11:0A:4B:21";
       microvm = {

@@ -28,6 +28,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    dav-server = {
+      url = "git+ssh://alex@git.nazar.studio/nazar/dav-server.git";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     nixpi = {
       url = "git+ssh://alex@git.nazar.studio/nazar/nixpi.git";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -57,23 +62,34 @@
 
       microvmGuestBaseModules = [
         inputs.microvm.nixosModules.microvm
-        ./nix/modules/common/base.nix
-        ./nix/modules/common/users.nix
-        ./nix/modules/common/security.nix
-        ./nix/modules/common/development.nix
-        ./nix/modules/common/nazar-context.nix
+        ./nix/modules/guest/base.nix
+        ./nix/modules/guest/users.nix
+        ./nix/modules/guest/security.nix
+        ./nix/modules/guest/development.nix
+        ./nix/modules/guest/nazar-context.nix
         ./nix/modules/host/microvm-guest.nix
       ];
 
-      piAgentModule = ./nix/modules/common/pi-agent.nix;
+      piAgentModule = ./nix/modules/guest/pi-agent.nix;
 
-      microvmServiceModules = {
-        minecraft = [
-          ./nix/modules/services/minecraft-identity.nix
-          inputs.minecraft.nixosModules.minecraft-service
-        ];
-        dav-server = [ ./nix/modules/services/dav-server.nix ];
+      # Identity modules: small local overrides (UID/GID, tmpfs root) that
+      # complement the canonical service module from the upstream flake input.
+      identityModules = {
+        minecraft = ./nix/modules/services/minecraft-identity.nix;
+        dav-server = ./nix/modules/services/dav-server-identity.nix;
       };
+
+      # Flake input modules for each service.
+      flakeInputModule = {
+        minecraft = inputs.minecraft.nixosModules.minecraft-service;
+        dav-server = inputs.dav-server.nixosModules.dav-server-service;
+      };
+
+      # Derive serviceModules from fleet/vms.nix metadata.
+      microvmServiceModules = nixpkgs.lib.mapAttrs (name: vm: [
+        identityModules.${name}
+        flakeInputModule.${name}
+      ]) fleet.vms;
 
       mkMicrovmGuest = name:
         mkNixosHost {
@@ -86,7 +102,7 @@
     in
     {
       nixosModules = {
-        dav-server-service = ./nix/modules/services/dav-server.nix;
+        dav-server-identity = ./nix/modules/services/dav-server-identity.nix;
         microvm-guest = ./nix/modules/host/microvm-guest.nix;
         microvm-host = ./nix/modules/host/microvm-host.nix;
         host-git-ssh = ./nix/modules/host/git-ssh.nix;

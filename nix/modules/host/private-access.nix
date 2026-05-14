@@ -15,17 +15,8 @@ let
   hostSite = exposure.host.site or { };
   hostNixpi = exposure.host.nixpi or { };
 
-  vmHasPrivateRoute =
-    name:
-    let
-      vmExposure = exposure.vms.${name} or { };
-    in
-    lib.any isPrivateAccess [
-      (vmExposure.service or { })
-    ];
-
   privateServiceDomains = lib.concatMap (
-    name: if vmHasPrivateRoute name then domainsFor fleet.vms.${name} else [ ]
+    name: if fleet.vms.${name}.privateAccess or false then domainsFor fleet.vms.${name} else [ ]
   ) (lib.attrNames fleet.vms);
 
   hostSiteDomains = lib.optional (isPrivateAccess hostSite && hostSite ? domain) hostSite.domain;

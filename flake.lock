@@ -59,6 +59,26 @@
         "type": "github"
       }
     },
+    "dav-server": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1778786479,
+        "narHash": "sha256-ZLnps+JSH3XZXAmCosuYPkwYLvd1bHrn/PLkysDktqw=",
+        "ref": "refs/heads/main",
+        "rev": "31f2a4a71dd8f5992adc3600995649735fc15294",
+        "revCount": 6,
+        "type": "git",
+        "url": "ssh://alex@git.nazar.studio/nazar/dav-server.git"
+      },
+      "original": {
+        "type": "git",
+        "url": "ssh://alex@git.nazar.studio/nazar/dav-server.git"
+      }
+    },
     "disko": {
       "inputs": {
         "nixpkgs": [
@@ -218,6 +238,7 @@
     },
     "root": {
       "inputs": {
+        "dav-server": "dav-server",
         "disko": "disko",
         "llm-agents": "llm-agents",
         "microvm": "microvm",

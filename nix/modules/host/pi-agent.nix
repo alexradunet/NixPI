@@ -3,7 +3,7 @@ let
   pi = pkgs.callPackage ../../packages/pi { };
 in
 {
-  imports = [ ../common/pi-default-packages.nix ];
+  imports = [ ../guest/pi-default-packages.nix ];
 
   environment.systemPackages = [
     pi

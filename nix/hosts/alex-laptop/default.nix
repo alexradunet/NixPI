@@ -3,7 +3,7 @@
   imports = [
     ./hardware-configuration.nix
     ../../modules/laptop/nazar-sshuttle.nix
-    ../../modules/common/pi-default-packages.nix
+    ../../modules/guest/pi-default-packages.nix
   ];
 
   networking.hostName = "alex-laptop";

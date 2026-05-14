@@ -13,7 +13,7 @@
     ../../modules/host/ssh.nix
     ../../modules/host/networking.nix
     ../../modules/host/private-access.nix
-    ../../modules/common/development.nix
+    ../../modules/guest/development.nix
     ../../modules/host/firewall.nix
     ../../modules/host/llm-agents.nix
     ../../modules/host/pi-agent.nix

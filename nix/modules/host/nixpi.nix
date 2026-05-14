@@ -28,7 +28,7 @@ in
 {
   imports = [
     inputs.nixpi.nixosModules.nixpi
-    ../common/pi-default-packages.nix
+    ../guest/pi-default-packages.nix
   ];
 
   services.nixpi = {

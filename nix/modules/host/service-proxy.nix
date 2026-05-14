@@ -91,12 +91,13 @@ let
     let
       vmExposure = exposure.vms.${name} or { };
       serviceBackend = serviceBackendFor vm;
-      serviceRoute = lib.optional ((vmExposure.service.enable or false) && serviceBackend != null) {
+      # Service route: enable/access derived from fleet/vms.nix privateAccess
+      serviceRoute = lib.optional (vm.privateAccess or false && serviceBackend != null) {
         name = "service";
         enable = true;
         path = "/";
         backend = serviceBackend;
-        access = vmExposure.service.access or "private";
+        access = "private";
       };
       nixpiRoute = lib.optional (vmExposure.nixpi.enable or false) {
         name = "nixpi";
