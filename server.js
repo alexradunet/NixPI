@@ -34,6 +34,7 @@ const PORT = parseInt(process.env.NIXPI_PORT || "4815", 10);
 const HOST = process.env.NIXPI_HOST || "0.0.0.0";
 const CWD = process.env.NIXPI_CWD || process.env.HOME;
 const PI_BIN = process.env.NIXPI_PI_BIN || "pi";
+const SSH_BIN = process.env.NIXPI_SSH_BIN || "ssh";
 const WORKSPACES_CONFIG = process.env.NIXPI_WORKSPACES_CONFIG || "";
 const IDLE_TIMEOUT_MS = parseInt(
 	process.env.NIXPI_IDLE_TIMEOUT_MS || "300000",
@@ -954,19 +955,14 @@ function ensurePi(ws) {
 	// SSH:    spawn("ssh", ["alex@10.10.10.30", "pi", "--mode", "rpc"])
 	let spawnBin, spawnArgs, spawnCwd;
 	if (ws.mode === "ssh" && ws.sshHost) {
-		spawnBin = "ssh";
+		spawnBin = SSH_BIN;
 		spawnArgs = [
-			"-T", // no PTY — raw pipe for JSON-RPC
-			"-o",
-			"StrictHostKeyChecking=accept-new",
-			"-o",
-			"ServerAliveInterval=30",
-			"-o",
-			"ServerAliveCountMax=3",
+			"-T", // no PTY
+			"-o", "StrictHostKeyChecking=accept-new",
+			"-o", "ServerAliveInterval=30",
+			"-o", "ServerAliveCountMax=3",
 			`${ws.sshUser}@${ws.sshHost}`,
-			"pi",
-			"--mode",
-			"rpc",
+			"pi", "--mode", "rpc",
 		];
 		// CWD doesn't apply locally for SSH — pi runs in the VM's $HOME.
 		// But we set a reasonable local cwd for the ssh process itself.
@@ -985,9 +981,6 @@ function ensurePi(ws) {
 		cwd: spawnCwd,
 		stdio: ["pipe", "pipe", "pipe"],
 		env: { ...process.env },
-		// SSH mode needs shell:true so PATH lookup works for finding ssh(1).
-		// The args contain no shell metacharacters so this is safe.
-		shell: ws.mode === "ssh",
 	});
 
 	console.log(`  pi PID: ${ws.piProc.pid}`);
