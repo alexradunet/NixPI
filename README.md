@@ -32,13 +32,13 @@ nixpi
 
 ## Configuration
 
-| Variable | Default | Description |
-|---|---|---|
-| `NIXPI_PORT` | `4815` | Server port |
-| `NIXPI_HOST` | `0.0.0.0` | Server bind address |
-| `NIXPI_CWD` | `$HOME` | Working directory for Pi |
-| `NIXPI_PI_BIN` | `pi` | Path to Pi binary |
-| `OPENAI_API_KEY` | unset | Optional Whisper speech-to-text key |
+| Variable         | Default   | Description                         |
+| ---------------- | --------- | ----------------------------------- |
+| `NIXPI_PORT`     | `4815`    | Server port                         |
+| `NIXPI_HOST`     | `0.0.0.0` | Server bind address                 |
+| `NIXPI_CWD`      | `$HOME`   | Working directory for Pi            |
+| `NIXPI_PI_BIN`   | `pi`      | Path to Pi binary                   |
+| `OPENAI_API_KEY` | unset     | Optional Whisper speech-to-text key |
 
 ## Nix/NixOS
 
@@ -91,6 +91,7 @@ Set `sourceDir` to point at your local `nixpi` checkout. The service will run `n
 ```
 
 **Requirements** for the live-source checkout:
+
 - `node_modules/` must exist and be populated (`npm install` in the checkout).
 - The `public/` directory must contain the built assets (e.g. `public/index.html`).
 

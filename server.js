@@ -10,7 +10,7 @@
  */
 
 import { spawn } from "node:child_process";
-import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, unlinkSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, unlinkSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
@@ -151,6 +151,40 @@ app.get("/lib/purify.js", (_req, res) => res.sendFile(DOMPURIFY_PATH, { dotfiles
 app.get("/favicon.ico", (_req, res) => {
   res.setHeader("Content-Type", "image/svg+xml");
   res.send(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><text y="24" font-size="24" fill="#6EA8DB">π</text></svg>`);
+});
+
+// ── Design System Showcase ──────────────────────────────────────────────
+// Proxy /storybook/* to the web-dev-server on localhost:4820 so
+// TypeScript files get transpiled on the fly and live reload works.
+app.use("/storybook", (req, res) => {
+  const isRoot = req.url === '' || req.url === '/';
+  const targetPath = isRoot ? '/showcase/index.html' : req.url;
+  const targetUrl = `http://127.0.0.1:4820${targetPath}`;
+
+  const proxyRequest = (http) => {
+    const upstream = http.get(targetUrl, { headers: { ...req.headers, host: '127.0.0.1:4820' } }, (uresp) => {
+      res.status(uresp.statusCode ?? 200);
+      uresp.headers && Object.entries(uresp.headers).forEach(([k, v]) => res.setHeader(k, v));
+      let body = '';
+      uresp.on('data', (c) => { body += c; });
+      uresp.on('end', () => {
+        if (targetPath.endsWith('.html')) {
+          // Rewrite absolute paths so the showcase works under /storybook/
+          res.send(body.replace(/(href|src)="\//g, '$1="/storybook/'));
+          return;
+        }
+        res.send(body);
+      });
+      uresp.on('error', (err) => res.status(502).send(`Upstream error: ${err.message}`));
+    });
+    upstream.on('error', (err) => res.status(503).send(`Design System dev server unavailable: ${err.message}`));
+    req.pipe ? req.pipe(upstream) : null;
+  };
+
+  import("node:http").then((http) => proxyRequest(http)).catch(() => {
+    // Fallback: try import('https') in case of SSL — not used for localhost
+    res.status(503).send("Design System dev server unavailable");
+  });
 });
 
 app.get("/manifest.json", (_req, res) => {
