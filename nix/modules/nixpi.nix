@@ -225,6 +225,7 @@ in
         NIXPI_PORT = toString cfg.port;
         NIXPI_CWD = toString cfg.workingDirectory;
         NIXPI_PI_BIN = cfg.piBinary;
+        NIXPI_SSH_BIN = lib.getExe pkgs.openssh;
         NIXPI_IDLE_TIMEOUT_MS = toString cfg.idleTimeoutMs;
         NIXPI_WORKSPACES_CONFIG = if workspacesJson != null
           then "${workspacesJson}"

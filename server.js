@@ -34,28 +34,12 @@ const PORT = parseInt(process.env.NIXPI_PORT || "4815", 10);
 const HOST = process.env.NIXPI_HOST || "0.0.0.0";
 const CWD = process.env.NIXPI_CWD || process.env.HOME;
 const PI_BIN = process.env.NIXPI_PI_BIN || "pi";
-const SSH_BIN = process.env.NIXPI_SSH_BIN || findExecutable("ssh") || "ssh";
 const WORKSPACES_CONFIG = process.env.NIXPI_WORKSPACES_CONFIG || "";
 const IDLE_TIMEOUT_MS = parseInt(
 	process.env.NIXPI_IDLE_TIMEOUT_MS || "300000",
 	10,
 ); // 5 min default
 const __dirname = dirname(fileURLToPath(import.meta.url));
-
-// ── Executable resolution ─────────────────────────────────────────────────
-// Node's spawn() without shell:true does not do PATH lookup.
-// Resolve ssh (and other executables) to absolute paths so they work
-// in systemd services where PATH may not include /usr/bin etc.
-function findExecutable(name) {
-	const pathEnv = process.env.PATH || "";
-	for (const dir of pathEnv.split(":")) {
-		const candidate = join(dir, name);
-		try {
-			if (existsSync(candidate)) return candidate;
-		} catch {}
-	}
-	return null;
-}
 
 // ── Module path resolution (handles hoisted node_modules via npx) ──────────
 const _require = createRequire(import.meta.url);
@@ -970,7 +954,7 @@ function ensurePi(ws) {
 	// SSH:    spawn("ssh", ["alex@10.10.10.30", "pi", "--mode", "rpc"])
 	let spawnBin, spawnArgs, spawnCwd;
 	if (ws.mode === "ssh" && ws.sshHost) {
-		spawnBin = SSH_BIN;
+		spawnBin = "ssh";
 		spawnArgs = [
 			"-T", // no PTY — raw pipe for JSON-RPC
 			"-o",
@@ -1001,7 +985,9 @@ function ensurePi(ws) {
 		cwd: spawnCwd,
 		stdio: ["pipe", "pipe", "pipe"],
 		env: { ...process.env },
-		shell: false,
+		// SSH mode needs shell:true so PATH lookup works for finding ssh(1).
+		// The args contain no shell metacharacters so this is safe.
+		shell: ws.mode === "ssh",
 	});
 
 	console.log(`  pi PID: ${ws.piProc.pid}`);
