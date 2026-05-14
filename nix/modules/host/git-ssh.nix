@@ -53,8 +53,38 @@ let
       echo "created $target"
     '';
   };
+  natBridgeIp = fleet.defaults.gateway; # 10.10.10.1
+  privateIp = "10.44.0.1";
+  gitPort = 10022;
+  adminKeys = import ../../users/admin-keys.nix;
 in
 {
+  # --- Git user ---
+  users.groups.git = { };
+  users.users.git = {
+    isSystemUser = true;
+    group = "git";
+    home = repositoriesDir;
+    createHome = false;
+    shell = "${pkgs.git}/bin/git-shell";
+    openssh.authorizedKeys.keys = adminKeys;
+  };
+
+  # --- Host sshd: Git endpoint on private interfaces ---
+  services.openssh = {
+    listenAddresses = [
+      { addr = natBridgeIp; port = gitPort; }
+      { addr = privateIp; port = gitPort; }
+    ];
+    extraConfig = ''
+      Match User git
+        X11Forwarding no
+        AllowTcpForwarding no
+        PermitTTY no
+        GatewayPorts no
+    '';
+  };
+
   # --- Repository directories ---
   systemd.tmpfiles.rules = [
     "d ${stateDir} 0750 root root - -"
