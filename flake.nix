@@ -1,11 +1,12 @@
 {
-  description = "DAV server VM module for Nazar";
+  description = "DAV server MicroVM service module for Nazar";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
   };
 
-  outputs = { self, nixpkgs }:
+  outputs =
+    { nixpkgs, ... }:
     let
       systems = [ "x86_64-linux" ];
       forAllSystems = f: nixpkgs.lib.genAttrs systems f;
@@ -13,11 +14,10 @@
     {
       nixosModules = rec {
         dav-server-service = ./nix/modules/dav-server.nix;
-        dav-server = ./nix/hosts/dav-server/default.nix;
-        davServer = dav-server;
-        dav-server-image = ./nix/hosts/dav-server/image.nix;
-        dav-server-disko = ./nix/hosts/dav-server/disko.nix;
-        default = dav-server;
+        dav-server-microvm = ./nix/hosts/dav-server/default.nix;
+        dav-server = dav-server-microvm;
+        davServer = dav-server-microvm;
+        default = dav-server-microvm;
       };
 
       packages = forAllSystems (_system: { });

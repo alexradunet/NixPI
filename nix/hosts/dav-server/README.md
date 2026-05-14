@@ -1,50 +1,13 @@
-# DAV Server Proxmox VM
+# DAV Server MicroVM guest module
 
-Declarative NixOS VM profile for the private personal info and data service.
+Canonical runtime: Nazar MicroVM only.
 
-```text
-Hostname: dav-server
-VMID: 121
-NAT IP: 10.10.10.41/24 on vmbr1
-Domain metadata: dav.nazar.studio
-NetBird: dav-server.netbird.cloud / dav.nazar.studio
-Resources: 2 vCPU, 4096 MiB RAM, 100 GiB disk
-Autostart: disabled initially
-Public exposure: none
-```
+The module in this directory is intentionally service-only. The `/root/nazar` fleet baseline composes hardware-free MicroVM settings, networking, virtiofs persistence, lifecycle, and deploy policy around it.
 
-Enabled scope:
+Important paths:
 
-- Radicale CalDAV/CardDAV service on loopback, proxied by nginx at `/radicale/`.
-- nginx WebDAV at `/files/` for personal wiki/files/journal Markdown.
-- Private-only firewall access on NetBird `wt0`; the NAT bridge remains for shell/admin access from `nazar`, not DAV service exposure.
+- DAV state: `/var/lib/dav-server` from the `dav-server-data` virtiofs share.
+- Radicale collections: `/var/lib/radicale/collections` from the `dav-server-radicale` virtiofs share.
+- VM-local switch helper: `nazar-vm-switch`.
 
-State paths:
-
-```text
-/var/lib/radicale/collections        Radicale calendars, contacts, journals
-/var/lib/dav-server/webdav         WebDAV personal files/wiki/journal data
-/var/lib/dav-server/webdav/wiki    default personal wiki WebDAV collection
-/var/lib/dav-server/wiki-git-backup hourly git snapshot worktree for the personal wiki
-```
-
-Auth note: no plaintext credentials or password hashes are committed.
-nginx enforces Basic Auth for both `/files/` and `/radicale/` using `/var/lib/dav-server/secrets/dav-server-htpasswd` (provisioned outside git, `root:nginx`, `0640`). Radicale is bound to loopback and uses `http_x_remote_user` from nginx, with `owner_only` rights. Use the `alex` WebDAV user from trusted admin clients only, store the password in the password manager, and do not place DAV client passwords in unrelated VM state. Current private-network policy should allow TCP/80 only from trusted admin peers; VM SSH remains through `nazar` and the NAT alias. Move these runtime secrets to encrypted sops-managed material and test restore/backups before migrating real personal data.
-
-Personal wiki git backup:
-
-- primary storage remains WebDAV at `/var/lib/dav-server/webdav/wiki`;
-- `dav-server-wiki-git-backup.timer` snapshots it hourly;
-- snapshots push to private Forgejo repo `nazar/personal-wiki-backup` over the private NAT bridge;
-- deploy key lives outside git at `/var/lib/dav-server/secrets/dav-server-wiki-backup-ed25519`.
-
-Validate local module exports from the repository root:
-
-```bash
-nix flake show
-nix flake check --no-build
-```
-
-Production toplevel and qcow2 image builds are run from `/root/nazar` after the
-Nazar orchestrator imports this module. This repository exports NixOS modules
-only; it does not export production `nixosConfigurations` or image packages.
+Validate service changes with `nix flake check --no-build`, commit and push, then use `nazar-vm-switch` or the Nazar fallback app `nix run .#deploy-dav-server`.

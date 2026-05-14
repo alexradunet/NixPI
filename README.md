@@ -1,23 +1,19 @@
 # dav-server
 
-DAV Server VM code/config repository for Nazar's private personal info and data service.
+DAV Server MicroVM service repository for Nazar's private personal info and data service.
 
-This repository owns VM 121's NixOS host/image modules, Radicale/WebDAV/git-snapshot service module, and canonical DAV Server runbook. The `/root/nazar` repository remains the fleet orchestrator and still owns VMID/IP/MAC/DNS/resources, private DNS policy, deploy-rs apps, Forgejo infrastructure, and secrets policy.
+This repository owns the DAV service modules used by the canonical Nazar MicroVM fleet. The `/root/nazar` repository remains the fleet orchestrator and owns MicroVM lifecycle, IDs, IP/MAC/DNS/resources, private DNS policy, deploy-rs apps, Forgejo infrastructure, and secrets policy.
 
 ## Exports
 
-- `nixosModules.dav-server` — installed VM host module
-- `nixosModules.dav-server-image` — qcow2 image module
 - `nixosModules.dav-server-service` — Radicale/WebDAV service module
-- `nixosModules.dav-server-disko` — optional disko layout
+- `nixosModules.dav-server-microvm` / `nixosModules.dav-server` / `default` — service-only MicroVM guest module
 
 ## Integration contract
 
-Production evaluation is done by `/root/nazar`. Nazar imports these modules with shared common VM modules and `specialArgs` containing `vm`, `fleet`, and `inputs`. This repo intentionally does not export production `nixosConfigurations` or deploy-rs nodes.
+Production evaluation is done by `/root/nazar`. Nazar composes this service module with the shared MicroVM guest baseline and `specialArgs` containing `vm`, `fleet`, and `inputs`. This repo defines only MicroVM service modules.
 
 ## VM-local Pi workflow
-
-Day-to-day changes should be made from the VM once repo access is provisioned:
 
 ```bash
 ssh alex@dav-server
@@ -26,23 +22,13 @@ cd ~/dav-server
 pi
 nix flake check --no-build
 # commit and push to Forgejo
+nazar-vm-switch
 ```
 
-Direct VM-local `nixos-rebuild switch` is not the canonical production path. A future `nazar-deploy-self` command may be added, but it must be a restricted trigger for the matching Nazar deploy action.
-
-Nazar remains the deployment orchestrator:
+Nazar remains the fallback deployment orchestrator:
 
 ```bash
 cd /root/nazar
 nix flake lock --update-input dav-server
 nix run .#deploy-dav-server
 ```
-
-## Validate
-
-```bash
-nix flake show
-nix flake check --no-build
-```
-
-Production builds and deploys are run from `/root/nazar`.
