@@ -1,17 +1,13 @@
-# Minecraft VM
+# Minecraft MicroVM guest module
 
-Declarative NixOS host profile for the PaperMC server on `nazar`.
+Canonical runtime: Nazar MicroVM only.
 
-```text
-VMID:        110
-hostname:    minecraft
-Proxmox:     minecraft
-NAT IP:      10.10.10.30
-service DNS: mc.nazar.studio
-state path:  /var/lib/minecraft
-ports:       25565/tcp (Minecraft) + 24454/udp (Simple Voice Chat)
-```
+The module in this directory is intentionally service-only. The `/root/nazar` fleet baseline composes hardware-free MicroVM settings, networking, virtiofs persistence, lifecycle, and deploy policy around it.
 
-Runtime world/plugin data is intentionally mutable state under `/var/lib/minecraft` and must be backed up separately from this repo.
+Important paths:
 
-See `runbooks/MINECRAFT_PAPERMC_VM.md` for build, deploy, DNS, firewall, and backup notes.
+- Service state: `/var/lib/minecraft` from the `minecraft-state` virtiofs share.
+- Service repo: `/home/alex/minecraft` from the `minecraft-repo` virtiofs share.
+- VM-local switch helper: `nazar-vm-switch`.
+
+Validate service changes with `nix flake check --no-build`, commit and push, then use `nazar-vm-switch` or the Nazar fallback app `nix run .#deploy-minecraft`.

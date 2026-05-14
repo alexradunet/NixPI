@@ -1,11 +1,12 @@
 {
-  description = "Nazar Minecraft VM module";
+  description = "Nazar Minecraft MicroVM service module";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
   };
 
-  outputs = { self, nixpkgs }:
+  outputs =
+    { self, nixpkgs }:
     let
       systems = [ "x86_64-linux" ];
       forAllSystems = f: nixpkgs.lib.genAttrs systems f;
@@ -14,10 +15,9 @@
       nixosModules = rec {
         minecraft-service = ./nix/modules/minecraft-papermc.nix;
         minecraft-web = ./nix/modules/minecraft-web.nix;
-        minecraft = ./nix/hosts/minecraft/default.nix;
-        minecraft-image = ./nix/hosts/minecraft/image.nix;
-        minecraft-disko = ./nix/hosts/minecraft/disko.nix;
-        default = minecraft;
+        minecraft-microvm = ./nix/hosts/minecraft/default.nix;
+        minecraft = minecraft-microvm;
+        default = minecraft-microvm;
       };
 
       packages = forAllSystems (_system: { });
