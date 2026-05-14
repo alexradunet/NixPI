@@ -34,7 +34,7 @@ in
     # are created early. OpenSSH StrictModes checks the home directory before
     # accepting declarative /etc/ssh/authorized_keys.d keys.
     "d /home/alex 0750 alex users - -"
-    "d /var/lib/nazar 0750 root root -"
+    "d /var/lib/nazar 0755 root root -"
     "d /var/lib/nazar/secrets 0700 root root -"
   ];
 

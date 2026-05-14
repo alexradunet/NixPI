@@ -29,7 +29,7 @@
   };
 
   systemd.tmpfiles.rules = [
-    "d /var/lib/nazar 0750 root root - -"
+    "d /var/lib/nazar 0755 root root - -"
     "d /var/lib/nazar/ssh 0700 root root - -"
   ];
 

@@ -14,6 +14,8 @@ let
 in
 {
   systemd.tmpfiles.rules = [
+    "d /var/lib/nazar 0755 root root - -"
+    "d /var/lib/nazar/fleet-git-keys 0755 root root - -"
     "d ${keyDir} 0700 alex users - -"
   ];
 
