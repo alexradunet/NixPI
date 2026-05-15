@@ -223,9 +223,13 @@ const inputStyles = `
 
   input,
   textarea {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
     width: 100%;
     box-sizing: border-box;
     border: 0;
+    border-radius: 0;
     border-bottom: 1px solid var(--color-outline-variant, #56423c);
     background: var(--color-surface-container, #271d1a);
     color: var(--color-on-surface, #f1dfd9);
