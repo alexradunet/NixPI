@@ -10,6 +10,8 @@ check:
 	node --check server.js
 	node --check public/app.js
 	node --check public/ds/topbar-actions.js
+	node --check scripts/smoke-ui.js
+	node scripts/smoke-ui.js
 	nix flake check --no-build
 
 build:

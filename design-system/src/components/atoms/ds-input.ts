@@ -87,7 +87,9 @@ export class DsInput extends LitElement {
 	@property({ type: String }) value = "";
 	@property({ type: String, reflect: true }) variant = "default";
 
-	@query("input, textarea") private field?: HTMLInputElement | HTMLTextAreaElement;
+	@query("input, textarea") private field?:
+		| HTMLInputElement
+		| HTMLTextAreaElement;
 
 	focus() {
 		this.field?.focus();
@@ -97,21 +99,23 @@ export class DsInput extends LitElement {
 		return html`
       <span class="field">
         ${this.icon ? html`<span class="icon material-symbols-outlined">${this.icon}</span>` : ""}
-        ${this.multiline
-					? html`<textarea
+        ${
+					this.multiline
+						? html`<textarea
               .value=${this.value}
               placeholder=${this.placeholder}
               rows=${this.rows}
               @input=${this.onInput}
               @change=${this.onChange}
             ></textarea>`
-					: html`<input
+						: html`<input
               .value=${this.value}
               type=${this.type}
               placeholder=${this.placeholder}
               @input=${this.onInput}
               @change=${this.onChange}
-            />`}
+            />`
+				}
       </span>
     `;
 	}

@@ -54,7 +54,7 @@ Acceptance:
 
 - Make `md()` safe when marked/DOMPurify fail to load. ✅
 - Preserve link hardening (`target="_blank"`, `rel="noopener noreferrer"`). ✅
-- Add focused hostile-markdown smoke checks before future sanitizer changes.
+- Add focused hostile-markdown smoke checks before future sanitizer changes. ✅
 
 Acceptance:
 
@@ -71,5 +71,5 @@ Acceptance:
 
 - Phase 1 complete: message scaffolding uses DOM APIs and markdown is isolated behind `setMarkdown()`.
 - Phase 2 complete: session rows use a minimal production `ds-session-item`.
-- Phase 4 implementation complete: markdown falls back to escaped plaintext HTML if DOMPurify is unavailable; repo-local browser smoke tests are still future work.
-- Phase 5 partially complete: source `ds-button`, `ds-input`, and `ds-session-item` align with the proven production APIs.
+- Phase 4 complete: markdown falls back to escaped plaintext HTML if DOMPurify is unavailable, covered by `scripts/smoke-ui.js`.
+- Phase 5 complete for migrated primitives: source `ds-button`, `ds-input`, `ds-session-item`, and `ds-avatar` align with the proven production APIs.
