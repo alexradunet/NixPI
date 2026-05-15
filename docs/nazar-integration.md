@@ -12,12 +12,12 @@ NixPi should be integrated into Nazar as a private, WireGuard-only Pi web surfac
 
 ## Recommended production shape
 
-1. Publish this repo to the Git server as `ssh://git@git.nazar.studio:10022/nazar/nixpi.git`.
+1. Publish this repo to the Git server as `ssh://alex@git.nazar.studio/nazar/nixpi.git`.
 2. Add it to `nazar/flake.nix`:
 
    ```nix
    nixpi = {
-     url = "git+ssh://git@git.nazar.studio:10022/nazar/nixpi.git";
+     url = "git+ssh://alex@git.nazar.studio/nazar/nixpi.git";
      inputs.nixpkgs.follows = "nixpkgs";
    };
    ```
