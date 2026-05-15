@@ -72,7 +72,7 @@ export class DsTopbar extends LitElement {
         <div class="logo">
           <slot name="logo">
             <span class="material-symbols-outlined logo-icon">terminal</span>
-            <span class="logo-text">Ownloom</span>
+            <span class="logo-text">nixpi</span>
           </slot>
         </div>
         <div class="center">
