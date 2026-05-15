@@ -206,7 +206,8 @@ const inputStyles = `
     color: var(--color-primary, #ffb59d);
   }
 
-  input {
+  input,
+  textarea {
     width: 100%;
     box-sizing: border-box;
     border: 0;
@@ -220,15 +221,33 @@ const inputStyles = `
     transition: border-color 0.15s ease;
   }
 
+  textarea {
+    min-height: 64px;
+    resize: vertical;
+  }
+
   :host([icon]) input {
     padding-left: 40px;
   }
 
-  input:focus {
+  :host([variant="plain"]) input,
+  :host([variant="plain"]) textarea {
+    border: 0;
+    background: transparent;
+    font-family: var(--font-body, "Work Sans", sans-serif);
+    font-size: var(--typo-body-md-size, 16px);
+    line-height: var(--typo-body-md-line, 1.5);
+    padding: 8px;
+    resize: none;
+  }
+
+  input:focus,
+  textarea:focus {
     border-bottom-color: var(--color-primary, #ffb59d);
   }
 
-  input::placeholder {
+  input::placeholder,
+  textarea::placeholder {
     color: var(--color-on-surface-variant, #dcc1b8);
   }
 `;
@@ -348,15 +367,23 @@ class DsButton extends HTMLElement {
 }
 
 class DsInput extends HTMLElement {
-	static observedAttributes = ["icon", "placeholder", "type", "value"];
+	static observedAttributes = [
+		"icon",
+		"multiline",
+		"placeholder",
+		"rows",
+		"type",
+		"value",
+		"variant",
+	];
 
 	get value() {
-		return this.shadowRoot.querySelector("input")?.value ?? this._value ?? "";
+		return this.shadowRoot.querySelector("input, textarea")?.value ?? this._value ?? "";
 	}
 
 	set value(value) {
 		this._value = String(value ?? "");
-		const input = this.shadowRoot.querySelector("input");
+		const input = this.shadowRoot.querySelector("input, textarea");
 		if (input) input.value = this._value;
 	}
 
@@ -376,14 +403,16 @@ class DsInput extends HTMLElement {
 	}
 
 	focus() {
-		this.shadowRoot.querySelector("input")?.focus();
+		this.shadowRoot.querySelector("input, textarea")?.focus();
 	}
 
 	render() {
 		const icon = this.getAttribute("icon") || "";
 		const placeholder = this.getAttribute("placeholder") || "";
+		const rows = this.getAttribute("rows") || "3";
 		const type = this.getAttribute("type") || "text";
 		const value = this._value || this.getAttribute("value") || "";
+		const multiline = this.hasAttribute("multiline");
 
 		const style = document.createElement("style");
 		style.textContent = inputStyles;
@@ -398,8 +427,9 @@ class DsInput extends HTMLElement {
 			field.appendChild(iconEl);
 		}
 
-		const input = document.createElement("input");
-		input.type = type;
+		const input = document.createElement(multiline ? "textarea" : "input");
+		if (!multiline) input.type = type;
+		else input.rows = Number(rows);
 		input.placeholder = placeholder;
 		input.value = value;
 		input.addEventListener("input", (event) => {

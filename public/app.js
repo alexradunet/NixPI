@@ -1278,4 +1278,4 @@ if (micBtn) {
 
 // ── Boot ──────────────────────────────────────────────────────────────────
 connect();
-input.focus();
+customElements.whenDefined("ds-input").then(() => input.focus());

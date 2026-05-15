@@ -360,13 +360,13 @@
               class="bg-surface-container border border-outline-variant rounded-lg p-2 flex flex-col focus-within:border-primary transition-colors shadow-lg shadow-black/40"
             >
               <div id="image-previews" class="flex flex-wrap gap-1 px-2"></div>
-              <textarea
+              <ds-input
                 id="input"
-                class="w-full bg-transparent border-none focus:ring-0 text-on-surface font-body-md resize-none h-16 p-2 outline-none"
-                placeholder="Direct the Atelier… (type / for commands)"
-                spellcheck="false"
+                variant="plain"
+                multiline
                 rows="3"
-              ></textarea>
+                placeholder="Direct the Atelier… (type / for commands)"
+              ></ds-input>
               <div
                 class="flex items-center justify-between mt-2 px-2 pb-1 border-t border-dashed border-outline-variant pt-2"
               >
