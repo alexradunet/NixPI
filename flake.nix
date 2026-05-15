@@ -108,6 +108,20 @@
                   exec sudo "$0" "$@"
                 fi
 
+                if [ "''${NAZAR_SWITCH_SYSTEMD_RUN:-0}" != "1" ] && grep -q 'nixpi\.service' /proc/self/cgroup; then
+                  unit="nazar-switch-${name}-$(date +%s)"
+                  echo "==> detected NixPi service context; continuing rebuild in transient systemd unit $unit"
+                  exec systemd-run \
+                    --unit="$unit" \
+                    --collect \
+                    --wait \
+                    --pipe \
+                    --property=Type=exec \
+                    --working-directory="$(pwd -P)" \
+                    --setenv=NAZAR_SWITCH_SYSTEMD_RUN=1 \
+                    "$0" "$@"
+                fi
+
                 nixos-rebuild switch --flake ${self.outPath}#nazar "$@"
 
                 ${nixpkgs.lib.optionalString (nodes != [ ]) ''
