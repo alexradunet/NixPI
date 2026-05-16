@@ -261,6 +261,18 @@ const inputStyles = `
     resize: none;
   }
 
+  :host([variant="plain"]) textarea {
+    max-height: min(30dvh, 180px);
+    overflow-y: auto;
+  }
+
+  @media (max-width: 640px) {
+    :host([variant="plain"]) textarea {
+      min-height: 52px;
+      max-height: 22dvh;
+    }
+  }
+
   input:focus,
   textarea:focus {
     border-bottom-color: var(--color-primary, #ffb59d);

@@ -133,15 +133,21 @@ async function main() {
 		await page.screenshot({ path: screenshotPath("03-help-modal.png") });
 
 		await page.evaluate(() => window.closeModal?.("help-modal"));
+		await page.click("#btn-mobile-actions");
+		await page.waitForTimeout(250);
+		await page.screenshot({ path: screenshotPath("04-mobile-actions.png") });
+		await page.evaluate(() => window.closeModal?.("mobile-actions-modal"));
+		await page.waitForTimeout(150);
+
 		await page.click("#btn-details-toggle");
 		await page.waitForTimeout(300);
-		await page.screenshot({ path: screenshotPath("04-details-drawer.png") });
+		await page.screenshot({ path: screenshotPath("05-details-drawer.png") });
 		await page.click("#btn-details-close");
-		await page.waitForTimeout(200);
+		await page.waitForTimeout(350);
 
 		await page.setViewportSize({ width: 360, height: 740 });
 		await page.screenshot({
-			path: screenshotPath("05-narrow-chat-mobile.png"),
+			path: screenshotPath("06-narrow-chat-mobile.png"),
 		});
 
 		const metrics = await page.evaluate(() => {
@@ -166,8 +172,9 @@ async function main() {
 			"01-chat-mobile.png",
 			"02-session-drawer.png",
 			"03-help-modal.png",
-			"04-details-drawer.png",
-			"05-narrow-chat-mobile.png",
+			"04-mobile-actions.png",
+			"05-details-drawer.png",
+			"06-narrow-chat-mobile.png",
 		]) {
 			console.log(`- ${screenshotPath(name)}`);
 		}

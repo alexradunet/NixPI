@@ -83,6 +83,8 @@ const sidebarRight = $("#sidebar-right");
 const sidebarOverlay = $("#sidebar-overlay");
 const topbar = $("header");
 const mainPane = $("main");
+const composerDock = $("#composer-dock");
+const composerSpacer = $("#composer-spacer");
 const diagModelBar = $("#diag-model-bar");
 const diagCtxBar = $("#diag-ctx-bar");
 const diagModelText = $("#diag-model");
@@ -216,7 +218,9 @@ function isVisible(el) {
 }
 
 function drawerFocusables(drawer) {
-	return [...drawer.querySelectorAll(drawerFocusableSelector)].filter(isVisible);
+	return [...drawer.querySelectorAll(drawerFocusableSelector)].filter(
+		isVisible,
+	);
 }
 
 function focusFirstInDrawer(drawer) {
@@ -294,11 +298,13 @@ function syncDrawerState({ restoreFocus = false } = {}) {
 	if (activeDrawer) {
 		requestAnimationFrame(() => {
 			focusFirstInDrawer(activeDrawer);
-			setTimeout(() => {
-				if (!activeDrawer.contains(document.activeElement)) {
-					focusFirstInDrawer(activeDrawer);
-				}
-			}, 50);
+			for (const delay of [50, 150]) {
+				setTimeout(() => {
+					if (!activeDrawer.contains(document.activeElement)) {
+						focusFirstInDrawer(activeDrawer);
+					}
+				}, delay);
+			}
 		});
 	} else if (restoreFocus) {
 		restoreDrawerFocus();
@@ -349,7 +355,11 @@ function closeCompactDrawerAfterAction() {
 
 function trapDrawerFocus(event) {
 	if (event.key !== "Tab" || !isCompactShell()) return;
-	const activeDrawer = sidebarOpen ? sidebarLeft : detailsOpen ? sidebarRight : null;
+	const activeDrawer = sidebarOpen
+		? sidebarLeft
+		: detailsOpen
+			? sidebarRight
+			: null;
 	if (!activeDrawer) return;
 	const focusables = drawerFocusables(activeDrawer);
 	if (!focusables.length) {
@@ -379,6 +389,22 @@ function newChat() {
 	if (!ws || ws.readyState !== 1) return;
 	ws.send(JSON.stringify({ type: "new_session" }));
 	closeCompactDrawerAfterAction();
+}
+
+// ── Composer sizing ───────────────────────────────────────────────────────
+function syncComposerHeight() {
+	if (!composerDock || !composerSpacer) return;
+	const height = Math.ceil(composerDock.getBoundingClientRect().height);
+	document.documentElement.style.setProperty(
+		"--composer-height",
+		`${height}px`,
+	);
+}
+
+if (composerDock && composerSpacer) {
+	new ResizeObserver(syncComposerHeight).observe(composerDock);
+	window.addEventListener("resize", syncComposerHeight);
+	requestAnimationFrame(syncComposerHeight);
 }
 
 // ── Scroll ─────────────────────────────────────────────────────────────────
@@ -1286,6 +1312,15 @@ function onClick(selector, handler) {
 	$(selector)?.addEventListener("click", handler);
 }
 
+function closeMobileActions() {
+	closeModal("mobile-actions-modal");
+}
+
+function runMobileAction(action) {
+	closeMobileActions();
+	action();
+}
+
 $("#sidebar-overlay")?.addEventListener("click", () => closeDrawers());
 onClick("#btn-sidebar-toggle", toggleLeftSidebar);
 onClick("#btn-details-toggle", toggleDetailsDrawer);
@@ -1301,6 +1336,13 @@ onClick("#btn-refresh", () => location.reload());
 onClick("#btn-new-chat", newChat);
 onClick("#btn-help", () => openModal("help-modal"));
 onClick("#btn-export", exportSession);
+onClick("#btn-mobile-actions", () => openModal("mobile-actions-modal"));
+onClick("#btn-mobile-actions-close", closeMobileActions);
+onClick("#btn-mobile-model", () => runMobileAction(openModelPicker));
+onClick("#btn-mobile-thinking", () => runMobileAction(cycleThinking));
+onClick("#btn-mobile-restart", () => runMobileAction(restartPi));
+onClick("#btn-mobile-help", () => runMobileAction(() => openModal("help-modal")));
+onClick("#btn-mobile-export", () => runMobileAction(exportSession));
 onClick("#btn-help-close", () => closeModal("help-modal"));
 onClick("#btn-model-close", () => closeModal("model-modal"));
 $("#model-search")?.addEventListener("input", (e) =>

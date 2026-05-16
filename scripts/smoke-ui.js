@@ -261,10 +261,19 @@ async function run() {
 
 		await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
 		ok('mobile-no-horizontal-overflow', document.documentElement.scrollWidth <= window.innerWidth + 2);
+		ok('mobile-secondary-actions-collapsed', getComputedStyle(document.querySelector('#btn-model-picker')).display === 'none' && getComputedStyle(document.querySelector('#btn-thinking-cycle')).display === 'none');
+		document.querySelector('#btn-mobile-actions').click();
+		await new Promise((resolve) => setTimeout(resolve, 80));
+		ok('mobile-actions-sheet-opens', document.querySelector('#mobile-actions-modal')?.open && document.querySelector('#mobile-actions-modal article').getBoundingClientRect().bottom <= window.innerHeight + 1);
+		document.querySelector('#btn-mobile-actions-close').click();
+		await new Promise((resolve) => setTimeout(resolve, 80));
+		ok('mobile-actions-sheet-closes', !document.querySelector('#mobile-actions-modal')?.open);
+		const composerHeight = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--composer-height'));
+		ok('mobile-composer-spacer-measured', composerHeight > 80 && document.querySelector('#composer-spacer').getBoundingClientRect().height >= composerHeight);
 		const details = document.querySelector('#sidebar-right');
 		ok('mobile-details-drawer-closed', details.getAttribute('aria-hidden') === 'true' && !details.classList.contains('open') && details.inert);
 		document.querySelector('#btn-details-toggle').click();
-		await new Promise((resolve) => setTimeout(resolve, 80));
+		await new Promise((resolve) => setTimeout(resolve, 220));
 		ok('mobile-details-drawer-opens', details.classList.contains('open') && details.getAttribute('role') === 'dialog' && !details.inert && document.body.classList.contains('details-open'));
 		ok('mobile-details-focus-inert', details.contains(document.activeElement) && document.querySelector('header').inert && document.querySelector('main').inert);
 		ok('mobile-details-tab-trap', !document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true, cancelable: true })));

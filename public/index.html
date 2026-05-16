@@ -270,6 +270,15 @@
         >
           <span class="material-symbols-outlined">monitoring</span>
         </ds-button>
+        <ds-button
+          id="btn-mobile-actions"
+          class="lg:hidden"
+          variant="fab"
+          size="md"
+          title="More actions"
+        >
+          <span class="material-symbols-outlined">more_horiz</span>
+        </ds-button>
         <ds-avatar
           class="mobile-avatar ml-2 cursor-pointer active:scale-95"
           fallback="π"
@@ -352,12 +361,13 @@
         >
           <!-- Messages rendered here via JS -->
         </div>
-        <!-- Spacer for floating input -->
-        <div class="h-44 sm:h-40 flex-shrink-0"></div>
+        <!-- Spacer for floating input; JS keeps this matched to composer height. -->
+        <div id="composer-spacer" class="composer-spacer flex-shrink-0"></div>
 
         <!-- Chat Input Area -->
         <div
-          class="absolute bottom-0 left-0 w-full p-3 sm:p-6 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:pb-6 bg-gradient-to-t from-surface via-surface/95 to-transparent pt-12 sm:pt-16 pointer-events-none"
+          id="composer-dock"
+          class="absolute bottom-0 left-0 w-full p-3 sm:p-6 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:pb-6 bg-gradient-to-t from-surface via-surface/95 to-transparent pt-8 sm:pt-16 pointer-events-none"
         >
           <div class="max-w-3xl mx-auto relative pointer-events-auto">
             <div
@@ -368,11 +378,11 @@
                 id="input"
                 variant="plain"
                 multiline
-                rows="3"
-                placeholder="Direct the Atelier… (type / for commands)"
+                rows="2"
+                placeholder="Ask the agent…"
               ></ds-input>
               <div
-                class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mt-2 px-2 pb-1 border-t border-dashed border-outline-variant pt-2"
+                class="flex items-center justify-between gap-2 mt-2 px-2 pb-1 border-t border-dashed border-outline-variant pt-2"
               >
                 <div class="flex gap-2 items-center">
                   <ds-button
@@ -405,9 +415,7 @@
                     >Enter to send</span
                   >
                 </div>
-                <div
-                  class="flex items-center gap-2 justify-end w-full sm:w-auto"
-                >
+                <div class="flex items-center gap-2 justify-end">
                   <ds-button id="btn-abort" variant="error" size="md" disabled>
                     <span class="material-symbols-outlined text-sm">stop</span>
                     Stop
@@ -682,6 +690,47 @@
         <p class="font-body-md text-sm text-on-surface-variant mb-2">
           💡 Paste an image directly into the chat to attach it.
         </p>
+      </article>
+    </dialog>
+
+    <dialog id="mobile-actions-modal" class="mobile-sheet">
+      <article class="p-4 w-full min-w-0">
+        <header
+          class="flex items-center justify-between mb-4 pb-2 border-b border-outline-variant"
+        >
+          <strong class="font-headline-md text-xl text-primary">Actions</strong>
+          <ds-button
+            id="btn-mobile-actions-close"
+            variant="fab"
+            size="sm"
+            aria-label="Close actions"
+            title="Close"
+          >
+            <span class="material-symbols-outlined">close</span>
+          </ds-button>
+        </header>
+        <div class="mobile-actions-list space-y-1">
+          <ds-button id="btn-mobile-model" variant="text" size="md" full>
+            <span class="material-symbols-outlined text-lg">model_training</span>
+            <span class="font-label-md text-label-md">Switch model</span>
+          </ds-button>
+          <ds-button id="btn-mobile-thinking" variant="text" size="md" full>
+            <span class="material-symbols-outlined text-lg">psychology</span>
+            <span class="font-label-md text-label-md">Thinking level</span>
+          </ds-button>
+          <ds-button id="btn-mobile-restart" variant="text" size="md" full>
+            <span class="material-symbols-outlined text-lg">sync</span>
+            <span class="font-label-md text-label-md">Restart Pi</span>
+          </ds-button>
+          <ds-button id="btn-mobile-help" variant="text" size="md" full>
+            <span class="material-symbols-outlined text-lg">help</span>
+            <span class="font-label-md text-label-md">Help</span>
+          </ds-button>
+          <ds-button id="btn-mobile-export" variant="text" size="md" full>
+            <span class="material-symbols-outlined text-lg">download</span>
+            <span class="font-label-md text-label-md">Export</span>
+          </ds-button>
+        </div>
       </article>
     </dialog>
 
