@@ -51,7 +51,7 @@ This keeps Pi config and NixPi session history across VM recreation. The host se
 The active NixPi implementation is the Bun checkout on the Nazar host:
 
 ```text
-/home/alex/repos/nixpi-bun
+/home/alex/repos/nixpi
 ```
 
 `nix/modules/host/nixpi.nix` runs that checkout directly with Bun, so the old

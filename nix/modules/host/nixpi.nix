@@ -1,7 +1,7 @@
 { fleet, pkgs, ... }:
 let
   pi = pkgs.callPackage ../../packages/pi { };
-  sourceDir = "/home/alex/repos/nixpi-bun";
+  sourceDir = "/home/alex/repos/nixpi";
 
   # Build workspace definitions from the fleet config.
   # Local workspaces (host) + SSH workspaces (one per VM with nixpi enabled).
@@ -36,8 +36,8 @@ in
   ];
 
   # Run the Bun implementation as the canonical NixPi service. The old Node.js
-  # flake module is intentionally not imported; /home/alex/repos/nixpi-bun is
-  # the live checkout used by the service.
+  # flake module is intentionally not imported; /home/alex/repos/nixpi is the
+  # Bun checkout used by the service.
   systemd.services.nixpi = {
     description = "Bun-based NixPi web interface for Pi Coding Agent";
     wantedBy = [ "multi-user.target" ];

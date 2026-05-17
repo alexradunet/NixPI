@@ -77,13 +77,13 @@ provides the `npm` and `node` binaries pi's package-manager spawns.
 ### B. Host NixPi (Bun systemd service)
 
 ```
-host/nixpi.nix           →  Bun systemd service from /home/alex/repos/nixpi-bun
+host/nixpi.nix           →  Bun systemd service from /home/alex/repos/nixpi
                             + pi-default-packages.nix
                             + systemd.services.nixpi.path = [ nodejs_22 openssh ]
 ```
 
-NixPi itself is provided by the Bun checkout at `/home/alex/repos/nixpi-bun`
-and runs only on the Nazar host. The old Node.js flake input/module and
+NixPi itself is provided by the Bun checkout at `/home/alex/repos/nixpi` and
+runs only on the Nazar host. The old Node.js flake input/module and
 VM-local NixPi services have been removed; VM workspaces are reached through
 SSH.
 
