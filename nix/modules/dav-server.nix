@@ -27,7 +27,7 @@ in
   assertions = [
     {
       assertion = vm ? service && vm.service == "dav-server";
-      message = "dav-server service module may only be enabled for fleet VMs with service = \"dav-server\".";
+      message = "dav-server service module requires a service context with service = \"dav-server\".";
     }
   ];
 
