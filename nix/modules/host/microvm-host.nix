@@ -26,13 +26,14 @@ let
     dav-server = ../services/dav-server-identity.nix;
   };
 
-  # Flake input name for each service — used to resolve the canonical NixOS module.
+  # Explicit service module mapping for each concrete VM. The fleet inventory
+  # names the VMs; module choices stay here so stale inventory metadata cannot
+  # imply a different runtime module.
   flakeInputModule = {
     minecraft = inputs.minecraft.nixosModules.minecraft-service;
     dav-server = inputs.dav-server.nixosModules.dav-server-service;
   };
 
-  # Derive serviceModules from fleet/vms.nix metadata.
   serviceModules = lib.mapAttrs (name: vm: [
     identityModules.${name}
     flakeInputModule.${name}
@@ -58,7 +59,8 @@ let
       inherit inputs fleet vm;
     };
     config = {
-      imports = commonGuestModules
+      imports =
+        commonGuestModules
         ++ lib.optional (vm.piAgent.enable or false) commonPiAgentModule
         ++ serviceModules.${name};
     };
@@ -79,6 +81,8 @@ in
 
   microvm = {
     stateDir = "/persist/microvms-runtime";
+    # Host autostart is intentionally owned here; both current MicroVM services
+    # start with the host and are not inferred from fleet inventory metadata.
     autostart = [
       "minecraft"
       "dav-server"

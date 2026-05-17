@@ -10,7 +10,7 @@ All service guests are MicroVMs. Guest repositories should be exposed through ex
 2. Mount it at `/home/alex/<repo>` in the guest.
 3. Keep ownership/mode in the same share declaration.
 4. Let `nazar-vm-repo-bootstrap` initialize or repair the checkout when needed.
-5. Use `nazar-vm-switch` for VM-local service deploys and the Nazar deploy app as fallback.
+5. Validate in the guest, commit and push, then switch production from `/root/nazar` with the appropriate host app (`nix run .#switch-minecraft` or `nix run .#switch-dav-server`) after updating the service input.
 
 ## Policy
 

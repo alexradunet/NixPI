@@ -1,52 +1,21 @@
 { fleet, lib, ... }:
 let
-  exposure = import ../../fleet/exposure.nix;
-  privateIp = "10.44.0.1";
-
-  isPrivateAccess =
-    route:
-    (route.enable or false)
-    && lib.elem (route.access or "private") [
-      "private"
-      "public"
-    ];
-
-  domainsFor = vm: [ vm.dns ] ++ (vm.aliases or [ ]);
-  hostSite = exposure.host.site or { };
-  hostNixpi = exposure.host.nixpi or { };
-
-  privateServiceDomains = lib.concatMap (
-    name: if fleet.vms.${name}.privateAccess or false then domainsFor fleet.vms.${name} else [ ]
-  ) (lib.attrNames fleet.vms);
-
-  hostSiteDomains = lib.optional (isPrivateAccess hostSite && hostSite ? domain) hostSite.domain;
-
-  hostNixpiDomains = lib.optionals (isPrivateAccess hostNixpi) (
-    lib.optional (hostNixpi ? domain) hostNixpi.domain
-    ++ (hostNixpi.pathDomains or [ ])
-  );
-
-  # Host-owned service domains (Git SSH is on the host, not a VM).
-  hostGitDomains = [ "git.nazar.studio" ];
-
-  privateDomainExclusions = exposure.privateDomainExclusions or [ ];
-  privateDomains = lib.subtractLists privateDomainExclusions (
-    lib.unique (hostGitDomains ++ privateServiceDomains ++ hostSiteDomains ++ hostNixpiDomains)
-  );
+  hostIdentity = import ../../fleet/host.nix;
+  privateDomains = import ../../fleet/private-domains.nix { inherit fleet lib; };
 in
 {
   # Private services bind to a host-local dummy address. sshuttle clients route
   # this address over SSH, while the address is never exposed on the public NIC.
-  systemd.network.netdevs."20-nazar-private" = {
+  systemd.network.netdevs."20-${hostIdentity.private.interfaceName}" = {
     netdevConfig = {
-      Name = "nazar-private";
+      Name = hostIdentity.private.interfaceName;
       Kind = "dummy";
     };
   };
 
-  systemd.network.networks."20-nazar-private" = {
-    matchConfig.Name = "nazar-private";
-    addresses = [ { Address = "${privateIp}/32"; } ];
+  systemd.network.networks."20-${hostIdentity.private.interfaceName}" = {
+    matchConfig.Name = hostIdentity.private.interfaceName;
+    addresses = [ { Address = hostIdentity.private.cidr; } ];
     networkConfig = {
       DHCP = "no";
       LinkLocalAddressing = "no";
@@ -56,5 +25,5 @@ in
 
   # Keep host-local commands aligned with the same private service view that
   # sshuttle clients get declaratively in nix/modules/laptop/nazar-sshuttle.nix.
-  networking.hosts.${privateIp} = privateDomains;
+  networking.hosts.${hostIdentity.private.ip} = privateDomains;
 }

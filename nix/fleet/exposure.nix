@@ -1,6 +1,12 @@
 {
   # Declarative HTTP exposure policy for host nginx.
   #
+  # This file owns the active host HTTP routes. VM private service domains are
+  # derived from nix/fleet/vms.nix `privateAccess`; keep VM service exposure
+  # there instead of duplicating it here. service-proxy.nix still tolerates an
+  # optional exposure.vms attrset for future non-service VM routes, but no active
+  # VM service route is configured from this file.
+  #
   # access = "private" serves the route only on the sshuttle-routed private
   # address, 10.44.0.1.
   # access = "public" additionally exposes the route on the host public IPv4
@@ -29,19 +35,6 @@
         "127.0.0.1"
         "localhost"
       ];
-    };
-  };
-
-  vms = {
-    minecraft = {
-      service.enable = false;
-    };
-
-    dav-server = {
-      service = {
-        enable = true;
-        access = "private";
-      };
     };
   };
 }

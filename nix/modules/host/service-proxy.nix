@@ -6,12 +6,16 @@
 }:
 let
   exposure = import ../../fleet/exposure.nix;
-  privateIp = "10.44.0.1";
-  publicIp = "167.235.12.22";
+  hostIdentity = import ../../fleet/host.nix;
+  privateIp = hostIdentity.private.ip;
+  publicIp = hostIdentity.public.ipv4;
   hostSite = exposure.host.site or { };
   hostNixpi = exposure.host.nixpi or { };
+  vmExposureConfig = exposure.vms or { };
   microvmUnits = map (name: "microvm@${name}.service") (lib.attrNames fleet.vms);
-  perVmNixpiEnabled = lib.filterAttrs (name: _vm: exposure.vms.${name}.nixpi.enable or false) fleet.vms;
+  perVmNixpiEnabled = lib.filterAttrs (
+    name: _vm: vmExposureConfig.${name}.nixpi.enable or false
+  ) fleet.vms;
 
   isPublic = route: (route.access or "private") == "public";
   isRouted = route: route.enable or false;
@@ -82,15 +86,12 @@ let
 
   serviceBackendFor =
     vm:
-    if vm.service == "dav-server" then
-      "http://${vm.ip}:${toString vm.davServer.httpPort}"
-    else
-      null;
+    if vm.service == "dav-server" then "http://${vm.ip}:${toString vm.davServer.httpPort}" else null;
 
   routesForVm =
     name: vm:
     let
-      vmExposure = exposure.vms.${name} or { };
+      vmExposure = vmExposureConfig.${name} or { };
       serviceBackend = serviceBackendFor vm;
       # Service route: enable/access derived from fleet/vms.nix privateAccess
       serviceRoute = lib.optional (vm.privateAccess or false && serviceBackend != null) {
@@ -197,10 +198,7 @@ let
   };
 
   # Host domains: site domain + nixpi path domains (legacy mode only)
-  hostDomains = lib.unique (
-    (lib.optional (hostSite ? domain) hostSite.domain)
-    ++ nixpiPathDomains
-  );
+  hostDomains = lib.unique ((lib.optional (hostSite ? domain) hostSite.domain) ++ nixpiPathDomains);
 
   routesForHostDomain =
     domain:
@@ -218,10 +216,15 @@ let
     mkDomainVhosts nixpiOwnDomain [ hostNixpiRoute ]
   );
   nixpiTunnelAliasVhosts = lib.optionals ((hostNixpi.enable or false) && nixpiTunnelAliases != [ ]) (
-    lib.concatMap (domain: mkDomainVhosts domain [ (hostNixpiRoute // { access = "private"; }) ]) nixpiTunnelAliases
+    lib.concatMap (
+      domain: mkDomainVhosts domain [ (hostNixpiRoute // { access = "private"; }) ]
+    ) nixpiTunnelAliases
   );
   allRouteLists = [
-    [ hostSiteRoute hostNixpiRoute ]
+    [
+      hostSiteRoute
+      hostNixpiRoute
+    ]
   ]
   ++ (map (name: routesForVm name fleet.vms.${name}) (lib.attrNames fleet.vms));
   publicHttpEnabled = lib.any (
@@ -235,7 +238,9 @@ in
     recommendedOptimisation = true;
     recommendedProxySettings = true;
 
-    virtualHosts = lib.listToAttrs (hostDomainVhosts ++ nixpiDomainVhosts ++ nixpiTunnelAliasVhosts ++ vmDomainVhosts);
+    virtualHosts = lib.listToAttrs (
+      hostDomainVhosts ++ nixpiDomainVhosts ++ nixpiTunnelAliasVhosts ++ vmDomainVhosts
+    );
   };
 
   systemd.services.nginx = {

@@ -1,4 +1,7 @@
 { lib, ... }:
+let
+  hostIdentity = import ../../fleet/host.nix;
+in
 {
   services.openssh = {
     enable = true;
@@ -17,6 +20,6 @@
     };
   };
 
-  networking.firewall.interfaces.enp0s31f6.allowedTCPPorts = [ 22 ];
-  networking.firewall.interfaces.nazar-private.allowedTCPPorts = [ 22 ];
+  networking.firewall.interfaces."${hostIdentity.public.nicName}".allowedTCPPorts = [ 22 ];
+  networking.firewall.interfaces."${hostIdentity.private.interfaceName}".allowedTCPPorts = [ 22 ];
 }

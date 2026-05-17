@@ -113,10 +113,15 @@ Host rollback:
 sudo nixos-rebuild switch --rollback
 ```
 
-VM rollback:
+If a MicroVM service change needs rollback, roll back or update the host flake input from `/root/nazar`, then use the host-driven switch app for that VM:
 
 ```bash
-nix run .#switch-<vm> -- --rollback
-# or inside a VM if the VM-local self flake is healthy:
-sudo nixos-rebuild switch --rollback
+nix flake lock --update-input <service-input>
+nix run .#switch-<vm>
+```
+
+For a previous host system generation, use the host rollback first, then restart the affected MicroVM from the host if needed:
+
+```bash
+sudo systemctl restart microvm@<vm>.service
 ```

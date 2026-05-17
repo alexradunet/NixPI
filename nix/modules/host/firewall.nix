@@ -5,7 +5,10 @@
   ...
 }:
 let
-  privateIp = "10.44.0.1";
+  hostIdentity = import ../../fleet/host.nix;
+  privateIp = hostIdentity.private.ip;
+  publicIp = hostIdentity.public.ipv4;
+  publicInterface = hostIdentity.public.nicName;
   minecraft = fleet.vms.minecraft;
   mcPort = minecraft.minecraft.port or 25565;
   mcVoicePort = minecraft.minecraft.voiceChatPort or 24454;
@@ -55,8 +58,8 @@ in
 
       # Approved public Minecraft exposure: game traffic only. There is
       # intentionally no public TCP/80 web DNAT to the Minecraft MicroVM.
-      iifname "enp0s31f6" ip daddr ${minecraft.ip} tcp dport ${toString mcPort} accept
-      iifname "enp0s31f6" ip daddr ${minecraft.ip} udp dport ${toString mcVoicePort} accept
+      iifname "${publicInterface}" ip daddr ${minecraft.ip} tcp dport ${toString mcPort} accept
+      iifname "${publicInterface}" ip daddr ${minecraft.ip} udp dport ${toString mcVoicePort} accept
     '';
   };
 
@@ -81,8 +84,8 @@ in
 
   networking.nat = {
     enable = true;
-    externalInterface = "enp0s31f6";
-    externalIP = "167.235.12.22";
+    externalInterface = publicInterface;
+    externalIP = publicIp;
     internalIPs = [ "10.10.10.0/24" ];
     forwardPorts = [
       {

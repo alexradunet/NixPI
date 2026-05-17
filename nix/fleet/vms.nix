@@ -11,35 +11,14 @@
     domain = "nazar.studio";
   };
 
-  ranges = {
-    infrastructure = {
-      vmids = "101-109";
-      ips = "10.10.10.21-10.10.10.29";
-    };
-    games = {
-      vmids = "110-119";
-      ips = "10.10.10.30-10.10.10.39";
-    };
-    personal = {
-      vmids = "120-139";
-      ips = "10.10.10.40-10.10.10.59";
-    };
-    disposable = {
-      vmids = "900-999";
-      purpose = "restore tests and temporary experiments only";
-    };
-  };
-
   vms = {
     minecraft = {
       vmid = 110;
       hostname = "minecraft";
       service = "minecraft";
       repoName = "minecraft";
-      serviceModule = "minecraft-service";
       privateAccess = false;
       ip = "10.10.10.30";
-      mac = "BC:24:11:0A:4B:10";
       microvm = {
         tap = "vm110";
         mac = "02:00:00:00:00:30";
@@ -70,10 +49,6 @@
       aliases = [ ];
       cores = 2;
       memoryMiB = 4096;
-      balloonMiB = 1024;
-      diskGiB = 50;
-      onboot = true;
-      startupOrder = 30;
       role = "small PaperMC Minecraft server";
       piAgent = {
         enable = true;
@@ -162,10 +137,8 @@
       hostname = "dav-server";
       service = "dav-server";
       repoName = "dav-server";
-      serviceModule = "dav-server-service";
       privateAccess = true;
       ip = "10.10.10.41";
-      mac = "BC:24:11:0A:4B:21";
       microvm = {
         tap = "vm121";
         mac = "02:00:00:00:00:41";
@@ -197,10 +170,6 @@
       aliases = [ ];
       cores = 2;
       memoryMiB = 4096;
-      balloonMiB = 1024;
-      diskGiB = 100;
-      onboot = false;
-      startupOrder = 41;
       role = "private personal DAV, CalDAV, CardDAV, WebDAV, and markdown wiki data VM";
       piAgent = {
         enable = true;

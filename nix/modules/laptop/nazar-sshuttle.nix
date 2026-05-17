@@ -7,44 +7,8 @@
 }:
 let
   cfg = config.nazar.access.sshuttle;
-  exposure = import ../../fleet/exposure.nix;
-
-  isPrivateAccess =
-    route:
-    (route.enable or false)
-    && lib.elem (route.access or "private") [
-      "private"
-      "public"
-    ];
-
-  domainsFor = vm: [ vm.dns ] ++ (vm.aliases or [ ]);
-  hostSite = exposure.host.site or { };
-  hostNixpi = exposure.host.nixpi or { };
-
-  vmHasPrivateRoute =
-    name:
-    let
-      vmExposure = exposure.vms.${name} or { };
-    in
-    lib.any isPrivateAccess [
-      (vmExposure.service or { })
-    ];
-
-  privateServiceDomains = lib.concatMap (
-    name: if vmHasPrivateRoute name then domainsFor fleet.vms.${name} else [ ]
-  ) (lib.attrNames fleet.vms);
-
-  hostSiteDomains = lib.optional (isPrivateAccess hostSite && hostSite ? domain) hostSite.domain;
-
-  hostNixpiDomains = lib.optionals (isPrivateAccess hostNixpi) (
-    lib.optional (hostNixpi ? domain) hostNixpi.domain
-    ++ (hostNixpi.pathDomains or [ ])
-  );
-
-  privateDomainExclusions = exposure.privateDomainExclusions or [ ];
-  privateDomains = lib.subtractLists privateDomainExclusions (
-    lib.unique (privateServiceDomains ++ hostSiteDomains ++ hostNixpiDomains)
-  );
+  hostIdentity = import ../../fleet/host.nix;
+  privateDomains = import ../../fleet/private-domains.nix { inherit fleet lib; };
 
   sshuttleArgs = lib.concatStringsSep " " (
     [
@@ -72,7 +36,7 @@ in
 
     host = lib.mkOption {
       type = lib.types.str;
-      default = "167.235.12.22";
+      default = hostIdentity.public.ipv4;
       description = "Public nazar SSH endpoint used for the sshuttle control connection.";
     };
 
@@ -102,26 +66,26 @@ in
 
     privateIp = lib.mkOption {
       type = lib.types.str;
-      default = "10.44.0.1";
+      default = hostIdentity.private.ip;
       description = "Host-local private service address routed by sshuttle.";
     };
 
     subnets = lib.mkOption {
       type = lib.types.listOf lib.types.str;
-      default = [ "10.44.0.1/32" ];
+      default = [ hostIdentity.private.cidr ];
       description = "Remote addresses routed through sshuttle.";
     };
 
     excludeHosts = lib.mkOption {
       type = lib.types.listOf lib.types.str;
-      default = [ "167.235.12.22" ];
+      default = [ hostIdentity.public.ipv4 ];
       description = "Hosts excluded from sshuttle routing, normally the public SSH endpoint.";
     };
 
     privateDomains = lib.mkOption {
       type = lib.types.listOf lib.types.str;
       default = privateDomains;
-      defaultText = "Nazar private domains from nix/fleet/exposure.nix";
+      defaultText = "Nazar private domains from fleet/vms.nix privateAccess, host exposure, and host Git domains";
       description = ''
         Private service domains mapped to the private service address in
         /etc/hosts. This lets browsers, curl, git, and other tools use the
