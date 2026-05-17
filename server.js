@@ -34,6 +34,11 @@ const HOST = process.env.NIXPI_HOST || "0.0.0.0";
 const CWD = process.env.NIXPI_CWD || process.env.HOME;
 const PI_BIN = process.env.NIXPI_PI_BIN || "pi";
 const SSH_BIN = process.env.NIXPI_SSH_BIN || "ssh";
+
+function shellQuote(value) {
+	return `'${String(value).replaceAll("'", "'\\''")}'`;
+}
+
 console.log(
 	`[DEBUG] SSH_BIN=${SSH_BIN} NIXPI_SSH_BIN=${process.env.NIXPI_SSH_BIN} PATH=${process.env.PATH?.split(":").length} entries`,
 );
@@ -634,9 +639,21 @@ function ensurePi(ws) {
 
 	// Build spawn command: for SSH-mode workspaces, tunnel pi over SSH.
 	// Local:  spawn("pi", ["--mode", "rpc"])
-	// SSH:    spawn("ssh", ["alex@10.10.10.30", "pi", "--mode", "rpc"])
+	// SSH:    spawn("ssh", ["alex@10.10.10.30", "cd '/repo' && exec pi --mode rpc"])
 	let spawnBin, spawnArgs, spawnCwd;
 	if (ws.mode === "ssh" && ws.sshHost) {
+		const remoteCwd = ws.cwd || ".";
+		const remoteCommand = [
+			`cd ${shellQuote(remoteCwd)}`,
+			"&& exec env",
+			"PI_TELEMETRY=0",
+			"PI_SKIP_VERSION_CHECK=1",
+			"NPM_CONFIG_PREFIX=$HOME/.pi/npm-global",
+			"PATH=$HOME/.pi/npm-global/bin:$PATH",
+			"NODE_PATH=$HOME/.pi/npm-global/lib/node_modules",
+			"pi --mode rpc",
+		].join(" ");
+
 		spawnBin = SSH_BIN;
 		spawnArgs = [
 			"-T", // no PTY
@@ -647,12 +664,10 @@ function ensurePi(ws) {
 			"-o",
 			"ServerAliveCountMax=3",
 			`${ws.sshUser}@${ws.sshHost}`,
-			"pi",
-			"--mode",
-			"rpc",
+			remoteCommand,
 		];
-		// CWD doesn't apply locally for SSH — pi runs in the VM's $HOME.
-		// Use user's HOME as the local cwd for the ssh process.
+		// The local cwd only applies to the ssh client. The remote pi process
+		// starts in ws.cwd via the command above.
 		spawnCwd = process.env.HOME || "/tmp";
 	} else {
 		spawnBin = PI_BIN;
