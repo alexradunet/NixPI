@@ -1,6 +1,0 @@
-node_modules/
-artifacts/
-.env
-*.bak
-.DS_Store
-.pi-lens/
