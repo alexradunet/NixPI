@@ -1,5 +1,6 @@
 {
   config,
+  fleet,
   inputs,
   lib,
   ...
@@ -20,10 +21,17 @@
     ../../modules/host/nixpi.nix
     ../../modules/host/code.nix
     ../../modules/host/dav-server.nix
-    ../../modules/host/microvm-host.nix
+    ../../modules/services/minecraft-identity.nix
+    inputs.minecraft.nixosModules.minecraft-service
     ../../modules/host/service-proxy.nix
     ../../modules/host/backup.nix
     ../../modules/host/monitoring.nix
+  ];
+
+  _module.args.minecraftContext = fleet.services.minecraft;
+
+  systemd.tmpfiles.rules = [
+    "d /persist/services/minecraft 0750 minecraft minecraft - -"
   ];
 
   networking.hostId = "16723512";

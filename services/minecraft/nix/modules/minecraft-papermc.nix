@@ -1,11 +1,21 @@
 {
   lib,
   pkgs,
-  vm,
+  vm ? null,
+  minecraftContext ? vm,
   ...
 }:
 let
-  minecraft = vm.minecraft or { };
+  serviceContext =
+    if minecraftContext == null then
+      {
+        service = "";
+        dns = "";
+        minecraft = { };
+      }
+    else
+      minecraftContext;
+  minecraft = serviceContext.minecraft or { };
   serverPort = minecraft.port or 25565;
   operators = minecraft.operators or [ ];
   operatorWhitelist = lib.listToAttrs (
@@ -14,15 +24,15 @@ let
       value = operator.uuid;
     }) (lib.filter (operator: operator ? name && operator ? uuid) operators)
   );
-  whitelist = (minecraft.whitelist or { }) // lib.optionalAttrs (minecraft.whitelistOperators or true) operatorWhitelist;
+  whitelist =
+    (minecraft.whitelist or { })
+    // lib.optionalAttrs (minecraft.whitelistOperators or true) operatorWhitelist;
   whitelistEnabled = minecraft.enableWhitelist or (whitelist != { });
   gameRules = minecraft.gameRules or { };
-  gameRuleValue = value:
-    if builtins.isBool value then
-      lib.boolToString value
-    else
-      toString value;
-  gameRuleCommands = lib.mapAttrsToList (name: value: "gamerule ${name} ${gameRuleValue value}") gameRules;
+  gameRuleValue = value: if builtins.isBool value then lib.boolToString value else toString value;
+  gameRuleCommands = lib.mapAttrsToList (
+    name: value: "gamerule ${name} ${gameRuleValue value}"
+  ) gameRules;
   defaultPlugins = [
     {
       name = "LevelledMobs.jar";
@@ -50,7 +60,8 @@ let
   backupFlushEnabled = backupFlush.enable or true;
 
   validPluginName = name: builtins.match "[A-Za-z0-9._+-]+\\.jar" name != null;
-  validRelativePath = path: builtins.match "([^/.][^/]*)(/[^/.][^/]*)*" path != null && !(lib.hasInfix ".." path);
+  validRelativePath =
+    path: builtins.match "([^/.][^/]*)(/[^/.][^/]*)*" path != null && !(lib.hasInfix ".." path);
 
   javaPackage = pkgs.openjdk25_headless;
 
@@ -102,7 +113,9 @@ let
     for _ in $(seq 1 90); do
       if ${pkgs.iproute2}/bin/ss -ltn sport = :${toString serverPort} | ${pkgs.gnugrep}/bin/grep -q LISTEN; then
         sleep 5
-        ${lib.concatMapStringsSep "\n        " (command: "echo ${lib.escapeShellArg command} > /run/minecraft-server.stdin") gameRuleCommands}
+        ${lib.concatMapStringsSep "\n        " (
+          command: "echo ${lib.escapeShellArg command} > /run/minecraft-server.stdin"
+        ) gameRuleCommands}
         exit 0
       fi
       sleep 2
@@ -113,7 +126,9 @@ let
   '';
 in
 {
-  networking.firewall.allowedUDPPorts = lib.optional (minecraft ? voiceChatPort) minecraft.voiceChatPort;
+  networking.firewall.allowedUDPPorts = lib.optional (
+    minecraft ? voiceChatPort
+  ) minecraft.voiceChatPort;
 
   services.minecraft-server = {
     enable = true;
@@ -132,7 +147,7 @@ in
 
     serverProperties = {
       "server-port" = serverPort;
-      motd = minecraft.motd or "${vm.dns} Minecraft";
+      motd = minecraft.motd or "${serviceContext.dns} Minecraft";
       "max-players" = minecraft.maxPlayers or 10;
       "level-seed" = minecraft.levelSeed or "";
       "op-permission-level" = minecraft.operatorPermissionLevel or 4;
@@ -144,7 +159,8 @@ in
       "online-mode" = true;
       "view-distance" = minecraft.viewDistance or 10;
       "simulation-distance" = minecraft.simulationDistance or 6;
-    } // lib.optionalAttrs rconEnabled {
+    }
+    // lib.optionalAttrs rconEnabled {
       "enable-rcon" = true;
       "rcon.port" = rconPort;
       "rcon.password" = "__managed_by_systemd_credential__";
@@ -180,7 +196,9 @@ in
 
     ${lib.concatStringsSep "\n    " (
       lib.mapAttrsToList (path: text: ''
-        install -D -m 0600 ${pkgs.writeText ("minecraft-plugin-config-" + builtins.baseNameOf path) text} "plugins/${path}"
+        install -D -m 0600 ${
+          pkgs.writeText ("minecraft-plugin-config-" + builtins.baseNameOf path) text
+        } "plugins/${path}"
       '') pluginConfigs
     )}
 
@@ -230,8 +248,8 @@ in
 
   assertions = [
     {
-      assertion = vm.service == "minecraft";
-      message = "The PaperMC module should only be imported by the minecraft VM.";
+      assertion = serviceContext.service == "minecraft";
+      message = "The PaperMC module requires a Minecraft service context.";
     }
     {
       assertion = serverPort > 0 && serverPort < 65536;
@@ -250,7 +268,12 @@ in
       message = "Every declarative Minecraft operator must define name and uuid.";
     }
     {
-      assertion = lib.all (operator: !(operator ? uuid) || builtins.match "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}" operator.uuid != null) operators;
+      assertion = lib.all (
+        operator:
+        !(operator ? uuid)
+        ||
+          builtins.match "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}" operator.uuid != null
+      ) operators;
       message = "Minecraft operator UUIDs must be canonical lowercase UUIDs.";
     }
     {

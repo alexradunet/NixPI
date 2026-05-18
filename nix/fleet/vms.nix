@@ -1,63 +1,19 @@
 {
   defaults = {
-    bridge = "nazar0";
-    gateway = "10.10.10.1";
-    prefixLength = 24;
-    nameservers = [
-      "10.10.10.1"
-      "1.1.1.1"
-      "9.9.9.9"
-    ];
     domain = "nazar.studio";
   };
 
-  vms = {
+  services = {
     minecraft = {
-      vmid = 110;
-      hostname = "minecraft";
+      hostname = "nazar";
       service = "minecraft";
-      repoName = "nazar";
-      privateAccess = false;
-      ip = "10.10.10.30";
-      microvm = {
-        tap = "vm110";
-        mac = "02:00:00:00:00:30";
-        shares = [
-          {
-            tag = "minecraft-state";
-            source = "/persist/microvms/minecraft/state";
-            mountPoint = "/var/lib/minecraft";
-            proto = "virtiofs";
-            # Guest minecraft:minecraft is uid/gid 999. The VM-owned state root
-            # must be writable by the guest service, not root-owned on Nazar.
-            owner = "999";
-            group = "999";
-            mode = "0700";
-          }
-          {
-            tag = "minecraft-repo";
-            source = "/persist/microvms/minecraft/repo";
-            mountPoint = "/home/alex/nazar";
-            proto = "virtiofs";
-            owner = "alex";
-            group = "users";
-            mode = "0755";
-          }
-        ];
-      };
       dns = "mc.nazar.studio";
       aliases = [ ];
-      cores = 2;
-      memoryMiB = 4096;
       role = "small PaperMC Minecraft server";
-      piAgent = {
-        enable = true;
-        workingDirectory = "/home/alex/nazar/services/minecraft";
-      };
 
       minecraft = {
         port = 25565;
-        stateDir = "/var/lib/minecraft";
+        stateDir = "/persist/services/minecraft";
         paperVersion = "26.1.2-62";
         paperUrl = "https://fill-data.papermc.io/v1/objects/b7b9581664abfb4706823c76fb8a8285e928d690770f03813e4a82e3489a78e5/paper-26.1.2-62.jar";
         paperHash = "sha256-t7lYFmSr+0cGgjx2+4qCheko1pB3DwOBPkqC40iaeOU=";
@@ -78,16 +34,12 @@
         gamemode = "survival";
         viewDistance = 10;
         simulationDistance = 6;
-        # Keep the server open to all authenticated Minecraft accounts.
         enableWhitelist = false;
-        # Add entries here only if the server should be closed again.
         whitelist = { };
         gameRules = {
           keep_inventory = true;
         };
 
-        # Public UDP port used by Simple Voice Chat. Requires matching host and
-        # provider firewall forwarding in addition to the guest firewall.
         voiceChatPort = 24454;
 
         pluginConfigs."voicechat/voicechat-server.properties" = ''
@@ -130,19 +82,6 @@
           }
         ];
       };
-    };
-  };
-
-  reserved = {
-    dav-vault = {
-      vmid = 122;
-      hostname = "dav-vault";
-      service = "dav-vault";
-      ip = "10.10.10.42";
-      mac = "BC:24:11:0A:4B:22";
-      dns = "vault.nazar.studio";
-      role = "reserved future secrets/vault VM; Bitwarden/Vaultwarden not enabled";
-      enabled = false;
     };
   };
 }

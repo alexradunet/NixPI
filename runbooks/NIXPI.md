@@ -62,7 +62,7 @@ nix run .#switch-host
 Then switch services as usual if another service changed:
 
 ```bash
-nix run .#switch-minecraft   # host switch + Minecraft MicroVM restart
+nix run .#switch-minecraft   # host switch for Minecraft
 nix run .#switch-dav-server  # host switch for the DAV host service
 ```
 
@@ -113,14 +113,8 @@ If a NixPi app change needs rollback, revert the relevant monorepo commit or use
 nix run .#switch-host
 ```
 
-If a MicroVM service change needs rollback, revert the relevant `services/<name>` monorepo commit or use a previous host system generation, then use the host-driven switch app for that VM:
+If a service change needs rollback, revert the relevant `services/<name>` monorepo commit or use a previous host system generation, then use the host-driven switch app for that service:
 
 ```bash
-nix run .#switch-<vm>
-```
-
-For a previous host system generation, use the host rollback first, then restart the affected MicroVM from the host if needed:
-
-```bash
-sudo systemctl restart microvm@<vm>.service
+nix run .#switch-<service>
 ```

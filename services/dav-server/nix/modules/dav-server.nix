@@ -1,11 +1,21 @@
 {
   lib,
   pkgs,
-  vm,
+  vm ? null,
+  davServerContext ? vm,
   ...
 }:
 let
-  cfg = vm.davServer or { };
+  serviceContext =
+    if davServerContext == null then
+      {
+        service = "";
+        dns = "";
+        davServer = { };
+      }
+    else
+      davServerContext;
+  cfg = serviceContext.davServer or { };
   stateDir = cfg.stateDir or "/var/lib/dav-server";
   webdavRoot = cfg.webdavRoot or "${stateDir}/webdav";
   radicaleStateDir = cfg.radicaleStateDir or "/var/lib/radicale/collections";
@@ -26,7 +36,7 @@ in
 {
   assertions = [
     {
-      assertion = vm ? service && vm.service == "dav-server";
+      assertion = serviceContext ? service && serviceContext.service == "dav-server";
       message = "dav-server service module requires a service context with service = \"dav-server\".";
     }
   ];
@@ -53,7 +63,7 @@ in
     recommendedOptimisation = true;
     recommendedProxySettings = true;
 
-    virtualHosts.${vm.dns} = {
+    virtualHosts.${serviceContext.dns} = {
       default = nginxDefault;
       listen = [
         {

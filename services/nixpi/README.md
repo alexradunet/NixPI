@@ -13,7 +13,7 @@ This repository is the production NixPi implementation consumed by Nazar through
 NixPi Bun is a native NixOS + Bun appliance shape for the private Nazar operator surface. It is intended to run:
 
 - on the `nazar` host for host-side development/operator work;
-- with SSH workspaces that start remote `pi --mode rpc` inside Nazar MicroVMs;
+- with local workspaces for Nazar service directories;
 - behind sshuttle/private host access when deployed as infrastructure;
 - behind a dedicated private reverse-proxy name such as `nixpi.nazar.studio`.
 

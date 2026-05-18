@@ -1,7 +1,7 @@
-{ fleet, lib, ... }:
+{ lib, ... }:
 let
   hostIdentity = import ../../fleet/host.nix;
-  privateDomains = import ../../fleet/private-domains.nix { inherit fleet lib; };
+  privateDomains = import ../../fleet/private-domains.nix { inherit lib; };
 in
 {
   # Private services bind to a host-local dummy address. sshuttle clients route

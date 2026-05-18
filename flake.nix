@@ -1,5 +1,5 @@
 {
-  description = "Nazar NixOS MicroVM fleet";
+  description = "Nazar NixOS host services";
 
   nixConfig = {
     extra-substituters = [ "https://cache.numtide.com" ];
@@ -10,16 +10,11 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
     # Keep llm-agents on its pinned nixpkgs so Numtide's binary cache hits and
-    # agent packages do not need to rebuild against the fleet nixpkgs input.
+    # agent packages do not need to rebuild against the host nixpkgs input.
     llm-agents.url = "github:numtide/llm-agents.nix";
 
     disko = {
       url = "github:nix-community/disko";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    microvm = {
-      url = "github:astro/microvm.nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
@@ -52,13 +47,45 @@
       pi = pkgs.callPackage ./nix/packages/pi { };
       fleet = import ./nix/fleet/vms.nix;
 
+      mkSwitchProgram =
+        name:
+        pkgs.writeShellApplication {
+          name = "nazar-switch-${name}";
+          runtimeInputs = [
+            pkgs.nixos-rebuild
+            pkgs.systemd
+          ];
+          text = ''
+            set -euo pipefail
+
+            if [ "$EUID" -ne 0 ]; then
+              exec sudo "$0" "$@"
+            fi
+
+            if [ "''${NAZAR_SWITCH_SYSTEMD_RUN:-0}" != "1" ] && grep -Eq 'nixpi(-bun)?\.service' /proc/self/cgroup; then
+              unit="nazar-switch-${name}-$(date +%s)"
+              echo "==> detected NixPi service context; continuing rebuild in transient systemd unit $unit"
+              exec systemd-run \
+                --unit="$unit" \
+                --collect \
+                --wait \
+                --pipe \
+                --property=Type=exec \
+                --working-directory="$(pwd -P)" \
+                --setenv=NAZAR_SWITCH_SYSTEMD_RUN=1 \
+                "$0" "$@"
+            fi
+
+            nixos-rebuild switch --flake ${self.outPath}#nazar "$@"
+          '';
+        };
+      mkSwitchApp = name: description: {
+        type = "app";
+        program = "${mkSwitchProgram name}/bin/nazar-switch-${name}";
+        meta.description = description;
+      };
     in
     {
-      nixosModules = {
-        microvm-guest = ./nix/modules/host/microvm-guest.nix;
-        microvm-host = ./nix/modules/host/microvm-host.nix;
-      };
-
       nixosConfigurations = {
         nazar = nixpkgs.lib.nixosSystem {
           inherit system;
@@ -84,80 +111,13 @@
         inherit pi;
       };
 
-      apps.${system} =
-        let
-          switchNodeNames = nixpkgs.lib.attrNames fleet.vms;
-          switchNodeList = nixpkgs.lib.concatStringsSep " " switchNodeNames;
-          mkSwitchProgram =
-            name: nodes:
-            let
-              nodeList = nixpkgs.lib.concatStringsSep " " nodes;
-            in
-            pkgs.writeShellApplication {
-              name = "nazar-switch-${name}";
-              runtimeInputs = [
-                pkgs.nixos-rebuild
-                pkgs.systemd
-              ];
-              text = ''
-                set -euo pipefail
-
-                if [ "$EUID" -ne 0 ]; then
-                  exec sudo "$0" "$@"
-                fi
-
-                if [ "''${NAZAR_SWITCH_SYSTEMD_RUN:-0}" != "1" ] && grep -Eq 'nixpi(-bun)?\.service' /proc/self/cgroup; then
-                  unit="nazar-switch-${name}-$(date +%s)"
-                  echo "==> detected NixPi service context; continuing rebuild in transient systemd unit $unit"
-                  exec systemd-run \
-                    --unit="$unit" \
-                    --collect \
-                    --wait \
-                    --pipe \
-                    --property=Type=exec \
-                    --working-directory="$(pwd -P)" \
-                    --setenv=NAZAR_SWITCH_SYSTEMD_RUN=1 \
-                    "$0" "$@"
-                fi
-
-                nixos-rebuild switch --flake ${self.outPath}#nazar "$@"
-
-                ${nixpkgs.lib.optionalString (nodes != [ ]) ''
-                  for node in ${nodeList}; do
-                    echo "==> restarting MicroVM $node"
-                    systemctl restart "microvm@$node.service"
-                    systemctl is-active --quiet "microvm@$node.service"
-                  done
-                ''}
-              '';
-            };
-          mkSwitchApp = name: {
-            type = "app";
-            program = "${mkSwitchProgram name [ name ]}/bin/nazar-switch-${name}";
-            meta.description = "Switch the Nazar host configuration and restart the ${name} MicroVM";
-          };
-          switchFleetApp = {
-            type = "app";
-            program = "${mkSwitchProgram "fleet" switchNodeNames}/bin/nazar-switch-fleet";
-            meta.description = "Switch the Nazar host configuration and restart the MicroVM fleet: ${switchNodeList}";
-          };
-        in
-        {
-          default = switchFleetApp;
-          switch = switchFleetApp;
-          switch-fleet = switchFleetApp;
-          switch-host = {
-            type = "app";
-            program = "${mkSwitchProgram "host" [ ]}/bin/nazar-switch-host";
-            meta.description = "Switch only the Nazar host configuration";
-          };
-          switch-minecraft = mkSwitchApp "minecraft";
-          switch-dav-server = {
-            type = "app";
-            program = "${mkSwitchProgram "dav-server" [ ]}/bin/nazar-switch-dav-server";
-            meta.description = "Switch the Nazar host configuration for the host DAV service";
-          };
-        };
+      apps.${system} = {
+        default = mkSwitchApp "host" "Switch the Nazar host configuration";
+        switch = mkSwitchApp "host" "Switch the Nazar host configuration";
+        switch-host = mkSwitchApp "host" "Switch the Nazar host configuration";
+        switch-minecraft = mkSwitchApp "minecraft" "Switch the Nazar host configuration for the host Minecraft service";
+        switch-dav-server = mkSwitchApp "dav-server" "Switch the Nazar host configuration for the host DAV service";
+      };
 
       checks.${system} = { };
 
@@ -172,7 +132,8 @@
           pkgs.nixfmt
         ];
         text = ''
-          find flake.nix nix services -type f -name '*.nix' -print0             | xargs -0 --no-run-if-empty nixfmt
+          find flake.nix nix services -type f -name '*.nix' -print0 \
+            | xargs -0 --no-run-if-empty nixfmt
         '';
       };
     };

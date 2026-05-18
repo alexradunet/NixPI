@@ -1,5 +1,5 @@
 {
-  description = "Nazar Minecraft MicroVM service module";
+  description = "Nazar Minecraft NixOS service module";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -15,9 +15,8 @@
       nixosModules = rec {
         minecraft-service = ./nix/modules/minecraft-papermc.nix;
         minecraft-web = ./nix/modules/minecraft-web.nix;
-        minecraft-microvm = ./nix/hosts/minecraft/default.nix;
-        minecraft = minecraft-microvm;
-        default = minecraft-microvm;
+        minecraft = minecraft-service;
+        default = minecraft-service;
       };
 
       packages = forAllSystems (_system: { });
@@ -28,7 +27,7 @@
           testSystem = nixpkgs.lib.nixosSystem {
             inherit system;
             specialArgs = {
-              vm = {
+              minecraftContext = {
                 service = "minecraft";
                 dns = "mc.example.invalid";
                 minecraft = {

@@ -22,19 +22,24 @@ let
   sourceFirewallStopRules = concatMapStringsSep "\n" (source: ''
     iptables -D nixos-fw -p tcp -s ${source} --dport ${toString cfg.port} -j nixos-fw-accept 2>/dev/null || true
   '') cfg.firewallAllowedSources;
-  workspacesJson = if cfg.workspaces == { }
-    then null
-    else pkgs.writeText "nixpi-bun-workspaces.json" (builtins.toJSON {
-      default = if cfg.defaultWorkspace != null
-        then cfg.defaultWorkspace
-        else lib.optionalString (cfg.workspaces != { })
-          (lib.head (lib.attrNames cfg.workspaces));
-      workspaces = lib.mapAttrs (_: ws: {
-        inherit (ws) cwd mode context;
-        sshHost = ws.sshHost;
-        sshUser = ws.sshUser;
-      }) cfg.workspaces;
-    });
+  workspacesJson =
+    if cfg.workspaces == { } then
+      null
+    else
+      pkgs.writeText "nixpi-bun-workspaces.json" (
+        builtins.toJSON {
+          default =
+            if cfg.defaultWorkspace != null then
+              cfg.defaultWorkspace
+            else
+              lib.optionalString (cfg.workspaces != { }) (lib.head (lib.attrNames cfg.workspaces));
+          workspaces = lib.mapAttrs (_: ws: {
+            inherit (ws) cwd mode context;
+            sshHost = ws.sshHost;
+            sshUser = ws.sshUser;
+          }) cfg.workspaces;
+        }
+      );
 in
 {
   options.services.nixpi-bun = {
@@ -132,37 +137,42 @@ in
     };
 
     workspaces = mkOption {
-      type = types.attrsOf (types.submodule {
-        options = {
-          cwd = mkOption {
-            type = types.str;
-            description = "Working directory for this workspace.";
+      type = types.attrsOf (
+        types.submodule {
+          options = {
+            cwd = mkOption {
+              type = types.str;
+              description = "Working directory for this workspace.";
+            };
+            mode = mkOption {
+              type = types.enum [
+                "local"
+                "ssh"
+              ];
+              default = "local";
+              description = ''
+                Connection mode. "local" runs Pi directly on the host.
+                "ssh" connects to a remote VM and starts `pi --mode rpc` there.
+              '';
+            };
+            sshHost = mkOption {
+              type = types.nullOr types.str;
+              default = null;
+              description = "Remote host for SSH-mode workspaces.";
+            };
+            sshUser = mkOption {
+              type = types.str;
+              default = cfg.user;
+              description = "SSH user for remote workspaces.";
+            };
+            context = mkOption {
+              type = types.str;
+              default = "";
+              description = "Human-readable context shown in the workspace switcher UI.";
+            };
           };
-          mode = mkOption {
-            type = types.enum [ "local" "ssh" ];
-            default = "local";
-            description = ''
-              Connection mode. "local" runs Pi directly on the host.
-              "ssh" connects to a remote VM and starts `pi --mode rpc` there.
-            '';
-          };
-          sshHost = mkOption {
-            type = types.nullOr types.str;
-            default = null;
-            description = "Remote host for SSH-mode workspaces.";
-          };
-          sshUser = mkOption {
-            type = types.str;
-            default = cfg.user;
-            description = "SSH user for remote workspaces.";
-          };
-          context = mkOption {
-            type = types.str;
-            default = "";
-            description = "Human-readable context shown in the workspace switcher UI.";
-          };
-        };
-      });
+        }
+      );
       default = { };
       example = literalExpression ''
         {
@@ -228,9 +238,7 @@ in
         NIXPI_PI_BIN = cfg.piBinary;
         NIXPI_SSH_BIN = lib.getExe pkgs.openssh;
         NIXPI_IDLE_TIMEOUT_MS = toString cfg.idleTimeoutMs;
-        NIXPI_WORKSPACES_CONFIG = if workspacesJson != null
-          then "${workspacesJson}"
-          else "";
+        NIXPI_WORKSPACES_CONFIG = if workspacesJson != null then "${workspacesJson}" else "";
         PI_SKIP_VERSION_CHECK = "1";
         PI_TELEMETRY = "0";
       }
@@ -240,9 +248,11 @@ in
         User = cfg.user;
         Group = cfg.group;
         WorkingDirectory = if cfg.sourceDir != null then cfg.sourceDir else toString cfg.workingDirectory;
-        ExecStart = if cfg.sourceDir != null
-          then "${pkgs.bun}/bin/bun ${cfg.sourceDir}/server.js"
-          else "${cfg.package}/bin/nixpi-bun";
+        ExecStart =
+          if cfg.sourceDir != null then
+            "${pkgs.bun}/bin/bun ${cfg.sourceDir}/server.js"
+          else
+            "${cfg.package}/bin/nixpi-bun";
         Restart = "on-failure";
         RestartSec = 3;
         UMask = "0027";
@@ -259,7 +269,11 @@ in
       cfg.port
     ];
 
-    networking.firewall.extraCommands = mkIf (cfg.openFirewall && cfg.firewallAllowedSources != [ ]) sourceFirewallRules;
-    networking.firewall.extraStopCommands = mkIf (cfg.openFirewall && cfg.firewallAllowedSources != [ ]) sourceFirewallStopRules;
+    networking.firewall.extraCommands = mkIf (
+      cfg.openFirewall && cfg.firewallAllowedSources != [ ]
+    ) sourceFirewallRules;
+    networking.firewall.extraStopCommands = mkIf (
+      cfg.openFirewall && cfg.firewallAllowedSources != [ ]
+    ) sourceFirewallStopRules;
   };
 }

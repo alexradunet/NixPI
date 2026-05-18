@@ -3,12 +3,11 @@ let
   inventory = pkgs.writeShellScriptBin "nazar-backup-inventory" ''
     set -eu
     cat <<'EOF'
-    Nazar backup roots after NixOS+MicroVM migration:
+    Nazar backup roots:
       /srv/nazar
       /persist/repos
-      /persist/microvms/git
-      /persist/microvms/minecraft
-      /persist/microvms/dav-server
+      /persist/services/minecraft
+      /persist/services/dav-server
       /persist/secrets
 
     This host module intentionally does not encode an off-host backup target or

@@ -14,10 +14,9 @@
     {
       nixosModules = rec {
         dav-server-service = ./nix/modules/dav-server.nix;
-        dav-server-microvm = ./nix/hosts/dav-server/default.nix;
-        dav-server = dav-server-microvm;
-        davServer = dav-server-microvm;
-        default = dav-server-microvm;
+        dav-server = dav-server-service;
+        davServer = dav-server-service;
+        default = dav-server-service;
       };
 
       packages = forAllSystems (_system: { });

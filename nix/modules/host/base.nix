@@ -11,10 +11,6 @@
       "@wheel"
     ];
     auto-optimise-store = true;
-    extra-substituters = [ "https://microvm.cachix.org" ];
-    extra-trusted-public-keys = [
-      "microvm.cachix.org-1:oXnBc6hRE3eX5rSYdRyMYXnfzcCxC7yKPTbZXALsqys="
-    ];
   };
 
   nix.gc = {

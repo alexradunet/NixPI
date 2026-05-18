@@ -1,4 +1,4 @@
-{ fleet, lib }:
+{ lib }:
 let
   exposure = import ./exposure.nix;
 
@@ -10,22 +10,9 @@ let
       "public"
     ];
 
-  domainsFor = vm: [ vm.dns ] ++ (vm.aliases or [ ]);
-
-  privateServiceDomains = lib.concatMap (
-    name:
-    let
-      vm = fleet.vms.${name};
-    in
-    if vm.privateAccess or false then domainsFor vm else [ ]
-  ) (lib.attrNames fleet.vms);
-
-  hostSite = exposure.host.site or { };
   hostNixpi = exposure.host.nixpi or { };
   hostCode = exposure.host.code or { };
   hostDav = exposure.host.dav or { };
-
-  hostSiteDomains = lib.optional (isPrivateAccess hostSite && hostSite ? domain) hostSite.domain;
 
   hostNixpiDomains = lib.optionals (isPrivateAccess hostNixpi) (
     lib.optional (hostNixpi ? domain) hostNixpi.domain ++ (hostNixpi.pathDomains or [ ])
@@ -38,7 +25,5 @@ let
   privateDomainExclusions = exposure.privateDomainExclusions or [ ];
 in
 lib.subtractLists privateDomainExclusions (
-  lib.unique (
-    privateServiceDomains ++ hostSiteDomains ++ hostNixpiDomains ++ hostCodeDomains ++ hostDavDomains
-  )
+  lib.unique (hostNixpiDomains ++ hostCodeDomains ++ hostDavDomains)
 )

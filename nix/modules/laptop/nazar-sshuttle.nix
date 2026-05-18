@@ -1,6 +1,5 @@
 {
   config,
-  fleet,
   lib,
   pkgs,
   ...
@@ -8,7 +7,7 @@
 let
   cfg = config.nazar.access.sshuttle;
   hostIdentity = import ../../fleet/host.nix;
-  privateDomains = import ../../fleet/private-domains.nix { inherit fleet lib; };
+  privateDomains = import ../../fleet/private-domains.nix { inherit lib; };
 
   sshuttleArgs = lib.concatStringsSep " " (
     [
@@ -85,7 +84,7 @@ in
     privateDomains = lib.mkOption {
       type = lib.types.listOf lib.types.str;
       default = privateDomains;
-      defaultText = "Nazar private domains from fleet/vms.nix privateAccess and host exposure";
+      defaultText = "Nazar private domains from host exposure";
       description = ''
         Private service domains mapped to the private service address in
         /etc/hosts. This lets browsers, curl, and other tools use the normal

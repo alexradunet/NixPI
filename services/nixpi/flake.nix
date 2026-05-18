@@ -5,7 +5,8 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
   };
 
-  outputs = { self, nixpkgs }:
+  outputs =
+    { self, nixpkgs }:
     let
       systems = [
         "x86_64-linux"
@@ -20,7 +21,8 @@
         nixpi-bun = final.callPackage ./nix/packages/nixpi-bun { };
       };
 
-      packages = forAllSystems (system:
+      packages = forAllSystems (
+        system:
         let
           pkgs = import nixpkgs {
             inherit system;
@@ -30,22 +32,28 @@
         {
           inherit (pkgs) nixpi-bun;
           default = pkgs.nixpi-bun;
-        });
+        }
+      );
 
       nixosModules = rec {
         nixpi-bun = ./nix/modules/nixpi-bun.nix;
         default = nixpi-bun;
       };
 
-      devShells = forAllSystems (system:
+      devShells = forAllSystems (
+        system:
         let
           pkgs = import nixpkgs { inherit system; };
         in
         {
           default = pkgs.mkShell {
-            packages = [ pkgs.bun pkgs.nodejs_22 ];
+            packages = [
+              pkgs.bun
+              pkgs.nodejs_22
+            ];
           };
-        });
+        }
+      );
 
       checks = forAllSystems (system: {
         inherit (self.packages.${system}) nixpi-bun;

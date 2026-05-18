@@ -1,36 +1,18 @@
-# minecraft
+# Nazar Minecraft service
 
-Nazar-owned PaperMC Minecraft MicroVM service subflake.
+Nazar-owned PaperMC Minecraft NixOS service module.
 
-This directory owns the Minecraft service modules used by the canonical Nazar MicroVM fleet. The monorepo root remains the fleet orchestrator and owns MicroVM lifecycle, IDs, IP/MAC/DNS/resources, host forwarding/firewall policy, host switch apps, and secrets policy.
+This directory owns the reusable Minecraft module. The root Nazar flake imports it into the host configuration and supplies the service context from `nix/fleet/vms.nix`.
 
 ## Exports
 
-- `nixosModules.minecraft-service` — PaperMC service module
-- `nixosModules.minecraft-web` — nginx/static website for `mc.nazar.studio`
-- `nixosModules.minecraft-microvm` / `nixosModules.minecraft` / `default` — service-only MicroVM guest module
+- `nixosModules.minecraft-service` — PaperMC service module.
+- `nixosModules.minecraft` / `default` — aliases for the service module.
 
-## Integration contract
+## Production
 
-Production evaluation is done by the Nazar monorepo root (`/root/nazar` on the host). Nazar composes this service module with the shared MicroVM guest baseline and `specialArgs` containing `vm`, `fleet`, and `inputs`. This subflake defines only MicroVM service modules.
-
-## VM-local Pi workflow
-
-Use the guest for editing and validation only:
+Production evaluation is done by the Nazar monorepo root. Use:
 
 ```bash
-ssh alex@minecraft
-nazar-vm-repo-bootstrap
-cd ~/nazar/services/minecraft
-pi
-nix flake check --no-build
-# commit and push from ~/nazar
-```
-
-Production switching is host-driven from Nazar after committing the monorepo change:
-
-```bash
-cd /root/nazar
-nix flake check --no-build
 nix run .#switch-minecraft
 ```
