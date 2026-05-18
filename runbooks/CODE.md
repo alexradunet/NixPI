@@ -26,7 +26,7 @@ Nazar configures OpenVSCode Server with:
 - user/group: `alex:users`
 - initial folder: `/home/alex`
 - mutable state: `/home/alex/.openvscode-server/{user-data,server-data,extensions}`
-- Nix tooling in the service PATH: `nix`, `nil`, `nixfmt-rfc-style`, `git`, `ripgrep`, and common build tools
+- Nix/Hermes tooling in the service PATH: `hermes`, `nix`, `nil`, `nixfmt`, `git`, `ripgrep`, and common build tools
 
 ## Switch
 
@@ -52,7 +52,7 @@ From a configured sshuttle laptop:
 
 ```bash
 systemctl status nazar-sshuttle
-getent hosts code.nazar.studio nixpi.nazar.studio
+getent hosts code.nazar.studio
 curl -I http://code.nazar.studio/
 ```
 

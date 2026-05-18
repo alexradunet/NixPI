@@ -9,17 +9,6 @@
   privateDomainExclusions = [ ];
 
   host = {
-    nixpi = {
-      enable = true;
-      domain = "nixpi.nazar.studio";
-      port = 4815;
-      access = "private";
-      localTunnelAliases = [
-        "127.0.0.1"
-        "localhost"
-      ];
-    };
-
     code = {
       enable = true;
       domain = "code.nazar.studio";

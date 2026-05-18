@@ -10,13 +10,8 @@ let
       "public"
     ];
 
-  hostNixpi = exposure.host.nixpi or { };
   hostCode = exposure.host.code or { };
   hostDav = exposure.host.dav or { };
-
-  hostNixpiDomains = lib.optionals (isPrivateAccess hostNixpi) (
-    lib.optional (hostNixpi ? domain) hostNixpi.domain ++ (hostNixpi.pathDomains or [ ])
-  );
 
   hostCodeDomains = lib.optional (isPrivateAccess hostCode && hostCode ? domain) hostCode.domain;
 
@@ -24,6 +19,4 @@ let
 
   privateDomainExclusions = exposure.privateDomainExclusions or [ ];
 in
-lib.subtractLists privateDomainExclusions (
-  lib.unique (hostNixpiDomains ++ hostCodeDomains ++ hostDavDomains)
-)
+lib.subtractLists privateDomainExclusions (lib.unique (hostCodeDomains ++ hostDavDomains))

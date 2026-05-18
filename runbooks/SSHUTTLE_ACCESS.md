@@ -50,7 +50,7 @@ If the private key has a different filename, override `nazar.access.sshuttle.key
 A fresh laptop may need temporary private service host entries before the declarative sshuttle configuration is active. For the first rebuild only, start a temporary sshuttle tunnel and temporary hosts entry from an existing checkout:
 
 ```bash
-sudo sh -c 'printf "10.44.0.1 nazar.studio mc.nazar.studio dav.nazar.studio\n" >> /etc/hosts'
+sudo sh -c 'printf "10.44.0.1 code.nazar.studio dav.nazar.studio\n" >> /etc/hosts'
 nix shell nixpkgs#sshuttle -c sudo sshuttle --method=auto \
   -e "ssh -i /home/alex/.ssh/id_ed25519 -o IdentitiesOnly=yes" \
   -r alex@167.235.12.22 \
@@ -65,7 +65,7 @@ Leave that command running in one terminal, run the normal rebuild in another, t
 ```bash
 sudo nixos-rebuild switch --flake .#alex-laptop
 systemctl status nazar-sshuttle
-getent hosts nazar.studio mc.nazar.studio dav.nazar.studio
+getent hosts code.nazar.studio dav.nazar.studio
 ```
 
 The generated command is equivalent to:
@@ -79,8 +79,7 @@ sshuttle --method=auto -r nazar-sshuttle -x 167.235.12.22 10.44.0.1/32
 Use normal service URLs; no browser SOCKS configuration is required:
 
 ```bash
-curl -I http://nazar.studio/
-curl -I http://nixpi.nazar.studio/
+curl -I http://code.nazar.studio/
 curl -I http://dav.nazar.studio/
 ```
 
@@ -102,5 +101,5 @@ Check host private address and services:
 
 ```bash
 ip addr show nazar-private
-systemctl is-active sshd systemd-networkd nginx nixpi-bun
+systemctl is-active sshd systemd-networkd nginx hermes-agent openvscode-server
 ```

@@ -6,12 +6,12 @@ Declarative NixOS configuration for the Hetzner host `nazar`, a client laptop pr
 
 This repository has one production Nix surface: the root `flake.nix`. The host and laptop configurations import modules directly from `nix/modules`, while service source and reusable service modules live under `services/`.
 
-The root flake owns deployment, private access policy, nginx routing, DAV/NixPi/Code services, Minecraft, operator switch apps, and the Pi package.
+The root flake owns deployment, private access policy, nginx routing, DAV/Code services, Minecraft, operator switch apps, and the Hermes Agent NixOS module wiring.
 
 ## Services
 
 - Public Minecraft: `mc.nazar.studio` game traffic on `25565/tcp` and voice chat on `24454/udp`.
-- Private NixPi: `http://nixpi.nazar.studio/` through sshuttle and host nginx.
+- Host Hermes Agent: `hermes-agent.service` managed declaratively by NixOS; use `hermes` from SSH or the private Code terminal.
 - Private Code: `http://code.nazar.studio/` through sshuttle and host nginx.
 - Private DAV: `http://dav.nazar.studio/` through sshuttle and host nginx.
 
@@ -23,12 +23,12 @@ nix/hosts/nazar/              # production host composition, hardware, and disk 
 nix/hosts/alex-laptop/        # client/laptop composition and hardware config
 nix/modules/host/             # host baseline, networking, service adapters, monitoring
 nix/modules/laptop/           # client-side access modules
-nix/modules/guest/            # shared Pi/default package modules used by host/client
+nix/modules/guest/            # legacy guest helpers; not imported by the production host
 nix/modules/services/         # small shared service identity modules
 nix/fleet/                    # host identity, exposure policy, service metadata
 services/minecraft/           # Minecraft source and reusable NixOS module
 services/dav-server/          # DAV/Radicale/WebDAV reusable NixOS module
-services/nixpi/               # NixPi source, module, and package expression
+services/nixpi/               # legacy NixPi source; not imported by the production host
 runbooks/                     # operational notes
 ```
 
@@ -45,15 +45,13 @@ nix run .#switch-dav-server
 ## Development commands
 
 ```bash
-nix build .#pi
-nix build .#nixpi-bun
-nix develop .#nixpi
+nix build .#hermes-agent
 ```
 
 ## Quick health checks
 
 ```bash
-systemctl is-active sshd systemd-networkd nginx nixpi-bun openvscode-server radicale minecraft-server
+systemctl is-active sshd systemd-networkd nginx hermes-agent openvscode-server radicale minecraft-server
 curl -I http://dav.nazar.studio/files/
 ```
 
@@ -61,5 +59,6 @@ curl -I http://dav.nazar.studio/files/
 
 - Keep deployment authority in the root flake.
 - Keep private HTTP services bound to the host private address and reachable through sshuttle.
+- Keep Hermes configured through NixOS and secrets files, not ad-hoc Pi/NixPi host services.
 - Keep service code in `services/`, but compose production from the root host configuration.
 - Prefer explicit direct imports over generated module discovery or wrapper layers.

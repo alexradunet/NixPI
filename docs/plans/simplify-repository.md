@@ -25,7 +25,7 @@ nix/
     alex-laptop/hardware-configuration.nix
   modules/
     host/                       # host baseline, networking, service adapters, monitoring
-    guest/                      # shared Pi/default package modules used by host/client
+    guest/                      # legacy guest helpers; not imported by the production host
     laptop/                     # client-side access modules
     services/                   # small shared service identity modules
   fleet/
@@ -33,12 +33,12 @@ nix/
     exposure.nix
     private-domains.nix
     services.nix                # service metadata/context
-  packages/pi/
+  packages/pi/                 # legacy Pi package expression; not exported by the root flake
   users/
 services/
   dav-server/                   # DAV module source
   minecraft/                    # Minecraft module source
-  nixpi/                        # NixPi source, module, and package expression
+  nixpi/                        # legacy NixPi source; not imported by the production host
 runbooks/
 ```
 
@@ -55,7 +55,7 @@ runbooks/
 
 - Root output names for NixOS configs: `nixosConfigurations.nazar`, `nixosConfigurations.alex-laptop`.
 - Existing switch app names: `switch-host`, `switch-minecraft`, `switch-dav-server`.
-- Private access model for NixPi, Code, and DAV.
+- Private access model for Code and DAV; Hermes is a native NixOS gateway service rather than a private HTTP route.
 - Existing service state directories, ports, users, UID/GID, and `system.stateVersion`.
 
 ## Avoid
@@ -73,7 +73,7 @@ nix fmt
 nix flake check --no-build --no-write-lock-file --show-trace
 nix eval --raw .#nixosConfigurations.nazar.config.networking.hostName
 nix eval --raw .#nixosConfigurations.alex-laptop.config.networking.hostName
-nix eval .#nixosConfigurations.nazar.config.services.nixpi-bun.enable
+nix eval .#nixosConfigurations.nazar.config.services.hermes-agent.enable
 nix eval .#nixosConfigurations.nazar.config.services.openvscode-server.enable
 nix eval .#nixosConfigurations.nazar.config.services.radicale.enable
 nix eval .#nixosConfigurations.nazar.config.services.minecraft-server.enable

@@ -1,13 +1,18 @@
-{ lib, pkgs, ... }:
+{
+  inputs,
+  lib,
+  pkgs,
+  ...
+}:
 let
   exposure = import ../../fleet/exposure.nix;
   hostCode = exposure.host.code or { };
-  pi = pkgs.callPackage ../../packages/pi { };
+  hermes = inputs.hermes-agent.packages.${pkgs.stdenv.hostPlatform.system}.default;
 in
 {
   # Native NixOS OpenVSCode Server: no container, no ad-hoc npm install.
-  # It runs as alex so browser terminals/editors see the same repos and home
-  # state as SSH/NixPi sessions.
+  # It runs as alex so browser terminals/editors see the same repos and can
+  # launch the host-managed Hermes CLI.
   services.openvscode-server = {
     enable = hostCode.enable or false;
     user = "alex";
@@ -16,8 +21,8 @@ in
     port = hostCode.port or 4821;
 
     # The nginx route is private-only in nix/fleet/exposure.nix. Keeping the
-    # OpenVSCode connection token disabled makes mobile browser entry match
-    # NixPi while the compile-time assertion below prevents accidental public
+    # OpenVSCode connection token disabled keeps mobile browser entry simple,
+    # while the compile-time assertion below prevents accidental public
     # tokenless exposure.
     withoutConnectionToken = true;
     telemetryLevel = "off";
@@ -41,10 +46,10 @@ in
       jq
       nil
       nix
-      nixfmt-rfc-style
+      nixfmt
       nodejs
       openssh
-      pi
+      hermes
       pkg-config
       python3
       ripgrep
@@ -55,8 +60,7 @@ in
 
     extraEnvironment = {
       NIX_CONFIG = "experimental-features = nix-command flakes";
-      NPM_CONFIG_PREFIX = "/home/alex/.pi/npm-global";
-      NODE_PATH = "/home/alex/.pi/npm-global/lib/node_modules";
+      HERMES_HOME = "/var/lib/hermes/.hermes";
     };
 
     extraArguments = [ "/home/alex" ];

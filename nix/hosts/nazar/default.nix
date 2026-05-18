@@ -17,8 +17,8 @@
     ../../modules/guest/development.nix
     ../../modules/host/firewall.nix
     ../../modules/host/llm-agents.nix
-    ../../modules/host/pi-agent.nix
-    ../../modules/host/nixpi.nix
+    inputs.hermes-agent.nixosModules.default
+    ../../modules/host/hermes-agent.nix
     ../../modules/host/code.nix
     ../../modules/host/dav-server.nix
     ../../modules/host/minecraft.nix

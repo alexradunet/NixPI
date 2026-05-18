@@ -8,6 +8,7 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    hermes-agent.url = "github:NousResearch/hermes-agent";
 
     # Keep llm-agents on its pinned nixpkgs so Numtide's binary cache hits and
     # agent packages do not need to rebuild against the host nixpkgs input.
@@ -28,8 +29,6 @@
     let
       system = "x86_64-linux";
       pkgs = nixpkgs.legacyPackages.${system};
-      pi = pkgs.callPackage ./nix/packages/pi { };
-      nixpi-bun = pkgs.callPackage ./services/nixpi/nix/packages/nixpi-bun { };
       fleet = import ./nix/fleet/services.nix;
 
       nixosModules = rec {
@@ -39,9 +38,6 @@
 
         dav-server = ./services/dav-server/nix/modules/dav-server.nix;
         dav-server-service = dav-server;
-
-        nixpi-bun = ./services/nixpi/nix/modules/nixpi-bun.nix;
-        nixpi-bun-service = nixpi-bun;
 
         minecraft = ./services/minecraft/nix/modules/minecraft-papermc.nix;
         minecraft-service = minecraft;
@@ -73,9 +69,9 @@
               exec sudo "$0" "$@"
             fi
 
-            if [ "''${NAZAR_SWITCH_SYSTEMD_RUN:-0}" != "1" ] && grep -Eq 'nixpi(-bun)?\.service' /proc/self/cgroup; then
+            if [ "''${NAZAR_SWITCH_SYSTEMD_RUN:-0}" != "1" ] && grep -Eq '(nixpi(-bun)?|hermes-agent)\.service' /proc/self/cgroup; then
               unit="nazar-switch-${name}-$(date +%s)"
-              echo "==> detected NixPi service context; continuing rebuild in transient systemd unit $unit"
+              echo "==> detected agent service context; continuing rebuild in transient systemd unit $unit"
               exec systemd-run \
                 --unit="$unit" \
                 --collect \
@@ -105,7 +101,7 @@
       };
 
       packages.${system} = {
-        inherit pi nixpi-bun;
+        hermes-agent = inputs.hermes-agent.packages.${system}.default;
       };
 
       apps.${system} = {
@@ -165,8 +161,6 @@
           };
         in
         {
-          inherit nixpi-bun;
-
           minecraft-module-eval = pkgs.runCommand "minecraft-module-eval" { } ''
             mkdir -p $out
             echo ${toString minecraftTestSystem.config.services.minecraft-server.serverProperties.server-port} > $out/server-port
@@ -181,15 +175,6 @@
       devShells.${system} = {
         default = pkgs.mkShell {
           packages = [ pkgs.nixos-rebuild ];
-        };
-
-        nixpi = pkgs.mkShell {
-          packages = [
-            pkgs.bun
-            pkgs.nodejs_22
-            pkgs.chromium
-            pkgs.gnumake
-          ];
         };
       };
 

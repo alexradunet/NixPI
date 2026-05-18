@@ -3,7 +3,6 @@
   imports = [
     ./hardware-configuration.nix
     ../../modules/laptop/nazar-sshuttle.nix
-    ../../modules/guest/pi-default-packages.nix
   ];
 
   networking.hostName = "alex-laptop";
@@ -90,7 +89,7 @@
     vim
     vscodium
     wget
-    inputs.self.packages.${pkgs.system}.pi
+    inputs.hermes-agent.packages.${pkgs.stdenv.hostPlatform.system}.default
   ];
 
   system.stateVersion = "25.11";
