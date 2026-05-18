@@ -71,6 +71,18 @@ The expected shape is:
 
 ## Client Setup
 
+For the declarative `alex-laptop` NixOS config, Tailscale is enabled through
+`nix/modules/laptop/tailscale.nix`. After pulling the repo on the laptop, switch
+that host config and enroll it once:
+
+```bash
+cd /home/alex/repos/nazar
+sudo nixos-rebuild switch --flake .#alex-laptop
+sudo tailscale up --hostname=alex-laptop --ssh=false
+```
+
+For other client devices:
+
 1. Install Tailscale on the client device.
 2. Join the same tailnet.
 3. Enable MagicDNS in the Tailscale admin UI if desired.

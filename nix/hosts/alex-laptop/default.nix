@@ -8,6 +8,7 @@
   imports = [
     ./hardware-configuration.nix
     ../../modules/laptop/nazar-tunnel.nix
+    ../../modules/laptop/tailscale.nix
   ];
 
   networking.hostName = "alex-laptop";
@@ -111,6 +112,14 @@
         config.systemd.services.nazar-tunnel.wantedBy or [ ]
       );
       message = "alex-laptop must start nazar-tunnel.service automatically at boot.";
+    }
+    {
+      assertion = config.services.tailscale.enable;
+      message = "alex-laptop must keep Tailscale enabled for private Nazar access.";
+    }
+    {
+      assertion = config.services.tailscale.useRoutingFeatures == "client";
+      message = "alex-laptop must use Tailscale client mode unless routing behavior is explicitly designed.";
     }
   ];
 

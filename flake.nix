@@ -194,18 +194,43 @@
         '';
         alex-laptop-tunnel-module-eval = pkgs.runCommand "alex-laptop-tunnel-module-eval" { } ''
           mkdir -p $out
-          echo ${toString self.nixosConfigurations.alex-laptop.config.nazar.access.tunnel.enable} > $out/nazar-tunnel-option-enabled
-          echo ${
+
+          assert_true() {
+            name="$1"
+            value="$2"
+            echo "$value" > "$out/$name"
+            if [ "$value" != "1" ]; then
+              echo "alex-laptop-tunnel-module-eval failed: $name expected 1, got $value" >&2
+              exit 1
+            fi
+          }
+
+          assert_equals() {
+            name="$1"
+            actual="$2"
+            expected="$3"
+            echo "$actual" > "$out/$name"
+            if [ "$actual" != "$expected" ]; then
+              echo "alex-laptop-tunnel-module-eval failed: $name expected $expected, got $actual" >&2
+              exit 1
+            fi
+          }
+
+          assert_true nazar-tunnel-option-enabled ${toString self.nixosConfigurations.alex-laptop.config.nazar.access.tunnel.enable}
+          assert_true nazar-tunnel-service-enabled ${
             toString (self.nixosConfigurations.alex-laptop.config.systemd.services.nazar-tunnel.enable or false)
-          } > $out/nazar-tunnel-service-enabled
-          echo ${
+          }
+          assert_true nazar-tunnel-wanted ${
             toString (
               nixpkgs.lib.elem "multi-user.target" (
                 self.nixosConfigurations.alex-laptop.config.systemd.services.nazar-tunnel.wantedBy or [ ]
               )
             )
-          } > $out/nazar-tunnel-wanted
-          echo ${self.nixosConfigurations.alex-laptop.config.systemd.services.nazar-tunnel.serviceConfig.Restart} > $out/nazar-tunnel-restart
+          }
+          assert_equals nazar-tunnel-restart ${self.nixosConfigurations.alex-laptop.config.systemd.services.nazar-tunnel.serviceConfig.Restart} always
+          assert_true tailscale-enabled ${toString self.nixosConfigurations.alex-laptop.config.services.tailscale.enable}
+          assert_true tailscale-open-firewall ${toString self.nixosConfigurations.alex-laptop.config.services.tailscale.openFirewall}
+          assert_equals tailscale-routing-features ${self.nixosConfigurations.alex-laptop.config.services.tailscale.useRoutingFeatures} client
         '';
       };
 
