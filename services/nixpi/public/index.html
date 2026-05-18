@@ -1,0 +1,772 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>nixpi - Master Workbench</title>
+    <!-- Prevent flash of wrong theme: resolve before first paint -->
+    <script>
+      (function () {
+        var stored = localStorage.getItem("nixpi-theme");
+        var prefersDark = window.matchMedia(
+          "(prefers-color-scheme: dark)",
+        ).matches;
+        var mode = stored || (prefersDark ? "dark" : "light");
+        if (mode === "dark") document.documentElement.classList.add("dark");
+      })();
+    </script>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='24' font-size='24' fill='%23ffb59d'>π</text></svg>"
+    />
+    <meta name="theme-color" content="#1a110f" id="meta-theme-color" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+      id="meta-apple-status-bar"
+    />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+      rel="stylesheet"
+    />
+    <link href="https://fonts.googleapis.com" rel="preconnect" />
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&amp;family=Newsreader:opsz,wght@6..72,500;6..72,600&amp;family=Work+Sans:wght@400&amp;display=swap"
+      rel="stylesheet"
+    />
+    <script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              surface: "rgb(var(--tw-surface))",
+              "surface-dim": "rgb(var(--tw-surface-dim))",
+              "surface-bright": "rgb(var(--tw-surface-bright))",
+              "surface-variant": "rgb(var(--tw-surface-variant))",
+              "surface-container-lowest":
+                "rgb(var(--tw-surface-container-lowest))",
+              "surface-container-low": "rgb(var(--tw-surface-container-low))",
+              "surface-container": "rgb(var(--tw-surface-container))",
+              "surface-container-high": "rgb(var(--tw-surface-container-high))",
+              "surface-container-highest":
+                "rgb(var(--tw-surface-container-highest))",
+              "surface-tint": "rgb(var(--tw-surface-tint))",
+              "surface-stitch": "rgb(var(--tw-outline-variant))",
+              background: "rgb(var(--tw-background))",
+              "on-background": "rgb(var(--tw-on-background))",
+              "on-surface": "rgb(var(--tw-on-surface))",
+              "on-surface-variant": "rgb(var(--tw-on-surface-variant))",
+              "inverse-surface": "rgb(var(--tw-inverse-surface))",
+              "inverse-on-surface": "rgb(var(--tw-inverse-on-surface))",
+              outline: "rgb(var(--tw-outline))",
+              "outline-variant": "rgb(var(--tw-outline-variant))",
+              primary: "rgb(var(--tw-primary))",
+              "on-primary": "rgb(var(--tw-on-primary))",
+              "primary-container": "rgb(var(--tw-primary-container))",
+              "on-primary-container": "rgb(var(--tw-on-primary-container))",
+              "inverse-primary": "rgb(var(--tw-inverse-primary))",
+              "primary-fixed": "rgb(var(--tw-primary-fixed))",
+              "primary-fixed-dim": "rgb(var(--tw-primary-fixed-dim))",
+              "on-primary-fixed": "rgb(var(--tw-on-primary-fixed))",
+              "on-primary-fixed-variant":
+                "rgb(var(--tw-on-primary-fixed-variant))",
+              secondary: "rgb(var(--tw-secondary))",
+              "on-secondary": "rgb(var(--tw-on-secondary))",
+              "secondary-container": "rgb(var(--tw-secondary-container))",
+              "on-secondary-container": "rgb(var(--tw-on-secondary-container))",
+              "secondary-fixed": "rgb(var(--tw-secondary-fixed))",
+              "secondary-fixed-dim": "rgb(var(--tw-secondary-fixed-dim))",
+              "on-secondary-fixed": "rgb(var(--tw-on-secondary-fixed))",
+              "on-secondary-fixed-variant":
+                "rgb(var(--tw-on-secondary-fixed-variant))",
+              tertiary: "rgb(var(--tw-tertiary))",
+              "on-tertiary": "rgb(var(--tw-on-tertiary))",
+              "tertiary-container": "rgb(var(--tw-tertiary-container))",
+              "on-tertiary-container": "rgb(var(--tw-on-tertiary-container))",
+              "tertiary-fixed": "rgb(var(--tw-tertiary-fixed))",
+              "tertiary-fixed-dim": "rgb(var(--tw-tertiary-fixed-dim))",
+              "on-tertiary-fixed": "rgb(var(--tw-on-tertiary-fixed))",
+              "on-tertiary-fixed-variant":
+                "rgb(var(--tw-on-tertiary-fixed-variant))",
+              error: "rgb(var(--tw-error))",
+              "on-error": "rgb(var(--tw-on-error))",
+              "error-container": "rgb(var(--tw-error-container))",
+              "on-error-container": "rgb(var(--tw-on-error-container))",
+            },
+            borderRadius: {
+              DEFAULT: "0.125rem",
+              lg: "0.25rem",
+              xl: "0.5rem",
+              "2xl": "0.75rem",
+              full: "9999px",
+            },
+            spacing: {
+              lg: "40px",
+              base: "4px",
+              xl: "64px",
+              sm: "16px",
+              gutter: "24px",
+              xs: "8px",
+              md: "24px",
+              margin: "32px",
+            },
+            fontFamily: {
+              "body-md": ['"Work Sans"', "sans-serif"],
+              "body-lg": ['"Work Sans"', "sans-serif"],
+              "label-md": ['"JetBrains Mono"', "monospace"],
+              "headline-lg-mobile": ['"Newsreader"', "serif"],
+              "headline-lg": ['"Newsreader"', "serif"],
+              "label-sm": ['"JetBrains Mono"', "monospace"],
+              "headline-md": ['"Newsreader"', "serif"],
+            },
+            fontSize: {
+              "body-md": ["16px", { lineHeight: "1.5", fontWeight: "400" }],
+              "body-lg": ["18px", { lineHeight: "1.6", fontWeight: "400" }],
+              "label-md": [
+                "14px",
+                {
+                  lineHeight: "1.4",
+                  letterSpacing: "0.05em",
+                  fontWeight: "500",
+                },
+              ],
+              "headline-lg-mobile": [
+                "32px",
+                { lineHeight: "1.2", fontWeight: "600" },
+              ],
+              "headline-lg": [
+                "40px",
+                {
+                  lineHeight: "1.2",
+                  letterSpacing: "-0.02em",
+                  fontWeight: "600",
+                },
+              ],
+              "label-sm": [
+                "12px",
+                {
+                  lineHeight: "1.4",
+                  letterSpacing: "0.02em",
+                  fontWeight: "500",
+                },
+              ],
+              "headline-md": ["28px", { lineHeight: "1.3", fontWeight: "500" }],
+            },
+          },
+        },
+      };
+    </script>
+    <!--
+      Bridge: --color-* hex tokens → --tw-* RGB channels for Tailwind.
+      This must run AFTER design-tokens.css is loaded (or use the inline :root vars).
+      The token values live in style.css so Tailwind resolves them at runtime
+      via rgb(var(--tw-*)). The `.dark` block overrides them.
+    -->
+    <link rel="stylesheet" href="ds/design-tokens.css" />
+    <link rel="stylesheet" href="style.css" />
+    <script type="module" src="ds/topbar-actions.js"></script>
+  </head>
+  <body
+    class="bg-background text-on-background font-body-md h-screen flex flex-col overflow-hidden"
+  >
+    <!-- Sidebar overlay for mobile -->
+    <div
+      id="sidebar-overlay"
+      class="fixed inset-0 bg-black/50 z-40"
+      aria-hidden="true"
+      style="display: none"
+    ></div>
+
+    <!-- =========================================== -->
+    <!-- TOP APP BAR                                 -->
+    <!-- =========================================== -->
+    <header
+      class="w-full h-14 sm:h-16 border-b border-outline-variant bg-surface flex items-center justify-between gap-2 px-3 sm:px-margin flex-shrink-0 z-20 relative"
+    >
+      <div
+        class="flex items-center gap-base cursor-pointer active:scale-95 transition-transform group"
+      >
+        <span class="lg:hidden mr-2 inline-flex">
+          <ds-button
+            id="btn-sidebar-toggle"
+            variant="fab"
+            size="sm"
+            aria-label="Toggle sessions sidebar"
+            title="Toggle sessions"
+          >
+            <span class="material-symbols-outlined">menu</span>
+          </ds-button>
+        </span>
+        <span class="material-symbols-outlined text-primary text-2xl"
+          >terminal</span
+        >
+        <h1
+          class="font-headline-md text-[24px] sm:text-headline-md text-primary tracking-tight font-semibold"
+        >
+          nixpi
+        </h1>
+      </div>
+
+      <div id="workspace-switcher" class="flex-1 max-w-lg mx-gutter hidden">
+        <select
+          id="workspace-select"
+          class="bg-surface-container border border-outline-variant rounded-sm px-3 py-1 text-on-surface font-label-md outline-none focus:border-primary cursor-pointer w-full"
+        ></select>
+      </div>
+
+      <div
+        id="topbar-actions"
+        class="mobile-action-rail flex items-center gap-1 sm:gap-4 overflow-x-auto"
+      >
+        <ds-button
+          id="btn-theme-toggle"
+          variant="fab"
+          size="md"
+          title="Toggle light/night mode"
+        >
+          <span class="material-symbols-outlined" id="theme-icon"
+            >dark_mode</span
+          >
+        </ds-button>
+        <ds-button
+          id="btn-restart"
+          class="mobile-secondary-action"
+          variant="fab"
+          size="md"
+          title="Restart Pi"
+        >
+          <span class="material-symbols-outlined">sync</span>
+        </ds-button>
+        <ds-button
+          id="btn-model-picker"
+          variant="fab"
+          size="md"
+          title="Switch model"
+        >
+          <span class="material-symbols-outlined">model_training</span>
+        </ds-button>
+        <ds-button
+          id="btn-thinking-cycle"
+          variant="fab"
+          size="md"
+          title="Thinking level"
+        >
+          <span class="material-symbols-outlined">psychology</span>
+          <span
+            id="thinking-indicator"
+            class="w-2 h-2 bg-primary-container rounded-full border border-surface hidden"
+          ></span>
+        </ds-button>
+        <ds-button
+          id="btn-details-toggle"
+          class="lg:hidden"
+          variant="fab"
+          size="md"
+          title="Session details"
+        >
+          <span class="material-symbols-outlined">monitoring</span>
+        </ds-button>
+        <ds-button
+          id="btn-mobile-actions"
+          class="lg:hidden"
+          variant="fab"
+          size="md"
+          title="More actions"
+        >
+          <span class="material-symbols-outlined">more_horiz</span>
+        </ds-button>
+        <ds-avatar
+          class="mobile-avatar ml-2 cursor-pointer active:scale-95"
+          fallback="π"
+          size="md"
+        ></ds-avatar>
+      </div>
+    </header>
+
+    <!-- Status bar -->
+    <div
+      id="pi-health-banner"
+      class="bg-error-container/10 border-b border-error-container px-3 sm:px-margin py-2 hidden flex-col sm:flex-row gap-2 items-start sm:items-center justify-between"
+    >
+      <div class="flex items-center gap-2 text-error font-label-sm">
+        <span class="material-symbols-outlined text-sm">warning</span>
+        <span id="health-msg">Pi disconnected. Attempting to reconnect…</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <span id="status-dot" class="font-label-sm text-on-surface-variant"
+          >Connecting…</span
+        >
+        <ds-button id="btn-refresh" variant="surface" size="sm">
+          Refresh
+        </ds-button>
+      </div>
+    </div>
+
+    <!-- =========================================== -->
+    <!-- LAYOUT: Sidebar | Main | Right Panel       -->
+    <!-- =========================================== -->
+    <div class="flex flex-1 min-h-0 overflow-hidden relative">
+      <!-- Left SideNavBar (Sessions) -->
+      <nav
+        id="sidebar-left"
+        class="h-full w-64 border-r border-dashed border-outline-variant bg-surface-container-lowest flex flex-col py-md flex-shrink-0 z-10 transition-transform duration-300"
+        aria-label="Sessions"
+        tabindex="-1"
+      >
+        <div class="px-4 mb-2">
+          <ds-input
+            id="global-search"
+            icon="search"
+            placeholder="Search sessions…"
+            type="text"
+          ></ds-input>
+        </div>
+        <div class="px-4 mb-4 flex items-center justify-between">
+          <h2 class="font-label-md text-label-md text-on-surface">Sessions</h2>
+          <ds-button
+            id="btn-new-chat"
+            variant="fab"
+            size="sm"
+            title="New chat (Ctrl+N)"
+          >
+            <span class="material-symbols-outlined text-lg">add</span>
+          </ds-button>
+        </div>
+        <div id="session-list" class="flex-1 overflow-y-auto px-4 space-y-1">
+          <p class="text-on-surface-variant font-label-sm text-xs">Loading…</p>
+        </div>
+        <div
+          class="mt-auto px-4 pt-4 border-t border-dashed border-outline-variant mx-4 space-y-1"
+        >
+          <ds-button id="btn-help" variant="text" size="md" full>
+            <span class="material-symbols-outlined text-lg">help</span>
+            <span class="font-label-md text-label-md">Help</span>
+          </ds-button>
+          <ds-button id="btn-export" variant="text" size="md" full>
+            <span class="material-symbols-outlined text-lg">download</span>
+            <span class="font-label-md text-label-md">Export</span>
+          </ds-button>
+        </div>
+      </nav>
+
+      <!-- Main Content Area (Chat & Canvas) -->
+      <main class="flex-1 flex flex-col bg-surface overflow-hidden relative">
+        <div
+          id="messages"
+          class="flex-1 min-h-0 overflow-y-auto p-4 sm:p-margin flex flex-col gap-4 sm:gap-6 w-full"
+        >
+          <!-- Messages rendered here via JS -->
+        </div>
+        <!-- Spacer for floating input; JS keeps this matched to composer height. -->
+        <div id="composer-spacer" class="composer-spacer flex-shrink-0"></div>
+
+        <!-- Chat Input Area -->
+        <div
+          id="composer-dock"
+          class="absolute bottom-0 left-0 w-full p-3 sm:p-6 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:pb-6 bg-gradient-to-t from-surface via-surface/95 to-transparent pt-8 sm:pt-16 pointer-events-none"
+        >
+          <div class="max-w-3xl mx-auto relative pointer-events-auto">
+            <div
+              class="bg-surface-container border border-outline-variant rounded-lg p-2 flex flex-col focus-within:border-primary transition-colors shadow-lg shadow-black/40"
+            >
+              <div id="image-previews" class="flex flex-wrap gap-1 px-2"></div>
+              <ds-input
+                id="input"
+                variant="plain"
+                multiline
+                rows="2"
+                placeholder="Ask the agent…"
+              ></ds-input>
+              <div
+                class="flex items-center justify-between gap-2 mt-2 px-2 pb-1 border-t border-dashed border-outline-variant pt-2"
+              >
+                <div class="flex gap-2 items-center">
+                  <ds-button
+                    id="attach-btn"
+                    variant="fab"
+                    size="sm"
+                    title="Attach image"
+                  >
+                    <span class="material-symbols-outlined text-sm"
+                      >attach_file</span
+                    >
+                  </ds-button>
+                  <input
+                    id="attach-input"
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    hidden
+                  />
+                  <ds-button
+                    id="mic-btn"
+                    variant="fab"
+                    size="sm"
+                    title="Speech to text"
+                  >
+                    <span class="material-symbols-outlined text-sm">mic</span>
+                  </ds-button>
+                  <span
+                    class="hidden sm:inline text-outline-variant text-xs font-label-sm"
+                    >Enter to send</span
+                  >
+                </div>
+                <div class="flex items-center gap-2 justify-end">
+                  <ds-button id="btn-abort" variant="error" size="md" disabled>
+                    <span class="material-symbols-outlined text-sm">stop</span>
+                    Stop
+                  </ds-button>
+                  <ds-button id="send-btn" variant="filled" size="md">
+                    Send
+                    <span class="material-symbols-outlined text-sm">send</span>
+                  </ds-button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <!-- Right SideNavBar (Telemetry / Context Panel) -->
+      <aside
+        id="sidebar-right"
+        class="h-full w-72 border-l border-dashed border-outline-variant bg-surface-container-low flex flex-col py-md flex-shrink-0 z-10"
+        aria-label="Telemetry and session details"
+        tabindex="-1"
+      >
+        <div class="px-4 mb-6 flex items-center justify-between">
+          <div>
+            <h2 class="font-label-md text-label-md text-on-surface mb-0.5">
+              Telemetry
+            </h2>
+            <p class="font-label-sm text-label-sm text-on-surface-variant">
+              v1.0.4-alpha
+            </p>
+          </div>
+          <div class="flex items-center gap-2">
+            <div
+              class="hidden lg:flex w-8 h-8 rounded border border-outline-variant items-center justify-center bg-surface-container"
+            >
+              <span
+                id="telemetry-sensor"
+                class="material-symbols-outlined text-tertiary text-sm animate-pulse-glow"
+                >sensors</span
+              >
+            </div>
+            <ds-button
+              id="btn-details-close"
+              class="lg:hidden"
+              variant="fab"
+              size="sm"
+              aria-label="Close session details"
+              title="Close details"
+            >
+              <span class="material-symbols-outlined">close</span>
+            </ds-button>
+          </div>
+        </div>
+
+        <div class="flex border-b border-outline-variant px-2 mb-4">
+          <ds-button variant="tab" size="sm" active>Context</ds-button>
+          <ds-button variant="tab" size="sm">Telemetry</ds-button>
+          <ds-button variant="tab" size="sm">Status</ds-button>
+        </div>
+
+        <div class="flex-1 overflow-y-auto px-4 space-y-6">
+          <!-- Stats -->
+          <div>
+            <h4
+              class="font-label-sm text-on-surface-variant mb-2 uppercase tracking-wider flex items-center gap-2"
+            >
+              <span class="material-symbols-outlined text-[14px]">speed</span>
+              Session Stats
+            </h4>
+            <div
+              id="stats-panel"
+              class="bg-surface border border-outline-variant rounded p-3 space-y-2 hidden"
+            >
+              <div class="flex justify-between items-center">
+                <span class="font-label-sm text-on-surface-variant"
+                  >Tokens</span
+                >
+                <span class="font-label-md text-on-surface" id="stat-tokens"
+                  >—</span
+                >
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="font-label-sm text-on-surface-variant"
+                  >Messages</span
+                >
+                <span class="font-label-md text-on-surface" id="stat-msgs"
+                  >—</span
+                >
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="font-label-sm text-on-surface-variant"
+                  >Context</span
+                >
+                <span class="font-label-md text-on-surface" id="stat-ctx"
+                  >—</span
+                >
+              </div>
+            </div>
+          </div>
+
+          <!-- Active Nodes (dummy) -->
+          <div>
+            <h4
+              class="font-label-sm text-on-surface-variant mb-2 uppercase tracking-wider flex items-center gap-2"
+            >
+              <span class="material-symbols-outlined text-[14px]"
+                >account_tree</span
+              >
+              System
+            </h4>
+            <div
+              class="bg-surface border border-outline-variant rounded p-3 space-y-2"
+            >
+              <div class="flex justify-between items-center">
+                <span class="font-label-md text-on-surface">Pi RPC</span>
+                <span
+                  id="node-pi-status"
+                  class="text-[10px] uppercase font-bold text-tertiary"
+                  >Operational</span
+                >
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="font-label-md text-on-surface">WebSocket</span>
+                <span
+                  id="node-ws-status"
+                  class="text-[10px] uppercase font-bold text-tertiary"
+                  >Connected</span
+                >
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="font-label-md text-on-surface">Whisper</span>
+                <span
+                  id="node-whisper-status"
+                  class="text-[10px] uppercase font-bold text-secondary-fixed-dim"
+                  >Available</span
+                >
+              </div>
+            </div>
+          </div>
+
+          <!-- Event Log (real) -->
+          <div>
+            <h4
+              class="font-label-sm text-on-surface-variant mb-2 uppercase tracking-wider flex items-center gap-2"
+            >
+              <span class="material-symbols-outlined text-[14px]"
+                >terminal</span
+              >
+              Event Log
+            </h4>
+            <div
+              id="event-log"
+              class="bg-surface-container-lowest border border-outline-variant rounded p-3 h-48 overflow-y-auto font-label-sm text-[11px] leading-relaxed"
+            >
+              <div class="text-on-surface-variant">
+                [00:00:00] Initializing atelier…
+              </div>
+            </div>
+          </div>
+
+          <!-- System Metrics (dummy but responsive) -->
+          <div>
+            <h4
+              class="font-label-sm text-on-surface-variant mb-2 uppercase tracking-wider flex items-center gap-2"
+            >
+              <span class="material-symbols-outlined text-[14px]">memory</span>
+              Diagnostics
+            </h4>
+            <div class="space-y-4 pt-1">
+              <div>
+                <div
+                  class="flex justify-between font-label-sm text-[10px] mb-2 uppercase"
+                >
+                  <span class="text-on-surface-variant">Model Load</span>
+                  <span class="text-on-surface" id="diag-model">—</span>
+                </div>
+                <div class="h-[2px] bg-outline-variant w-full">
+                  <div
+                    id="diag-model-bar"
+                    class="h-full bg-on-surface w-[0%] transition-all duration-500"
+                  ></div>
+                </div>
+              </div>
+              <div>
+                <div
+                  class="flex justify-between font-label-sm text-[10px] mb-2 uppercase"
+                >
+                  <span class="text-on-surface-variant">Context Usage</span>
+                  <span class="text-on-surface" id="diag-ctx">—</span>
+                </div>
+                <div class="h-[2px] bg-outline-variant w-full">
+                  <div
+                    id="diag-ctx-bar"
+                    class="h-full bg-on-surface w-[0%] transition-all duration-500"
+                  ></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <!-- =========================================== -->
+    <!-- MODALS                                      -->
+    <!-- =========================================== -->
+    <dialog id="help-modal">
+      <article class="p-4 sm:p-6 w-[min(92vw,420px)] min-w-0">
+        <header
+          class="flex items-center justify-between mb-4 pb-2 border-b border-outline-variant"
+        >
+          <strong class="font-headline-md text-xl text-primary"
+            >Keyboard Shortcuts</strong
+          >
+          <ds-button
+            id="btn-help-close"
+            variant="fab"
+            size="sm"
+            aria-label="Close help modal"
+            title="Close"
+          >
+            <span class="material-symbols-outlined">close</span>
+          </ds-button>
+        </header>
+        <div class="space-y-2 font-label-sm mb-4">
+          <div class="flex items-center">
+            <kbd
+              class="bg-surface-container px-2 py-1 rounded border border-outline-variant mr-2"
+              >Ctrl</kbd
+            ><kbd
+              class="bg-surface-container px-2 py-1 rounded border border-outline-variant mr-2"
+              >N</kbd
+            ><span>New chat</span>
+          </div>
+          <div class="flex items-center">
+            <kbd
+              class="bg-surface-container px-2 py-1 rounded border border-outline-variant mr-2"
+              >Enter</kbd
+            ><span>Send message</span>
+          </div>
+          <div class="flex items-center">
+            <kbd
+              class="bg-surface-container px-2 py-1 rounded border border-outline-variant mr-2"
+              >Shift</kbd
+            ><kbd
+              class="bg-surface-container px-2 py-1 rounded border border-outline-variant mr-2"
+              >Enter</kbd
+            ><span>New line</span>
+          </div>
+          <div class="flex items-center">
+            <kbd
+              class="bg-surface-container px-2 py-1 rounded border border-outline-variant mr-2"
+              >Escape</kbd
+            ><span>Abort / Close</span>
+          </div>
+          <div class="flex items-center">
+            <kbd
+              class="bg-surface-container px-2 py-1 rounded border border-outline-variant mr-2"
+              >Ctrl</kbd
+            ><kbd
+              class="bg-surface-container px-2 py-1 rounded border border-outline-variant mr-2"
+              >L</kbd
+            ><span>Clear chat</span>
+          </div>
+          <div class="flex items-center">
+            <kbd
+              class="bg-surface-container px-2 py-1 rounded border border-outline-variant mr-2"
+              >/</kbd
+            ><span>Slash commands</span>
+          </div>
+        </div>
+        <p class="font-body-md text-sm text-on-surface-variant mb-2">
+          💡 Paste an image directly into the chat to attach it.
+        </p>
+      </article>
+    </dialog>
+
+    <dialog id="mobile-actions-modal" class="mobile-sheet">
+      <article class="p-4 w-full min-w-0">
+        <header
+          class="flex items-center justify-between mb-4 pb-2 border-b border-outline-variant"
+        >
+          <strong class="font-headline-md text-xl text-primary">Actions</strong>
+          <ds-button
+            id="btn-mobile-actions-close"
+            variant="fab"
+            size="sm"
+            aria-label="Close actions"
+            title="Close"
+          >
+            <span class="material-symbols-outlined">close</span>
+          </ds-button>
+        </header>
+        <div class="mobile-actions-list space-y-1">
+          <ds-button id="btn-mobile-model" variant="text" size="md" full>
+            <span class="material-symbols-outlined text-lg"
+              >model_training</span
+            >
+            <span class="font-label-md text-label-md">Switch model</span>
+          </ds-button>
+          <ds-button id="btn-mobile-thinking" variant="text" size="md" full>
+            <span class="material-symbols-outlined text-lg">psychology</span>
+            <span class="font-label-md text-label-md">Thinking level</span>
+          </ds-button>
+          <ds-button id="btn-mobile-restart" variant="text" size="md" full>
+            <span class="material-symbols-outlined text-lg">sync</span>
+            <span class="font-label-md text-label-md">Restart Pi</span>
+          </ds-button>
+          <ds-button id="btn-mobile-help" variant="text" size="md" full>
+            <span class="material-symbols-outlined text-lg">help</span>
+            <span class="font-label-md text-label-md">Help</span>
+          </ds-button>
+          <ds-button id="btn-mobile-export" variant="text" size="md" full>
+            <span class="material-symbols-outlined text-lg">download</span>
+            <span class="font-label-md text-label-md">Export</span>
+          </ds-button>
+        </div>
+      </article>
+    </dialog>
+
+    <dialog id="model-modal">
+      <article class="p-4 sm:p-6 w-[min(92vw,520px)] min-w-0">
+        <header
+          class="flex items-center justify-between mb-4 pb-2 border-b border-outline-variant"
+        >
+          <strong class="font-headline-md text-xl text-primary"
+            >Switch Model</strong
+          >
+          <ds-button
+            id="btn-model-close"
+            variant="fab"
+            size="sm"
+            aria-label="Close model modal"
+            title="Close"
+          >
+            <span class="material-symbols-outlined">close</span>
+          </ds-button>
+        </header>
+        <ds-input
+          id="model-search"
+          class="mb-4"
+          placeholder="Search models…"
+          type="text"
+        ></ds-input>
+        <div id="model-list" class="max-h-[400px] overflow-y-auto"></div>
+      </article>
+    </dialog>
+
+    <!-- =========================================== -->
+    <!-- SCRIPTS                                     -->
+    <!-- =========================================== -->
+    <script src="app.js"></script>
+  </body>
+</html>
