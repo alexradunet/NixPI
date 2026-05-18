@@ -171,11 +171,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1778763290,
-        "narHash": "sha256-m8TXBJLWs4UyQu/3vHsIQquAh1dsSD5ccmaEJY2J1fw=",
+        "lastModified": 1779036519,
+        "narHash": "sha256-Elb/bKlhkV06mptgfrA3HG67BWOS82BRc4JxBUSG5Fo=",
         "ref": "refs/heads/main",
-        "rev": "e48f2866d53380bfd7444be83296750c0c29ca97",
-        "revCount": 2,
+        "rev": "5ed19087cbb29e76b00791c69bd169b5dddde01c",
+        "revCount": 4,
         "type": "git",
         "url": "ssh://alex@git.nazar.studio/nazar/minecraft.git"
       },
