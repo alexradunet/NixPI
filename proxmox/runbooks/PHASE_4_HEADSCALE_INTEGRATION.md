@@ -28,10 +28,10 @@ OS: NixOS
 Config source: /home/alex/repos/ownloom/infra#headscale
 State: /var/lib/headscale
 Database: SQLite, /var/lib/headscale/db.sqlite
-Public hostname intended: https://headscale.nazar.studio
+Public hostname: https://headscale.nazar.studio
 ```
 
-Public DNS for `headscale.nazar.studio` was **not present** at deployment time, so the internal service and Caddy route are configured, but public trusted HTTPS will only become usable after the DNS record below is added.
+Public DNS, trusted HTTPS, and first laptop enrollment are complete. Temporary reusable preauth keys generated during bootstrap were revoked after enrollment.
 
 ## Architecture
 
@@ -67,9 +67,9 @@ Public exposure remains:
 
 Headscale listens on `10.10.10.11:8080` inside the private Proxmox service network. It is not DNATed directly from the public internet.
 
-## DNS required
+## DNS and HTTPS status
 
-Add this public DNS record in Gandi:
+This public DNS record is active in Gandi:
 
 ```text
 Type: A
@@ -78,20 +78,34 @@ Value: 167.235.12.22
 TTL: 300
 ```
 
-Verification command:
+DNS verification command:
 
 ```bash
 curl -fsS 'https://cloudflare-dns.com/dns-query?name=headscale.nazar.studio&type=A' \
   -H 'accept: application/dns-json'
 ```
 
-Expected answer after propagation:
+Expected answer:
 
 ```json
 {"name":"headscale.nazar.studio","type":1,"data":"167.235.12.22"}
 ```
 
-At deployment time, Cloudflare returned NXDOMAIN for `headscale.nazar.studio`, and Caddy logged ACME failures for that hostname. That is expected until the DNS record exists.
+Verified public resolver results on 2026-05-19:
+
+```text
+Cloudflare DNS: headscale.nazar.studio -> 167.235.12.22
+Google DNS:     headscale.nazar.studio -> 167.235.12.22
+```
+
+Trusted HTTPS is issued by Let's Encrypt through edge Caddy:
+
+```text
+Subject: CN=headscale.nazar.studio
+Issuer: Let's Encrypt E8
+SAN: headscale.nazar.studio
+Verification: OpenSSL verify result 0
+```
 
 ## NixOS configuration
 
@@ -208,7 +222,7 @@ ID: 1
 Username: alex
 ```
 
-A reusable preauth key was generated with a 24 hour expiration. Do not commit preauth keys to Git. Generate a fresh key when enrolling a client:
+Reusable 24 hour preauth keys were generated during bootstrap and revoked after `alex-laptop` was enrolled. Do not commit preauth keys to Git or leave reusable keys active after enrollment. Generate a fresh short-lived key only when enrolling a client:
 
 ```bash
 ssh -i /home/alex/.ssh/proxmox_alex_ed25519 \
@@ -220,12 +234,23 @@ ssh -i /home/alex/.ssh/proxmox_alex_ed25519 \
 
 ## Client enrollment
 
-After `headscale.nazar.studio` resolves publicly and Caddy has issued a trusted certificate, install/start Tailscale on the client and run:
+After `headscale.nazar.studio` resolves publicly and Caddy has issued a trusted certificate, install/start Tailscale on the client and run. If the device is already logged into a different Tailscale control server, include `--force-reauth`:
 
 ```bash
-tailscale up \
+sudo tailscale up \
   --login-server=https://headscale.nazar.studio \
-  --auth-key=<fresh-headscale-preauth-key>
+  --auth-key=<fresh-headscale-preauth-key> \
+  --force-reauth
+```
+
+Current enrolled client:
+
+```text
+Hostname: alex-laptop
+User: alex
+Tailnet IPv4: 100.64.0.1
+Tailnet IPv6: fd7a:115c:a1e0::1
+Status at enrollment verification: online
 ```
 
 Then verify on the Headscale VM:
@@ -307,7 +332,7 @@ Location: https://headscale.nazar.studio/health
 Server: Caddy
 ```
 
-The redirect proves Caddy loaded the `headscale.nazar.studio` site. Full HTTPS verification is pending the public DNS record.
+The redirect proves Caddy loaded the `headscale.nazar.studio` site.
 
 ## Operations
 
@@ -389,15 +414,40 @@ Destroy VM 101 only if its state is no longer needed:
 ssh proxmox-root 'qm destroy 101 --purge'
 ```
 
+## Public HTTPS verification
+
+Verified on 2026-05-19:
+
+```bash
+curl -fsS https://headscale.nazar.studio/health
+```
+
+Result:
+
+```json
+{"status":"pass"}
+```
+
+## Temporary preauth key cleanup
+
+Two bootstrap reusable preauth keys were revoked after laptop enrollment:
+
+```text
+ID 1 expired at 2026-05-19 18:00:03
+ID 2 expired at 2026-05-19 18:00:04
+```
+
+Verification command:
+
+```bash
+ssh -i /home/alex/.ssh/proxmox_alex_ed25519 \
+  -o IdentitiesOnly=yes \
+  -J proxmox \
+  alex@10.10.10.11 \
+  'sudo headscale preauthkeys list --user 1'
+```
+
 ## Remaining work
 
-1. Add public DNS record `headscale.nazar.studio A 167.235.12.22` in Gandi.
-2. Verify Caddy obtains a trusted certificate:
-
-   ```bash
-   curl -fsSI --max-time 30 https://headscale.nazar.studio/health
-   curl -fsS --max-time 30 https://headscale.nazar.studio/health
-   ```
-
-3. Enroll the operator laptop with a fresh preauth key.
-4. Decide the subnet-router node for `10.10.10.0/24`. Recommended next step: enroll `edge` or a tiny dedicated router VM as the subnet router rather than exposing Proxmox UI publicly.
+1. Decide the subnet-router node for `10.10.10.0/24`. Recommended next step: enroll `edge` or a tiny dedicated router VM as the subnet router rather than exposing Proxmox UI publicly.
+2. Keep `/home/alex/repos/ownloom/ARCHITECTURE.md` updated whenever infrastructure topology, DNS, routing, or service exposure changes.
