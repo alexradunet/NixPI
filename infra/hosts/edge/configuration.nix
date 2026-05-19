@@ -54,7 +54,8 @@
     virtualHosts."headscale.nazar.studio".extraConfig = ''
       reverse_proxy 10.10.10.11:8080
     '';
-    virtualHosts."http://proxmox.nazar.studio".extraConfig = ''
+    virtualHosts."proxmox.nazar.studio".extraConfig = ''
+      tls internal
       @tailnet remote_ip 100.64.0.0/10 10.10.10.0/24
       handle @tailnet {
         reverse_proxy https://10.10.10.1:8006 {

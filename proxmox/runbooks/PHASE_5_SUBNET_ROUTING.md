@@ -77,7 +77,7 @@ edge VM 100
 Proxmox private service network vmbr1
   10.10.10.0/24
   ├── 10.10.10.1  Proxmox host gateway/UI (direct/debug: proxmox.tailnet.nazar.studio:8006)
-  ├── 10.10.10.10 edge / Caddy (gateway: http://proxmox.nazar.studio/)
+  ├── 10.10.10.10 edge / Caddy (gateway: https://proxmox.nazar.studio/)
   └── 10.10.10.11 headscale
 ```
 
@@ -238,16 +238,16 @@ proxmox.nazar.studio -> 10.10.10.10
 Edge Caddy then reverse-proxies the simple private URL to the real Proxmox upstream, but only for private/tailnet source ranges (`100.64.0.0/10` and `10.10.10.0/24`):
 
 ```text
-http://proxmox.nazar.studio/ -> https://10.10.10.1:8006/
+https://proxmox.nazar.studio/ -> https://10.10.10.1:8006/
 ```
 
 This is intended for tailnet clients only. It is not a public Gandi DNS record and does not expose the Proxmox UI publicly. With route acceptance enabled, access the UI from the laptop at:
 
 ```text
-http://proxmox.nazar.studio/
+https://proxmox.nazar.studio/
 ```
 
-This deliberately uses HTTP on the browser-facing tailnet side for now to avoid private CA/certificate setup. The laptop-to-edge path is still carried over the encrypted tailnet. Caddy connects to the Proxmox upstream over HTTPS and skips verification of Proxmox's default self-signed certificate.
+This uses Caddy's internal CA on the browser-facing tailnet side. That is required because Proxmox sets its authentication cookie with the `Secure` attribute; plain HTTP can load the login page but browser API calls fail after login with `401 Unauthorized` because the browser will not send the secure cookie over HTTP. Until the Caddy internal CA is trusted on the client, the browser may show a certificate warning. Caddy connects to the Proxmox upstream over HTTPS and skips verification of Proxmox's default self-signed certificate.
 
 The direct/debug tailnet name remains available for bypassing Caddy during troubleshooting:
 
