@@ -154,6 +154,24 @@
           assert_equals hermes-dashboard-restart ${self.nixosConfigurations.nazar.config.systemd.services.hermes-dashboard.serviceConfig.Restart} always
           assert_true tailscale-enabled ${toString self.nixosConfigurations.nazar.config.services.tailscale.enable}
           assert_true nginx-enabled ${toString self.nixosConfigurations.nazar.config.services.nginx.enable}
+          assert_true app-directory-vhost ${
+            toString (self.nixosConfigurations.nazar.config.services.nginx.virtualHosts ? "nazar-app-directory")
+          }
+          assert_true app-directory-tailscale-port-allowed ${
+            toString (
+              nixpkgs.lib.elem 8080 (
+                self.nixosConfigurations.nazar.config.networking.firewall.interfaces.tailscale0.allowedTCPPorts
+                  or [ ]
+              )
+            )
+          }
+          assert_true app-directory-port-not-globally-allowed ${
+            toString (
+              !(nixpkgs.lib.elem 8080 (
+                self.nixosConfigurations.nazar.config.networking.firewall.allowedTCPPorts or [ ]
+              ))
+            )
+          }
           assert_true life-os-webdav-location ${
             toString (
               self.nixosConfigurations.nazar.config.services.nginx.virtualHosts."life-os-private".locations

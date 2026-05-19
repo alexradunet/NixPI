@@ -20,6 +20,7 @@
     inputs.hermes-agent.nixosModules.default
     ../../modules/host/hermes-agent.nix
     ../../modules/host/hermes-dashboard.nix
+    ../../modules/host/app-directory.nix
     ../../modules/host/life-os.nix
     ../../modules/host/life-os-webdav.nix
     ../../modules/host/life-os-radicale.nix
